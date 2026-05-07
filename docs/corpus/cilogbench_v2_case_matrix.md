@@ -358,6 +358,30 @@ Update this section as cases land.
              that point extend both schemas + the validator's
              ALLOWED_FAILURE_CATEGORY constant in lockstep.
 
+[2026-05-07] Status update on the schema extension above: the first
+             new_v2 case in `matrix_or_monorepo_failure` has now
+             landed (`cpython-tcl-windows-matrix-v2-001`), but the
+             schema extension is **further deferred to v3** rather
+             than being applied at the 10-case checkpoint. Reason:
+             extending case.schema.json + ground_truth.schema.json +
+             tools/validate_cases.py + prompts/debugger_v1.md +
+             configs/evaluation/category_compatibility_v1_1.json in
+             lockstep would invalidate the SHA pins in both v2 protocol
+             locks and require a full v2 diagnoser re-run (the diagnoser
+             prompt's category enum currently has 13 values; without
+             matrix_or_monorepo_failure in the prompt, the diagnoser
+             cannot have produced it as an output, so re-scoring the
+             cached diagnoses against a new ground-truth category would
+             systematically lower the case's scores rather than reflect
+             the diagnoser's actual capability).
+             For the 10-case checkpoint we instead carry the divergence
+             explicitly: tags.json names matrix_or_monorepo_failure
+             (narrative coverage tracking), case.json + ground_truth
+             stay test_assertion (canonical / evaluator-load-bearing).
+             reports/e10_v2_generalization_partial.md §5.8 documents
+             this caveat. Re-evaluate at v3 with explicit train/holdout
+             split for cleaner partial-match scoring extension.
+
 [2026-05-06] Backfill complete. 16 / 16 v1.3 tags.json files now
              carry origin=legacy_v1_3, inserted directly after `split`.
              No other fields touched.

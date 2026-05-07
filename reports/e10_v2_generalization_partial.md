@@ -168,7 +168,9 @@ After collecting 2 more v2 cases into the previously-empty `v2/stress`
 split — `numpy-pytest-segfault-argsort-v2-001` (process-crash from
 a numpy `argsort` segfault on the `reverse-sorts` perf branch) and
 `cpython-tcl-windows-matrix-v2-001` (matrix-shaped Windows-only
-tcltk regression) — Phase 3 was re-run on the 10-case state.
+tcltk regression; canonical `case.json` `failure_category` =
+`test_assertion`, the matrix-coverage label lives on `tags.json`
+only — see §5.8) — Phase 3 was re-run on the 10-case state.
 Results:
 
 ```text
@@ -321,11 +323,15 @@ is **not** strong enough to retire v1.3 yet. Specifically:
    review and E9 AI-assisted human review. v2 has neither yet. The
    `sv1.1` formula is the same calibrated v1.3 formula, but its
    calibration on v2 is unverified.
-6. **v2/stress is empty (0/3).** The 8 accepted cases are all in
-   `v2/dev` (3) and `v2/holdout` (5). "Deliberately difficult"
-   stress cases (huge logs, scattered evidence, multi-failure with
-   distinct causes, unusual evidence format) have not been collected
-   yet.
+6. **v2/stress is partial (2/3).** Two stress cases were added in
+   the 10-case checkpoint (`numpy-pytest-segfault-argsort-v2-001`
+   and `cpython-tcl-windows-matrix-v2-001`) — see §3b above. The
+   third stress slot remains empty; "deliberately difficult"
+   targets still missing include huge logs (>50k lines),
+   scattered-evidence multi-failure, and a non-pytest framework
+   (the v2/stress framework dominance flagged by
+   `tools/check_split_balance.py` is real until a third stress case
+   breaks the 2/2 pytest monoculture).
 7. **Hybrid's threshold is the variable, not the method shape.**
    This study cannot say "hybrid as a strategy is bad." It only
    says "this specific 4k-token threshold tuned on v1.3 is bad on
@@ -333,6 +339,27 @@ is **not** strong enough to retire v1.3 yet. Specifically:
    we deliberately did not retune on the same v2 corpus to avoid
    the same selection-by-method risk that produced the v1.3
    overfit (see `cilogbench_v1_3_limitations.md` §9).
+8. **Matrix-category coverage is a `tags.json`-only narrative claim,
+   not a canonical evaluator category.** The `cpython-tcl-windows-
+   matrix-v2-001` case is described in §3b above and the corpus
+   reports as "first v2 `matrix_or_monorepo_failure`" coverage.
+   That label lives on `tags.json` only. The case's `case.json`
+   `failure_category` and its `ground_truth.root_cause.category`
+   are both still `test_assertion`, which is what
+   `evaluate_diagnosis.py` and `build_split_manifest.py` see and
+   what the lock files SHA-pin. The reason: extending
+   `case.schema.json` / `ground_truth.schema.json` /
+   `prompts/debugger_v1.md` /
+   `configs/evaluation/category_compatibility_v1_1.json` to make
+   `matrix_or_monorepo_failure` a first-class canonical category
+   would require re-running the entire v2 diagnoser pipeline (the
+   diagnoser was prompted with a 13-value enum that does not
+   include the new category, so it cannot have produced it). That
+   re-run is deliberately deferred to a v3 release with an
+   explicit train/holdout split so we can avoid the same
+   selection-by-method risk flagged in caveat §5.7. Until then:
+   evaluator-load-bearing claims should cite `test_assertion`;
+   matrix-coverage narrative claims should cite this caveat.
 
 ## 6. What this enables
 
@@ -368,29 +395,38 @@ to:
 
 ## 8. Reproducibility
 
-Everything below is locked in
-[`protocols/cilogbench-v2-partial.lock.json`](../protocols/cilogbench-v2-partial.lock.json):
+Two protocol locks now exist for v2; the §3 8-case headline numbers
+reproduce against `cilogbench-v2-partial`, and the §3b 10-case
+checkpoint numbers reproduce against `cilogbench-v2-checkpoint`.
+Both locks SHA-pin the same v1.3 schemas, prompts, and evaluators
+that were in `cilogbench-v1.3.lock.json`; they differ only in case
+set:
 
 ```text
-schemas         9 SHA-pinned schema files
-prompts         3 SHA-pinned prompts (debugger_v1, llm_summary_v1_*)
-evaluators      2 SHA-pinned evaluator scripts (signal_recall, diagnosis)
-baselines       7 locked context-provider baselines
-                 (raw, tail, grep, rtk-read, rtk-log, rtk-err-cat,
-                  llm-summary-v1-mock, hybrid-grep-4k-rtk-err-cat-v1)
-splits          5 splits: dev (5), holdout (5), stress (6),
-                 v2/dev (3), v2/holdout (5)
-total cases     24
+                            v2-partial      v2-checkpoint
+schemas / prompts /         identical       identical
+evaluators (14 hashes)
+baselines (7)               identical       identical
+
+splits                      5 splits        6 splits
+                            dev/holdout/    + v2/stress
+                            stress (v1.3)
+                            + v2/dev (3)
+                            + v2/holdout (5)
+
+total cases                 24              26
+v2 new cases                 8              10
 ```
 
-To reproduce the headline numbers from a fresh checkout:
+**For the 10-case checkpoint headline numbers (§3b)** — fresh-checkout
+reproduction:
 
 ```bash
-python3 tools/validate_protocol_lock.py --protocol protocols/cilogbench-v2-partial.lock.json
-# Should print: "Protocol lock OK: cilogbench-v2-partial"
+python3 tools/validate_protocol_lock.py --protocol protocols/cilogbench-v2-checkpoint.lock.json
+# Should print: "Protocol lock OK: cilogbench-v2-checkpoint"
 
 # Re-run all baselines on all splits (requires `rtk` on PATH):
-for split in dev holdout stress v2/dev v2/holdout; do
+for split in dev holdout stress v2/dev v2/holdout v2/stress; do
   for m in raw tail grep; do
     python3 tools/run_baseline.py --method "$m" --split "$split"
   done
@@ -410,7 +446,7 @@ for debugger_model in sonnet haiku; do
   export CILOGBENCH_CLAUDE_MODEL=$debugger_model
   diagname=$([[ $debugger_model == sonnet ]] && echo real-debugger-v2 \
                                               || echo real-debugger-v1)
-  for split in dev holdout stress v2/dev v2/holdout; do
+  for split in dev holdout stress v2/dev v2/holdout v2/stress; do
     for m in raw tail grep rtk-read rtk-log rtk-err-cat \
              llm-summary-v1-mock hybrid-grep-4k-rtk-err-cat-v1; do
       python3 tools/run_diagnosis.py --split "$split" \
@@ -422,9 +458,18 @@ for debugger_model in sonnet haiku; do
 done
 ```
 
-Sonnet 4.6 + Haiku 4.5 cost roughly $1.50 + $0.30 respectively for
-the 64 calls each on v2 splits. v1.3 numbers are cached; only v2
-needs re-running on a fresh checkout.
+The v2 splits collectively run 80 diagnosis calls per debugger
+(10 v2 cases × 8 baselines). Sonnet 4.6 + Haiku 4.5 cost roughly
+$1.85 + $0.40 respectively at this scale. v1.3 cached numbers are
+reused; only v2 splits need re-running on a fresh checkout.
+
+**For the 8-case Phase 3 baseline numbers (§3, §4)** — same
+commands but iterate over only `dev holdout stress v2/dev v2/holdout`
+(omit `v2/stress`) and validate against
+`protocols/cilogbench-v2-partial.lock.json`. That run was 64
+diagnosis calls per debugger and is preserved as a historical
+checkpoint; the canonical "post-Phase-2-checkpoint" numbers are
+the §3b ones above.
 
 ## 9. Recommended next steps
 

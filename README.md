@@ -246,7 +246,12 @@ to let the numbers pick.
        `reverse-sorts` perf branch. Process-crash format, exit 245.
        `requires_repo_context = true`.
     2. `cases/v2/stress/cpython-tcl-windows-matrix-v2-001/`
-       — first v2 `matrix_or_monorepo_failure`. cpython's
+       — first v2 `matrix_or_monorepo_failure` (tags.json label
+       only — case.json + ground_truth.root_cause.category are
+       both still `test_assertion` for evaluator and manifest
+       purposes; schema/prompt extension deferred to v3 to avoid
+       a re-run of the full v2 diagnoser pipeline; see
+       `reports/e10_v2_generalization_partial.md` §5.8). cpython's
        `update_windows_tcltk` broke Unicode surrogate handling
        in the bundled tcltk: ALL 7 Windows configs fail with the
        same `AssertionError: '<💻>' != '<ðŸ’»>'` while
