@@ -1,0 +1,56 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Assembly test `tests/assembly-llvm/wasm_exceptions.rs` failed because FileCheck verification found that expected strings were not present in the generated WebAssembly assembly output.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "FileCheck assertions at lines 38 and 62 of tests/assembly-llvm/wasm_exceptions.rs expected specific strings in the generated assembly, but these strings were not found in the actual wasm_exceptions.s output. The generated assembly contains `call may_panic` instructions, but the test's CHECK directives did not match the expected patterns.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "tests/assembly-llvm/wasm_exceptions.rs",
+    "/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s"
+  ],
+  "relevant_tests": [
+    "[assembly] tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "error: CHECK: expected string not found in input",
+      "reason": "FileCheck tool reported that the expected pattern in the assembly test was not found in the generated code"
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:38:12: error: CHECK: expected string not found in input",
+      "reason": "Explicit failure at line 38 of the test file with CHECK directive mismatch"
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:62:12: error: CHECK: expected string not found in input",
+      "reason": "Second failure at line 62 of the test file with CHECK directive mismatch"
+    },
+    {
+      "quote": "error: verification with 'FileCheck' failed",
+      "reason": "FileCheck tool explicitly failed to verify the assembly matches the expected patterns"
+    },
+    {
+      "quote": "test result: FAILED. 550 passed; 1 failed; 103 ignored",
+      "reason": "Only the assembly test failed; all other tests in the suite passed, indicating this is an isolated test assertion failure"
+    }
+  ],
+  "suggested_fix": "Review the expected CHECK patterns in tests/assembly-llvm/wasm_exceptions.rs (lines 38 and 62) and update them to match the actual generated wasm_exceptions.s assembly output, or investigate whether recent changes to WebAssembly exception handling code generation have altered the assembly structure in an unintended way.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-4k-rtk-err-cat-v1/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 18150
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 541
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 25645.709,
+    "cache_key": "b44ca543ae3486af05fcb5dfe7fea299acff19c80becd94b40154f8f85ac9c6f",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

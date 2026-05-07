@@ -1,0 +1,68 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The assembly FileCheck test for wasm_exceptions failed because the generated WebAssembly assembly output did not match the expected patterns at lines 38 and 62 of the test file. Specifically, two CHECK directives expected certain strings that were not found in the generated .s file at the expected positions relative to 'call may_panic' instructions.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The FileCheck verification of tests/assembly-llvm/wasm_exceptions.rs failed: the expected CHECK patterns at lines 38 and 62 of the test file were not found in the generated wasm assembly output (wasm_exceptions.s). The assembly around 'call may_panic' (lines 33 and 68 of the .s file) does not match what the CHECK directives expect, indicating the generated wasm exception-handling instructions changed relative to what the test checks for.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "tests/assembly-llvm/wasm_exceptions.rs",
+    "/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s"
+  ],
+  "relevant_tests": [
+    "[assembly] tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "test [assembly] tests/assembly-llvm/wasm_exceptions.rs ... FAILED",
+      "reason": "Directly identifies the failing test."
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:38:12: error: CHECK: expected string not found in input",
+      "reason": "FileCheck reports the CHECK directive at line 38 of the test file did not match any text in the generated assembly."
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:62:12: error: CHECK: expected string not found in input",
+      "reason": "FileCheck reports the CHECK directive at line 62 of the test file also did not match, showing two separate pattern mismatches."
+    },
+    {
+      "quote": "check:38'0                    X error: no match found",
+      "reason": "Confirms that the first CHECK pattern has no match at the expected location in the assembly output."
+    },
+    {
+      "quote": "check:62'0                    X error: no match found",
+      "reason": "Confirms the second CHECK pattern also has no match."
+    },
+    {
+      "quote": "error: verification with 'FileCheck' failed",
+      "reason": "Summarizes the overall FileCheck failure that caused the test to fail."
+    },
+    {
+      "quote": "test result: FAILED. 550 passed; 1 failed; 103 ignored; 0 measured; 0 filtered out; finished in 15.38s",
+      "reason": "Shows that exactly 1 test failed in the assembly-llvm suite, corresponding to wasm_exceptions.rs."
+    },
+    {
+      "quote": "Some tests failed in compiletest suite=assembly-llvm mode=assembly host=x86_64-unknown-linux-gnu target=wasm32-wasip1",
+      "reason": "Identifies the suite, mode, and target (wasm32-wasip1) for the failing test, confirming it is a wasm assembly check test."
+    }
+  ],
+  "suggested_fix": "Update the CHECK patterns at lines 38 and 62 of tests/assembly-llvm/wasm_exceptions.rs to match the actual wasm assembly output now generated around the 'call may_panic' instructions, or investigate whether a recent LLVM/codegen change altered the wasm exception-handling instruction sequence.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-4k-rtk-err-cat-v1/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 18150
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 760
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 25463.409,
+    "cache_key": "e3cefeee02c63919a776699e9982f7647ad71ff9f98e4bdb8c23e572fa6a4dfc",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

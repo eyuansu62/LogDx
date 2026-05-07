@@ -1,0 +1,55 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Assembly test for WASM exception handling failed: FileCheck verification could not find expected patterns in the generated WASM assembly output.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The test `tests/assembly-llvm/wasm_exceptions.rs` contains CHECK directives at lines 38 and 62 that expect specific patterns in the generated WASM assembly output for the wasm32-wasip1 target. FileCheck reported \"expected string not found in input\" at both locations, indicating the generated assembly does not match the expected patterns.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "relevant_tests": [
+    "[assembly] tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "test [assembly] tests/assembly-llvm/wasm_exceptions.rs ... FAILED",
+      "reason": "Explicit test failure output showing the assembly test did not pass."
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:38:12: error: CHECK: expected string not found in input",
+      "reason": "FileCheck verification failure at line 38 of the test file, indicating a mismatch between expected and actual assembly output."
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:62:12: error: CHECK: expected string not found in input",
+      "reason": "FileCheck verification failure at line 62 of the test file, showing a second pattern mismatch in the same test."
+    },
+    {
+      "quote": "error: verification with 'FileCheck' failed",
+      "reason": "Explicit error message confirming FileCheck pattern verification failed during assembly test execution."
+    },
+    {
+      "quote": "Some tests failed in compiletest suite=assembly-llvm mode=assembly host=x86_64-unknown-linux-gnu target=wasm32-wasip1",
+      "reason": "Final error message confirming the test suite failed specifically for the wasm32-wasip1 target in assembly-llvm tests."
+    }
+  ],
+  "suggested_fix": "Review the changes that affected WASM exception code generation and update the CHECK patterns in `tests/assembly-llvm/wasm_exceptions.rs` to match the newly generated assembly, or investigate whether the code generation for WASM exceptions has changed unexpectedly.",
+  "input": {
+    "context_path": "results/v2/stress/rtk-err-cat/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 18101
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 530
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 26895.529,
+    "cache_key": "b98d78b7e00e499fbffabbe999037eefa39be2bd21d2c351c119068308320fa6",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

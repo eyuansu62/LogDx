@@ -1,0 +1,60 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Git submodule config files are missing across multiple submodules (.git/modules/*/config), indicating incomplete git submodule initialization during checkout. The rust-lang/rust repository requires properly initialized submodules (llvm-project, cargo, backtrace, etc.) for compilation and testing.",
+  "root_cause_category": "github_actions_config",
+  "root_cause": "Repository checkout did not properly initialize git submodules. The .git/modules directory structure is missing or incomplete, causing errors when git attempts to lock submodule config files for backtrace, llvm-project, cargo, and other critical submodules.",
+  "confidence": 0.62,
+  "relevant_files": [
+    ".git/modules/library/backtrace/config",
+    ".git/modules/src/llvm-project/config",
+    ".git/modules/src/tools/cargo/config",
+    ".git/modules/src/doc/book/config",
+    ".git/modules/src/doc/edition-guide/config",
+    ".git/modules/src/doc/embedded-book/config",
+    ".git/modules/src/doc/nomicon/config",
+    ".git/modules/src/doc/reference/config",
+    ".git/modules/src/doc/rust-by-example/config",
+    ".git/modules/src/gcc/config",
+    ".git/modules/src/tools/enzyme/config",
+    ".git/modules/src/tools/rustc-perf/config"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "error: could not lock config file .git/modules/library/backtrace/config: No such file or directory",
+      "reason": "Explicit error indicating .git/modules directory is missing for the backtrace submodule"
+    },
+    {
+      "quote": "error: could not lock config file .git/modules/src/llvm-project/config: No such file or directory",
+      "reason": "Same pattern for llvm-project, a critical build dependency for Rust"
+    },
+    {
+      "quote": "error: could not lock config file .git/modules/src/tools/cargo/config: No such file or directory",
+      "reason": "Repeated failures across multiple essential submodules indicate systematic initialization failure"
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Job failed with exit code 1; git submodule initialization errors are the primary observable failures"
+    }
+  ],
+  "suggested_fix": "Configure the GitHub Actions checkout action to initialize submodules by adding `submodules: recursive` to the checkout step, or use `git submodule update --init --recursive` after checkout",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-mock/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 1297
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 553
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 32080.72,
+    "cache_key": "43ec5e2bf21429fa5cc762ac953cdafbafd650a17376b34a597ff96772996c4a",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

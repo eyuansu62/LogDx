@@ -234,12 +234,12 @@ to let the numbers pick.
   - Tooling: `tools/validate_case_tags.py` accepts `v2/dev`,
     `v2/holdout`, `v2/stress`, `v1.3`, `v2`, `all`; case importer
     already handled nested splits.
-  - Cases collected so far: **10 / 34** new ✓ Phase 2 10-case
-    checkpoint hit. (16 / 16 legacy tagged `origin=legacy_v1_3`.)
-    Batch 1 (3/3) ✓, Batch 2 (5/5) ✓, Batch 3 (2/2) ✓.
-    v2/dev 3/3 ✓, v2/holdout 5/4 (slightly over-target),
-    v2/stress 2/3.
-  - v2/stress cases (process-crash + matrix shape):
+  - Cases collected so far: **12 / 34** new (16 / 16 legacy tagged
+    `origin=legacy_v1_3`). Batch 1 (3/3) ✓, Batch 2 (5/5) ✓,
+    Batch 3 (2/2) ✓ Phase 2 10-case checkpoint, Batch 4 (2 of 3-5)
+    in progress. v2/dev 3/3 ✓, v2/holdout 5/4 (slightly over-target),
+    v2/stress 4/3.
+  - v2/stress cases (4 — process-crash + matrix + non-pytest framework + timeout):
     1. `cases/v2/stress/numpy-pytest-segfault-argsort-v2-001/`
        — `Fatal Python error: Segmentation fault` inside
        `test_datetime_nat_argsort_stability` on numpy's
@@ -256,28 +256,45 @@ to let the numbers pick.
        in the bundled tcltk: ALL 7 Windows configs fail with the
        same `AssertionError: '<💻>' != '<ðŸ’»>'` while
        ALL Linux/macOS variants pass. `multi_failure = true`.
-  - **Two protocol locks now exist for v2:**
-    [`protocols/cilogbench-v2-partial.lock.json`](protocols/cilogbench-v2-partial.lock.json)
+    3. `cases/v2/stress/rust-compiletest-wasm-exceptions-asm-v2-001/`
+       — Batch 4 case 1; first non-pytest v2/stress framework (rust
+       compiletest), closes the v2/stress framework_dominance
+       split-balance flag (was 2/2 pytest). Largest v2 raw.log
+       so far at 31110 lines.
+    4. `cases/v2/stress/nodejs-test-debugger-exec-timeout-v2-001/`
+       — Batch 4 case 2; first v2 case with `timeout_or_oom`
+       failure_category (was 0/v2 → 1) and first use of the
+       `timeout_marker` evidence_format. nodejs/node `parallel/
+       test-debugger-exec` timed out 15s waiting for the inspector
+       break-in pattern.
+  - **Three protocol locks now exist for v2:**
+    [`cilogbench-v2-partial`](protocols/cilogbench-v2-partial.lock.json)
     (8 v2 cases — the snapshot the original Phase 3 numbers were
-    measured against) and
-    [`protocols/cilogbench-v2-checkpoint.lock.json`](protocols/cilogbench-v2-checkpoint.lock.json)
-    (10 v2 cases — Phase 2 checkpoint with v2/stress added). Both
-    SHA-pin the same 14 schema/prompt/evaluator hashes; only the
-    case set differs.
-  - **10-case refresh hardened the headline but softened the
-    rank claim.** Phase 3 was re-run with Sonnet + Haiku on the
-    2 new v2/stress cases (32 calls). Hybrid sv1.1 stayed roughly
-    flat (0.4495 → 0.4427 Sonnet, 0.4150 → 0.4683 Haiku — both
-    still ≥0.25 below v1.3), but **rank #1 → #3-4, not #1 → #6**.
-    The 8-case sample missed the v2/stress bucket where
-    `raw`/`rtk-read` collapse to ~0.34 sv1.1 and `grep` jumps to
-    0.74 (Sonnet) — adding stress cases re-ordered the middle
-    of the ranking without changing the magnitude of hybrid's
-    drop. The robust core: **grep is the unanimous v2 winner
-    across both debuggers (rank #1, both); hybrid loses ≥0.25
-    sv1.1 and falls out of the top tier.** Full 10-case detail
-    in [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md)
-    §3b.
+    measured against),
+    [`cilogbench-v2-checkpoint`](protocols/cilogbench-v2-checkpoint.lock.json)
+    (10 v2 cases — Phase 2 checkpoint with v2/stress 2/3), and
+    [`cilogbench-v2-checkpoint-12`](protocols/cilogbench-v2-checkpoint-12.lock.json)
+    (12 v2 cases — Batch 4 partial state with v2/stress 4/3, current
+    canonical). All three SHA-pin the same 14 schema/prompt/evaluator
+    hashes; only the case set differs.
+  - **12-case refresh produced a second headline shift: tail
+    unseats grep as the unanimous v2 winner.** Phase 3 was re-run
+    with Sonnet + Haiku on the 2 new v2/stress cases (16 calls each
+    debugger). Hybrid sv1.1 stayed flat (0.4427 → 0.4353 Sonnet,
+    0.4683 → 0.4302 Haiku — both still ≥0.27 below v1.3), but
+    **grep dropped −0.13 to −0.15 sv1.1 cross-debugger** because
+    rust + nodejs both reveal a previously-unseen grep blindspot:
+    when the regex matches too widely (rust 31k-line log → 161k
+    tokens of grep context, nodejs 10k-line log → 359k tokens),
+    Sonnet/Haiku abstain on the inflated context (sv1.1 = 0.0).
+    `tail`'s bounded 200-line window survives all 4 v2/stress cases.
+    `rtk-err-cat` also collapses on nodejs (~320k tokens). Hybrid's
+    4k threshold avoids grep's blowup but inherits rtk-err-cat's
+    nodejs collapse. **At 12 cases: tail is the unanimous v2
+    winner across both debuggers, grep #2, hybrid #4.** Full
+    12-case detail in
+    [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md)
+    §3c.
   - Phase 2 acceptance-criteria-C deliverables landed:
     [`reports/v2_corpus_summary.md`](reports/v2_corpus_summary.md),
     [`reports/v2_split_balance.md`](reports/v2_split_balance.md),

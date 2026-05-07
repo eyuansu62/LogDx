@@ -3,28 +3,54 @@
   "context_method": "tail",
   "diagnoser": "real-debugger-v1",
   "mode": "root_cause_diagnosis",
-  "summary": "Diagnoser failed. See metadata.provider_error.",
-  "root_cause_category": "unknown",
-  "root_cause": "unknown",
-  "confidence": 0.0,
-  "relevant_files": [],
-  "relevant_tests": [],
-  "evidence": [],
-  "suggested_fix": "",
+  "summary": "Two Tcl unicode surrogates tests failed on Windows: test_eval_surrogates_in_result and test_evalfile_surrogates_in_result. The tests expect properly decoded unicode characters but receive UTF-16 surrogates instead.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The test_tcl.py tests for surrogate handling in Tcl results are asserting that tcl.eval() should decode Unicode surrogates (e.g., \\ud83d\\udcbb) into proper Unicode characters (e.g., \\U0001f4bb), but the actual behavior on Windows returns the raw surrogates unchanged.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "Lib/test/test_tcl.py"
+  ],
+  "relevant_tests": [
+    "test.test_tcl.TclTest.test_eval_surrogates_in_result",
+    "test.test_tcl.TclTest.test_evalfile_surrogates_in_result"
+  ],
+  "evidence": [
+    {
+      "quote": "1 test failed:\n    test_tcl",
+      "reason": "Confirms test_tcl is the sole failing test module out of 505 tests run."
+    },
+    {
+      "quote": "File \"D:\\a\\cpython\\cpython\\Lib\\test\\test_tcl.py\", line 57, in test_eval_surrogates_in_result\n    self.assertEqual(tcl.eval(r'set a \"<\\ud83d\\udcbb>\"'), '<\\U0001f4bb>')\nAssertionError: '<\\ud83d\\udcbb>' != '<ðŸ'»>'",
+      "reason": "Shows the exact assertion failure: expected properly decoded emoji (\\U0001f4bb) but received raw surrogates (\\ud83d\\udcbb)."
+    },
+    {
+      "quote": "File \"D:\\a\\cpython\\cpython\\Lib\\test\\test_tcl.py\", line 292, in test_evalfile_surrogates_in_result\n    self.assertEqual(tcl.eval('set b'), '<\\U0001f4bb>')\nAssertionError: '<\\ud83d\\udcbb>' != '<ðŸ'»>'",
+      "reason": "Identical assertion failure in second test, confirming consistent surrogate handling issue across different Tcl eval paths."
+    },
+    {
+      "quote": "Re-running 1 failed tests in verbose mode... 1 test failed again",
+      "reason": "Failure persisted on rerun, indicating consistent, non-flaky test failure."
+    },
+    {
+      "quote": "Windows / Build and test (x64, switch-case)",
+      "reason": "Job runs on Windows platform; surrogate encoding handling is platform-specific."
+    }
+  ],
+  "suggested_fix": "Investigate the Tcl Unicode surrogate decoding logic in the Windows build, particularly in the code that converts Tcl strings back to Python strings. The surrogate pairs are not being combined into proper Unicode characters as expected by test_tcl.py lines 57 and 292.",
   "input": {
     "context_path": "results/v2/stress/tail/cpython-tcl-windows-matrix-v2-001.txt",
     "context_tokens_estimate": 5443
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 55
+    "output_tokens_estimate": 564
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 24480.068,
+    "runtime_ms": 26753.427,
     "cache_key": "970ec43b536482d2f6ce33503e3878a23a060781328257371bbb3a347c0caf15",
-    "provider_error": "RuntimeError: diagnosis command exited 1: diagnosis_shim_claude_cli: JSONDecodeError: Invalid \\escape: line 4 column 164 (char 402)\n",
+    "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
   }
 }

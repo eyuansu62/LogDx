@@ -1,0 +1,55 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The compiletest assembly-llvm test for `tests/assembly-llvm/wasm_exceptions.rs` failed when targeting `wasm32-wasip1`. A filecheck directive was not satisfied in the generated assembly output, indicated by the `>>>>>>` marker after line 133 of the assembly. This caused the bootstrap build to fail.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The filecheck CHECK directives in `tests/assembly-llvm/wasm_exceptions.rs` were not satisfied by the actual assembly output generated for the `wasm32-wasip1` target. The filecheck run terminated with `>>>>>>` after matching through line 133 of the assembly, indicating a subsequent expected pattern was not found in the output.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "relevant_tests": [
+    "[assembly] tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "failures:\n    [assembly] tests/assembly-llvm/wasm_exceptions.rs",
+      "reason": "Explicitly names the failing test in the compiletest assembly-llvm suite."
+    },
+    {
+      "quote": ">>>>>>",
+      "reason": "The filecheck `>>>>>>` marker indicates the point where a CHECK directive was not matched in the actual assembly output, confirming a pattern mismatch."
+    },
+    {
+      "quote": "test result: FAILED. 550 passed; 1 failed; 103 ignored; 0 measured; 0 filtered out; finished in 15.38s",
+      "reason": "Confirms exactly one test failed in the assembly-llvm suite."
+    },
+    {
+      "quote": "Some tests failed in compiletest suite=assembly-llvm mode=assembly host=x86_64-unknown-linux-gnu target=wasm32-wasip1",
+      "reason": "Identifies the compiletest suite, mode, and target (wasm32-wasip1) where the failure occurred."
+    },
+    {
+      "quote": "Bootstrap failed while executing `--stage 2 test --host= --target wasm32-wasip1 tests/run-make tests/run-make-cargo tests/ui tests/mir-opt tests/codegen-units tests/codegen-llvm tests/assembly-llvm library/core`",
+      "reason": "Confirms the overall build failure was triggered by the assembly-llvm test failure on the wasm32-wasip1 target."
+    }
+  ],
+  "suggested_fix": "Update the filecheck CHECK directives in `tests/assembly-llvm/wasm_exceptions.rs` to match the current assembly output generated for `wasm32-wasip1`, or fix the code change that caused the assembly output to diverge from the existing expected patterns.",
+  "input": {
+    "context_path": "results/v2/stress/tail/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 3914
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 569
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 29473.315,
+    "cache_key": "02b25395d97e72051919ce529c5da4f7aadc9ca6e20a2f3bafcb465c92224c42",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because a FileCheck assembly test for wasm exceptions produced output that did not match the expected CHECK patterns. Specifically, two CHECK directives at lines 38 and 62 of the test file were not satisfied by the generated assembly for the wasm32-wasip1 target.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The assembly test `tests/assembly-llvm/wasm_exceptions.rs` failed FileCheck verification: the expected strings at check lines 38 and 62 were not found in the generated assembly file `wasm_exceptions.s`. The generated code contains `call may_panic` at lines 33 and 68, but the CHECK patterns expected different surrounding instructions (e.g., a specific try_table or exception-handling pattern) that were not present at those scan positions.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "tests/assembly-llvm/wasm_exceptions.rs",
+    "/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s"
+  ],
+  "relevant_tests": [
+    "[assembly] tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "test [assembly] tests/assembly-llvm/wasm_exceptions.rs ... FAILED",
+      "reason": "Directly identifies the failing test."
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:38:12: error: CHECK: expected string not found in input",
+      "reason": "Shows the first FileCheck pattern mismatch at line 38 of the test file."
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:62:12: error: CHECK: expected string not found in input",
+      "reason": "Shows the second FileCheck pattern mismatch at line 62 of the test file."
+    },
+    {
+      "quote": "error: verification with 'FileCheck' failed",
+      "reason": "Confirms the failure mode is a FileCheck verification failure, not a compile or link error."
+    },
+    {
+      "quote": "test result: FAILED. 550 passed; 1 failed; 103 ignored; 0 measured; 0 filtered out; finished in 15.38s",
+      "reason": "Confirms exactly one test failed in the assembly-llvm suite."
+    },
+    {
+      "quote": "Some tests failed in compiletest suite=assembly-llvm mode=assembly host=x86_64-unknown-linux-gnu target=wasm32-wasip1",
+      "reason": "Identifies the suite, mode, and target (wasm32-wasip1) where the failure occurred."
+    },
+    {
+      "quote": "Bootstrap failed while executing `--stage 2 test --host= --target wasm32-wasip1 tests/run-make tests/run-make-cargo tests/ui tests/mir-opt tests/codegen-units tests/codegen-llvm tests/assembly-llvm library/core`",
+      "reason": "Confirms the bootstrap/CI job failed as a direct consequence of this test failure."
+    }
+  ],
+  "suggested_fix": "Update the CHECK patterns at lines 38 and 62 of `tests/assembly-llvm/wasm_exceptions.rs` to match the actual assembly output generated for the wasm32-wasip1 target, or fix the code-generation logic so that the wasm exception-handling instructions appear at the expected positions relative to the `call may_panic` instruction.",
+  "input": {
+    "context_path": "results/v2/stress/rtk-err-cat/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 18101
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 714
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 27523.973,
+    "cache_key": "bdca244b997022a1f4f9b59c1c810bd1070390e377eb6b7a7098571def8e1941",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

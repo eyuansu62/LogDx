@@ -1,6 +1,6 @@
 # CILogBench E10 — v2 generalization (partial)
 
-> **Two protocols are described in this report:**
+> **Three protocols are described in this report:**
 >
 > - [`cilogbench-v2-partial`](../protocols/cilogbench-v2-partial.lock.json)
 >   (lock 2026-05-07, 24 cases) — the **8-case** v2 state that the
@@ -9,11 +9,16 @@
 > - [`cilogbench-v2-checkpoint`](../protocols/cilogbench-v2-checkpoint.lock.json)
 >   (lock 2026-05-07, 26 cases) — the **10-case** Phase 2 checkpoint
 >   state, adding the v2/stress split (numpy segfault + cpython
->   matrix). The §4 10-case numbers below are anchored to this lock.
+>   matrix). The §3b 10-case numbers below are anchored to this lock.
+> - [`cilogbench-v2-checkpoint-12`](../protocols/cilogbench-v2-checkpoint-12.lock.json)
+>   (lock 2026-05-07, 28 cases) — the **12-case** Batch 4 partial
+>   state, adding rust compiletest + nodejs timeout into v2/stress.
+>   The §3c 12-case numbers below are anchored to this lock.
 >
-> Both locks SHA-pin the same v1.3 schemas, prompts, and evaluators
-> that were in `cilogbench-v1.3.lock.json`, so v1.3 numbers reproduce
-> identically against either; only the case set has grown.
+> All three locks SHA-pin the same v1.3 schemas, prompts, and
+> evaluators that were in `cilogbench-v1.3.lock.json`, so v1.3
+> numbers reproduce identically against any of them; only the case
+> set has grown.
 >
 > **Companion docs:**
 > [`e10_phase3_v2_partial_signal_recall.md`](e10_phase3_v2_partial_signal_recall.md)
@@ -22,21 +27,28 @@
 > (real-debugger sv1.1 detail). This file is the single canonical
 > narrative aggregating both.
 >
-> **Caveats** (covered in §5 below): 8-case sample, AI-drafted +
-> single-author-verified ground truth, no independent human review,
-> two Anthropic models only, mock LLM summary only.
+> **Caveats** (covered in §5 below): small sample (8/10/12 cases
+> across the three refreshes), AI-drafted + single-author-verified
+> ground truth, no independent human review, two Anthropic models
+> only, mock LLM summary only.
 
 ## TL;DR
 
 The v1.3 hybrid does **not** generalize to a fresh v2 corpus.
 This is the strongest single result of E10 so far. Magnitudes
-shifted between the 8-case (v2-partial) and 10-case (v2-checkpoint)
-refreshes — the **direction** is unchanged in both cases; the
-**ranking magnitude** softened from "rank #1 → #6" (8-case) to
-"rank #1 → #3–4" (10-case), because adding the v2/stress split
-revealed that *every* method except grep/tail collapses on
-stress-bucket cases (raw and rtk-read both hit 0.000 sv1.1 on the
-2 stress cases when Sonnet abstains; relative rank shifts).
+shifted across three refreshes (8 cases → 10 → 12); the **direction
+is unchanged in all three** — hybrid loses ≥0.25 sv1.1 cross-
+debugger and falls out of the top tier:
+
+- 8-case (v2-partial): hybrid rank #1 → **#6/8**
+- 10-case (v2-checkpoint): hybrid #1 → **#3-4/8** (`v2/stress` split
+  added; raw + rtk-read collapse harder than hybrid on stress logs)
+- 12-case (v2-checkpoint-12): hybrid #1 → **#4/8** stable, but
+  **the v2 winner pivoted from grep to tail** because the 2 new
+  stress cases reveal a previously-unseen grep blindspot: when the
+  regex matches too widely (rust 31k-line log: 161k tokens; nodejs
+  10k-line log: 359k tokens), Sonnet/Haiku abstain on the inflated
+  context. tail's bounded-200-line window survives unchanged.
 
 ```text
                                    v1.3 macro      v2 macro       Δ
@@ -54,16 +66,23 @@ grep
 raw                                  0.5110          0.5478      +0.04   (Sonnet)
 ```
 
-- Hybrid falls from rank #1 (tied with grep) to **rank #6 of 8**.
-  Confirmed with both Haiku 4.5 and Sonnet 4.6 — the rank shift is
-  not debugger-specific.
-- Top-2 (`grep`, `tail`) and bottom-3 (`hybrid` at #6,
-  `llm-summary-v1-mock` at #7, `rtk-log` at #8) are **identical
-  across both debuggers** on v2. This invariance protects the
-  direction against random-noise concerns even at 8 cases.
+- Hybrid stays in the bottom-half across all three refreshes
+  (#6 at 8 cases, #3-4 at 10, #4 at 12). Confirmed with both Haiku
+  4.5 and Sonnet 4.6 — the rank shift is not debugger-specific.
+- At 12 cases the bottom-3 (`hybrid` at #4, `llm-summary-v1-mock`
+  at #7, `rtk-log` at #8) are **identical across both debuggers**;
+  the top is now `tail` #1 unanimous, `grep` #2 unanimous (was the
+  reverse at 10 cases). Cross-debugger invariance protects the
+  direction against random-noise concerns.
 - The cost advantage of hybrid is intact (~95% reduction in tokens).
-  Only the quality match with grep does not survive distribution
-  shift.
+  Only the quality match does not survive distribution shift.
+- The 12-case refresh surfaces a new failure mode for both
+  `grep` and `rtk-err-cat`: **density-driven context inflation**.
+  Logs where `error|failed` markers appear in test-progress noise
+  cause grep/rtk-err-cat outputs to exceed reasoning budget,
+  producing cross-debugger abstains (sv1.1 = 0.0). `tail` survives
+  by being content-blind and bounded; raw/rtk-read also abstain
+  on full logs.
 
 The v1.3 one-pager headline ("matched grep on quality at ~⅓ token
 cost") was rewritten on 2026-05-07 to carry an explicit v2 caveat;
@@ -72,21 +91,21 @@ see [`docs/reports/cilogbench_v1_3_one_pager.md`](../docs/reports/cilogbench_v1_
 ## 1. What changed in v2
 
 The v2 corpus carries forward all 16 v1.3 cases (now tagged
-`origin: legacy_v1_3` in `tags.json`) plus 8 new cases collected in
-this round:
+`origin: legacy_v1_3` in `tags.json`) plus **12 new cases** collected
+across Batches 1-4:
 
 | split | new_v2 | filling |
 |---|---:|---|
 | `v2/dev` | 3 | docker_build (was 0/16), test_assertion, network_or_flaky (was 0/16) |
 | `v2/holdout` | 5 | go ecosystem (was 0/16), dependency_install (audit), github_actions_config (2nd), snapshot_or_golden_diff (was 0/16), compile_error+cpp (was 0/16 cpp) |
-| `v2/stress` | 2 | first stress cases — see §4 below |
+| `v2/stress` | 4 | numpy segfault + cpython matrix (Batch 3); rust compiletest + nodejs timeout_or_oom (Batch 4) — see §3c, §4 |
 
-The 10 new cases were sourced from real public CI runs (pnpm/pnpm,
+The 12 new cases were sourced from real public CI runs (pnpm/pnpm,
 pypa/pip, moby/buildkit, cli/cli, biomejs/biome,
-prettier/prettier, pandas-dev/pandas, numpy/numpy, python/cpython)
-and imported through the v2 intake pipeline
-(`tools/import_case_skeleton.py` → ground_truth + tags annotation
-→ raw-sanity gate at 100% signal preservation per case).
+prettier/prettier, pandas-dev/pandas, numpy/numpy, python/cpython,
+rust-lang/rust, nodejs/node) and imported through the v2 intake
+pipeline (`tools/import_case_skeleton.py` → ground_truth + tags
+annotation → raw-sanity gate at 100% signal preservation per case).
 
 Five new schema fields used for v2 cases (all additive, v1.3 cases
 remain valid): `origin`, `ecosystem`, `ci_provider`,
@@ -249,6 +268,141 @@ Signal-recall agrees: hybrid loses another ~0.09 going from 8 to
 10 cases (now Δ −0.43 from v1.3 to v2-10). Grep is essentially
 unchanged. Tail picks up slightly.
 
+## 3c. 12-case refresh (v2-checkpoint-12, 2026-05-07)
+
+After collecting 2 more v2 cases into `v2/stress` —
+`rust-compiletest-wasm-exceptions-asm-v2-001` (rust bors-try
+compiletest assembly-llvm test failed because FileCheck CHECK
+directives no longer match the new wasm exnref EH lowering;
+canonical category test_assertion, tags add a non-pytest framework
+gap-fill) and
+`nodejs-test-debugger-exec-timeout-v2-001` (nodejs Test macOS
+parallel/test-debugger-exec timed out 15s waiting for the inspector
+break-in pattern; canonical category timeout_or_oom, fills the
+v2 timeout_or_oom gap that was 0/v2 through 10-case) — Phase 3 was
+re-run on the 12-case state. New protocol lock at
+[`protocols/cilogbench-v2-checkpoint-12.lock.json`](../protocols/cilogbench-v2-checkpoint-12.lock.json)
+(28 cases, 6 splits, 14 SHA-pinned hashes; same v1.3 schemas/
+prompts/evaluators as the 8-case and 10-case locks).
+
+**The 12-case refresh produces a third headline shift: tail
+unseats grep as the unanimous v2 winner.**
+
+```text
+                                v1.3 sv1.1   v2 sv1.1 (10)   v2 sv1.1 (12)   Δ from 10→12
+                                (Sonnet)     (Sonnet)        (Sonnet)
+raw                               0.5110       0.3652          0.3652         +0.0000
+tail                              0.6886       0.6673          0.6807         +0.0134
+grep                              0.7700       0.7435          0.5939         -0.1496
+rtk-read                          0.5224       0.3360          0.3360         +0.0000
+rtk-log                           0.3089       0.1622          0.2199         +0.0577
+rtk-err-cat                       0.5343       0.4880          0.4870         -0.0010
+llm-summary-v1-mock               0.5181       0.2154          0.2363         +0.0209
+hybrid-grep-4k-rtk-err-cat-v1     0.7713       0.4427          0.4353         -0.0074
+```
+
+Cross-debugger ranking on the 12-case v2 state:
+
+```text
+                                  Haiku v2-12        Sonnet v2-12
+method                            score   rank       score   rank
+tail                              0.6251    1        0.6807    1   ← unanimous winner (was #2 at v2-10)
+grep                              0.4918    2        0.5939    2   ← was #1 at v2-10; dropped ≈0.13-0.15
+rtk-err-cat                       0.4481    3        0.4870    3   ← stable
+hybrid-grep-4k-rtk-err-cat-v1     0.4302    4        0.4353    4   ← stable
+rtk-read                          0.2969    5        0.3360    6   (Haiku) / 5 (Sonnet flips with raw)
+raw                               0.2901    6        0.3652    5
+llm-summary-v1-mock               0.2268    7        0.2363    7   ← stable
+rtk-log                           0.1897    8        0.2199    8   ← stable
+```
+
+The big shift: **grep loses ~0.13-0.15 sv1.1 going from 10 to 12
+cases on both debuggers**, while tail moves up to rank #1.
+
+Why? Both new v2/stress cases reveal a **grep blindspot we hadn't
+seen before**: when the regex `error|failed|...|##[error]` matches
+*too widely*, it produces context that exceeds the diagnoser's
+reasoning budget. The two new cases trigger it cleanly:
+
+- `rust-compiletest-wasm-exceptions-asm-v2-001` (31110-line log,
+  full from-scratch rustc build): grep produces **161 086 context
+  tokens**. Sonnet abstains; Haiku abstains. sv1.1 = 0.0 on both.
+- `nodejs-test-debugger-exec-timeout-v2-001` (10773-line log, 5175
+  test progress lines): grep produces **359 459 context tokens**.
+  Sonnet abstains; Haiku abstains. sv1.1 = 0.0 on both.
+
+These are not regex-misses (the way `gh-cli-go-test-prompter` and
+`pnpm-audit-vuln-ip-address` were grep-regex blindspots at 8-case);
+they are **grep-too-greedy blindspots**. Both new logs contain so
+many lines matching `error|failed|...` (test-progress noise + the
+build's compile-error chatter for rust; jest-style `Error:` traces
+in test fixtures for nodejs) that the matched span exceeds the
+budget the diagnoser can reason over.
+
+`tail`, by contrast, is bounded at 200 lines / a few thousand
+tokens. Both new cases happen to have signal_position=late (failure
+block at L30430-30999 of 31110 for rust, L10717-10756 of 10773 for
+nodejs), so tail catches the failure summary cleanly and Sonnet/
+Haiku produce strong diagnoses (rust 0.755 / 0.680 sv1.1; nodejs
+0.750 / 0.988 sv1.1).
+
+```text
+v2/stress per-case sv1.1 at 12-case (Sonnet 4.6):
+                                   numpy   cpython     rust    nodejs    macro
+raw                               0.0000    0.0000   0.0000   0.0000    0.0000   ← Sonnet abstains on all 4
+tail                              0.7500    0.5950   0.7550   0.7500    0.7125   ← bounded, late-signal-friendly
+grep                              1.0000    0.7950   0.0000   0.0000    0.4487   ← over-match collapse on rust+nodejs
+rtk-err-cat                       0.4833    0.3750   0.8475   0.0000    0.4264   ← also collapses on nodejs (ctx ≈ 320k)
+hybrid-grep-4k-rtk-err-cat-v1     0.4833    0.3750   0.7700   0.0000    0.4071   ← inherits rtk-err-cat's nodejs blindspot
+```
+
+Hybrid's 4k-token threshold correctly avoided grep's blowup on
+both new cases (it routed all 4 v2/stress cases to rtk-err-cat).
+But rtk-err-cat *also* collapses on nodejs (320 916 context tokens
+on Haiku/hybrid, similar on Sonnet), so hybrid inherits that
+blindspot. tail is the only locked baseline that survives all 4
+v2/stress cases without abstaining.
+
+The headline updates accordingly:
+
+| Headline claim | 8-case | 10-case | 12-case |
+|---|---|---|---|
+| "hybrid sv1.1 drops substantially v1.3 → v2" | ✅ −0.32 / −0.30 | ✅ −0.33 / −0.25 | ✅ −0.34 / −0.28 |
+| "hybrid stays in the bottom-half across debuggers" | ✅ #6/8 | ✅ #3-4/8 | ✅ #4/8 |
+| "grep is the unanimous v2 winner" | ✅ | ✅ (and improved) | ❌ **superseded — tail #1, grep #2** |
+| "tail is the unanimous v2 winner" | (was #2) | (was #2) | ✅ **new at 12-case** |
+| "cost match holds; quality match doesn't" | ✅ | ✅ | ✅ |
+| "confident-error rate on hybrid spikes 0.00 → 0.17" | (Sonnet) | confirmed | confirmed |
+
+The robust-across-cases finding is now: **tail is the unanimous
+v2 winner across both debuggers, grep collapses on high-error-
+density logs that produce >100k tokens of grep context, and
+hybrid stays in the bottom-half because its 4k-token threshold
+correctly avoids grep's blowup but inherits rtk-err-cat's
+collapse on the same density-driven blindspots.** Stress
+collection has revealed a class of failure (high-error-density
+verbose logs) that is harder than v1.3 was designed for, where
+*bounded tail* outperforms *content-aware filtering*.
+
+Signal-recall (deterministic) at 12-case:
+
+```text
+                                v1.3 sig    v2 sig (10)    v2 sig (12)    Δ from 10→12
+hybrid                          0.8237      0.3942         0.4779         +0.0837
+grep                            0.8756      0.8381         0.8479         +0.0098
+tail                            0.8549      0.8042         0.7896         -0.0146
+rtk-err-cat                     —           —              0.4589         —
+```
+
+Signal-recall *disagrees* with sv1.1 at 12-case: grep's
+deterministic recall stays high (0.85) because the failure
+markers ARE in the grep output — the model just can't reason
+over 161k-359k tokens to extract them. This is exactly the
+"deterministic proxy understates real-debugger collapse" gap
+E5 originally identified on v1.3, now reappearing in a different
+shape on v2 (deterministic proxy *overstates* grep's real-
+debugger usefulness when context inflates past reasoning budget).
+
 ## 4. Why hybrid drops
 
 Per-case detail on the 8 v2 cases (Sonnet 4.6, sv1.1):
@@ -403,19 +557,32 @@ that were in `cilogbench-v1.3.lock.json`; they differ only in case
 set:
 
 ```text
-                            v2-partial      v2-checkpoint
-schemas / prompts /         identical       identical
+                            v2-partial      v2-checkpoint   v2-checkpoint-12
+schemas / prompts /         identical       identical       identical
 evaluators (14 hashes)
-baselines (7)               identical       identical
+baselines (7)               identical       identical       identical
 
-splits                      5 splits        6 splits
-                            dev/holdout/    + v2/stress
-                            stress (v1.3)
+splits                      5 splits        6 splits        6 splits
+                            dev/holdout/    + v2/stress     + v2/stress
+                            stress (v1.3)   (2 cases)       (4 cases)
                             + v2/dev (3)
                             + v2/holdout (5)
 
-total cases                 24              26
-v2 new cases                 8              10
+total cases                 24              26              28
+v2 new cases                 8              10              12
+```
+
+**For the 12-case checkpoint headline numbers (§3c) — current
+canonical** — fresh-checkout reproduction:
+
+```bash
+python3 tools/validate_protocol_lock.py --protocol protocols/cilogbench-v2-checkpoint-12.lock.json
+# Should print: "Protocol lock OK: cilogbench-v2-checkpoint-12"
+
+# Same baseline + diagnoser bash loop as the 10-case repro below;
+# v2/stress now contains 4 cases instead of 2 (numpy + cpython +
+# rust + nodejs). 96 diagnosis calls per debugger total
+# (12 v2 cases × 8 baselines).
 ```
 
 **For the 10-case checkpoint headline numbers (§3b)** — fresh-checkout
@@ -492,20 +659,23 @@ In priority order:
 ## 10. Where the artifacts live
 
 ```text
-protocols/cilogbench-v2-partial.lock.json   ← THIS protocol's lock
+protocols/cilogbench-v2-partial.lock.json        ← 8-case lock (§3)
+protocols/cilogbench-v2-checkpoint.lock.json     ← 10-case lock (§3b)
+protocols/cilogbench-v2-checkpoint-12.lock.json  ← 12-case lock (§3c, current)
 docs/corpus/cilogbench_v2_case_matrix.md     ← target matrix + counts
 docs/corpus/cilogbench_v2_collection_guidelines.md
 docs/corpus/cilogbench_v2_annotation_guide.md
 docs/corpus/v2_case_intake_queue.md          ← rolling intake worklist
 cases/dev/, cases/holdout/, cases/stress/    ← 16 legacy v1.3 cases
-cases/v2/dev/, cases/v2/holdout/             ← 8 new_v2 cases
-results/{dev,holdout,stress,v2/dev,v2/holdout}/eval_diagnosis_real-debugger-{v1,v2}.json
+cases/v2/dev/ (3), cases/v2/holdout/ (5),
+cases/v2/stress/ (4)                          ← 12 new_v2 cases
+results/{dev,holdout,stress,v2/dev,v2/holdout,v2/stress}/eval_diagnosis_real-debugger-{v1,v2}.json
                                               ← Haiku + Sonnet sv1.1 numbers
 results/{...}/eval_<method>.json             ← signal-recall numbers
-reports/e10_phase3_v2_partial_signal_recall.md   ← deterministic detail
-reports/e10_phase3_v2_partial_diagnosis.md       ← real-debugger detail
+reports/e10_phase3_v2_partial_signal_recall.md   ← deterministic detail (8-case)
+reports/e10_phase3_v2_partial_diagnosis.md       ← real-debugger detail (8-case)
 reports/e10_codex_adversarial_review_fixes.md    ← privacy-gate fix log
-reports/e10_v2_generalization_partial.md          ← THIS report
+reports/e10_v2_generalization_partial.md          ← THIS report (canonical narrative)
 ```
 
 ## 11. Status of the limitations originally listed in v1.3

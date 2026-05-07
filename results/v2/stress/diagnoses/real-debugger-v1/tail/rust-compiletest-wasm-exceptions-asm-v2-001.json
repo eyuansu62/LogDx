@@ -1,0 +1,51 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Assembly test for WebAssembly exception handling failed when comparing generated LLVM assembly output against expected output. The `wasm_exceptions.rs` assembly test detected mismatches in the compiled assembly code for the wasm32-wasip1 target.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The `[assembly] tests/assembly-llvm/wasm_exceptions.rs` test compares generated LLVM assembly output for WebAssembly exception handling, and the actual output differs from the expected assembly patterns. The generated assembly contains differences in exception-handling-related sections (marked by `~` in the diff output).",
+  "confidence": 0.78,
+  "relevant_files": [
+    "tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "relevant_tests": [
+    "[assembly] tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "failures:\n    [assembly] tests/assembly-llvm/wasm_exceptions.rs",
+      "reason": "Explicitly identifies the failing test as an assembly-llvm test"
+    },
+    {
+      "quote": "test result: FAILED. 550 passed; 1 failed; 103 ignored",
+      "reason": "Confirms one test failure among assembly-llvm tests"
+    },
+    {
+      "quote": "Some tests failed in compiletest suite=assembly-llvm mode=assembly host=x86_64-unknown-linux-gnu target=wasm32-wasip1",
+      "reason": "Indicates the failure is in assembly output comparison for wasm32-wasip1 target with LLVM backend"
+    },
+    {
+      "quote": ".ascii \"exception-handling\"",
+      "reason": "Assembly output shows exception-handling related code in the WebAssembly sections, relevant to the failing test"
+    }
+  ],
+  "suggested_fix": "Review recent changes to LLVM code generation for WebAssembly exception handling. Update the expected assembly output in `tests/assembly-llvm/wasm_exceptions.rs` to match the new LLVM-generated assembly if the changes are intentional, or investigate if a compiler change inadvertently altered the assembly output.",
+  "input": {
+    "context_path": "results/v2/stress/tail/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 3914
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 462
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 23379.656,
+    "cache_key": "dda04f172d553d59220651701aad9e4ac3bed40643bf2d5e8654fd21625f8858",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}
