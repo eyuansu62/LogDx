@@ -267,7 +267,16 @@ to let the numbers pick.
       across Haiku + Sonnet. The v1.3 model-stability finding
       ("hybrid stays #1 across two debuggers") generalizes the
       wrong way on v2: hybrid stays #6 across two debuggers.
-    - Reports:
+    - Frozen as
+      [`protocols/cilogbench-v2-partial.lock.json`](protocols/cilogbench-v2-partial.lock.json)
+      (5 splits, 24 cases, 14 SHA-pinned schema/prompt/evaluator
+      hashes). Validate with
+      `python3 tools/validate_protocol_lock.py --protocol protocols/cilogbench-v2-partial.lock.json`.
+    - **Canonical narrative:**
+      [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md)
+      — the single document aggregating signal-recall + diagnosis
+      (Haiku + Sonnet) + cross-debugger + per-case detail + caveats
+      + reproducibility instructions. Companion deep-dives:
       [`reports/e10_phase3_v2_partial_signal_recall.md`](reports/e10_phase3_v2_partial_signal_recall.md)
       and
       [`reports/e10_phase3_v2_partial_diagnosis.md`](reports/e10_phase3_v2_partial_diagnosis.md).
