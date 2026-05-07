@@ -8,23 +8,40 @@
 > See [`cilogbench_v1_3_technical_report.md`](cilogbench_v1_3_technical_report.md)
 > §8b and `reports/e9_human_verified_v1_3_review.md` for details.
 
-> 🚨 **v2 generalization caveat (added 2026-05-07, E10 Phase 3 partial):**
+> 🚨 **v2 generalization caveat (added 2026-05-07, refined at the
+> 10-case v2-checkpoint state):**
 > The hybrid-vs-grep "matched on quality at ~⅓ token cost" headline below
-> **does not generalize on the 8-case v2 corpus**. Hybrid sv1.1 falls from
-> 0.7713 (v1.3 Sonnet, rank #1 tied with grep) to 0.4495 (v2 Sonnet,
-> rank #6 of 8) — a drop of −0.32. Haiku 4.5 confirms: hybrid drops −0.30
-> on Haiku too (rank #1 → #6); top-2 and bottom-3 ranks are **identical
-> across Haiku and Sonnet on v2**. Grep's drop is much smaller (−0.10
-> Sonnet, −0.13 Haiku) and grep is the unanimous v2 winner across both
-> debuggers. Hybrid's confident-error rate rises from 0.00 to 0.17 on
-> Sonnet. The cost match holds (~95% reduction); the quality match does
-> not. Root cause: the 4k-token threshold inside the hybrid was tuned on
-> the same v1.3 corpus that scored it (see
+> **does not generalize on the v2 corpus.** Across the 10 v2 cases
+> (`v2/dev` 3 + `v2/holdout` 5 + `v2/stress` 2), hybrid sv1.1 falls:
+>
+> - Sonnet 4.6: 0.7713 → 0.4427, Δ **−0.33** (rank #1 → **#4**)
+> - Haiku 4.5: 0.7150 → 0.4683, Δ **−0.25** (rank #1 → **#3**)
+>
+> Grep's drop is much smaller (−0.03 Sonnet, −0.10 Haiku at 10 cases)
+> and grep is the **unanimous v2 winner across both debuggers** — at 10
+> cases grep actually *improves* over the 8-case state because the two
+> v2/stress cases (numpy segfault, cpython tcl matrix) contain failure
+> markers grep's regex catches cleanly. Hybrid's confident-error rate
+> rises from 0.00 → ~0.17 on Sonnet. The cost match holds (~95%
+> reduction); the quality match does not. Root cause: the 4k-token
+> threshold inside the hybrid was tuned on the same v1.3 corpus that
+> scored it (see
 > [`cilogbench_v1_3_limitations.md`](cilogbench_v1_3_limitations.md) §9).
-> The v1.3 model-stability claim ("hybrid stays #1 across two debuggers")
-> *technically* still generalizes — but the wrong way: hybrid stays #6
-> across two debuggers on v2.
-> Full v2 results: [`reports/e10_phase3_v2_partial_signal_recall.md`](../../reports/e10_phase3_v2_partial_signal_recall.md)
+>
+> The earlier 8-case framing read "rank #1 → #6"; that exact
+> ranking-magnitude was a small-sample artifact from the v2-partial
+> state. Adding the 2 v2/stress cases revealed that `raw` and
+> `rtk-read` collapse harder than hybrid on huge logs, which softens
+> hybrid's relative rank to **#3–4** without changing its absolute
+> sv1.1 (still 0.44–0.47). The robust core finding is unchanged:
+> hybrid loses ≥0.25 sv1.1 across both debuggers, falls out of the
+> top tier, grep wins unanimously, and the v1.3 "hybrid stays #1
+> across two debuggers" model-stability claim does not survive
+> distribution shift.
+>
+> Full v2 results: [`reports/e10_v2_generalization_partial.md`](../../reports/e10_v2_generalization_partial.md)
+> (canonical narrative with 8-case → 10-case refresh in §3b),
+> [`reports/e10_phase3_v2_partial_signal_recall.md`](../../reports/e10_phase3_v2_partial_signal_recall.md),
 > and [`reports/e10_phase3_v2_partial_diagnosis.md`](../../reports/e10_phase3_v2_partial_diagnosis.md).
 > All v1.3 numbers below are still correct *on v1.3*; this caveat
 > qualifies their generalization, not their v1.3 validity.

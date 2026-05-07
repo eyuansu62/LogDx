@@ -1,6 +1,10 @@
 # CILogBench v2 — Case Matrix
 
-> **Status:** target matrix only. v2 corpus is **not** collected yet.
+> **Status (refreshed 2026-05-07):** Phase 2 **10-case checkpoint**
+> reached — 10 / 34 new_v2 cases collected (3 v2/dev + 5 v2/holdout +
+> 2 v2/stress). Matrix-vs-target deltas live in §12 progress tracker
+> below; full split-balance narrative lives at
+> [`reports/v2_split_balance.md`](../../reports/v2_split_balance.md).
 > Initialized 2026-05-06 from
 > [`cilogbench_e10_corpus_expansion_v2_generalization_plan.md`](cilogbench_e10_corpus_expansion_v2_generalization_plan.md).
 > See [`cilogbench_v2_collection_guidelines.md`](cilogbench_v2_collection_guidelines.md)
@@ -445,7 +449,43 @@ Update this section as cases land.
              v2/dev distribution: 3 / 3 cases (target met for dev split).
              Next: Batch 2 (5 cases) targeting v2/holdout primarily.
 
-[pending]    cases/v2/dev, cases/v2/holdout, cases/v2/stress directories
-             not yet created. First case import (Phase 2) will create
-             them via Path.mkdir(parents=True).
+[2026-05-07] Batch 2 COMPLETE (5 / 5 — 8 / 34 cumulative).
+             v2/holdout: 5 / 4 (slight over-target by 1, documented).
+             accepts: gh-cli-go-test-prompter-v2-001 (go gap),
+                      pnpm-audit-vuln-ip-address-v2-001 (ascii_table),
+                      biome-pnpm-not-found-v2-001 (gh_actions_config),
+                      prettier-jest-snapshot-babel-v2-001 (snapshot gap),
+                      pandas-cpp-xsimd-neon64-v2-001 (cpp+compile_error).
+             Carry-overs: timeout/OOM and matrix/monorepo still 0/v2.
+             Phase 3 first run (8-case state) → headline finding:
+             hybrid sv1.1 −0.32 Sonnet / −0.30 Haiku, rank #1 → #6
+             cross-debugger (`reports/e10_v2_generalization_partial.md`
+             §3); locked at `protocols/cilogbench-v2-partial.lock.json`.
+
+[2026-05-07] Batch 3 COMPLETE — Phase 2 10-case checkpoint reached
+             (10 / 34 cumulative).
+             accepts: numpy-pytest-segfault-argsort-v2-001 (first
+                      v2/stress; process-crash format),
+                      cpython-tcl-windows-matrix-v2-001 (first
+                      matrix_or_monorepo_failure in v2; first
+                      matrix_summary evidence_format use).
+             Phase 2 deliverable C now complete: corpus summary +
+             split-balance narrative + cross-split contamination
+             check all live under `reports/v2_*.md`.
+             Phase 3 refreshed at 10-case state — direction unchanged,
+             ranking magnitude softens to "rank #1 → #3-4" (Sonnet #4,
+             Haiku #3). 8-case → 10-case Δ table in
+             `reports/e10_v2_generalization_partial.md` §3b. New lock
+             at `protocols/cilogbench-v2-checkpoint.lock.json`
+             (26 cases, 6 splits, validated clean).
+             v1.3 one-pager v2 caveat (`docs/reports/cilogbench_v1_3_one_pager.md`)
+             refreshed to the "#1 → #3–4" framing.
+             Still empty: timeout_or_oom (0/v2), huge log bucket
+             (0/26 — none > 50k lines), early signal_position (0/26).
+
+[pending]    Continue Batch 4+ collection toward 34 cases. Specifically:
+             timeout/OOM, true matrix-leg-only failure, huge
+             (>50k-line) log, early signal_position. Independent
+             second human reviewer on v2 ground truth still
+             outstanding.
 ```
