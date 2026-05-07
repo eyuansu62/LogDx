@@ -43,12 +43,17 @@ debugger and falls out of the top tier:
 - 8-case (v2-partial): hybrid rank #1 → **#6/8**
 - 10-case (v2-checkpoint): hybrid #1 → **#3-4/8** (`v2/stress` split
   added; raw + rtk-read collapse harder than hybrid on stress logs)
-- 12-case (v2-checkpoint-12): hybrid #1 → **#4/8** stable, but
-  **the v2 winner pivoted from grep to tail** because the 2 new
-  stress cases reveal a previously-unseen grep blindspot: when the
-  regex matches too widely (rust 31k-line log: 161k tokens; nodejs
-  10k-line log: 359k tokens), Sonnet/Haiku abstain on the inflated
-  context. tail's bounded-200-line window survives unchanged.
+- 12-case (v2-checkpoint-12): hybrid #1 → **#4/8** stable. The
+  2 new stress cases reveal a previously-unseen grep blindspot:
+  when the regex matches too widely (rust 31k-line log: 161k
+  tokens; nodejs 10k-line log: 359k tokens), Sonnet/Haiku abstain
+  on the inflated context. tail's bounded-200-line window
+  survives unchanged. **Caveat:** the resulting "tail #1, grep #2"
+  ranking on the v2 macro is partly a v2/stress-sampling artifact
+  — v2/stress is currently 4/4 late and tail is structurally
+  advantaged by late signals. On the non-stress portion (v2/dev +
+  v2/holdout, 8 cases, mixed positions) tail and grep are tied
+  within 0.03. See §3c and [`reports/v2_split_balance.md`](v2_split_balance.md).
 
 ```text
                                    v1.3 macro      v2 macro       Δ
@@ -367,22 +372,54 @@ The headline updates accordingly:
 
 | Headline claim | 8-case | 10-case | 12-case |
 |---|---|---|---|
-| "hybrid sv1.1 drops substantially v1.3 → v2" | ✅ −0.32 / −0.30 | ✅ −0.33 / −0.25 | ✅ −0.34 / −0.28 |
+| "hybrid sv1.1 drops substantially v1.3 → v2" | ✅ −0.32 / −0.30 | ✅ −0.33 / −0.25 | ✅ −0.34 / −0.28 (robust across stress sampling) |
 | "hybrid stays in the bottom-half across debuggers" | ✅ #6/8 | ✅ #3-4/8 | ✅ #4/8 |
-| "grep is the unanimous v2 winner" | ✅ | ✅ (and improved) | ❌ **superseded — tail #1, grep #2** |
-| "tail is the unanimous v2 winner" | (was #2) | (was #2) | ✅ **new at 12-case** |
+| "grep is the unanimous v2 winner" | ✅ | ✅ (and improved) | ❌ **superseded — tail #1 macro, grep #2 macro** |
+| "tail is the unanimous v2 winner" | (was #2) | (was #2) | ⚠ **macro-level only**; 4/4-late v2/stress drives the gap. tied with grep on non-stress |
+| "grep over-matches on high-error-density logs" | (not seen) | (not seen) | ✅ **new at 12-case** — method-level (independent of signal_position) |
 | "cost match holds; quality match doesn't" | ✅ | ✅ | ✅ |
 | "confident-error rate on hybrid spikes 0.00 → 0.17" | (Sonnet) | confirmed | confirmed |
 
-The robust-across-cases finding is now: **tail is the unanimous
-v2 winner across both debuggers, grep collapses on high-error-
-density logs that produce >100k tokens of grep context, and
-hybrid stays in the bottom-half because its 4k-token threshold
-correctly avoids grep's blowup but inherits rtk-err-cat's
-collapse on the same density-driven blindspots.** Stress
-collection has revealed a class of failure (high-error-density
-verbose logs) that is harder than v1.3 was designed for, where
-*bounded tail* outperforms *content-aware filtering*.
+The robust-across-cases finding is now: **hybrid stays in the
+bottom-half because its 4k-token threshold correctly avoids grep's
+blowup but inherits rtk-err-cat's collapse on the same density-
+driven blindspots.** Hybrid sv1.1 drop (−0.34 / −0.28) and #4
+rank are robust across all three refreshes (8 → 10 → 12 cases)
+and across both debuggers.
+
+**The "tail unseats grep" sub-claim is partially confounded by a
+v2/stress sampling bias** that needs to be disclosed up front.
+The current v2/stress bucket is **4/4 late** (numpy, cpython,
+rust, nodejs all place the failure block at ≥92% of the log; see
+[`reports/v2_split_balance.md`](v2_split_balance.md) §3),
+and tail's bounded 200-line window is structurally advantaged by
+late evidence. Decomposing the 12-case macro by split:
+
+```text
+                                v2/dev (3)  v2/holdout (5)  v2/stress (4)   v2 macro (12)
+                                Sonnet      Sonnet          Sonnet          Sonnet
+tail                            0.7858      0.5437          0.7125          0.6807    #1
+grep                            0.7439      0.5890          0.4487          0.5939    #2
+rtk-err-cat                     0.5847      0.4500          0.4264          0.4870    #3
+hybrid                          0.4889      0.4100          0.4071          0.4353    #4
+```
+
+On v2/dev + v2/holdout (8 cases, mixed signal_position), tail
+(0.62) and grep (0.65) are roughly tied (grep edges +0.03). It is
+only on v2/stress's 4/4-late bucket that tail opens a +0.26 lead
+(0.71 vs 0.45) — exactly the bucket where bounded-tail's
+structural advantage matters. Tail's macro #1 ranking is therefore
+**directionally correct but its magnitude is plausibly inflated
+by sampling bias**. The "tail unseats grep" finding should be
+re-checked when v2/stress acquires a non-late case.
+
+In contrast, the "high-error-density logs cause grep's regex to
+over-match" mechanism (rust 161k tokens, nodejs 359k tokens) is a
+**method-level finding** that does not depend on signal_position
+— grep's 0.0 sv1.1 on rust + nodejs is from abstain-on-large-
+context regardless of where the failure sits in the log. So the
+density-driven grep blindspot survives the v2/stress sampling
+caveat; the tail-as-#1-overall claim is what needs the caveat.
 
 Signal-recall (deterministic) at 12-case:
 

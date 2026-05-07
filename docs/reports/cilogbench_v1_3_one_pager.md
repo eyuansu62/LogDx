@@ -22,21 +22,32 @@
 > same v1.3 corpus that scored it (see
 > [`cilogbench_v1_3_limitations.md`](cilogbench_v1_3_limitations.md) §9).
 >
-> The 12-case refresh also revealed a **second headline shift**: at
-> 10 cases grep was the unanimous v2 winner, but at 12 cases **tail
-> unseats grep** as the #1 method on both debuggers (Sonnet 0.6807 vs
-> 0.5939 grep; Haiku 0.6251 vs 0.4918 grep). Why: the two new v2/stress
-> cases (rust compiletest assembly check + nodejs debugger 15s timeout)
-> reveal a previously-unseen grep blindspot. When the regex
-> `error|failed|...|##[error]` matches *too widely* — rust's 31k-line
-> log produces 161k tokens of grep context, nodejs's 10k-line log
-> produces 359k tokens — Sonnet/Haiku abstain on the inflated context
-> (sv1.1 = 0.0). tail's bounded 200-line window survives unchanged.
-> Hybrid's 4k-token threshold correctly avoids grep's blowup but
-> inherits rtk-err-cat's collapse on the same density-driven blindspots
-> (rtk-err-cat also produces ~320k tokens on nodejs). Earlier 8-case
-> framing read "rank #1 → #6" and 10-case read "rank #1 → #3-4"; the
-> 12-case refresh stabilizes hybrid at **rank #4 unanimous**.
+> The 12-case refresh surfaced two further findings:
+>
+> 1. **Method-level (robust):** the two new v2/stress cases reveal a
+>    previously-unseen grep blindspot. When the regex
+>    `error|failed|...|##[error]` matches *too widely* — rust's
+>    31k-line log produces 161k tokens of grep context, nodejs's
+>    10k-line log produces 359k tokens — Sonnet/Haiku abstain on the
+>    inflated context (sv1.1 = 0.0). Hybrid's 4k-token threshold
+>    correctly avoids grep's blowup but inherits rtk-err-cat's
+>    collapse on the same density-driven blindspots (rtk-err-cat
+>    also produces ~320k tokens on nodejs).
+> 2. **Macro-level (caveated):** at the 12-case macro, tail unseats
+>    grep as v2 #1 (Sonnet 0.68 vs 0.59; Haiku 0.63 vs 0.49). But
+>    that gap is partly a v2/stress sampling artifact: the bucket
+>    is currently **4/4 late** and tail's bounded 200-line window is
+>    structurally advantaged by late signals. On the non-stress
+>    portion (v2/dev + v2/holdout, 8 cases, mixed signal_position)
+>    tail and grep are tied within 0.03. The "tail unseats grep"
+>    finding should be re-checked when v2/stress acquires a
+>    middle/scattered/early case (see
+>    [`reports/v2_split_balance.md`](../../reports/v2_split_balance.md)
+>    §3 for the sampling decomposition).
+>
+> Earlier 8-case framing read "rank #1 → #6" and 10-case read "rank
+> #1 → #3-4"; the 12-case refresh stabilizes hybrid at **rank #4
+> unanimous**.
 >
 > The robust core finding is unchanged across all three refreshes:
 > hybrid loses ≥0.25 sv1.1 cross-debugger, falls out of the top tier,

@@ -1,7 +1,7 @@
 {
   "protocol_id": "cilogbench-v2-checkpoint",
-  "created_at": "2026-05-07T09:32:53.099726+00:00",
-  "regenerated": false,
+  "created_at": "2026-05-07T13:27:32.136395+00:00",
+  "regenerated": true,
   "splits": {
     "dev": {
       "path": "cases/dev",
@@ -30,7 +30,7 @@
     },
     "v2/stress": {
       "path": "cases/v2/stress",
-      "case_count": 2,
+      "case_count": 4,
       "manifest_path": "cases/v2/stress/split_manifest.json"
     }
   },
@@ -70,6 +70,10 @@
     "summarizer_config": {
       "path": "schemas/summarizer_config.schema.json",
       "sha256": "ab86eda37050659d8e55fdb66545373d3ebb1b80a911ae4528ef2f8ba2831593"
+    },
+    "hybrid_route": {
+      "path": "schemas/hybrid_route.schema.json",
+      "sha256": "6bea0d6b03d8a32f9db35513af49977dcd26d10307b66cc3b991763d3e2856d7"
     }
   },
   "prompts": {
@@ -94,6 +98,14 @@
     "diagnosis": {
       "path": "tools/evaluate_diagnosis.py",
       "sha256": "f6f0b3c07c952dd62eb5af2af9fa27443c31f52b47e7702afda7c5aa7c34c236"
+    },
+    "category_compatibility": {
+      "path": "configs/evaluation/category_compatibility_v1_1.json",
+      "sha256": "1f394d1954a475665fcd1dabc9ce3ea6c5888b1d5d58ca2e68eb508fd4cf79bf"
+    },
+    "hybrid_router": {
+      "path": "tools/run_hybrid_baseline.py",
+      "sha256": "15091cf091aba108cd54242cd61d2bac83e69c12b5eeca42d573e4aaba562695"
     }
   },
   "baselines": {
@@ -127,11 +139,34 @@
     },
     "llm-summary-v1-mock": {
       "enabled": true
+    },
+    "hybrid-grep-4k-rtk-err-cat-v1": {
+      "enabled": true,
+      "type": "hybrid_context_provider",
+      "config_path": "configs/hybrids/hybrid-grep-4k-rtk-err-cat-v1.json",
+      "config_sha256": "c2ffaec3c4a85055114c609cb612e075ed170ea9f28f27dd15ed0916b501a04e",
+      "route_schema_path": "schemas/hybrid_route.schema.json",
+      "route_schema_sha256": "6bea0d6b03d8a32f9db35513af49977dcd26d10307b66cc3b991763d3e2856d7",
+      "router_path": "tools/run_hybrid_baseline.py",
+      "router_sha256": "15091cf091aba108cd54242cd61d2bac83e69c12b5eeca42d573e4aaba562695",
+      "primary_method": "grep",
+      "fallback_method": "rtk-err-cat",
+      "budget_tokens": 4000,
+      "anti_leakage": {
+        "uses_ground_truth": false,
+        "uses_signal_eval": false,
+        "uses_diagnosis_eval": false,
+        "uses_review_labels": false
+      }
     }
   },
   "scoring": {
     "signal_recall_version": "v1",
-    "diagnosis_eval_version": "v1",
-    "diagnosis_score_v1_experimental": true
+    "diagnosis_eval_version": "v1.1",
+    "diagnosis_score_primary": "diagnosis_score_v1_1",
+    "diagnosis_score_secondary": "diagnosis_score_v1",
+    "diagnosis_score_v1_experimental": false,
+    "diagnosis_score_v1_1_experimental": false,
+    "calibration_evidence": "reports/e2b_score_calibration_v1_1.md"
   }
 }

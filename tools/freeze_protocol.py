@@ -34,6 +34,7 @@ SCHEMA_KEYS: list[tuple[str, str]] = [
     ("split_manifest",       "schemas/split_manifest.schema.json"),
     ("diagnoser_config",     "schemas/diagnoser_config.schema.json"),
     ("summarizer_config",    "schemas/summarizer_config.schema.json"),
+    ("hybrid_route",         "schemas/hybrid_route.schema.json"),
 ]
 
 PROMPT_KEYS: list[tuple[str, str]] = [
@@ -43,11 +44,16 @@ PROMPT_KEYS: list[tuple[str, str]] = [
 ]
 
 EVALUATOR_KEYS: list[tuple[str, str]] = [
-    ("signal_recall", "tools/evaluate_signal_recall.py"),
-    ("diagnosis",     "tools/evaluate_diagnosis.py"),
+    ("signal_recall",          "tools/evaluate_signal_recall.py"),
+    ("diagnosis",              "tools/evaluate_diagnosis.py"),
+    ("category_compatibility", "configs/evaluation/category_compatibility_v1_1.json"),
+    ("hybrid_router",          "tools/run_hybrid_baseline.py"),
 ]
 
-BASELINES = {
+# Static baseline parameters. The hybrid baseline's content-addressed
+# fields (config_sha256, route_schema_sha256, router_sha256) are filled
+# dynamically in build_lock() via build_hybrid_baseline_block().
+BASELINES_STATIC: dict = {
     "raw":     {"enabled": True},
     "tail-200": {
         "enabled": True,
@@ -67,6 +73,11 @@ BASELINES = {
     "rtk-err-cat": {"enabled": True, "external_tool": "rtk", "version_policy": "record_actual_version"},
     "llm-summary-v1-mock": {"enabled": True},
 }
+
+HYBRID_BASELINE_KEY = "hybrid-grep-4k-rtk-err-cat-v1"
+HYBRID_CONFIG_PATH       = "configs/hybrids/hybrid-grep-4k-rtk-err-cat-v1.json"
+HYBRID_ROUTE_SCHEMA_PATH = "schemas/hybrid_route.schema.json"
+HYBRID_ROUTER_PATH       = "tools/run_hybrid_baseline.py"
 
 
 def sha256_path(path: Path) -> str:
@@ -102,7 +113,46 @@ def split_block(split: str) -> dict:
     }
 
 
+def build_hybrid_baseline_block() -> dict:
+    """Construct the hybrid baseline block with content-addressed hashes.
+
+    The locked hybrid is the v1.3 router (`hybrid-grep-4k-rtk-err-cat-v1`):
+    grep when its output fits in 4000 tokens, otherwise rtk-err-cat. The
+    config/route_schema/router file hashes pin the router behaviour;
+    `anti_leakage` makes the no-ground-truth-leakage assertion explicit
+    so a future change that wires ground-truth into routing would either
+    have to flip the flag or invalidate the lock.
+    """
+    config_path  = ROOT / HYBRID_CONFIG_PATH
+    schema_path  = ROOT / HYBRID_ROUTE_SCHEMA_PATH
+    router_path  = ROOT / HYBRID_ROUTER_PATH
+    for p in (config_path, schema_path, router_path):
+        if not p.exists():
+            raise FileNotFoundError(f"hybrid baseline file missing: {p.relative_to(ROOT)}")
+    return {
+        "enabled": True,
+        "type": "hybrid_context_provider",
+        "config_path":         HYBRID_CONFIG_PATH,
+        "config_sha256":       sha256_path(config_path),
+        "route_schema_path":   HYBRID_ROUTE_SCHEMA_PATH,
+        "route_schema_sha256": sha256_path(schema_path),
+        "router_path":         HYBRID_ROUTER_PATH,
+        "router_sha256":       sha256_path(router_path),
+        "primary_method":  "grep",
+        "fallback_method": "rtk-err-cat",
+        "budget_tokens":   4000,
+        "anti_leakage": {
+            "uses_ground_truth":   False,
+            "uses_signal_eval":    False,
+            "uses_diagnosis_eval": False,
+            "uses_review_labels":  False,
+        },
+    }
+
+
 def build_lock(protocol_id: str, regenerated: bool, splits: list[str]) -> dict:
+    baselines = dict(BASELINES_STATIC)
+    baselines[HYBRID_BASELINE_KEY] = build_hybrid_baseline_block()
     return {
         "protocol_id": protocol_id,
         "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
@@ -111,11 +161,15 @@ def build_lock(protocol_id: str, regenerated: bool, splits: list[str]) -> dict:
         "schemas":    hash_map(SCHEMA_KEYS),
         "prompts":    hash_map(PROMPT_KEYS),
         "evaluators": hash_map(EVALUATOR_KEYS),
-        "baselines":  BASELINES,
+        "baselines":  baselines,
         "scoring": {
-            "signal_recall_version": "v1",
-            "diagnosis_eval_version": "v1",
-            "diagnosis_score_v1_experimental": True,
+            "signal_recall_version":            "v1",
+            "diagnosis_eval_version":           "v1.1",
+            "diagnosis_score_primary":          "diagnosis_score_v1_1",
+            "diagnosis_score_secondary":        "diagnosis_score_v1",
+            "diagnosis_score_v1_experimental":  False,
+            "diagnosis_score_v1_1_experimental": False,
+            "calibration_evidence":             "reports/e2b_score_calibration_v1_1.md",
         },
     }
 

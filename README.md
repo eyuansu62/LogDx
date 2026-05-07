@@ -277,24 +277,33 @@ to let the numbers pick.
     (12 v2 cases — Batch 4 partial state with v2/stress 4/3, current
     canonical). All three SHA-pin the same 14 schema/prompt/evaluator
     hashes; only the case set differs.
-  - **12-case refresh produced a second headline shift: tail
-    unseats grep as the unanimous v2 winner.** Phase 3 was re-run
+  - **12-case refresh surfaced two findings.** Phase 3 was re-run
     with Sonnet + Haiku on the 2 new v2/stress cases (16 calls each
     debugger). Hybrid sv1.1 stayed flat (0.4427 → 0.4353 Sonnet,
-    0.4683 → 0.4302 Haiku — both still ≥0.27 below v1.3), but
-    **grep dropped −0.13 to −0.15 sv1.1 cross-debugger** because
-    rust + nodejs both reveal a previously-unseen grep blindspot:
-    when the regex matches too widely (rust 31k-line log → 161k
-    tokens of grep context, nodejs 10k-line log → 359k tokens),
-    Sonnet/Haiku abstain on the inflated context (sv1.1 = 0.0).
-    `tail`'s bounded 200-line window survives all 4 v2/stress cases.
-    `rtk-err-cat` also collapses on nodejs (~320k tokens). Hybrid's
-    4k threshold avoids grep's blowup but inherits rtk-err-cat's
-    nodejs collapse. **At 12 cases: tail is the unanimous v2
-    winner across both debuggers, grep #2, hybrid #4.** Full
-    12-case detail in
-    [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md)
-    §3c.
+    0.4683 → 0.4302 Haiku — both still ≥0.27 below v1.3), rank
+    stable at **#4 unanimous**.
+    1. **Method-level (robust):** rust + nodejs both reveal a
+       previously-unseen grep blindspot. When the regex matches
+       too widely (rust 31k-line log → 161k tokens, nodejs
+       10k-line log → 359k tokens), Sonnet/Haiku abstain on the
+       inflated context (sv1.1 = 0.0). `tail`'s bounded 200-line
+       window survives all 4 v2/stress cases.  `rtk-err-cat` also
+       collapses on nodejs (~320k tokens). Hybrid's 4k threshold
+       avoids grep's blowup but inherits rtk-err-cat's nodejs
+       collapse.
+    2. **Macro-level (caveated):** the 12-case v2 macro is now
+       tail #1 (Sonnet 0.68 / Haiku 0.63), grep #2 (0.59 / 0.49)
+       — but that "tail unseats grep" gap is partly a sampling
+       artifact. v2/stress is currently 4/4 late and tail is
+       structurally advantaged by late signals. On the non-stress
+       portion (v2/dev + v2/holdout, 8 cases, mixed positions)
+       tail and grep are tied within 0.03. The macro-level
+       tail-winner finding should be re-checked when v2/stress
+       acquires a middle/scattered/early case. Full 12-case
+       detail with the sampling decomposition in
+       [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md)
+       §3c, narrative in
+       [`reports/v2_split_balance.md`](reports/v2_split_balance.md).
   - Phase 2 acceptance-criteria-C deliverables landed:
     [`reports/v2_corpus_summary.md`](reports/v2_corpus_summary.md),
     [`reports/v2_split_balance.md`](reports/v2_split_balance.md),
