@@ -1,0 +1,144 @@
+{
+  "root_cause": {
+    "summary": "nodejs/node parallel test `test-debugger-exec` (test/parallel/test-debugger-exec.js) failed because its `waitForInitialBreak` helper timed out waiting for the inspector debugger to emit a `break in` initial-break message. The helper, defined at `test/common/debugger.js:67-92`, awaits a regex `/break (?:on start )?in/i` against the debugger's stdout via `waitFor`. After 15 seconds without a match it throws `Error: Timeout (15000) while waiting for /break (?:on start )?in/i` from `test/common/debugger.js:92`. The captured `output` shows the debugger CLI did spin up successfully — the inspector printed `Debugger listening on ws://127.0.0.1:49508/...` and `Debugger attached.` and reached the `debug>` prompt — but the synchronous initial break that the test expects to see (the debugger should auto-pause on script start and print `break in <file>:1` in the CLI client) never appeared in the test's window. The single-test failure causes the runner to print `=== 1 tests failed` and `make: *** [test-ci] Error 1`, which propagates to GHA as `##[error]Process completed with exit code 2`. This is a macOS-arm64 runner timing flake against the debugger's break-emission timing, not a logic bug — the only signal the log gives is the timeout itself plus the partial debugger output where the connect/attach succeeded but break-in did not.",
+    "category": "timeout_or_oom"
+  },
+  "required_signals": [
+    {
+      "type": "failed_test",
+      "value": "=== release test-debugger-exec ===",
+      "file": "test/parallel/test-debugger-exec.js",
+      "importance": "critical",
+      "evidence_lines": [[10717, 10718]]
+    },
+    {
+      "type": "exception",
+      "value": "Error: Timeout (15000) while waiting for /break (?:on start )?in/i",
+      "importance": "critical",
+      "evidence_lines": [[10724, 10724]]
+    },
+    {
+      "type": "stack_location",
+      "value": "/Users/runner/work/node/node/node/test/common/debugger.js:92:28",
+      "file": "test/common/debugger.js",
+      "line": 92,
+      "importance": "critical",
+      "evidence_lines": [[10725, 10725]]
+    },
+    {
+      "type": "stack_location",
+      "value": "Object.waitFor (/Users/runner/work/node/node/node/test/common/debugger.js:67:14)",
+      "file": "test/common/debugger.js",
+      "line": 67,
+      "importance": "important",
+      "evidence_lines": [[10727, 10727]]
+    },
+    {
+      "type": "stack_location",
+      "value": "Object.waitForInitialBreak (/Users/runner/work/node/node/node/test/common/debugger.js:116:18)",
+      "file": "test/common/debugger.js",
+      "line": 116,
+      "importance": "critical",
+      "evidence_lines": [[10728, 10728]]
+    },
+    {
+      "type": "stack_location",
+      "value": "waitInitialBreak (/Users/runner/work/node/node/node/test/parallel/test-debugger-exec.js:15:15)",
+      "file": "test/parallel/test-debugger-exec.js",
+      "line": 15,
+      "importance": "critical",
+      "evidence_lines": [[10729, 10729]]
+    },
+    {
+      "type": "command",
+      "value": "Command: out/Release/node /Users/runner/work/node/node/node/test/parallel/test-debugger-exec.js",
+      "importance": "important",
+      "evidence_lines": [[10747, 10747]]
+    },
+    {
+      "type": "command",
+      "value": "=== 1 tests failed",
+      "importance": "critical",
+      "evidence_lines": [[10750, 10750]]
+    },
+    {
+      "type": "command",
+      "value": "make: *** [test-ci] Error 1",
+      "importance": "important",
+      "evidence_lines": [[10755, 10755]]
+    },
+    {
+      "type": "annotation",
+      "value": "##[error]Process completed with exit code 2.",
+      "importance": "important",
+      "evidence_lines": [[10756, 10756]]
+    },
+    {
+      "type": "diff",
+      "value": "Debugger attached.",
+      "aliases": [
+        "connecting to 127.0.0.1:",
+        "Debugger listening on ws://"
+      ],
+      "importance": "important",
+      "evidence_lines": [[10733, 10741]]
+    }
+  ],
+  "relevant_files": [
+    "test/parallel/test-debugger-exec.js",
+    "test/common/debugger.js"
+  ],
+  "relevant_tests": [
+    "parallel/test-debugger-exec"
+  ],
+  "evidence_spans": [
+    {
+      "start_line": 10717,
+      "end_line": 10719,
+      "reason": "Test boundary marker: `=== release test-debugger-exec ===` + `Path: parallel/test-debugger-exec` + the `##[error]--- stderr ---` GHA annotation that opens the failure block. Identifies the exact failing test path."
+    },
+    {
+      "start_line": 10720,
+      "end_line": 10732,
+      "reason": "Core failure block: source line `test/common/debugger.js:92` (the throw site), the literal `Error: Timeout (15000) while waiting for /break (?:on start )?in/i`, and the JS stack trace ending at the test entry `test-debugger-exec.js:73:1`. Self-contained — names file:line at all 4 stack frames, the timeout duration, the regex pattern that didn't match, and the call hierarchy from `waitInitialBreak` through `waitForInitialBreak` and `waitFor`."
+    },
+    {
+      "start_line": 10733,
+      "end_line": 10745,
+      "reason": "Captured debugger output object showing the test DID receive `Debugger listening on ws://127.0.0.1:49508/...`, `connecting to 127.0.0.1:49508 ... ok`, `Debugger attached.`, and the `debug>` prompt — proving the connect/attach phase succeeded and the timeout was specifically on the break-in pattern, not on connection failure. Critical for distinguishing per-test timeout from connection/setup failure."
+    },
+    {
+      "start_line": 10747,
+      "end_line": 10747,
+      "reason": "The reproduction `Command: out/Release/node /Users/runner/work/node/node/node/test/parallel/test-debugger-exec.js`. Lets a triager run the failing test in isolation."
+    },
+    {
+      "start_line": 10750,
+      "end_line": 10756,
+      "reason": "Test runner summary block: `=== 1 tests failed`, `Failed tests: out/Release/node ...test-debugger-exec.js`, `make: *** [test-ci] Error 1`, and `##[error]Process completed with exit code 2.`. Confirms scope (exactly 1 test failed out of 5175) and exit-code propagation."
+    },
+    {
+      "start_line": 10589,
+      "end_line": 10590,
+      "reason": "Test-suite header `Running 5175 tests` (one line up from the start of the dotted progress strip). Establishes that this is a single-test failure embedded in a 5175-test suite, useful for the diagnoser to estimate flake/scope."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "test-debugger-exec",
+      "Timeout",
+      "15000",
+      "break"
+    ],
+    "must_not_claim": [
+      "compilation failed",
+      "out of memory",
+      "the build crashed",
+      "permission denied",
+      "network failure on github.com",
+      "the debugger failed to attach",
+      "Linux is also affected",
+      "exit code 1"
+    ]
+  }
+}

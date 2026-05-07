@@ -1,0 +1,30 @@
+{
+  "case_id": "nodejs-test-debugger-exec-timeout-v2-001",
+  "split": "v2/stress",
+  "origin": "new_v2",
+  "ecosystem": "generic-github-actions",
+  "primary_language": "javascript",
+  "ci_provider": "github_actions",
+  "repo_visibility": "public",
+  "failure_category": "timeout_or_oom",
+  "framework": "generic",
+  "log_size_bucket": "large",
+  "signal_position": "late",
+  "evidence_formats": [
+    "traceback",
+    "timeout_marker",
+    "ansi_colored_block",
+    "github_annotation",
+    "shell_command_output"
+  ],
+  "noise_profile": [
+    "runner_setup",
+    "verbose_build_noise",
+    "test_progress_noise"
+  ],
+  "multi_failure": false,
+  "flaky_or_transient": true,
+  "requires_repo_context": false,
+  "diagnosis_difficulty": "medium",
+  "notes": "nodejs/node Test macOS run (workflow: 'Test macOS', job: test-macOS, ~77min runtime). Single test failure (1 of 5175) under nodejs's own python tools/test.py runner: parallel/test-debugger-exec timed out after 15 seconds in waitForInitialBreak (test/common/debugger.js:116 → waitFor:67 → throw at debugger.js:92). Captured debugger output shows the inspector's `Debugger attached.` and `debug>` prompt arrived; only the `break in` initial-break pattern was missing within the 15s window. flaky_or_transient=true because the connect/attach phase succeeded — this is timing-sensitive macOS-arm64 runner flake on the break-emission window, not a deterministic logic bug.\n\nFills v2 gaps:\n  - timeout_or_oom failure_category (was 0/v2 → now 1)\n  - first v2 case using a per-test timeout marker (15000ms in JS Error message), distinct from the GHA step-level timeout shape we'd see for OOM/runner-timeout\n  - first v2 case under primary_language=javascript with framework=generic (nodejs's own test runner). All other v2 javascript cases use jest or pnpm.\n\nDoes NOT fill the huge log_size_bucket gap (10773 lines = 'large'). Signal_position=late worsens v2/stress late-monoculture (now 4/3 of v2/stress are late after rust+numpy+cpython all-late).\n\nframework=generic chosen because schemas/case.schema.json's framework enum lacks a `nodejs-tools-test` value — nodejs's tools/test.py runner is its own thing. Closest fit: `generic` (matches what cilogbench-v1.3 used for similar non-pytest/non-jest runners).\n\nrepo_visibility=public — privacy audit was 0 hits AFTER splitting 3 overlong gyp libtool linker-command lines into shorter chunks (>8000 chars per line tripped the audit's per-line cap with fail-closed semantics; content was just verbose linker arg lists, no secrets). Original log raw line count was 10752; post-split 10773.\n\nevidence_format `timeout_marker` (`Error: Timeout (15000) while waiting for ...`) is genuinely a new format vs v1.3 — first v2 case to exercise this enum value."
+}
