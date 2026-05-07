@@ -1,0 +1,51 @@
+{
+  "case_id": "gh-cli-go-test-prompter-v2-001",
+  "context_method": "raw",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "A single Go test in the internal/prompter package failed because a form operation did not complete within its time limit. All other test packages passed. The job exited with code 1 due to this one failure.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The test TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query failed because form.Run() did not complete within the expected time window, as reported at huh_prompter_test.go:478.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "huh_prompter_test.go"
+  ],
+  "relevant_tests": [
+    "TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query"
+  ],
+  "evidence": [
+    {
+      "quote": "--- FAIL: TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query (5.13s)",
+      "reason": "Identifies the exact sub-test that failed and its elapsed time."
+    },
+    {
+      "quote": "huh_prompter_test.go:478: form.Run() did not complete in time",
+      "reason": "The test's own assertion at line 478 detected that form.Run() did not finish within the allotted time, causing the failure."
+    },
+    {
+      "quote": "FAIL\tgithub.com/cli/cli/v2/internal/prompter\t8.475s",
+      "reason": "Confirms the failing package and that the overall test binary for internal/prompter was marked FAIL."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "The go test command returned exit code 1 due to this test failure, causing the CI job to fail."
+    }
+  ],
+  "suggested_fix": "Investigate huh_prompter_test.go line 478 to determine whether the timeout threshold is too tight for a macOS ARM64 CI runner, or whether there is a deadlock/blocking condition in the MultiSelect search-persistence logic. If this is a timing-sensitive test, consider increasing the timeout or making the test more robust to slower environments.",
+  "input": {
+    "context_path": "results/v2/holdout/raw/gh-cli-go-test-prompter-v2-001.txt",
+    "context_tokens_estimate": 11367
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 457
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 30012.622,
+    "cache_key": "c0272549a299c1e685b52bd6b75fbea03fc2f9a5ba4de1ca5bac3815f9bd32aa",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

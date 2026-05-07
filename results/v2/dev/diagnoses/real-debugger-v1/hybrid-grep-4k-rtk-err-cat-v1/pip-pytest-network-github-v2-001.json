@@ -1,0 +1,49 @@
+{
+  "case_id": "pip-pytest-network-github-v2-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Single functional test failed due to network connectivity issues with GitHub returning HTTP 502 errors during package download. All other 1753 unit tests and 1080 functional tests passed successfully.",
+  "root_cause_category": "network_or_flaky",
+  "root_cause": "External service failure: GitHub returning 502 Bad Gateway errors when test attempts to download from /pypa/pip-test-package/archive/refs/heads/master.zip. The urllib3 HTTPSConnectionPool exceeded max retries after repeated 502 responses from github.com:443.",
+  "confidence": 0.92,
+  "relevant_files": [],
+  "relevant_tests": [
+    "tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]"
+  ],
+  "evidence": [
+    {
+      "quote": "HTTPSConnectionPool(host='github.com', port=443): Max retries exceeded with url: /pypa/pip-test-package/archive/refs/heads/master.zip (Caused by ResponseError('too many 502 error responses'))",
+      "reason": "Explicit evidence of network failure from GitHub service returning 502 errors and connection retries being exhausted"
+    },
+    {
+      "quote": "ERROR: Could not install packages due to an OSError: HTTPSConnectionPool",
+      "reason": "OSError with HTTPSConnectionPool indicates a network-level failure, not an application logic error"
+    },
+    {
+      "quote": "1753 passed, 30 skipped, 4 xfailed",
+      "reason": "All unit tests passed, indicating the codebase itself is sound; failure is isolated to network interaction"
+    },
+    {
+      "quote": "1080 passed, 44 skipped, 21 xfailed, 2 xpassed, 5 warnings, 3 rerun in 451.05s ... 1 failed",
+      "reason": "Only 1 test failed out of 1080+ functional tests, with the failure being network-related, not a systematic code issue"
+    }
+  ],
+  "suggested_fix": "Rerun the CI job. This is a transient failure caused by GitHub service degradation returning 502 errors, not a code defect. If the failure persists, check GitHub status or contact GitHub support.",
+  "input": {
+    "context_path": "results/v2/dev/hybrid-grep-4k-rtk-err-cat-v1/pip-pytest-network-github-v2-001.txt",
+    "context_tokens_estimate": 12488
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 462
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 21287.759,
+    "cache_key": "a207613107b5e75d04bc2fd7dcb8b33543fcde0de615e870e9413daecaae1283",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

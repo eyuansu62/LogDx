@@ -1,0 +1,39 @@
+{
+  "case_id": "docbuild-hf-stress-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The job failed due to a malformed GitHub Actions workflow conditional that always evaluates to false. The condition `[[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]]` checks if a literal string equals hardcoded values, resulting in exit code 1.",
+  "root_cause_category": "github_actions_config",
+  "root_cause": "Workflow conditional logic error: the condition compares a literal string \"failure\" against \"success\" and \"skipped\", which will always be false. This appears to be a missing variable expansion or incorrect condition syntax.",
+  "confidence": 0.7,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] &&",
+      "reason": "The conditional uses the literal string 'failure' rather than a variable reference, making the comparison always false since the string 'failure' is never equal to 'success' or 'skipped'."
+    },
+    {
+      "quote": "Process completed with exit code 1.",
+      "reason": "Confirms the job failed with exit code 1, likely because the false conditional caused an unexpected branch or early termination."
+    }
+  ],
+  "suggested_fix": "Replace the literal 'failure' string in the conditional with the appropriate variable reference (e.g., `${{ job.status }}` or `${{ steps.previous_step.outcome }}`) to check the actual job or step status.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-mock/docbuild-hf-stress-001.txt",
+    "context_tokens_estimate": 169
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 337
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 19495.916,
+    "cache_key": "2e77970f3440a9d28e5d12e8340c918147a591f2463facfd06bd41c7b4c6ea4a",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

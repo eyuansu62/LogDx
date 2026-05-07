@@ -1,0 +1,97 @@
+{
+  "root_cause": {
+    "summary": "The pytest functional test `tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]` fails because GitHub returns repeated 502 Bad Gateway errors when pip tries to download `https://github.com/pypa/pip-test-package/archive/refs/heads/master.zip`. The pip subprocess exits with code 1, the test framework asserts on exit code 0, and `AssertionError: Script returned code: 1` is raised. The test was retried 3 times by pytest-rerunfailures before the final fail; the root cause is transient external infrastructure (GitHub 502s), not a bug in pip or in the truststore code path the test name suggests.",
+    "category": "network_or_flaky"
+  },
+  "required_signals": [
+    {
+      "type": "failed_test",
+      "value": "tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]",
+      "file": "tests/functional/test_truststore.py",
+      "importance": "critical",
+      "evidence_lines": [[6649, 6649]]
+    },
+    {
+      "type": "exception",
+      "value": "ERROR: Could not install packages due to an OSError: HTTPSConnectionPool(host='github.com', port=443): Max retries exceeded with url: /pypa/pip-test-package/archive/refs/heads/master.zip (Caused by ResponseError('too many 502 error responses'))",
+      "aliases": [
+        "too many 502 error responses",
+        "Max retries exceeded with url: /pypa/pip-test-package"
+      ],
+      "importance": "critical",
+      "evidence_lines": [[6537, 6537]]
+    },
+    {
+      "type": "assertion",
+      "value": "AssertionError: Script returned code: 1",
+      "importance": "important",
+      "evidence_lines": [[6520, 6520]]
+    },
+    {
+      "type": "stack_location",
+      "value": "tests/lib/__init__.py:681: AssertionError",
+      "file": "tests/lib/__init__.py",
+      "line": 681,
+      "importance": "important",
+      "evidence_lines": [[6532, 6532]]
+    },
+    {
+      "type": "command",
+      "value": "python -m pip install https://github.com/pypa/pip-test-package/archive/refs/heads/master.zip --use-deprecated=legacy-certs",
+      "importance": "important",
+      "evidence_lines": [[6534, 6534]]
+    },
+    {
+      "type": "exit_code",
+      "value": "failed with exit code 1",
+      "importance": "optional",
+      "evidence_lines": [[6651, 6651]]
+    },
+    {
+      "type": "annotation",
+      "value": "##[error]Process completed with exit code 1.",
+      "importance": "optional",
+      "evidence_lines": [[6653, 6653]]
+    }
+  ],
+  "relevant_files": [
+    "tests/functional/test_truststore.py",
+    "tests/lib/__init__.py"
+  ],
+  "relevant_tests": [
+    "tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]"
+  ],
+  "evidence_spans": [
+    {
+      "start_line": 6398,
+      "end_line": 6399,
+      "reason": "FAILURES section header + the failing test parametrization (`test_no_truststore_can_install[GitHub]`)."
+    },
+    {
+      "start_line": 6520,
+      "end_line": 6537,
+      "reason": "The full surface-and-root-cause block: `E AssertionError: Script returned code: 1` (the surface), the locals showing the failing pip command and its args, the AssertionError stack location at `tests/lib/__init__.py:681`, and the captured pip stderr `ERROR: Could not install packages due to an OSError: HTTPSConnectionPool(host='github.com', port=443) ... too many 502 error responses` (the actual root cause)."
+    },
+    {
+      "start_line": 6649,
+      "end_line": 6653,
+      "reason": "Final test summary: `FAILED tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]`, the `1 failed, 1080 passed, ... 3 rerun` totals confirming this is the single failure and was retried, the nox session error, and the GHA `##[error]Process completed with exit code 1.` annotation."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "test_no_truststore_can_install",
+      "github.com",
+      "502",
+      "network"
+    ],
+    "must_not_claim": [
+      "compile error",
+      "permission denied",
+      "TLS error",
+      "truststore code is broken",
+      "pip-test-package contains a bug",
+      "test logic is incorrect"
+    ]
+  }
+}

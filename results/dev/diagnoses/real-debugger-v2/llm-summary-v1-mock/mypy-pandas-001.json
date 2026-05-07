@@ -1,0 +1,67 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The pyright type checker failed on multiple pandas source files because several pyarrow symbols are not recognized as exported or known attributes in the installed version of pyarrow. Specifically, 'Expression' is not exported from 'pyarrow.compute', 'FileSystem' is not exported from 'pyarrow.fs', and many 'pyarrow.compute' functions (is_null, if_else, utf8_lower, utf8_upper, etc.) are not known attributes of their respective modules.",
+  "root_cause_category": "type_error",
+  "root_cause": "Pyright reports that multiple pyarrow symbols used in pandas source files are not exported or not known attributes of their pyarrow modules. This indicates a mismatch between the pyarrow version installed in CI and the pyarrow type stubs/API that pyright is checking against, causing pyright to fail with 4+ errors across several files.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "pandas/core/arrays/arrow/accessors.py",
+    "pandas/io/orc.py",
+    "pandas/compat/pyarrow.py",
+    "pandas/core/arrays/_arrow_string_mixins.py"
+  ],
+  "relevant_tests": [
+    "pyright",
+    "pyright reportGeneralTypeIssues"
+  ],
+  "evidence": [
+    {
+      "quote": "pyright..................................................................[41mFailed[m",
+      "reason": "The pyright pre-commit hook explicitly failed, triggering the exit code 1."
+    },
+    {
+      "quote": "/home/runner/work/pandas/pandas/pandas/core/arrays/arrow/accessors.py:[33m319[39m:[33m14[39m - [31merror[39m: \"Expression\" is not exported from module \"pyarrow.com…",
+      "reason": "Pyright cannot find the 'Expression' symbol in pyarrow.compute, indicating a version incompatibility or missing type stubs."
+    },
+    {
+      "quote": "/home/runner/work/pandas/pandas/pandas/io/orc.py:[33m44[39m:[33m28[39m - [31merror[39m: \"FileSystem\" is not exported from module \"pyarrow.fs\"",
+      "reason": "Pyright cannot find 'FileSystem' in pyarrow.fs, another missing/unexported pyarrow symbol."
+    },
+    {
+      "quote": "/home/runner/work/pandas/pandas/pandas/compat/pyarrow.py:[33m76[39m:[33m23[39m - [31merror[39m: \"is_null\" is not a known attribute of module \"pyarrow.compute\"",
+      "reason": "Multiple pyarrow.compute functions are not recognized, consistent with a pyarrow version or stubs mismatch."
+    },
+    {
+      "quote": "4 errors, 0 warnings, 0 informations",
+      "reason": "Pyright summarizes 4 errors from the first hook run, confirming non-zero errors caused the failure."
+    },
+    {
+      "quote": "pyright reportGeneralTypeIssues..........................................[41mFailed[m",
+      "reason": "A second pyright hook (reportGeneralTypeIssues) also failed, with many more missing attribute errors in pyarrow.compute."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "The overall job exited with code 1, confirming the CI failure."
+    }
+  ],
+  "suggested_fix": "Update the pyarrow type stubs or pin the pyarrow version in CI to one whose stubs export 'Expression' from 'pyarrow.compute', 'FileSystem' from 'pyarrow.fs', and the expected 'pyarrow.compute' functions (is_null, if_else, utf8_lower, etc.), or update the pandas source files to use the correct public API symbols for the installed pyarrow version.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-mock/mypy-pandas-001.txt",
+    "context_tokens_estimate": 1996
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 768
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 35706.9,
+    "cache_key": "8d9f4feb7105ccd1ed797df8ed03d015bf5513a7f0811065858e6027655847a0",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "root_cause": {
+    "summary": "The runner container's checked-out workspace at /work is owned by a different UID than the process that invokes git, so git refuses to operate with `fatal: detected dubious ownership in repository at '/work'`. The test harness falls back to running jest against an empty view of the repository, which reports `No tests found, exiting with code 1` for every example. The surface symptom is jest failing; the fix is upstream in the runner setup: add `git config --global --add safe.directory /work` (or equivalent) before running tests.",
+    "category": "permission_or_secret"
+  },
+  "required_signals": [
+    {
+      "type": "exception",
+      "value": "fatal: detected dubious ownership in repository at '/work'",
+      "importance": "critical",
+      "evidence_lines": [[1147, 1147]]
+    },
+    {
+      "type": "exception",
+      "value": "Git error: fatal: detected dubious ownership in repository at '/work'",
+      "importance": "important",
+      "evidence_lines": [[1192, 1192]]
+    },
+    {
+      "type": "assertion",
+      "value": "No tests found, exiting with code 1",
+      "importance": "critical",
+      "evidence_lines": [[10167, 10167]]
+    },
+    {
+      "type": "failed_test",
+      "value": "examples/with-jest/__tests__/index.test.tsx failed to pass within 2 retries",
+      "importance": "critical",
+      "evidence_lines": [[10238, 10238]]
+    },
+    {
+      "type": "stack_location",
+      "file": "/work/run-tests.js",
+      "line": 927,
+      "importance": "important",
+      "evidence_lines": [[10242, 10245]]
+    },
+    {
+      "type": "exit_code",
+      "value": "1",
+      "importance": "critical",
+      "evidence_lines": [[10976, 10976]]
+    }
+  ],
+  "relevant_files": [
+    "/work/run-tests.js"
+  ],
+  "relevant_tests": [
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest-babel/__tests__/index.test.tsx"
+  ],
+  "evidence_spans": [
+    {
+      "start_line": 1147,
+      "end_line": 1196,
+      "reason": "The root `fatal: detected dubious ownership` line plus the downstream warning that wraps it; this is the upstream cause that every later jest symptom traces back to."
+    },
+    {
+      "start_line": 10167,
+      "end_line": 10273,
+      "reason": "Jest reports `No tests found` for multiple example projects and the run-tests.js harness emits ENOENT for missing results.json; these are symptoms of the root ownership issue."
+    },
+    {
+      "start_line": 10976,
+      "end_line": 10976,
+      "reason": "GHA exit-code marker confirming the step failed."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "fatal: detected dubious ownership",
+      "git",
+      "jest",
+      "no tests found"
+    ],
+    "must_not_claim": [
+      "jest test assertion failed on a real test case",
+      "dependency installation failed",
+      "network failure",
+      "compilation error"
+    ]
+  }
+}

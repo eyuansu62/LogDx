@@ -1,0 +1,50 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "rtk-log",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The mypy type-checking job failed with 641 errors (298 unique), almost entirely consisting of 'Module has no attribute' errors concentrated in pandas/core/arrays/arrow/array.py and pandas/core/arrays/datetimes.py. This indicates that mypy cannot resolve certain attributes on imported modules, likely due to missing or incompatible type stubs for an arrow or datetime-related dependency.",
+  "root_cause_category": "type_error",
+  "root_cause": "mypy reports 'Module has no attribute' errors across multiple lines in pandas/core/arrays/arrow/array.py and pandas/core/arrays/datetimes.py, totaling 641 errors. This is caused by mypy being unable to find expected attributes on one or more modules (likely pyarrow), suggesting missing, outdated, or incompatible type stubs.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "pandas/core/arrays/arrow/array.py",
+    "pandas/core/arrays/datetimes.py"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "[error] 641 errors (298 unique)",
+      "reason": "Confirms the job failed due to a large number of type errors reported by mypy."
+    },
+    {
+      "quote": "pandas/core/arrays/arrow/array.py:2708: error: Module has no attribu...",
+      "reason": "Shows the dominant error type is 'Module has no attribute' in the arrow array module, pointing to missing or incompatible type stubs for the arrow module."
+    },
+    {
+      "quote": "pandas/core/arrays/datetimes.py:1368: error: Module has no attribute...",
+      "reason": "The same 'Module has no attribute' error pattern also appears in datetimes.py, suggesting the issue may span multiple modules or dependencies."
+    },
+    {
+      "quote": "[×18] 2026-04-23T08:38:17.9083057Z pandas/core/arrays/arrow/array.py:2708",
+      "reason": "The high repeat count (×18, ×12, etc.) for errors at specific lines indicates systematic missing attributes rather than isolated typos, consistent with a type stub version mismatch."
+    }
+  ],
+  "suggested_fix": "Update or install compatible type stubs for pyarrow (e.g., pyarrow-stubs) that match the version of pyarrow used in the project, so mypy can resolve the attributes referenced in pandas/core/arrays/arrow/array.py and pandas/core/arrays/datetimes.py.",
+  "input": {
+    "context_path": "results/dev/rtk-log/mypy-pandas-001.txt",
+    "context_tokens_estimate": 450
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 529
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 26701.319,
+    "cache_key": "cb420354f4ad1b49bb70dcdf29602b542ac143e8e07957ede4dbaa1b851b2b2d",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

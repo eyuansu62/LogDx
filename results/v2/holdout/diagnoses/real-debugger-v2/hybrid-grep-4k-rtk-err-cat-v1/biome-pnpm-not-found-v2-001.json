@@ -1,0 +1,39 @@
+{
+  "case_id": "biome-pnpm-not-found-v2-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "All Rust/Cargo tests pass successfully, but a subsequent 'just' recipe step fails with exit code 127 (command not found). The 'format' recipe and 'gen-all' recipe both fail, indicating that a required command invoked by those recipes (likely 'pnpm' or a Node.js-based tool) is not found on the PATH of the ARM runner.",
+  "root_cause_category": "other",
+  "root_cause": "The 'just' recipe 'format' (line 221) exited with code 127 (command not found), causing 'gen-all' (line 32) to also fail. Exit code 127 indicates a required executable invoked by those recipes was not present in the runner's PATH.",
+  "confidence": 0.72,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "error: Recipe `format` failed on line 221 with exit code 127",
+      "reason": "Exit code 127 universally means 'command not found' in POSIX shells; the 'format' recipe invoked a binary that does not exist on this runner."
+    },
+    {
+      "quote": "error: Recipe `gen-all` failed on line 32 with exit code 127",
+      "reason": "'gen-all' depends on 'format' (or another missing command) and propagates the same exit code 127 failure."
+    }
+  ],
+  "suggested_fix": "Ensure the command required by the 'format' recipe (e.g. 'pnpm', 'node', or another tool) is installed and available on the PATH for the depot-ubuntu-24.04-arm-16 runner before the 'just gen-all' step is executed.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-4k-rtk-err-cat-v1/biome-pnpm-not-found-v2-001.txt",
+    "context_tokens_estimate": 29028
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 337
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 20102.427,
+    "cache_key": "0174ceaff5b94f60e1f3831e8a1a870f04aaff9bb88007bd044d944268d6d666",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "root_cause": {
+    "summary": "The pandas `Unit Tests / macos-15 py312` job's C++ extension build (meson+ninja under `pip install -e`) fails because `pandas/_libs/include/pandas/simd/moments_simd.hpp:255` declares an explicit template instantiation `extern template Moments accumulate_moments_simd::operator()<xsimd::neon64>(...)` (and the matching non-extern definition at `pandas/_libs/simd/moments_inst_neon.cpp:14`), but the primary template at `moments_simd.hpp:182` is parameterized with `xsimd::neon`, not `xsimd::neon64`. clang++ -std=c++20 rejects with `error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member`, and the diagnostic note shows the type-mismatch directly: `could not match 'Moments (xsimd::neon64, ...)' against 'Moments (xsimd::neon, ...)'`. Two compile units fail with the same root cause (moments_inst_neon.cpp.o and moments.cpp.o); ninja stops the build, pip's metadata-generation hook exits 1.",
+    "category": "compile_error"
+  },
+  "required_signals": [
+    {
+      "type": "compile_error",
+      "value": "error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "importance": "critical",
+      "evidence_lines": [[1009, 1009]]
+    },
+    {
+      "type": "stack_location",
+      "value": "../../pandas/_libs/include/pandas/simd/moments_simd.hpp:255:50",
+      "file": "pandas/_libs/include/pandas/simd/moments_simd.hpp",
+      "line": 255,
+      "importance": "critical",
+      "evidence_lines": [[1009, 1009]]
+    },
+    {
+      "type": "compile_error",
+      "value": "could not match 'Moments (xsimd::neon64,",
+      "aliases": [
+        "against 'Moments (xsimd::neon,",
+        "candidate template ignored"
+      ],
+      "importance": "critical",
+      "evidence_lines": [[1012, 1012]]
+    },
+    {
+      "type": "package",
+      "value": "pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o",
+      "importance": "important",
+      "evidence_lines": [[1006, 1006]]
+    },
+    {
+      "type": "command",
+      "value": "arm64-apple-darwin20.0.0-clang++",
+      "importance": "important",
+      "evidence_lines": [[1007, 1007]]
+    },
+    {
+      "type": "annotation",
+      "value": "##[error]Process completed with exit code 1.",
+      "importance": "important",
+      "evidence_lines": [[1054, 1054]]
+    },
+    {
+      "type": "exit_code",
+      "value": "ninja: build stopped: subcommand failed.",
+      "importance": "important",
+      "evidence_lines": [[1036, 1036]]
+    }
+  ],
+  "relevant_files": [
+    "pandas/_libs/include/pandas/simd/moments_simd.hpp",
+    "pandas/_libs/simd/moments_inst_neon.cpp",
+    "pandas/_libs/simd/moments.cpp"
+  ],
+  "relevant_tests": [],
+  "evidence_spans": [
+    {
+      "start_line": 1005,
+      "end_line": 1021,
+      "reason": "Primary compile error block: the meson `[12/163] Compiling C++ object ...moments_inst_neon.cpp.o` step header, the `FAILED: [code=1]` line, the full clang++ command, the two errors with their `error: explicit instantiation` messages, and the `note: candidate template ignored: could not match 'Moments (xsimd::neon64,...)' against 'Moments (xsimd::neon,...)'` diagnostic that pinpoints the actual type mismatch. The `2 errors generated.` summary closes this compile unit."
+    },
+    {
+      "start_line": 1036,
+      "end_line": 1054,
+      "reason": "Build-stop and job-exit block: ninja's `build stopped: subcommand failed.`, pip's `subprocess-exited-with-error` chain, `metadata-generation-failed` summary, and the GHA `##[error]Process completed with exit code 1.` annotation that propagates the C++ compile failure to the job exit code."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "explicit instantiation",
+      "xsimd::neon64",
+      "moments_simd.hpp",
+      "operator()"
+    ],
+    "must_not_claim": [
+      "missing include",
+      "permission denied",
+      "test failed",
+      "syntax error",
+      "out of memory",
+      "the xsimd library is not installed",
+      "this is a Cython compile error"
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "case_id": "pip-pytest-network-github-v2-001",
+  "split": "v2/dev",
+  "origin": "new_v2",
+  "ecosystem": "python-pytest",
+  "primary_language": "python",
+  "ci_provider": "github_actions",
+  "repo_visibility": "public",
+  "failure_category": "network_or_flaky",
+  "framework": "pytest",
+  "log_size_bucket": "large",
+  "signal_position": "late",
+  "evidence_formats": [
+    "traceback",
+    "assertion_diff",
+    "ansi_colored_block",
+    "package_manager_error",
+    "github_annotation"
+  ],
+  "noise_profile": [
+    "runner_setup",
+    "dependency_install_noise",
+    "test_progress_noise",
+    "log_group_noise"
+  ],
+  "multi_failure": false,
+  "flaky_or_transient": true,
+  "requires_repo_context": false,
+  "diagnosis_difficulty": "medium",
+  "notes": "Single pytest functional failure where the surface (`AssertionError: Script returned code: 1` at tests/lib/__init__.py:681) hides a network root cause (GitHub 502 Bad Gateway when pip downloads pip-test-package master.zip). flaky_or_transient = true because pytest-rerunfailures retried 3 times. Diagnosis difficulty = medium because the test name (`test_no_truststore_can_install`) suggests truststore as the suspect, but the actual root cause is GitHub returning 502s before truststore code runs."
+}

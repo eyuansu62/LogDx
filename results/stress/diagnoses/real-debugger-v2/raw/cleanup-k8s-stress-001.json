@@ -1,0 +1,47 @@
+{
+  "case_id": "cleanup-k8s-stress-001",
+  "context_method": "raw",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Cleanup artifacts' job failed when attempting to delete a CI artifact via the GitHub API. The DELETE request returned HTTP 403, indicating the GITHUB_TOKEN lacks the necessary permissions to delete artifacts for the target repository.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GITHUB_TOKEN used by the job does not have sufficient permissions to delete artifacts via the GitHub Actions REST API. The API call to DELETE /repos/kubernetes/kubernetes/actions/artifacts/{artifact_id} returned HTTP 403 'Resource not accessible by integration'.",
+  "confidence": 0.92,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "This is the direct error message returned by the GitHub API, indicating the token lacks permission to perform the DELETE operation on the artifact."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the job step failed due to the 403 error from the API call."
+    },
+    {
+      "quote": "Actions: write\n  Metadata: read",
+      "reason": "The GITHUB_TOKEN permissions listed only include Actions: write and Metadata: read. The 'Actions: write' permission may not be sufficient to delete artifacts on the kubernetes/kubernetes repository, or the token scope does not cover cross-repository artifact deletion."
+    },
+    {
+      "quote": "-X DELETE \\\n    -H \"Accept: application/vnd.github+json\" \\\n    /repos/kubernetes/kubernetes/actions/artifacts/\"$artifact_id\"",
+      "reason": "This is the exact API call that triggered the 403, confirming the operation attempted was artifact deletion on kubernetes/kubernetes."
+    }
+  ],
+  "suggested_fix": "Ensure the workflow's GITHUB_TOKEN (or a PAT stored as a secret) has explicit permission to delete artifacts on the kubernetes/kubernetes repository. In the workflow file, add or update the permissions block to include `actions: write` at the job level, and verify the token is not restricted by repository or organization policies that block artifact deletion via integrations.",
+  "input": {
+    "context_path": "results/stress/raw/cleanup-k8s-stress-001.txt",
+    "context_tokens_estimate": 1291
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 514
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 24718.554,
+    "cache_key": "ea24b3ce525f8e8b6f6a5db78ce887a44c4198eb675aefaf85171b3c12a8313e",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

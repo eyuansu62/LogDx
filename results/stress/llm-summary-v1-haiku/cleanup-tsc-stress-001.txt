@@ -1,0 +1,41 @@
+# CI Failure Summary
+
+## Primary Failure
+
+The `Cleanup artifacts` step failed when attempting to delete GitHub Actions artifacts using the GitHub CLI (gh). The request was rejected with a 403 permission error, causing the workflow to exit with code 1.
+
+## Critical Evidence
+
+- `gh: Resource not accessible by integration (HTTP 403)` (L000081)
+- Process exit code 1 (L000082)
+
+## Failed Tests / Checks
+
+- _(none identified)_ — This is a CI step failure, not a test failure.
+
+## Relevant Files and Locations
+
+- GitHub Actions workflow step: lines L000066–L000070 (gh api DELETE command for artifact cleanup)
+
+## Commands and Exit Codes
+
+```
+gh api \
+  --silent \
+  -X DELETE \
+  -H "Accept: application/vnd.github+json" \
+  /repos/microsoft/TypeScript/actions/artifacts/"$artifact_id"
+```
+
+Exit code: `1`
+
+## Possible Root Cause
+
+The GitHub integration token or workflow permissions lack authorization to delete artifacts in the `microsoft/TypeScript` repository. Alternatively, the artifact referenced by `$artifact_id` may have already been deleted or the token may be scoped too narrowly.
+
+## Uncertainties / Missing Context
+
+- Value of `$artifact_id` variable (whether it was populated correctly)
+- Which artifacts were targeted for deletion and whether they exist
+- Token scopes and repository role permissions for the GitHub Actions integration
+- Whether this failure is intermittent or blocking the entire workflow

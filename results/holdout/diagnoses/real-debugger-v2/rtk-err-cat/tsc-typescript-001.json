@@ -1,0 +1,49 @@
+{
+  "case_id": "tsc-typescript-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "A test assertion failed during parallel test execution in the TypeScript CI coverage job. The test expected a full return type string 'Add return type \\'Foo<string, string[…' but received a truncated version 'Add return type \\'Foo<string>\\''.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "A runtime test assertion mismatch: the actual value was 'Add return type \\'Foo<string>\\'' but the expected value was 'Add return type \\'Foo<string, string[…' (truncated in log), indicating the code under test produces an incomplete or incorrect return type string.",
+  "confidence": 0.85,
+  "relevant_files": [],
+  "relevant_tests": [
+    "do-runtests-parallel"
+  ],
+  "evidence": [
+    {
+      "quote": "AssertionError: expected 'Add return type \\'Foo<string>\\'' to equal 'Add return type \\'Foo<string, string[…'",
+      "reason": "This is the direct assertion failure showing the actual vs expected value mismatch that caused the test to fail."
+    },
+    {
+      "quote": "Error in do-runtests-parallel in 10m 38.9s",
+      "reason": "Confirms the failing task is 'do-runtests-parallel', identifying which CI step failed."
+    },
+    {
+      "quote": "Failed tasks: do-runtests-parallel",
+      "reason": "Explicitly names the failed task that caused the job to exit with code 1."
+    },
+    {
+      "quote": "Error: Process exited with code: 1",
+      "reason": "Confirms a non-zero exit code resulting from the assertion failure, causing the CI job to fail."
+    }
+  ],
+  "suggested_fix": "Investigate the code responsible for generating return type strings for generic types like 'Foo<string, string[]>' — it appears the second type argument is being dropped, producing 'Foo<string>' instead of the full 'Foo<string, string[]>'. Fix the type printer or the code path that constructs the 'Add return type' refactoring suggestion string.",
+  "input": {
+    "context_path": "results/holdout/rtk-err-cat/tsc-typescript-001.txt",
+    "context_tokens_estimate": 356
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 439
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 24892.912,
+    "cache_key": "ba34ec80d40b562768d6e8e76d0e56fc63fbd7a78d4d71c4370bade7d17ec08b",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

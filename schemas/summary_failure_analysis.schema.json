@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CILogBench E4 summary failure analysis",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "experiment_id",
+    "protocol_id",
+    "summary_method",
+    "diagnoser",
+    "splits",
+    "cases",
+    "aggregate"
+  ],
+  "properties": {
+    "experiment_id": {"type": "string"},
+    "protocol_id": {"type": "string"},
+    "summary_method": {"type": "string"},
+    "diagnoser": {"type": "string"},
+    "comparison_method": {"type": "string"},
+    "splits": {"type": "array", "items": {"type": "string"}},
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "case_id",
+          "split",
+          "summary_status",
+          "diagnosis_status",
+          "summary_signal_recall",
+          "summary_critical_recall",
+          "summary_sv1_1",
+          "comparison_sv1_1",
+          "failure_modes",
+          "top_level_attribution"
+        ],
+        "properties": {
+          "case_id": {"type": "string"},
+          "split": {"type": "string"},
+          "summary_status": {
+            "enum": ["ok", "provider_error", "missing"]
+          },
+          "diagnosis_status": {
+            "enum": ["ok", "provider_error", "missing", "abstained"]
+          },
+          "summary_signal_recall": {"type": ["number", "null"]},
+          "summary_critical_recall": {"type": ["number", "null"]},
+          "summary_sv1_1": {"type": ["number", "null"]},
+          "comparison_sv1_1": {"type": ["number", "null"]},
+          "delta_vs_comparison": {"type": ["number", "null"]},
+          "missing_signals": {"type": "array"},
+          "failure_modes": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "top_level_attribution": {
+            "enum": [
+              "summary_failure",
+              "debugger_failure",
+              "evaluator_possible_undercount",
+              "provider_error",
+              "annotation_issue",
+              "method_success",
+              "mixed"
+            ]
+          },
+          "notes": {"type": "string"}
+        }
+      }
+    },
+    "aggregate": {
+      "type": "object"
+    }
+  }
+}

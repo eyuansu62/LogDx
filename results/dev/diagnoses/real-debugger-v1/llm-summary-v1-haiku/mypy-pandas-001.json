@@ -1,0 +1,57 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Type checkers (pyright and mypy) report that multiple pyarrow functions and classes are missing or not exported from their modules, causing 279 type errors across 9 files and preventing the mypy stubtest check from completing.",
+  "root_cause_category": "type_error",
+  "root_cause": "PyArrow version or type stub incompatibility: pyright and mypy cannot find expected attributes (is_null, if_else, etc.) in pyarrow.compute and FileSystem in pyarrow.fs, indicating either the installed pyarrow version lacks these exports or the type stubs are outdated.",
+  "confidence": 0.75,
+  "relevant_files": [
+    "/home/runner/work/pandas/pandas/pandas/core/arrays/arrow/accessors.py"
+  ],
+  "relevant_tests": [
+    "pyright",
+    "mypy (stubtest)",
+    "mypy"
+  ],
+  "evidence": [
+    {
+      "quote": "\"Expression\" is not exported from module \"pyarrow.compute\"",
+      "reason": "Type stub is missing expected export, indicating version/stub mismatch"
+    },
+    {
+      "quote": "\"is_null\" is not a known attribute of module \"pyarrow.compute\"",
+      "reason": "Directly shows type checker cannot locate attribute in pyarrow.compute type information"
+    },
+    {
+      "quote": "Module has no attribute \"is_null\"  [attr-defined]",
+      "reason": "Mypy explicitly confirms attribute missing from pyarrow.compute type stubs"
+    },
+    {
+      "quote": "Found 279 errors in 9 files (checked 1458 source files)",
+      "reason": "Large systematic error count across multiple files indicates fundamental incompatibility, not isolated issues"
+    },
+    {
+      "quote": "error: not checking stubs due to mypy build errors:",
+      "reason": "Mypy cannot complete type checking due to fundamental module attribute errors"
+    }
+  ],
+  "suggested_fix": "Verify the installed pyarrow version is compatible with pandas type stubs; update pyarrow and/or pyarrow-stubs packages if version pinning in dependencies is outdated",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-haiku/mypy-pandas-001.txt",
+    "context_tokens_estimate": 611
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 446
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 38599.859,
+    "cache_key": "4126612d47ab7063c74beb1156bd284126cf3a2c58fa84d97c15a46ea5898060",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

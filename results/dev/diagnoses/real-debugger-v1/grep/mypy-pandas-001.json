@@ -1,0 +1,59 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "grep",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Type checkers (pyright and mypy) report that multiple PyArrow compute module functions (is_null, if_else, utf8_length, equal, list_value_length, etc.) are not recognized as attributes or are not exported, affecting 9 files with PyArrow-related code.",
+  "root_cause_category": "type_error",
+  "root_cause": "Type checkers cannot find PyArrow compute module functions. Pyright reports functions like Expression, FileSystem are not exported from pyarrow modules. Mypy reports Module has no attribute errors for is_null, if_else, utf8_length, and many other compute functions across pandas/compat/pyarrow.py, pandas/core/arrays/*arrow*, and pandas/io/* files.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "pandas/compat/pyarrow.py",
+    "pandas/core/arrays/_arrow_string_mixins.py",
+    "pandas/core/arrays/arrow/accessors.py",
+    "pandas/core/arrays/arrow/array.py",
+    "pandas/core/arrays/arrow/extension_types.py",
+    "pandas/io/orc.py",
+    "pandas/io/parquet.py"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "\"is_null\" is not a known attribute of module \"pyarrow.compute\" (reportAttributeAccessIssue)",
+      "reason": "Pyright explicitly reports missing compute functions across multiple files"
+    },
+    {
+      "quote": "Module has no attribute \"is_null\"  [attr-defined]",
+      "reason": "Mypy reports the same missing PyArrow attributes; pattern repeats for is_null, if_else, utf8_length, equal, list_value_length, and ~100+ other functions"
+    },
+    {
+      "quote": "\"Expression\" is not exported from module \"pyarrow.compute\" (reportPrivateImportUsage)",
+      "reason": "Pyright indicates imports are attempting to use non-exported symbols from pyarrow"
+    },
+    {
+      "quote": "Found 279 errors in 9 files (checked 1458 source files)",
+      "reason": "Mypy found 279 type errors, concentrated in PyArrow-related code paths"
+    },
+    {
+      "quote": "pyright..................................................................[41mFailed[m\n- hook id: pyright\n- exit code: 1",
+      "reason": "Pyright hook explicitly failed with exit code 1, blocking merge"
+    }
+  ],
+  "suggested_fix": "Check if the installed PyArrow version (likely 2025.12.0 or newer based on conda output) supports the compute functions being called. If a recent commit added PyArrow compute function calls, verify they exist in the current PyArrow version or update the code to use compatible function names. Alternatively, regenerate or update PyArrow type stubs if they are out of sync with the installed version.",
+  "input": {
+    "context_path": "results/dev/grep/mypy-pandas-001.txt",
+    "context_tokens_estimate": 27248
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 601
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 25365.428,
+    "cache_key": "c7db957e648557f7b82c0c7c7315d8ceeef6a77b400f8ad0e29b97816587668c",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

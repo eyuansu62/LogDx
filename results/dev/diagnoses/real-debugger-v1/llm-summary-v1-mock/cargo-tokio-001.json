@@ -1,0 +1,56 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Cargo test compilation failed with type mismatch errors in the compile-fail test file `tests/fail/macros_type_mismatch.rs`. Multiple async block return types do not match the expected types in the test cases.",
+  "root_cause_category": "compile_error",
+  "root_cause": "Type mismatch errors in compile-fail tests: async blocks are producing unexpected return types (e.g., `Result<(), _>` instead of `()`, `()` instead of `Result<(), ()>`, etc.) in `tests/fail/macros_type_mismatch.rs`. The job exited with code 100, indicating Rust compilation failure.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "tests/fail/macros_type_mismatch.rs"
+  ],
+  "relevant_tests": [
+    "tests/fail/macros_type_mismatch.rs (line 3)",
+    "tests/fail/macros_type_mismatch.rs (line 8)",
+    "tests/fail/macros_type_mismatch.rs (line 13)",
+    "tests/fail/macros_type_mismatch.rs (line 38)",
+    "tests/fail/macros_type_mismatch.rs (line 55)",
+    "tests/fail/macros_type_mismatch.rs (line 63)"
+  ],
+  "evidence": [
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
+      "reason": "Direct compile error showing type mismatch in async block return type at line 3"
+    },
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:8:1: 8:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
+      "reason": "Second compile error showing same pattern at line 8"
+    },
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:13:1: 13:15}` to be a future that resolves to `Result<(), ()>`, but it resolves to `()`",
+      "reason": "Third error showing inverted mismatch (returns `()` instead of `Result`)"
+    },
+    {
+      "quote": "##[error]Process completed with exit code 100.",
+      "reason": "Exit code 100 is the standard Rust compiler error exit code"
+    }
+  ],
+  "suggested_fix": "Run `cargo test --test fail` or the relevant compile-fail test runner to update the expected error output files, or review recent macro implementation changes in tokio's main code that may have altered the return types of the #[tokio::...] macros.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-mock/cargo-tokio-001.txt",
+    "context_tokens_estimate": 2264
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 535
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 20761.271,
+    "cache_key": "d82708c69d51fb4491ff1c2d5fff2f1dcf6df9b1a5e10e28152e5bb210f15ace",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "case_id": "cleanup-tsc-stress-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "GitHub Actions 'Cleanup artifacts' step failed when attempting to delete artifacts using the GitHub CLI. The API request was rejected with HTTP 403 'Resource not accessible by integration', indicating insufficient authorization.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GitHub Actions integration token lacks authorization to delete artifacts. The HTTP 403 'Resource not accessible by integration' error indicates the token is authenticated but not authorized for DELETE operations on the artifacts endpoint.",
+  "confidence": 0.85,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "HTTP 403 is a standard authorization error; the token is recognized but lacks permission to delete artifacts"
+    },
+    {
+      "quote": "gh api --silent -X DELETE -H \"Accept: application/vnd.github+json\" /repos/microsoft/TypeScript/actions/artifacts/\"$artifact_id\"",
+      "reason": "The command attempts a DELETE operation on the artifacts API endpoint, which requires explicit write permissions on actions"
+    },
+    {
+      "quote": "Process exit code 1",
+      "reason": "Non-zero exit confirms the gh command failed due to the permission error"
+    },
+    {
+      "quote": "The GitHub integration token or workflow permissions lack authorization to delete artifacts in the microsoft/TypeScript repository.",
+      "reason": "Context explicitly identifies token/permission scoping as the likely cause"
+    }
+  ],
+  "suggested_fix": "Verify that the workflow job has the required permissions. Ensure the GitHub Actions workflow YAML includes 'permissions: { actions: write }' in the job definition, or confirm that the repository's default workflow permissions allow artifact deletion.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-haiku/cleanup-tsc-stress-001.txt",
+    "context_tokens_estimate": 355
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 432
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 31637.527,
+    "cache_key": "d7ecd59f93cca4dc569f371f254dc2c4c0b027744233c058ac1816dbf1eb7288",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

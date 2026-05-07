@@ -1,0 +1,129 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CILogBench case tags (M9)",
+  "description": "Per-case descriptive tags used for dataset analysis and split-balance reports. NOT passed to summarizers or diagnosers.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "case_id", "split",
+    "failure_category", "framework",
+    "log_size_bucket", "signal_position",
+    "evidence_formats", "noise_profile",
+    "diagnosis_difficulty"
+  ],
+  "properties": {
+    "case_id": {"type": "string", "minLength": 1},
+    "split": {
+      "type": "string",
+      "enum": [
+        "dev", "holdout", "stress",
+        "v2/dev", "v2/holdout", "v2/stress"
+      ],
+      "description": "v1.3 splits (dev/holdout/stress) and v2 splits (v2/dev, v2/holdout, v2/stress). v2 splits are introduced in cilogbench-v2; the path-style string matches the on-disk cases/<split>/<case_id>/ layout."
+    },
+    "origin": {
+      "type": "string",
+      "enum": ["legacy_v1_3", "new_v2"],
+      "description": "Provenance tag introduced for cilogbench-v2. legacy_v1_3 = case carried over from the v1.3 corpus. new_v2 = case collected for v2. Optional; absent on cases that pre-date the v2 schema bump and have not yet been migrated."
+    },
+    "ecosystem": {
+      "type": "string",
+      "enum": [
+        "python-pytest", "python-poetry-pip-tox",
+        "javascript-jest", "javascript-pnpm-yarn-npm",
+        "typescript-tsc", "rust-cargo", "go",
+        "java-maven", "java-gradle",
+        "docker-buildkit", "terraform", "kubernetes-helm",
+        "c-cpp-cmake", "ruby-bundler",
+        "generic-github-actions", "other"
+      ],
+      "description": "Ecosystem the failing job belongs to. Pick the most specific match; only use 'other' when nothing fits and the matrix should be extended. Introduced in v2; optional on legacy v1.3 cases until backfilled."
+    },
+    "ci_provider": {
+      "type": "string",
+      "enum": [
+        "github_actions", "gitlab_ci", "circleci",
+        "buildkite", "jenkins", "other"
+      ],
+      "description": "CI provider that produced the raw log. Defaults to github_actions for v1.3 and most of v2. Introduced in v2; optional."
+    },
+    "repo_visibility": {
+      "type": "string",
+      "enum": ["public", "private", "redacted"],
+      "description": "public = upstream run is publicly viewable. private = collector has explicit publication permission. redacted = log was lightly modified to remove secrets per cilogbench_v2_collection_guidelines.md §6. Introduced in v2; optional."
+    },
+    "failure_category": {
+      "type": "string",
+      "enum": [
+        "test_assertion", "compile_error", "type_error",
+        "lint_failure", "lint_error",
+        "formatting_failure",
+        "dependency_install", "docker_build",
+        "github_actions_config", "permission_or_secret",
+        "network_or_flaky", "timeout_or_oom",
+        "snapshot_or_golden_diff",
+        "matrix_or_monorepo_failure",
+        "multi_failure",
+        "generic_error", "unknown", "other"
+      ]
+    },
+    "framework": {
+      "type": "string",
+      "enum": [
+        "pytest", "jest", "cargo", "tsc", "eslint", "prettier",
+        "npm", "pnpm", "pip", "docker", "terraform",
+        "generic", "unknown"
+      ]
+    },
+    "primary_language": {"type": "string"},
+    "log_size_bucket": {
+      "type": "string",
+      "enum": ["small", "medium", "large", "huge"],
+      "description": "small <500 lines, medium 500-5000, large 5000-50000, huge >50000."
+    },
+    "signal_position": {
+      "type": "string",
+      "enum": ["early", "middle", "late", "scattered"],
+      "description": "early = primary evidence in first 25% of raw log; middle 25-75%; late >75%; scattered across multiple regions."
+    },
+    "evidence_formats": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "enum": [
+          "plain_error_line", "traceback",
+          "compiler_diagnostic", "ascii_table",
+          "json_block", "diff_block",
+          "ansi_colored_block", "github_annotation",
+          "shell_command_output", "nested_tool_output",
+          "assertion_diff", "snapshot_diff",
+          "docker_build_output", "package_manager_error",
+          "timeout_marker", "oom_marker", "matrix_summary"
+        ]
+      },
+      "description": "Surface forms of the critical evidence in the log. Entries from 'assertion_diff' onward are introduced in v2; legacy v1.3 cases never use them."
+    },
+    "noise_profile": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "enum": [
+          "runner_setup", "dependency_install_noise",
+          "test_progress_noise", "matrix_noise",
+          "docker_layer_noise", "verbose_build_noise",
+          "log_group_noise", "low_noise"
+        ]
+      }
+    },
+    "multi_failure": {"type": "boolean"},
+    "flaky_or_transient": {"type": "boolean"},
+    "requires_repo_context": {"type": "boolean"},
+    "diagnosis_difficulty": {
+      "type": "string",
+      "enum": ["easy", "medium", "hard", "unclear"]
+    },
+    "notes": {"type": "string"}
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "case_id": "pytest-pandas-001",
+  "context_method": "grep",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "NumPy nightly build deprecated creating datetime64/timedelta64 without explicit unit specification. Pandas code uses `np.datetime64(\"NaT\")` and similar patterns throughout without specifying units, causing DeprecationWarnings that are treated as errors due to `--werror` flag.",
+  "root_cause_category": "other",
+  "root_cause": "NumPy nightly deprecated the 'generic' unit for datetime64 and timedelta64, requiring explicit unit specification (e.g., 'ns', 'us', 'ms'). Pandas test code and internal code (e.g., `pandas/core/internals/concat.py:412`) call `np.datetime64(\"NaT\")` and `dtype.type(\"NaT\")` without units. With `--werror` setup arg, these DeprecationWarnings are converted to errors and cause test failures.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "pandas/core/internals/concat.py",
+    "pandas/tests/arrays/masked/test_indexing.py",
+    "pandas/tests/arrays/test_timedeltas.py",
+    "pandas/tests/dtypes/test_inference.py",
+    "pandas/tests/dtypes/test_missing.py",
+    "pandas/tests/frame/indexing/test_indexing.py",
+    "pandas/tests/frame/test_constructors.py"
+  ],
+  "relevant_tests": [
+    "pandas/tests/arithmetic/test_datetime64.py::TestDatetimeIndexComparisons::test_dti_cmp_nat_behaves_like_float_cmp_nan",
+    "pandas/tests/reshape/concat/test_append.py::TestAppend::test_append_dtype_coerce",
+    "pandas/tests/scalar/timedelta/test_arithmetic.py::TestTimedeltaAdditionSubtraction::test_td_rsub_nat"
+  ],
+  "evidence": [
+    {
+      "quote": "E   DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific unit instead.",
+      "reason": "The exact error message appears consistently across 45 failed tests and 52 errors, indicating NumPy nightly no longer accepts unspecified units for datetime64/timedelta64"
+    },
+    {
+      "quote": "np.datetime64(\"NaT\")",
+      "reason": "Found repeatedly in test code (e.g., test_indexing.py:43, test_constructors.py:2041) without unit specification, triggering deprecation"
+    },
+    {
+      "quote": "return dtype.type(\"NaT\") ... pandas/core/internals/concat.py:412: DeprecationWarning",
+      "reason": "Core pandas code in concat.py line 412 creates NaT without specifying unit, causing failures when used in concat operations"
+    },
+    {
+      "quote": "-Csetup-args=\"--werror\"",
+      "reason": "Build is configured to convert all warnings to errors, causing DeprecationWarnings to fail the build"
+    },
+    {
+      "quote": "= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s",
+      "reason": "45 failures and 52 collection errors all traceable to the same DeprecationWarning pattern across multiple test files"
+    }
+  ],
+  "suggested_fix": "Update calls to np.datetime64() and np.timedelta64() to include explicit unit specification: replace `np.datetime64(\"NaT\")` with `np.datetime64(\"NaT\", \"ns\")` and similar patterns throughout the codebase, especially in pandas/core/internals/concat.py line 412 and test files that parametrize NaT values.",
+  "input": {
+    "context_path": "results/dev/grep/pytest-pandas-001.txt",
+    "context_tokens_estimate": 81103
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 740
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 30892.052,
+    "cache_key": "62e1bb8d3b2d0df4f7f24b1869294af28c97829217211def270906b25c871416",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

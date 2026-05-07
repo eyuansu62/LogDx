@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CILogBench diagnosis",
+  "description": "A diagnoser's answer after reading one context method's output for one case. Written by tools/run_diagnosis.py, one row per case in results/<split>/diagnoses/<diagnoser>/<context_method>.jsonl and one JSON per case in the same directory.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "case_id",
+    "context_method",
+    "diagnoser",
+    "mode",
+    "summary",
+    "root_cause_category",
+    "root_cause",
+    "confidence",
+    "relevant_files",
+    "relevant_tests",
+    "evidence",
+    "input",
+    "usage",
+    "metadata"
+  ],
+  "properties": {
+    "case_id":         {"type": "string", "minLength": 1},
+    "context_method":  {"type": "string", "minLength": 1},
+    "diagnoser":       {"type": "string", "minLength": 1},
+    "mode":            {"type": "string", "const": "root_cause_diagnosis"},
+    "summary":         {"type": "string"},
+    "root_cause_category": {
+      "type": "string",
+      "enum": [
+        "test_assertion", "compile_error", "type_error",
+        "lint_failure", "formatting_failure",
+        "dependency_install", "docker_build",
+        "github_actions_config", "permission_or_secret",
+        "network_or_flaky", "timeout_or_oom",
+        "unknown", "other"
+      ]
+    },
+    "root_cause":      {"type": "string"},
+    "confidence":      {"type": "number", "minimum": 0, "maximum": 1},
+    "relevant_files":  {"type": "array", "items": {"type": "string"}},
+    "relevant_tests":  {"type": "array", "items": {"type": "string"}},
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["quote", "reason"],
+        "properties": {
+          "quote":  {"type": "string"},
+          "reason": {"type": "string"}
+        }
+      }
+    },
+    "suggested_fix":   {"type": "string"},
+    "input": {
+      "type": "object",
+      "required": ["context_path", "context_tokens_estimate"],
+      "properties": {
+        "context_path":            {"type": "string"},
+        "context_tokens_estimate": {"type": "integer", "minimum": 0}
+      }
+    },
+    "usage": {
+      "type": "object",
+      "required": ["processing_tokens_estimate", "output_tokens_estimate"],
+      "properties": {
+        "processing_tokens_estimate": {"type": "integer", "minimum": 0},
+        "output_tokens_estimate":     {"type": "integer", "minimum": 0}
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["provider", "prompt_sha256", "runtime_ms"],
+      "properties": {
+        "provider":      {"type": "string"},
+        "prompt_sha256": {"type": "string"},
+        "runtime_ms":    {"type": "number", "minimum": 0},
+        "cache_key":     {"type": ["string", "null"]},
+        "cache_hit":     {"type": "boolean"},
+        "provider_error":{"type": ["string", "null"]},
+        "command":       {"type": ["string", "null"]}
+      },
+      "additionalProperties": true
+    }
+  }
+}

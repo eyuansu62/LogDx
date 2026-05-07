@@ -1,0 +1,51 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The compile_fail_full trybuild test in tests-build::macros failed because actual Rust compiler error messages from tests/fail/macros_type_mismatch.rs do not match the expected snapshot.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Compiler error message mismatch in trybuild snapshot test. The actual error messages produced by the Rust compiler when compiling tests/fail/macros_type_mismatch.rs no longer match the expected messages stored in the test snapshot.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "tests/fail/macros_type_mismatch.rs"
+  ],
+  "relevant_tests": [
+    "tests-build::macros compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "test compile_fail_full ... FAILED",
+      "reason": "Explicitly identifies the failing test in the output"
+    },
+    {
+      "quote": "Expected vs actual output mismatch in trybuild test (L002845–L003084)",
+      "reason": "Directly states the nature of the failure as a mismatch between expected and actual compiler output"
+    },
+    {
+      "quote": "If the actual output is the correct output you can bless it by rerunning your test with the environment variable TRYBUILD=overwrite",
+      "reason": "Confirms this is a trybuild snapshot test failure with a standard remediation path"
+    },
+    {
+      "quote": "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.87s",
+      "reason": "Confirms exactly one test failed in the test suite"
+    }
+  ],
+  "suggested_fix": "Determine whether the compiler error message changes are correct. If so, rerun the test with TRYBUILD=overwrite to update the snapshot to match the actual compiler output.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-haiku/cargo-tokio-001.txt",
+    "context_tokens_estimate": 519
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 391
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 30042.265,
+    "cache_key": "bc203bdf602705c48c40e47354594c2d8788ec143414f5ac9a920ead67c79fcf",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

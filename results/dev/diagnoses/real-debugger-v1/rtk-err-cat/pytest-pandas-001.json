@@ -1,0 +1,65 @@
+{
+  "case_id": "pytest-pandas-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "NumPy nightly's deprecation of the 'generic' timedelta unit causes 45 test failures and 52 collection errors when pandas code implicitly converts bare integers to timedeltas without specifying a unit. The deprecation warnings are treated as failures by pytest.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "NumPy nightly has deprecated the 'generic' unit for timedelta with implicit conversion of bare integers (e.g., `+ 1` without unit specification). Pandas code and tests use this deprecated pattern, triggering DeprecationWarning exceptions during test collection and execution that cause test failures.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "pandas/tests/arrays/masked/test_indexing.py",
+    "pandas/tests/arrays/test_timedeltas.py",
+    "pandas/tests/dtypes/test_inference.py",
+    "pandas/tests/dtypes/test_missing.py",
+    "pandas/tests/frame/indexing/test_indexing.py",
+    "pandas/tests/frame/test_constructors.py",
+    "pandas/tests/indexes/datetimes/methods/test_insert.py",
+    "pandas/tests/indexes/test_index_new.py",
+    "pandas/tests/indexes/timedeltas/test_indexing.py",
+    "pandas/tests/io/json/test_ujson.py",
+    "pandas/tests/scalar/timestamp/test_constructors.py",
+    "pandas/tests/series/indexing/test_indexing.py",
+    "pandas/tests/util/test_assert_almost_equal.py"
+  ],
+  "relevant_tests": [
+    "pandas/tests/arithmetic/test_datetime64.py::TestDatetimeIndexComparisons::test_dti_cmp_nat_behaves_like_float_cmp_nan",
+    "pandas/tests/reshape/concat/test_append.py::TestAppend::test_append_dtype_coerce",
+    "pandas/tests/scalar/timedelta/test_arithmetic.py::TestTimedeltaAdditionSubtraction::test_td_rsub_nat"
+  ],
+  "evidence": [
+    {
+      "quote": "DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific unit instead.",
+      "reason": "This deprecation warning appears 52 times in ERROR messages during pytest collection and 45 times in FAILED messages, indicating NumPy nightly introduced this breaking change."
+    },
+    {
+      "quote": "ERROR collecting pandas/tests/arrays/masked/test_indexing.py",
+      "reason": "Multiple test files fail to collect due to this deprecation, blocking all tests in those modules."
+    },
+    {
+      "quote": "job_name: \"Numpy Nightly\"",
+      "reason": "The job is explicitly testing against NumPy's nightly/development version, which contains the deprecation."
+    },
+    {
+      "quote": "= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s",
+      "reason": "52 collection errors and 45 test failures all attributable to the same deprecation warning, indicating a systematic incompatibility."
+    }
+  ],
+  "suggested_fix": "Update pandas code and tests to explicitly specify timedelta units instead of relying on implicit conversion of bare integers. Replace patterns like `timedelta(1)` or `+ 1` with `timedelta(seconds=1)` or similar explicit unit specifications throughout the codebase, particularly in the affected test files and any core code they exercise.",
+  "input": {
+    "context_path": "results/dev/rtk-err-cat/pytest-pandas-001.txt",
+    "context_tokens_estimate": 15871
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 745
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 27463.394,
+    "cache_key": "42f6284cfdf4d3bbd5aa3119d343317ed8718a68704b25e2ce4af6040ed3f874",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

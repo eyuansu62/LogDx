@@ -1,0 +1,45 @@
+{
+  "case_id": "pushpr-nextjs-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "GitHub Actions workflow failed when nextjs-bot attempted to push to vercel/next.js repository, receiving HTTP 403 Permission Denied error. The bot lacks push access or authentication credentials are invalid/expired.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The nextjs-bot user is denied push permission to vercel/next.js.git. GitHub returned HTTP 403 error when attempting to authenticate with the provided credentials, indicating either the bot account lacks push access or the authentication token is invalid, expired, or incorrectly scoped.",
+  "confidence": 0.9,
+  "relevant_files": [
+    "/home/runner/work/next.js/next.js/scripts/sync-react.js:645"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "remote: Permission to vercel/next.js.git denied to nextjs-bot.",
+      "reason": "Explicit permission denial message from GitHub indicating the bot account is not authorized to push"
+    },
+    {
+      "quote": "fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403",
+      "reason": "HTTP 403 error confirms authentication/authorization failure at GitHub API level"
+    },
+    {
+      "quote": "git push origin update/react/19.3.0-canary-142cfde8-20260422 (L001000) ... exit code 128 (L001001)",
+      "reason": "Git exit code 128 indicates authentication failure during the push operation"
+    }
+  ],
+  "suggested_fix": "Verify and update the GitHub authentication credentials used by nextjs-bot in the GitHub Actions workflow. Check that the bot's personal access token or deploy key has 'push' permissions on vercel/next.js repository, is not expired, and is correctly configured in the workflow secrets.",
+  "input": {
+    "context_path": "results/holdout/llm-summary-v1-haiku/pushpr-nextjs-001.txt",
+    "context_tokens_estimate": 455
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 407
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 23060.608,
+    "cache_key": "5195a8796df00b747028363ed42606778536bb96efa02dee40c8a345b1e93bab",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "case_id": "pytest-pandas-001",
+  "context_method": "rtk-log",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed during pytest collection phase because NumPy nightly introduced a deprecation that raises errors for the 'generic' unit for NumPy timedelta. Multiple test files could not be collected due to this DeprecationWarning being treated as an error, causing 258 total errors across the test suite.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "A NumPy nightly build deprecated the 'generic' unit for NumPy timedelta, and pandas code/tests that use this unit trigger a DeprecationWarning which is configured to be treated as an error, causing test collection failures across numerous test files.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "pandas/tests/arrays/masked/test_indexing.py",
+    "pandas/tests/arrays/test_timedeltas.py",
+    "pandas/tests/series/indexing/test_indexing.py",
+    "pandas/tests/dtypes/test_missing.py",
+    "pandas/tests/indexes/timedeltas/test_indexing.py",
+    "pandas/tests/frame/indexing/test_indexing.py",
+    "pandas/tests/frame/methods/test_rank.py",
+    "pandas/tests/arithmetic/test_timedelta64.py",
+    "pandas/tests/tslibs/test_array_to_datetime.py",
+    "pandas/core/internals/concat.py"
+  ],
+  "relevant_tests": [
+    "pandas/tests/arrays/masked/test_indexing.py",
+    "pandas/tests/arrays/test_timedeltas.py",
+    "pandas/tests/series/indexing/test_indexing.py",
+    "pandas/tests/dtypes/test_missing.py",
+    "pandas/tests/indexes/timedeltas/test_indexing.py",
+    "pandas/tests/frame/indexing/test_indexing.py"
+  ],
+  "evidence": [
+    {
+      "quote": "DeprecationWarning: The 'generic' unit for NumPy timedelta is de...",
+      "reason": "This is the core error message appearing across 52+ instances, identifying the specific NumPy deprecation that is causing failures throughout the test suite."
+    },
+    {
+      "quote": "ERROR collecting pandas/tests/arrays/test_timedeltas.py",
+      "reason": "Tests are failing at the collection stage (not execution), indicating the DeprecationWarning is raised at import/collection time and is being treated as an error."
+    },
+    {
+      "quote": "ERROR collecting pandas/tests/arrays/masked/test_indexing.py",
+      "reason": "Multiple test files fail at collection with the same pattern, confirming this is a widespread import-time issue triggered by the NumPy timedelta deprecation."
+    },
+    {
+      "quote": "job_name\": \"Numpy Nightly\"",
+      "reason": "The job targets the NumPy nightly build, confirming the failure is tied to a new/pre-release NumPy version that introduced this deprecation."
+    },
+    {
+      "quote": "pandas/core/internals/concat.py:412: DeprecationWarning",
+      "reason": "The deprecation is triggered in pandas core library code (not just tests), meaning production pandas code uses the deprecated 'generic' timedelta unit."
+    }
+  ],
+  "suggested_fix": "Update pandas code (particularly in pandas/core/internals/concat.py and timedelta-related modules) to stop using the deprecated 'generic' unit for NumPy timedelta, replacing it with the appropriate explicit unit as required by the new NumPy nightly API.",
+  "input": {
+    "context_path": "results/dev/rtk-log/pytest-pandas-001.txt",
+    "context_tokens_estimate": 451
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 722
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 29993.47,
+    "cache_key": "3faee4d7825df4ba6990b75ba3427710f1e57140ed89c900dfcc86c66d05807e",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

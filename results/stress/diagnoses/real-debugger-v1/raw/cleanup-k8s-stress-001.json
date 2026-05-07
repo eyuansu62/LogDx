@@ -1,0 +1,43 @@
+{
+  "case_id": "cleanup-k8s-stress-001",
+  "context_method": "raw",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Cleanup artifacts' job attempted to delete GitHub Actions artifacts but received a 403 Forbidden error from the GitHub API. The GITHUB_TOKEN lacks sufficient permissions to delete artifacts.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GITHUB_TOKEN has only 'Actions: write' and 'Metadata: read' permissions, but deleting artifacts requires 'Actions: delete' permission.",
+  "confidence": 0.82,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "Explicit HTTP 403 error from GitHub API indicates insufficient permissions for the DELETE operation on artifacts."
+    },
+    {
+      "quote": "GITHUB_TOKEN Permissions\n2026-03-24T10:56:22.0819454Z Actions: write\n2026-03-24T10:56:22.0819963Z Metadata: read",
+      "reason": "The token permissions shown do not include 'Actions: delete', which is required to delete artifacts via the GitHub API."
+    },
+    {
+      "quote": "-X DELETE \\\n    -H \"Accept: application/vnd.github+json\" \\\n    /repos/kubernetes/kubernetes/actions/artifacts/",
+      "reason": "The job was attempting a DELETE request to the artifacts API endpoint, which is being rejected due to insufficient permissions."
+    }
+  ],
+  "suggested_fix": "Update the workflow permissions to include 'Actions: delete' for the GITHUB_TOKEN, or use a Personal Access Token with appropriate permissions for artifact deletion.",
+  "input": {
+    "context_path": "results/stress/raw/cleanup-k8s-stress-001.txt",
+    "context_tokens_estimate": 1291
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 352
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 15099.976,
+    "cache_key": "cc943d84617fae668ff057ce88eae34b1ccbe6aca028ff31838b1a3fb3e53452",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

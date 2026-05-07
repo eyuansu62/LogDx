@@ -1,0 +1,101 @@
+{
+  "experiment_id": "E9-human-verified-v1-3-review",
+  "_doc": [
+    "First AI-assisted human review pass on CILogBench v1.3.",
+    "Single reviewer (project author), worked from a ChatGPT draft and",
+    "verified each of the 48 items. NOT independent human review.",
+    "Verdict per E9 plan rules: WEAKEN_HEADLINE — human pairwise leans",
+    "grep (8 wins vs 2 hybrid out of 16, with 6 ties), but hybrid stays",
+    "inside the 0.25 absolute-usefulness tie band and keeps the ~3x cost",
+    "advantage from E5/E6."
+  ],
+  "kind": "ai_assisted_human_review",
+  "is_human_verified": true,
+  "is_independent_human_review": false,
+  "closes_e9_gap_partially": true,
+  "closes_e9_gap_fully": false,
+  "protocol_id": "cilogbench-v1.3",
+  "protocol_lock_path": "protocols/cilogbench-v1.3.lock.json",
+  "batch_id": "e9_v1_3_hybrid_vs_grep_human_001",
+  "diagnoser": "real-debugger-v2",
+  "methods_compared": [
+    "hybrid-grep-4k-rtk-err-cat-v1",
+    "grep"
+  ],
+  "reviewers": [
+    {
+      "reviewer_id": "human_a",
+      "kind": "ai_assisted_human",
+      "role": "project_author_of_hybrid_baseline",
+      "labels_path": "review/batches/e9_v1_3_hybrid_vs_grep_human_001/labels/reviewer_human_a.jsonl",
+      "verified_count": 48,
+      "modifications_to_draft": 0,
+      "draft_source": "reviewer_chatgpt_draft.jsonl"
+    },
+    {
+      "reviewer_id": "chatgpt_draft",
+      "kind": "LLM",
+      "role": "draft_source_for_human_a",
+      "labels_path": "review/batches/e9_v1_3_hybrid_vs_grep_human_001/labels/reviewer_chatgpt_draft.jsonl",
+      "_note": "Kept in labels dir for audit. Not a second independent reviewer; reviewer_human_a's labels are byte-identical because they verified each item and chose not to override."
+    }
+  ],
+  "items": {
+    "absolute": 32,
+    "pairwise": 16,
+    "total": 48
+  },
+  "splits": ["dev", "holdout", "stress"],
+  "case_count": 16,
+  "headline_numbers": {
+    "mean_overall_usefulness": {
+      "hybrid-grep-4k-rtk-err-cat-v1": 3.875,
+      "grep": 3.938,
+      "delta": -0.063,
+      "tie_band_threshold_per_plan": 0.25,
+      "is_within_tie_band": true
+    },
+    "pairwise_canonical": {
+      "hybrid_wins": 2,
+      "grep_wins": 8,
+      "tie": 6,
+      "both_bad": 0,
+      "insufficient_information": 0,
+      "decisive_total": 10,
+      "grep_share_of_decisive": 0.8
+    },
+    "spearman_overall_vs_sv1": -0.4592,
+    "spearman_overall_vs_sv1_1": -0.4594,
+    "_spearman_caveat": "Score-compression artifact: 29/32 absolute scores are 4. Spearman dominated by tie-breaking noise.",
+    "human_vs_auto_pairwise_agreement_rate": 0.444,
+    "human_vs_auto_pairwise_decisive_pairs": 9,
+    "confident_error_v1_count": 8,
+    "confident_error_v1_human_confirmed_rate": 0.0,
+    "confident_error_v1_1_count": 0,
+    "_confErr_finding": "sv1.1 had 0 false positives on the 32 reviewed items. Reproduces E2b finding for the third time."
+  },
+  "verdict": "WEAKEN_HEADLINE",
+  "verdict_basis": [
+    "human pairwise prefers grep 8-to-2 (out of 10 decisive)",
+    "absolute mean overall_usefulness within 0.25 tie band (Δ=0.063)",
+    "macro total pipeline tokens unchanged: hybrid ~5k vs grep ~16k (~3x)",
+    "Spearman with sv1.1 fails 0.5 threshold but is dominated by score compression"
+  ],
+  "v1_3_doc_changes_required": [
+    "docs/reports/cilogbench_v1_3_technical_report.md  ← change headline, add §8b",
+    "docs/reports/cilogbench_v1_3_one_pager.md         ← change headline + 'what surprised us'",
+    "docs/reports/cilogbench_v1_3_limitations.md       ← add §2 Update (2026-05) on AI-assisted human review",
+    "README.md                                         ← change headline phrasing"
+  ],
+  "next_steps": [
+    "v1.3 public-doc updates (this PR)",
+    "Optional: second independent human reviewer for real IRR",
+    "Optional: larger corpus to widen score variance",
+    "Do NOT modify sv1.1 based solely on this pass (score compression caveat)"
+  ],
+  "report_path": "reports/e9_human_verified_v1_3_review.md",
+  "raw_analysis_path": "results/human_review_e9_v1_3_hybrid_vs_grep_human_001.json",
+  "finalized_at": "2026-05-06",
+  "git_commit": "unknown",
+  "working_tree_dirty": true
+}

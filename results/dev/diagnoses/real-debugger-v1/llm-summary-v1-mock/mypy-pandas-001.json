@@ -1,0 +1,60 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "pyright type checking failed during pre-commit hooks. Multiple errors indicate that pyarrow modules are missing type exports and attributes that pandas code is trying to use.",
+  "root_cause_category": "type_error",
+  "root_cause": "pyright type checker reports that 'Expression' is not exported from module 'pyarrow.compute', 'FileSystem' is not exported from 'pyarrow.fs', and numerous string manipulation functions (is_null, if_else, utf8_lower, utf8_upper, utf8_trim_whitespace, utf8_trim, utf8_ltrim_whitespace, utf8_ltrim, utf8_rtrim_whitespace, utf8_rtrim, utf8_lpad, utf8_rpad, utf8_center, utf8_length) are not known attributes of module 'pyarrow.compute'. This indicates a type stub mismatch or missing type annotations in the pyarrow library.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "pandas/core/arrays/arrow/accessors.py",
+    "pandas/io/orc.py",
+    "pandas/compat/pyarrow.py",
+    "pandas/core/arrays/_arrow_string_mixins.py"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "pyright..................................................................[41mFailed[m",
+      "reason": "Explicitly shows pyright hook failed in pre-commit"
+    },
+    {
+      "quote": "\"Expression\" is not exported from module \"pyarrow.com",
+      "reason": "Specific type error about missing export in pyarrow"
+    },
+    {
+      "quote": "\"FileSystem\" is not exported from module \"pyarrow.fs\"",
+      "reason": "Another missing export in pyarrow type stubs"
+    },
+    {
+      "quote": "\"is_null\" is not a known attribute of module \"pyarrow.compute\"",
+      "reason": "Type stub does not recognize a function that pandas code uses"
+    },
+    {
+      "quote": "4 errors, 0 warnings, 0 informations",
+      "reason": "Indicates multiple type errors from pyright"
+    },
+    {
+      "quote": "- exit code: 1",
+      "reason": "Confirms the pyright hook exited with failure"
+    }
+  ],
+  "suggested_fix": "Update pyarrow and/or pyarrow-stubs to a version compatible with the pandas code, or check the pandas requirements for the correct pyarrow version. Alternatively, verify that type stubs for pyarrow are up-to-date and match the installed pyarrow library version.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-mock/mypy-pandas-001.txt",
+    "context_tokens_estimate": 1996
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 510
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 21607.71,
+    "cache_key": "081e09cb748f5f7deab4a372558a4c77495622dd57ecacf07cd18864b3baed53",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

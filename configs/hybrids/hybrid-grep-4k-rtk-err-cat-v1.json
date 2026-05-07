@@ -1,0 +1,32 @@
+{
+  "method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "mode": "context_provider",
+  "router_version": "v1",
+
+  "primary_method": "grep",
+  "fallback_method": "rtk-err-cat",
+
+  "routing_rule": {
+    "type": "final_context_token_budget",
+    "budget_tokens": 4000,
+    "comparison": "<=",
+    "token_field": "output_byte_size_div_4",
+    "_doc": "We use the existing manifest field `output_byte_size` divided by 4 as the token estimate. This matches `tools/run_diagnosis.py`'s context_tokens accounting on every locked grep/rtk-err-cat manifest in cilog-bench/results/* (verified ratio 1.000)."
+  },
+
+  "fallback_behavior": {
+    "on_primary_too_large": "use_fallback",
+    "on_primary_missing": "provider_error",
+    "on_fallback_missing": "provider_error",
+    "on_fallback_provider_error": "provider_error",
+    "raw_fallback_enabled": false
+  },
+
+  "anti_leakage": {
+    "uses_ground_truth": false,
+    "uses_signal_eval": false,
+    "uses_diagnosis_eval": false,
+    "uses_review_labels": false,
+    "_doc": "The router reads only the primary/fallback manifest rows for the case (case_id, context_path, output_byte_size, output_line_count, included_line_ranges, metadata.provider_error). It does not open ground_truth.json, eval_*.json, or any review label."
+  }
+}

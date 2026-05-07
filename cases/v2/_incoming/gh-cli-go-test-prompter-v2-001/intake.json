@@ -1,0 +1,20 @@
+{
+  "candidate_id": "gh-cli-go-test-prompter-v2-001",
+  "source": "github_actions",
+  "source_url": "https://github.com/cli/cli/actions/runs/25420916282/job/74562623100",
+  "repo": "cli/cli",
+  "head_branch": "trunk",
+  "head_sha": null,
+  "workflow_name": "Unit and Integration Tests",
+  "job_name": "build (macos-latest)",
+  "ecosystem_guess": "go",
+  "framework_guess": "generic",
+  "failure_category_guess": "test_assertion",
+  "public_source": true,
+  "raw_log_path": "cases/v2/_incoming/gh-cli-go-test-prompter-v2-001/raw.log",
+  "raw_log_normalization": "pulled via `rtk proxy gh run view --job <id> --log` and stripped the leading <job>\\t<step>\\t prefix per line so timestamps lead each line, matching v1.3 raw.log format.",
+  "collected_at": "2026-05-06",
+  "collector": "project_author",
+  "intended_split": "v2/holdout",
+  "notes": "Go test failure in cli/cli on macos-latest only (linux build presumably passed since only macos failed in this run). Single failing test: TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query in internal/prompter package. Failure message: 'form.Run() did not complete in time' (huh_prompter_test.go:478) — strongly suggests a timing flake on the slower macOS runner, hence flaky_or_transient = true. Two interesting properties for benchmarking: (1) signal_position = middle (FAIL block at L243-247 of 545 lines ≈ 45%) — the primary diagnostic is OUTSIDE tail-200's window (L346-545), so tail-200 sees only the bare 'FAIL' + '##[error]' at L510-511 without the actual test name or message; (2) Go ecosystem (was 0/16 in v1.3, target 4 in v2). Selected as Batch 2 case 1."
+}

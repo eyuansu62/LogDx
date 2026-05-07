@@ -1,0 +1,43 @@
+{
+  "case_id": "docbuild-hf-stress-001",
+  "context_method": "rtk-read",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The doc_build_status_check job detected that an upstream documentation build job failed. The status check script validated that job statuses should be either 'success' or 'skipped', but found 'failure', causing the condition to fail and exit with code 1.",
+  "root_cause_category": "other",
+  "root_cause": "An upstream job in the documentation build workflow completed with 'failure' status",
+  "confidence": 0.7,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && [[ \"skipped\" == \"success\" || \"skipped\" == \"skipped\" ]]; then",
+      "reason": "The status check explicitly evaluates if job statuses equal 'success' or 'skipped'. The first status value is 'failure', which is neither, making the first condition false and causing the overall condition (with &&) to evaluate false."
+    },
+    {
+      "quote": "else\n  exit 1",
+      "reason": "When the if condition is false, the else block executes unconditionally, exiting with code 1."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the job failed due to the exit 1 from the status check."
+    }
+  ],
+  "suggested_fix": "Review the logs from the upstream documentation build job to identify what caused it to fail, then address that upstream failure.",
+  "input": {
+    "context_path": "results/stress/rtk-read/docbuild-hf-stress-001.txt",
+    "context_tokens_estimate": 606
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 326
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 54635.618,
+    "cache_key": "cf6a8e4892afc701a64ad4356a4aa13b2d09aebe010a0dc28b8af7eb1bb2f205",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

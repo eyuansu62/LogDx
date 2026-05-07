@@ -1,0 +1,64 @@
+{
+  "case_id": "pytest-pandas-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The pytest collection phase fails across multiple test files because a NumPy nightly build has deprecated the 'generic' unit for NumPy timedelta, turning previously-valid code into errors during import/collection. This causes pytest to report ERROR collecting for files such as pandas/tests/arrays/masked/test_indexing.py, pandas/tests/arrays/test_timedeltas.py, pandas/tests/dtypes/test_inference.py, and others, ultimately exiting with code 1.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "A NumPy nightly deprecation of the 'generic' timedelta unit causes DeprecationWarning to be raised as errors during pytest collection, preventing multiple test modules from loading and causing the entire test run to fail.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "pandas/tests/arrays/masked/test_indexing.py",
+    "pandas/tests/arrays/test_timedeltas.py",
+    "pandas/tests/dtypes/test_inference.py",
+    "pandas/tests/dtypes/test_missing.py",
+    "pandas/tests/util/test_assert_almost_equal.py",
+    "pandas/tests/util/test_assert_index_equal.py"
+  ],
+  "relevant_tests": [
+    "pandas/tests/arrays/masked/test_indexing.py",
+    "pandas/tests/arrays/test_timedeltas.py",
+    "pandas/tests/dtypes/test_inference.py",
+    "pandas/tests/dtypes/test_missing.py",
+    "pandas/tests/util/test_assert_almost_equal.py"
+  ],
+  "evidence": [
+    {
+      "quote": "DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.",
+      "reason": "This warning appears repeatedly as the error raised during collection across multiple test files, directly causing pytest to fail to collect those modules."
+    },
+    {
+      "quote": "ERROR collecting pandas/tests/arrays/masked/test_indexing.py",
+      "reason": "Shows that pytest collection is failing, not a runtime test assertion, triggered by the NumPy deprecation warning surfacing at import time."
+    },
+    {
+      "quote": "ERROR collecting pandas/tests/arrays/test_timedeltas.py",
+      "reason": "Additional collection failure in a timedelta-specific test file, consistent with the NumPy timedelta deprecation being the root cause."
+    },
+    {
+      "quote": "pixi run --environment numpy-nightly build-pandas --editable -Csetup-args=--werror",
+      "reason": "Confirms this is the numpy-nightly environment, meaning a pre-release NumPy version introducing the deprecation is in use."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the CI job failed with a non-zero exit code, consistent with pytest collection errors aborting the run."
+    }
+  ],
+  "suggested_fix": "Update pandas code that uses bare integer timedeltas or the 'generic' timedelta unit to supply an explicit unit (e.g., np.timedelta64(value, 'ns')), resolving the DeprecationWarning that NumPy nightly now raises as a collection-time error.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-mock/pytest-pandas-001.txt",
+    "context_tokens_estimate": 2056
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 694
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 33036.533,
+    "cache_key": "623731e502c4879f5d8679421370883442715cde871c09b9c65e2702a5124d79",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

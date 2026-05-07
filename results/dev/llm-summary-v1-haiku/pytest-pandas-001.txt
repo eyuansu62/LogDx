@@ -1,0 +1,82 @@
+# CI Failure Summary
+
+## Primary Failure
+
+pytest test suite encountered 45 failures and 52 errors across multiple test files in the pandas repository. The root cause is a NumPy DeprecationWarning about timedelta units that is being raised as an error: `DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific unit instead.`
+
+## Critical Evidence
+
+- `DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific unit instead.` (appears at L001282, L001289, L001296, L001303, L001310, L001317, L001324, L001331, L001338, L001345, L001362, L001369, and many subsequent lines across chunks)
+- `np.datetime64("NaT")` is the source of the warning (L001280, L001287, L001294, L001301, L001308, L001315, L001322, L001348, L001372, L001384, L001391, and elsewhere)
+- `= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s (0:12:39) =` (L003619)
+- `##[error]Process completed with exit code 1.` (L003620)
+
+## Failed Tests / Checks
+
+- `TestDatetimeIndexComparisons.test_dti_cmp_nat_behaves_like_float_cmp_nan`
+- `TestAppend.test_append_dtype_coerce[True]`
+- `TestAppend.test_append_dtype_coerce[False]`
+- `TestCategoricalConcat.test_concat_categorical_datetime`
+- `TestDatetimeConcat.test_concat_NaT_dataframes[None]`
+- `TestDatetimeConcat.test_concat_NaT_dataframes_all_NaT_axis_0[item1-None-None]`
+- `TestDatetimeConcat.test_concat_NaT_series_dataframe_all_NaT[None-None]`
+- `test_concat_datetime64_different_resolutions`
+- `TestTimedeltaAdditionSubtraction.test_td_rsub_nat`
+- `TestTimedeltaMultiplicationDivision.test_td_rdiv_na_scalar`
+- `test_equals_matching_nas`
+- `TestContains.test_contains_na_dtype[True]` and `[False]`
+- `TestGetLoc.test_get_loc_nat`
+- `TestTimedeltaArraylikeAddSubOps.test_td64arr_add_datetime64_nat[Index]`
+- `TestDuplicated.test_datetime_likes`
+- `test_nullable_integer_to_datetime`
+- `TestTimedeltaIndexInsert.test_insert_invalid_na`
+- `TestArrayToDatetimeResolutionInference.test_infer_homogeoneous_date_objects`
+- `TestArrayToDatetimeResolutionInference.test_infer_with_nat_int_float_str[nan]`, `[-9223372036854775808]`, `[-9.223372036854776e+18]`, `[NaT]`, `[]`
+- `test_assert_index_equal_different_inferred_types`
+- `TestRank.test_rank_inf_and_nan[DataFrame-contents0-float64]` through `[Series-contents5-datetime64]` (multiple variants)
+- `test_first_categorical_and_datetime_data_nat`
+- `test_null_date`
+
+## Relevant Files and Locations
+
+- `pandas/tests/arrays/masked/test_indexing.py:43`
+- `pandas/tests/arrays/test_timedeltas.py:233`
+- `pandas/tests/dtypes/test_inference.py:1344`
+- `pandas/tests/dtypes/test_missing.py:769`
+- `pandas/tests/frame/indexing/test_indexing.py:1921`
+- `pandas/tests/frame/test_constructors.py:77` and `:2041`
+- `pandas/tests/indexes/datetimes/methods/test_insert.py:18–19`
+- `pandas/tests/indexes/test_index_new.py:38` and `:126`
+- `pandas/tests/indexes/timedeltas/test_indexing.py:23` and `:68`
+- `pandas/tests/io/json/test_ujson.py:54` and `:350`
+- `pandas/tests/scalar/timestamp/test_constructors.py:1119`
+- `pandas/tests/series/indexing/test_indexing.py:444` and `:484`
+- `pandas/tests/util/test_assert_almost_equal.py:309`
+- `pandas/tests/arithmetic/test_datetime64.py`
+- `pandas/tests/reshape/concat/test_append.py`
+- `pandas/tests/reshape/concat/test_categorical.py`
+- `pandas/tests/reshape/concat/test_datetimes.py:258`
+- `pandas/tests/frame/methods/test_rank.py:391`
+- `pandas/tests/tslibs/test_array_to_datetime.py:101`
+- `pandas/tests/util/test_assert_index_equal.py:262`
+- `pandas/tests/groupby/methods/test_nth.py:637`
+- `pandas/tests/io/sas/test_sas7bdat.py:336`
+- **Core files triggering the warning:**
+  - `pandas/core/reshape/concat.py:466`
+  - `pandas/core/internals/concat.py:145`, `:380`, `:412`
+
+## Commands and Exit Codes
+
+- pytest test suite execution failed with exit code 1 (`##[error]Process completed with exit code 1.`)
+- 52 errors during test collection/execution, 45 test failures (indicating both collection errors and assertion failures)
+
+## Possible Root Cause
+
+NumPy has deprecated implicit conversion of bare integers (e.g., `+ 1`) to timedelta64 with a 'generic' unit. Code using `np.datetime64("NaT")` or similar constructs that implicitly create timedelta objects with unspecified units is triggering this warning. Either pytest is configured to treat warnings as errors (via `-W error` or `filterwarnings = error` in setup.cfg/pytest.ini), or NumPy's deprecation has been upgraded to an error in the version being tested. The warning originates from `pandas/core/internals/concat.py` and related concat/reshape operations that handle NaT (Not-a-Time) values.
+
+## Uncertainties / Missing Context
+
+- NumPy version being used and whether the deprecation has escalated from warning to error in a recent release
+- Exact pytest configuration (`-W` flag or `pytest.ini` settings) that may be treating all warnings as errors
+- Whether this is a pre-existing code issue in pandas or a breaking change in NumPy's deprecation policy
+- Whether the call stack shows the actual fix location (concat operations) or merely where the NaT value propagates

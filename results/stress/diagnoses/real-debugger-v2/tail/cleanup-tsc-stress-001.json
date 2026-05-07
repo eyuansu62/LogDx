@@ -1,0 +1,47 @@
+{
+  "case_id": "cleanup-tsc-stress-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Cleanup artifacts' job failed because the GitHub token lacks permission to delete artifacts via the API. The gh CLI received an HTTP 403 'Resource not accessible by integration' error when attempting to delete an artifact.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GITHUB_TOKEN used by the job does not have sufficient permissions to delete artifacts. The job only has 'Actions: write' and 'Metadata: read' permissions, but deleting artifacts requires additional permissions not granted in this workflow configuration.",
+  "confidence": 0.92,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "Explicit HTTP 403 error from the GitHub API indicating the token does not have permission to perform the DELETE operation on the artifact."
+    },
+    {
+      "quote": "Actions: write\nMetadata: read",
+      "reason": "These are the only GITHUB_TOKEN permissions listed for this job. The permissions granted may be insufficient for deleting artifacts via the REST API."
+    },
+    {
+      "quote": "Secret source: None",
+      "reason": "No external secrets are injected, confirming the job relies solely on the GITHUB_TOKEN with its limited scope."
+    },
+    {
+      "quote": "-X DELETE \\\n    -H \"Accept: application/vnd.github+json\" \\\n    /repos/microsoft/TypeScript/actions/artifacts/\"$artifact_id\"",
+      "reason": "This is the DELETE call that triggered the 403, confirming the operation being attempted is artifact deletion via the GitHub REST API."
+    }
+  ],
+  "suggested_fix": "Add 'actions: write' permission explicitly to the workflow job's permissions block (or verify it covers artifact deletion), or ensure the token/integration has the required scope to delete artifacts. If using a fine-grained PAT or GitHub App token, confirm the 'Actions' permission includes write access to artifacts.",
+  "input": {
+    "context_path": "results/stress/tail/cleanup-tsc-stress-001.txt",
+    "context_tokens_estimate": 1291
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 465
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 26007.013,
+    "cache_key": "9ec626360f0ba8c4ae12bfdede0df9838763b44d7d17e33761b8e106286c8f0c",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

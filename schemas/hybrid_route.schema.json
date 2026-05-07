@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CILogBench hybrid route record",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "case_id",
+    "split",
+    "hybrid_method",
+    "selected_method",
+    "selected_reason",
+    "budget_tokens",
+    "candidates",
+    "selected_context_path",
+    "output_context_path"
+  ],
+  "properties": {
+    "case_id": {"type": "string"},
+    "split": {"type": "string"},
+    "hybrid_method": {"type": "string"},
+    "selected_method": {"type": ["string", "null"]},
+    "selected_reason": {
+      "enum": [
+        "primary_fits_budget",
+        "primary_too_large_used_fallback",
+        "primary_missing_provider_error",
+        "fallback_missing_provider_error",
+        "fallback_provider_error",
+        "primary_provider_error_used_fallback"
+      ]
+    },
+    "budget_tokens": {"type": "integer", "minimum": 1},
+    "candidates": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["available", "context_tokens"],
+        "properties": {
+          "available": {"type": "boolean"},
+          "context_tokens": {"type": ["integer", "null"]},
+          "context_path": {"type": ["string", "null"]},
+          "provider_error": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "selected_context_path": {"type": ["string", "null"]},
+    "output_context_path": {"type": "string"},
+    "line_mapping_available": {"type": "boolean"},
+    "mapping_type": {"enum": ["line", "text", "none"]},
+    "router_version": {"type": "string"}
+  }
+}

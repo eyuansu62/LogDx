@@ -1,0 +1,62 @@
+{
+  "case_id": "jest-nextjs-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest reports 'No tests found' for all test files under examples/with-vitest/ and examples/with-zones/ because those directories are not included in Jest's configured roots. The test runner retries each file up to 2 times, all fail with exit code 1, and no results JSON is ever produced.",
+  "root_cause_category": "other",
+  "root_cause": "Jest's configured roots (/work/test, /work/packages/next/src, /work/packages/next-codemod, /work/packages/eslint-plugin-internal, /work/packages/font/src, /work/packages/next-routing) do not include the examples/ directory. When run-tests.js invokes Jest with patterns like 'examples/with-vitest/app/counter.test.tsx', Jest scans only its roots (14634 files, 0 matches for each pattern) and exits with code 1.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "examples/with-vitest/app/counter.test.tsx",
+    "examples/with-vitest/app/page.test.tsx",
+    "examples/with-vitest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts",
+    "/work/run-tests.js"
+  ],
+  "relevant_tests": [
+    "examples/with-vitest/app/counter.test.tsx",
+    "examples/with-vitest/app/page.test.tsx",
+    "examples/with-vitest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts"
+  ],
+  "evidence": [
+    {
+      "quote": "roots: /work/test, /work/packages/next/src, /work/packages/next-codemod, /work/packages/eslint-plugin-internal, /work/packages/font/src, /work/packages/next-routing - 14634 matches",
+      "reason": "Jest's roots do not include the examples/ directory, so test files placed there are outside the search scope."
+    },
+    {
+      "quote": "Pattern: examples/with-vitest/app/counter.test.tsx - 0 matches",
+      "reason": "Even though the file path is passed as a Jest pattern, it produces 0 matches because the file is not within any configured root."
+    },
+    {
+      "quote": "No tests found, exiting with code 1",
+      "reason": "This is the direct Jest error emitted for every attempted test file, confirming it cannot locate any tests matching the provided pattern within its roots."
+    },
+    {
+      "quote": "examples/with-vitest/app/counter.test.tsx failed to pass within 2 retries",
+      "reason": "The failure is deterministic across all retries — it is a configuration issue, not a flaky runtime failure."
+    },
+    {
+      "quote": "Failed to load test output Error: ENOENT: no such file or directory, open 'examples/with-vitest/app/counter.test.tsx.results.json'",
+      "reason": "Because Jest exits before running any tests, no output JSON is written, confirming the tests never executed."
+    }
+  ],
+  "suggested_fix": "Add the examples/ directory to Jest's roots configuration (e.g., add '/work/examples' to the roots array in jest.config.js or the relevant Jest config) so that test files under examples/with-vitest/ and examples/with-zones/ are discoverable when passed as patterns.",
+  "input": {
+    "context_path": "results/dev/tail/jest-nextjs-001.txt",
+    "context_tokens_estimate": 5404
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 687
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 50263.568,
+    "cache_key": "e785fbc27b451acc37fb29dd6eb7043e8fae05890edc45e97567eb4d03de73a1",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

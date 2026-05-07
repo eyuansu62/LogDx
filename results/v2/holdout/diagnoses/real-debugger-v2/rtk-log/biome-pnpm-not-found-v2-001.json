@@ -1,0 +1,47 @@
+{
+  "case_id": "biome-pnpm-not-found-v2-001",
+  "context_method": "rtk-log",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The log summary reports 756 errors, but every visible error entry is a Cargo test result line whose name contains the word 'error' (e.g., 'description_syntax_error', 'formatter_syntax_error') and all of them end with '... ok'. The 741 additional unique errors are not shown in the context, so the actual failure signal is not visible.",
+  "root_cause_category": "unknown",
+  "root_cause": "The provided context does not contain a visible failure line. All 15 enumerated 'error' entries are passing Rust test outputs whose test names happen to include the word 'error'. The 741 remaining errors referenced by '+741 more unique errors' are not reproduced in the context, making the true root cause unobservable.",
+  "confidence": 0.05,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "test tests/macros/description_syntax_error.rs ... ok",
+      "reason": "This line is counted as an 'error' by the log summarizer but actually represents a passing test; the word 'error' in the test name triggered false classification."
+    },
+    {
+      "quote": "test diagnostics::test::formatter_syntax_error ... ok",
+      "reason": "Another passing test whose name contains 'error', further confirming the summarizer is miscounting test names as error signals."
+    },
+    {
+      "quote": "[error] 756 errors (751 unique)",
+      "reason": "Headline count of errors is high, but all visible samples are passing tests, so the real failure lines are in the 741 omitted entries not present in this context."
+    },
+    {
+      "quote": "... +741 more unique errors",
+      "reason": "The bulk of the reported errors are withheld from the context, leaving the actual failure cause invisible."
+    }
+  ],
+  "suggested_fix": "",
+  "input": {
+    "context_path": "results/v2/holdout/rtk-log/biome-pnpm-not-found-v2-001.txt",
+    "context_tokens_estimate": 399
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 414
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 36165.423,
+    "cache_key": "1df90aef203ad086a4c637bef8e1ae73c20c4268eb8eb0256a74d7983fdc2668",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

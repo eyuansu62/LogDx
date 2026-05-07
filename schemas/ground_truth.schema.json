@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CILogBench ground_truth.json",
+  "description": "The correct answer for a case, plus the evidence required to reach it. Line numbers are 1-indexed, inclusive.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["root_cause", "required_signals", "evidence_spans", "expected_diagnosis"],
+  "properties": {
+    "root_cause": {
+      "type": "object",
+      "required": ["summary", "category"],
+      "properties": {
+        "summary": {"type": "string", "minLength": 1},
+        "category": {
+          "type": "string",
+          "enum": [
+            "test_assertion", "snapshot_diff", "compile_error", "type_error",
+            "lint_error", "dependency_install", "docker_build",
+            "github_actions_config", "permission_or_secret",
+            "timeout_or_oom", "network_or_flaky", "generic_error", "unknown"
+          ]
+        }
+      }
+    },
+    "required_signals": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/definitions/signal"}
+    },
+    "relevant_files": {"type": "array", "items": {"type": "string"}},
+    "relevant_tests": {"type": "array", "items": {"type": "string"}},
+    "evidence_spans": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["start_line", "end_line", "reason"],
+        "properties": {
+          "start_line": {"type": "integer", "minimum": 1},
+          "end_line":   {"type": "integer", "minimum": 1},
+          "reason":     {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "expected_diagnosis": {
+      "type": "object",
+      "required": ["must_mention", "must_not_claim"],
+      "properties": {
+        "must_mention":    {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "must_not_claim":  {"type": "array", "items": {"type": "string"}, "minItems": 1}
+      }
+    }
+  },
+  "definitions": {
+    "signal": {
+      "type": "object",
+      "required": ["type", "importance", "evidence_lines"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "failed_test", "stack_location", "assertion", "exception",
+            "panic", "compile_error", "exit_code", "command",
+            "package", "version", "diff", "annotation",
+            "step_name", "job_name", "workflow_name"
+          ]
+        },
+        "importance": {"type": "string", "enum": ["critical", "important", "optional"]},
+        "evidence_lines": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {"type": "integer", "minimum": 1}
+          }
+        },
+        "value": {"type": "string"},
+        "file":  {"type": "string"},
+        "line":  {"type": "integer", "minimum": 1},
+        "aliases": {
+          "type": "array",
+          "description": "Optional alternative substrings that also count as preserving this signal (e.g. a short test name without its full path). Aliases must be justified by content already present in raw.log; see docs/annotation_guide.md.",
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "case_id": "tsc-typescript-001",
+  "context_method": "grep",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "A fourslash test for code fixes on type annotations with generics failed because the generated code fix suggestion is incomplete. The test expected a generic type parameter suggestion of 'Add return type \\'Foo<string, string[…' but the actual output was 'Add return type \\'Foo<string>\\'.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The code fix for missing type annotations on exports with generics is not generating the expected generic type parameters. Expected: 'Add return type \\'Foo<string, string[…', Actual: 'Add return type \\'Foo<string>\\''",
+  "confidence": 0.85,
+  "relevant_files": [
+    "tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts",
+    "src/harness/fourslashImpl.ts"
+  ],
+  "relevant_tests": [
+    "fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts"
+  ],
+  "evidence": [
+    {
+      "quote": "AssertionError: expected 'Add return type \\'Foo<string>\\'' to equal 'Add return type \\'Foo<string, string[…'",
+      "reason": "Directly shows the assertion failure with the expected value (including full generic parameters) versus the actual value (missing parameters)"
+    },
+    {
+      "quote": "at Verify.codeFix (src/harness/fourslashInterfaceImpl.ts:206:20)",
+      "reason": "Indicates the failure occurred during code fix verification, confirming this is a test assertion failure"
+    },
+    {
+      "quote": "fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts runs correctly:",
+      "reason": "Identifies the specific failing test which is designed to test generics handling in missing type annotation code fixes"
+    }
+  ],
+  "suggested_fix": "Review recent changes to the code fix logic that generates type annotations for exports with generic type parameters. The test indicates that generic type parameters are being omitted from the suggested fix message.",
+  "input": {
+    "context_path": "results/holdout/grep/tsc-typescript-001.txt",
+    "context_tokens_estimate": 908
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 459
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 18920.573,
+    "cache_key": "031f5be2e4ef38e45e2a744fc984a5847fc0ecd1e8fd73367bee1cd01672af92",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

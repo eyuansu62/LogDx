@@ -1,0 +1,49 @@
+{
+  "case_id": "pushpr-nextjs-001",
+  "context_method": "raw",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The sync-react workflow failed when attempting to push a new React canary sync branch to the repository. The `nextjs-bot` account was denied push access to `vercel/next.js` with a 403 error, indicating the token used lacks the necessary permissions to push to the repository.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GITHUB_TOKEN or token used by `nextjs-bot` does not have push permission to `vercel/next.js`. The git push command returned exit code 128 with stderr: 'remote: Permission to vercel/next.js.git denied to nextjs-bot.' and HTTP 403.",
+  "confidence": 0.97,
+  "relevant_files": [
+    "scripts/sync-react.js"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "remote: Permission to vercel/next.js.git denied to nextjs-bot.",
+      "reason": "Explicit GitHub remote rejection message showing the bot account was denied push access."
+    },
+    {
+      "quote": "fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403",
+      "reason": "HTTP 403 Forbidden confirms the token used for authentication lacks push permissions."
+    },
+    {
+      "quote": "command: 'git push origin update/react/19.3.0-canary-142cfde8-20260422'",
+      "reason": "Identifies the exact command that failed — the push of the React sync branch."
+    },
+    {
+      "quote": "exitCode: 128,",
+      "reason": "Exit code 128 from git is consistent with a remote authentication/permission failure."
+    }
+  ],
+  "suggested_fix": "Ensure the token provided to `nextjs-bot` (passed as the `GITHUB_TOKEN` env var to the sync-react step) has `Contents: write` permission and push access to `vercel/next.js`. If a PAT is used, verify it has not expired and is scoped with `repo` or at minimum `public_repo` write access for the nextjs-bot account.",
+  "input": {
+    "context_path": "results/holdout/raw/pushpr-nextjs-001.txt",
+    "context_tokens_estimate": 18936
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 430
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 24022.464,
+    "cache_key": "5fff1239bc70b5ccc6d1e80b13a411362a63a0c433a751bf721f9e5c322a5bae",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "root_cause": {
+    "summary": "The `docker buildx bake integration-tests` build of moby/buildkit's frontend integration test target failed at build step `#72 [nydus 1/2]`, where `RUN wget https://github.com/dragonflyoss/nydus/releases/download/v2.4.0/nydus-static-v2.4.0-linux-amd64.tgz` (Dockerfile:336) hit HTTP/1.1 502 Bad Gateway from github.com and exited with code 1. BuildKit reported `failed to solve: process \"/bin/bash -c wget ...\" did not complete successfully: exit code: 1`, the buildx bake action emitted `##[error]buildx bake failed with: ...`, and the job exited 1. This is a transient external network failure (github.com 502 from the nydus release CDN), not a Dockerfile or wget bug; the build would succeed on retry once GitHub returns 200.",
+    "category": "docker_build"
+  },
+  "required_signals": [
+    {
+      "type": "command",
+      "value": "#72 [nydus 1/2] RUN wget https://github.com/dragonflyoss/nydus/releases/download/v2.4.0/nydus-static-v2.4.0-linux-amd64.tgz",
+      "aliases": [
+        "RUN wget https://github.com/dragonflyoss/nydus/releases/download",
+        "[nydus 1/2] RUN wget"
+      ],
+      "importance": "critical",
+      "evidence_lines": [[1853, 1853]]
+    },
+    {
+      "type": "exception",
+      "value": "wget: server returned error: HTTP/1.1 502 Bad Gateway or Proxy Error",
+      "importance": "critical",
+      "evidence_lines": [[1855, 1855]]
+    },
+    {
+      "type": "exit_code",
+      "value": "did not complete successfully: exit code: 1",
+      "importance": "important",
+      "evidence_lines": [[1856, 1856]]
+    },
+    {
+      "type": "stack_location",
+      "value": "Dockerfile:336",
+      "file": "Dockerfile",
+      "line": 336,
+      "importance": "important",
+      "evidence_lines": [[1886, 1886]]
+    },
+    {
+      "type": "exception",
+      "value": "ERROR: failed to solve: process \"/bin/bash -c wget https://github.com/dragonflyoss/nydus/releases/download/$NYDUS_VERSION/nydus-static-$NYDUS_VERSION-$TARGETOS-$TARGETARCH.tgz\" did not complete successfully: exit code: 1",
+      "aliases": [
+        "ERROR: failed to solve",
+        "failed to solve: process"
+      ],
+      "importance": "critical",
+      "evidence_lines": [[1894, 1894]]
+    },
+    {
+      "type": "annotation",
+      "value": "##[error]buildx bake failed with: ERROR: failed to solve",
+      "importance": "important",
+      "evidence_lines": [[1901, 1901]]
+    }
+  ],
+  "relevant_files": [
+    "Dockerfile"
+  ],
+  "relevant_tests": [],
+  "evidence_spans": [
+    {
+      "start_line": 1853,
+      "end_line": 1856,
+      "reason": "Primary BuildKit failure block: `#72 [nydus 1/2] RUN wget ...` build step header, the connection attempt to github.com, the `wget: server returned error: HTTP/1.1 502 Bad Gateway or Proxy Error` line (the actual root cause), and the `#72 ERROR: process ... exit code: 1` BuildKit error."
+    },
+    {
+      "start_line": 1881,
+      "end_line": 1901,
+      "reason": "Secondary error block + Dockerfile pointer + GHA annotation: BuildKit's re-print of the failing step under `------ > [nydus 1/2] RUN wget ...:`, the `Dockerfile:336` file:line indicator with surrounding source-code context (lines 334-338), the final `ERROR: failed to solve: ...` summary, and the GHA `##[error]buildx bake failed with: ...` annotation that closes the failed step."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "Dockerfile",
+      "wget",
+      "502",
+      "github.com",
+      "buildx"
+    ],
+    "must_not_claim": [
+      "Dockerfile syntax error",
+      "missing base image",
+      "permission denied",
+      "compile error",
+      "test failed",
+      "the wget command is wrong",
+      "$NYDUS_VERSION is undefined"
+    ]
+  }
+}

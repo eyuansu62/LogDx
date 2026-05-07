@@ -1,0 +1,45 @@
+{
+  "case_id": "pnpm-jest-config-v2-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest test suite failed with 1 test failing out of 485 total tests. A warning about environment variable replacement in config (`${ENV_VAR_123}`) appears in the logs, suggesting a test assertion failure related to configuration handling.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "One test in the Jest suite failed due to an assertion mismatch. The warning message `[WARN] Failed to replace env in config: ${ENV_VAR_123}` from `src/getConfig.ts:39:13` suggests a test is verifying config behavior when environment variables cannot be replaced, and the test assertion is not matching the expected behavior.",
+  "confidence": 0.68,
+  "relevant_files": [
+    "src/getConfig.ts"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "Test Suites: 1 failed, 3 skipped, 61 passed, 62 of 65 total\nTests:       1 failed, 9 skipped, 475 passed, 485 total",
+      "reason": "Clear indication that one test suite failed with exactly one failing test out of 485 total tests"
+    },
+    {
+      "quote": "[WARN] Failed to replace env in config: ${ENV_VAR_123}\nat warn (src/getConfig.ts:39:13)",
+      "reason": "Shows the exact failure point in src/getConfig.ts where env variable replacement is failing, directly preceding the test failure summary"
+    },
+    {
+      "quote": "[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] pnpm@11.0.6 .test: `cross-env NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules --disable-warning=ExperimentalWarning --disable-warning=DEP0169\" jest`\n[ELIFECYCLE] Command failed with exit code 1.",
+      "reason": "Confirms the test command exited with code 1, indicating a test assertion failure rather than an infrastructure or installation issue"
+    }
+  ],
+  "suggested_fix": "Review the test that verifies environment variable replacement in config (likely in tests for src/getConfig.ts). The test may need to be updated to match the current behavior when `${ENV_VAR_123}` or similar unresolvable variables are encountered, or the config handler needs to be fixed to properly handle this case.",
+  "input": {
+    "context_path": "results/v2/dev/hybrid-grep-4k-rtk-err-cat-v1/pnpm-jest-config-v2-001.txt",
+    "context_tokens_estimate": 4586
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 491
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 26737.764,
+    "cache_key": "b8ac346254c1c3797f3b5572cc02de2ab3d97d2ba3ceca9b8910cf48bf95259c",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

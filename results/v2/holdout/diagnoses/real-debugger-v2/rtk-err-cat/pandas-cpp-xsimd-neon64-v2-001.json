@@ -1,0 +1,63 @@
+{
+  "case_id": "pandas-cpp-xsimd-neon64-v2-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed during the C++ build phase because clang++ rejected an explicit template instantiation in the SIMD/moments code. Two compilation units failed with the same error: 'explicit instantiation of operator() does not refer to a function template, variable template, member function, member class, or static data member', causing ninja to abort and pip metadata generation to fail.",
+  "root_cause_category": "compile_error",
+  "root_cause": "clang++ (arm64-apple-darwin, with --werror) rejects the explicit instantiation of 'operator()' in pandas/simd/moments_simd.hpp:255 and pandas/_libs/simd/moments_inst_neon.cpp:14 because the target entity is not a function template, variable template, member function, member class, or static data member. This causes both libmoments_simd_neon.a and libmoments_base.a compilation units to fail.",
+  "confidence": 0.93,
+  "relevant_files": [
+    "pandas/_libs/include/pandas/simd/moments_simd.hpp",
+    "pandas/_libs/simd/moments_inst_neon.cpp",
+    "pandas/_libs/simd/moments.cpp"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "../../pandas/_libs/include/pandas/simd/moments_simd.hpp:255:50: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "reason": "This is the primary compiler error in the header file causing the build to fail."
+    },
+    {
+      "quote": "../../pandas/_libs/simd/moments_inst_neon.cpp:14:43: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "reason": "The same error appears in the NEON-specific instantiation file, confirming the explicit instantiation is malformed or targets a non-eligible entity."
+    },
+    {
+      "quote": "FAILED: [code=1] pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o",
+      "reason": "Confirms the NEON SIMD compilation unit failed due to the compiler error."
+    },
+    {
+      "quote": "FAILED: [code=1] pandas/_libs/simd/libmoments_base.a.p/moments.cpp.o",
+      "reason": "Confirms the base moments compilation unit also failed with the same underlying error."
+    },
+    {
+      "quote": "--werror",
+      "reason": "Warnings are treated as errors, meaning even a warning-level diagnostic about the explicit instantiation would be fatal; the error is a hard error regardless."
+    },
+    {
+      "quote": "ninja: build stopped: subcommand failed.",
+      "reason": "Ninja aborted the entire build after the compiler errors, propagating the failure upstream to pip."
+    },
+    {
+      "quote": "error: metadata-generation-failed",
+      "reason": "The downstream consequence of the build failure: pip could not generate package metadata because the build subprocess exited with an error."
+    }
+  ],
+  "suggested_fix": "Fix the explicit instantiation of 'operator()' at pandas/_libs/include/pandas/simd/moments_simd.hpp:255 and pandas/_libs/simd/moments_inst_neon.cpp:14 — either correct the syntax so it targets a valid function template/member function, or replace the explicit instantiation with an appropriate alternative (e.g., an explicit template instantiation of the enclosing class or a free function template) that clang++ accepts under C++20.",
+  "input": {
+    "context_path": "results/v2/holdout/rtk-err-cat/pandas-cpp-xsimd-neon64-v2-001.txt",
+    "context_tokens_estimate": 1130
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 791
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 22171.98,
+    "cache_key": "e41b66beb9cbb83cc4cd4c5f3dffdc35dec2c09146c227165fd577c12aff6658",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

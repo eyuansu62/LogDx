@@ -1,0 +1,25 @@
+{
+  "key_parts": {
+    "case_id": "docbuild-hf-stress-001",
+    "raw_sha": "43ef1103c13423270c911f90f000e2e7dceadcd7d7c3782f771c35ec23b87205",
+    "prompt_version": "llm_summary_v1",
+    "prompt_sha": "e3739738b7136af3956f3712e7b76babd9224b6854dcc60ff16546a3fbb16702",
+    "provider": "command",
+    "method": "llm-summary-v1-haiku",
+    "chunk_index": -1,
+    "chunk_sha": "d591dc626724e3eff31acb51839afb6db938fe804d76abf80226d2f824841d76",
+    "temperature": 0.0,
+    "max_output_chars": 12000,
+    "stage": "reduce"
+  },
+  "response": {
+    "content": "# CI Failure Summary\n\n## Primary Failure\n\nThe `doc_build_status_check` step failed with exit code 1. A bash conditional evaluated one build status as `\"failure\"` when the check required all statuses to be either `\"success\"` or `\"skipped\"`.\n\n## Critical Evidence\n\n- `if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && [[ \"skipped\" == \"success\" || \"skipped\" == \"skipped\" ]];` (L000031-L000036) — The condition failed because the first status is `\"failure\"`, which matches neither `\"success\"` nor `\"skipped\"`.\n- `##[error]Process completed with exit code 1.` (L000039) — GitHub Actions error marker.\n\n## Failed Tests / Checks\n\n- `doc_build_status_check` step\n\n## Relevant Files and Locations\n\n- _(none identified)_\n\n## Commands and Exit Codes\n\n- Bash conditional in `doc_build_status_check` step\n- Exit code: `1` (L000039)\n\n## Possible Root Cause\n\nA documentation build or related check returned a `\"failure\"` status. The step's validation logic rejects any status other than `\"success\"` or `\"skipped\"`, causing the entire check to fail. The upstream build or check that produced the `\"failure\"` status is the likely source.\n\n## Uncertainties / Missing Context\n\n- The identity of the build/check producing the `\"failure\"` status is not revealed in the provided output.\n- The name or purpose of the variable holding `\"failure\"` is unclear.\n- No details on what the documentation build itself did or why it failed.\n- The second status `\"skipped\"` is accepted but its role is undefined.",
+    "provider": "claude-cli",
+    "model": "haiku",
+    "usage": {
+      "input_tokens": 9,
+      "output_tokens": 801,
+      "total_cost_usd": 0.010988900000000001
+    }
+  }
+}

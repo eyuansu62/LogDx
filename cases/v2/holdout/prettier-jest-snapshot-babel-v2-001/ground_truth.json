@@ -1,0 +1,86 @@
+{
+  "root_cause": {
+    "summary": "Prettier's CI on the `renovate/babel` branch (a babel package update) broke 13 jest snapshots across 3 test suites because the updated babel parser reports `import()`-arity errors with new wording. The first failing test, `tests/format/js/_errors_/import/format.test.js > snippet: #0 > format[babel]`, raises `expect(received).rejects.toThrowErrorMatchingSnapshot()` and the snapshot diff shows `- Unexpected token (1:8)` (the previous babel error) replaced by `+ \\`import()\\` requires exactly one or two arguments. (1:1)` (the new babel error). Final totals: 3 failed test suites of 1503, 14 failed tests of 29653, 13 failed snapshots of 12099. The fix is either to re-run jest with `-u` to refresh the snapshots (if the new babel wording is accepted) or to pin babel back. The prettier source is correct — only the embedded babel diagnostic strings drifted.",
+    "category": "snapshot_diff"
+  },
+  "required_signals": [
+    {
+      "type": "failed_test",
+      "value": "tests/format/js/_errors_/import/format.test.js",
+      "file": "tests/format/js/_errors_/import/format.test.js",
+      "importance": "critical",
+      "evidence_lines": [[399, 399]]
+    },
+    {
+      "type": "assertion",
+      "value": "Error: expect(received).rejects.toThrowErrorMatchingSnapshot()",
+      "importance": "critical",
+      "evidence_lines": [[401, 401]]
+    },
+    {
+      "type": "diff",
+      "value": "- Unexpected token (1:8)",
+      "aliases": [
+        "+ `import()` requires exactly one or two arguments. (1:1)",
+        "- Snapshot  - 3"
+      ],
+      "importance": "critical",
+      "evidence_lines": [[405, 414]]
+    },
+    {
+      "type": "stack_location",
+      "value": "at Object.toThrowErrorMatchingSnapshot",
+      "importance": "important",
+      "evidence_lines": [[415, 415]]
+    },
+    {
+      "type": "exit_code",
+      "value": "13 snapshots failed from 2 test suites",
+      "importance": "critical",
+      "evidence_lines": [[2240, 2240]]
+    },
+    {
+      "type": "annotation",
+      "value": "##[error]Process completed with exit code 1.",
+      "importance": "important",
+      "evidence_lines": [[2247, 2247]]
+    }
+  ],
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js"
+  ],
+  "relevant_tests": [
+    "tests/format/js/_errors_/import/format.test.js > snippet: #0 > format[babel]",
+    "tests/format/js/_errors_/import/format.test.js > snippet: #0 > format[babel-flow]",
+    "tests/format/js/_errors_/import/format.test.js > snippet: #0 > format[babel-ts]"
+  ],
+  "evidence_spans": [
+    {
+      "start_line": 399,
+      "end_line": 417,
+      "reason": "First failing snapshot block — `FAIL tests/format/js/_errors_/import/format.test.js`, the failing test variant `snippet: #0 > format[babel]`, the `expect(received).rejects.toThrowErrorMatchingSnapshot()` assertion, the snapshot name, the `- Snapshot - 3 / + Received + 3` diff with the actual old-vs-new babel error text, and the stack frame. Sufficient on its own to identify root cause: babel parser-error wording changed."
+    },
+    {
+      "start_line": 2240,
+      "end_line": 2247,
+      "reason": "Final summary block: `13 snapshots failed from 2 test suites` advisory, the Test Suites/Tests/Snapshots totals (3 failed/14 failed/13 failed), and the GHA `##[error]Process completed with exit code 1.` annotation. Confirms the multi_failure scope and the job-level exit."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "snapshot",
+      "babel",
+      "import()",
+      "13"
+    ],
+    "must_not_claim": [
+      "compile error",
+      "permission denied",
+      "network failure",
+      "test logic is incorrect",
+      "the snapshots are correct and the code regressed",
+      "import() syntax is invalid in the test source",
+      "out of memory"
+    ]
+  }
+}

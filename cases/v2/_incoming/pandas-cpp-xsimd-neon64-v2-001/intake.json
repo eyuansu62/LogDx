@@ -1,0 +1,20 @@
+{
+  "candidate_id": "pandas-cpp-xsimd-neon64-v2-001",
+  "source": "github_actions",
+  "source_url": "https://github.com/pandas-dev/pandas/actions/runs/25463397447/job/74710897960",
+  "repo": "pandas-dev/pandas",
+  "head_branch": "perf/skew-kurt-omp-xsimd",
+  "head_sha": null,
+  "workflow_name": "Unit Tests",
+  "job_name": "macos-15 py312",
+  "ecosystem_guess": "c-cpp-cmake",
+  "framework_guess": "generic",
+  "failure_category_guess": "compile_error",
+  "public_source": true,
+  "raw_log_path": "cases/v2/_incoming/pandas-cpp-xsimd-neon64-v2-001/raw.log",
+  "raw_log_normalization": "pulled via `rtk proxy gh run view --job <id> --log` and stripped the leading <job>\\t<step>\\t prefix per line.",
+  "collected_at": "2026-05-06",
+  "collector": "project_author",
+  "intended_split": "v2/holdout",
+  "notes": "C++ template instantiation compile error in pandas's perf branch. The author added explicit instantiations `accumulate_moments_simd::operator()<xsimd::neon64>(...)` (Dockerfile-style: line 14 of moments_inst_neon.cpp, declared at moments_simd.hpp:255), but the template was defined for `xsimd::neon`, not `xsimd::neon64` (candidate at moments_simd.hpp:182 uses `xsimd::neon`). clang++ rejects with `error: explicit instantiation of 'operator()' does not refer to a function template`. Two compile units fail with the same root cause (moments_inst_neon.cpp.o + moments.cpp.o). meson+ninja stops the build, pip metadata-generation fails. macOS-15 / arm64 / Python 3.12. Selected as Batch 2 case 5 (deviation: compile_error rather than originally-targeted timeout/OOM, which has been hard to surface via run-list browsing). Fills v1.3 compile_error mass (was 1/16 → 2 in v2). Note: split=v2/holdout brings holdout to 5/4, slightly over-target — this case doesn't fit v2/stress's 'deliberately difficult' bucket, and v2/stress remains intentionally empty for future cases that probe known weaknesses (huge logs, scattered/multi-failure, unusual format)."
+}

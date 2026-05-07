@@ -1,0 +1,36 @@
+# CI Failure Summary
+
+## Primary Failure
+
+A Python syntax error occurred during the "Building the MDX files" step, caused by an unresolved git merge conflict marker embedded in `transformers/modeling_utils.py`. The conflict marker `<<<<<<< sonic-moe` is treated as invalid Python syntax, preventing the file from being parsed.
+
+## Critical Evidence
+
+- `SyntaxError: invalid syntax` at modeling_utils.py line 1974 (L000799)
+- `<<<<<<< sonic-moe` conflict marker present in source (L000797)
+- `Traceback (most recent call last):` (L000767)
+- `File "/home/runner/work/transformers/transformers/.venv/lib/python3.10/site-packages/transformers/modeling_utils.py", line 1974` (L000796)
+
+## Failed Tests / Checks
+
+- **Step:** "Building the MDX files" (L000764–L000766)
+
+## Relevant Files and Locations
+
+- `/home/runner/work/transformers/transformers/.venv/lib/python3.10/site-packages/transformers/modeling_utils.py:1974`
+- Source branch: `sonic-moe` (implied from conflict marker)
+
+## Commands and Exit Codes
+
+- Step exited with `exit code 1` (L000816)
+- GHA error marker: `##[error]Process completed with exit code 1.` (L000816)
+
+## Possible Root Cause
+
+A git merge conflict in the `sonic-moe` branch was not properly resolved before the CI run. The conflict marker `<<<<<<< sonic-moe` remains in `modeling_utils.py` at line 1974, causing Python to fail syntax validation during the build step.
+
+## Uncertainties / Missing Context
+
+- Which branch was being merged into `sonic-moe`, and what changes caused the conflict
+- Whether the conflict should be resolved by keeping the `sonic-moe` version, the merge source version, or a manual combination
+- Whether the actual MDX build logic ran before the syntax check, or if the check occurs during import/initialization

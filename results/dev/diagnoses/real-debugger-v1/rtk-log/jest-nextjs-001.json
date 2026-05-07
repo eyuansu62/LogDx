@@ -1,0 +1,56 @@
+{
+  "case_id": "jest-nextjs-001",
+  "context_method": "rtk-log",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'next:pack-for-isolated-tests' build step failed to generate required distribution files, causing 498 errors for dist/api/error.d.ts and preventing Jest tests from running due to missing files (ENOENT errors).",
+  "root_cause_category": "compile_error",
+  "root_cause": "The 'next:pack-for-isolated-tests' build step failed to generate required type definition and compiled distribution files (dist/api/error.d.ts, dist/compiled/@babel/runtime/helpers/, dist/next-font-error.d.ts, etc.), resulting in missing files that Jest tests depend on.",
+  "confidence": 0.72,
+  "relevant_files": [
+    "dist/api/error.d.ts",
+    "dist/compiled/@babel/runtime/helpers/",
+    "dist/compiled/@next/font/dist/next-font-error.d.ts",
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest/app/blog/[slug]/page.test.tsx"
+  ],
+  "relevant_tests": [
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest/app/blog/[slug]/page.test.tsx"
+  ],
+  "evidence": [
+    {
+      "quote": "[×498] 2026-04-22T16:29:45.3176640Z next:pack-for-isolated-tests: dist/api/error.d.ts",
+      "reason": "498 errors from pack-for-isolated-tests for the same file indicates a systematic build/compilation failure in the packing step"
+    },
+    {
+      "quote": "[×12] 2026-04-22T16:29:53.6809073Z Failed to load test output Error: ENOENT: no such file or directory",
+      "reason": "ENOENT (no such file) errors indicate required dist files do not exist, a downstream symptom of the failed build step"
+    },
+    {
+      "quote": "[×12] 2026-04-22T16:29:53.6805943Z examples/with-jest/__tests__/index.test.tsx failed due to Error: fai",
+      "reason": "Test execution failed because build artifacts that tests depend on were not generated"
+    },
+    {
+      "quote": "[×8] 2026-04-22T16:29:45.4258172Z next:pack-for-isolated-tests: dist/compiled/@babel/runtime/helpers/c",
+      "reason": "Multiple pack-for-isolated-tests errors across different dist paths (Babel, Font) show the build step is broadly failing to generate required files"
+    }
+  ],
+  "suggested_fix": "Review the output of the 'next:pack-for-isolated-tests' build step for the underlying error preventing dist/api/error.d.ts and other distribution files from being generated. Check for TypeScript compilation errors, missing source files, or build configuration issues.",
+  "input": {
+    "context_path": "results/dev/rtk-log/jest-nextjs-001.txt",
+    "context_tokens_estimate": 401
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 555
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 25693.946,
+    "cache_key": "7168814f6a83d86aa1093ec929fb8e1a82a65853996dd52fed4a013ae0b0a953",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

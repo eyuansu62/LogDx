@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CILogBench diagnoser config",
+  "description": "Fixed-configuration for an M6 experiment run. Committed under configs/diagnosers/. The config is SHA-256 hashed into the experiment manifest so results can be reproduced; any change to the config invalidates the diagnosis cache.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "diagnoser_name", "provider", "prompt_path",
+    "model", "context_policy", "privacy"
+  ],
+  "properties": {
+    "diagnoser_name": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*[a-z0-9]$",
+      "description": "Stable slug used in result paths. Must not contain API keys, account IDs, or private endpoints."
+    },
+    "provider": {
+      "type": "string",
+      "enum": ["command", "mock"]
+    },
+    "command_env_var": {
+      "type": "string",
+      "description": "Name of the environment variable holding the shim command string (e.g. DIAGNOSIS_COMMAND)."
+    },
+    "command_override": {
+      "type": ["string", "null"],
+      "description": "Optional explicit command; overrides command_env_var."
+    },
+    "prompt_path": {
+      "type": "string",
+      "description": "Path (relative to repo root) to the debugger prompt file."
+    },
+    "model": {
+      "type": "object",
+      "required": ["provider_name", "model_name", "temperature"],
+      "properties": {
+        "provider_name":      {"type": "string"},
+        "model_name":         {"type": "string"},
+        "model_version":      {"type": "string"},
+        "temperature":        {"type": "number", "minimum": 0},
+        "top_p":              {"type": "number", "minimum": 0, "maximum": 1},
+        "max_output_tokens":  {"type": "integer", "minimum": 1},
+        "json_mode":          {"type": "boolean"},
+        "deterministic":      {"type": "boolean",
+          "description": "False when the provider does not support deterministic decoding; the M6 report should surface this."}
+      }
+    },
+    "context_policy": {
+      "type": "object",
+      "required": ["allow_raw_context", "on_context_too_large", "allow_truncation"],
+      "properties": {
+        "allow_raw_context":   {"type": "boolean"},
+        "max_context_tokens":  {"type": ["integer", "null"], "minimum": 1},
+        "on_context_too_large": {
+          "type": "string",
+          "enum": ["mark_unsupported", "error"]
+        },
+        "allow_truncation": {
+          "type": "boolean",
+          "description": "Must be false for M6. Silent truncation is forbidden; implement truncation as a separate context method instead."
+        }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "required": [
+        "requires_explicit_external_llm_opt_in",
+        "redaction_mode",
+        "allow_secret_values_in_results"
+      ],
+      "properties": {
+        "requires_explicit_external_llm_opt_in": {"type": "boolean"},
+        "redaction_mode": {
+          "type": "string",
+          "enum": ["audit_only", "none"]
+        },
+        "allow_secret_values_in_results": {"type": "boolean"}
+      }
+    }
+  }
+}

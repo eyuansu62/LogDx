@@ -1,0 +1,51 @@
+{
+  "case_id": "pandas-cpp-xsimd-neon64-v2-001",
+  "context_method": "rtk-read",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "C++ template instantiation error during build of pandas SIMD moments module. An explicit instantiation for xsimd::neon64 cannot find a matching template definition, which is only defined for xsimd::neon.",
+  "root_cause_category": "compile_error",
+  "root_cause": "In pandas/_libs/include/pandas/simd/moments_simd.hpp, line 255 contains an explicit template instantiation for accumulate_moments_simd::operator()<xsimd::neon64>, but the actual template definition at line 182 is only defined for xsimd::neon (without neon64). The template parameter type mismatch (neon64 vs neon) causes the compiler to reject the explicit instantiation.",
+  "confidence": 0.94,
+  "relevant_files": [
+    "pandas/_libs/include/pandas/simd/moments_simd.hpp",
+    "pandas/_libs/simd/moments_inst_neon.cpp",
+    "pandas/_libs/simd/moments.cpp"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "reason": "Compiler directly states the explicit instantiation cannot resolve to any matching template definition"
+    },
+    {
+      "quote": "extern template Moments accumulate_moments_simd::operator()<xsimd::neon64>(",
+      "reason": "Line 255 shows the explicit instantiation attempting to instantiate for xsimd::neon64"
+    },
+    {
+      "quote": "could not match 'Moments (xsimd::neon64, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int) noexcept' against 'Moments (xsimd::neon, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int)'",
+      "reason": "Shows the specific mismatch: the explicit instantiation expects neon64 but the template is for neon, and noexcept specifications differ"
+    },
+    {
+      "quote": "FAILED: [code=1] pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o",
+      "reason": "Compilation failed for the NEON SIMD moments instantiation object file during ninja build"
+    }
+  ],
+  "suggested_fix": "Update the explicit template instantiation in pandas/_libs/include/pandas/simd/moments_simd.hpp line 255 to use xsimd::neon instead of xsimd::neon64, or update the template definition at line 182 to support neon64 specialization. Ensure the noexcept specifier is consistent between the declaration and definition.",
+  "input": {
+    "context_path": "results/v2/holdout/rtk-read/pandas-cpp-xsimd-neon64-v2-001.txt",
+    "context_tokens_estimate": 35666
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 566
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 38708.258,
+    "cache_key": "32c1c24ea41b037b9138d77f255aedb6696d2ca5721e341a66507e3b3371ec53",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

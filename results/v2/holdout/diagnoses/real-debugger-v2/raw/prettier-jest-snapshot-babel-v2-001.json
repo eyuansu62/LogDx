@@ -1,0 +1,70 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "raw",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "Three test suites failed due to Jest snapshot mismatches caused by a change in Babel's error messages for invalid `import()` usage. The snapshots contain the old Babel error text (e.g., 'Unexpected token', 'Cannot use new with import(...)') while the installed Babel version now produces different error text (e.g., '`import()` requires exactly one or two arguments', 'Cannot use new with import()'). A third suite fails because babel-ts now throws an unexpected SyntaxError instead of passing for a constructor overload with a default value.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Babel (babel, babel-flow, babel-ts parsers) changed the error messages it emits for invalid dynamic import expressions. Existing Jest snapshots encode the old error text, so toThrowErrorMatchingSnapshot() fails because the received error messages no longer match the stored snapshots.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js"
+  ],
+  "relevant_tests": [
+    "snippet: #0 > format[babel]",
+    "snippet: #0 > format[babel-flow]",
+    "snippet: #0 > format[babel-ts]",
+    "snippet: #1 > format[babel]",
+    "snippet: #1 > format[babel-flow]",
+    "snippet: #1 > format[babel-ts]",
+    "snippet: #2 > format[babel]",
+    "snippet: #2 > format[babel-flow]",
+    "snippet: #2 > format[babel-ts]",
+    "snippet: #3 > format[babel]",
+    "snippet: #3 > format[babel-flow]",
+    "snippet: #3 > format[babel-ts]",
+    "constructorOverloadsWithDefaultValues.ts > format[babel-ts]",
+    "snippet: #0 > format[babel-ts]"
+  ],
+  "evidence": [
+    {
+      "quote": "- Unexpected token (1:8)\n     + `import()` requires exactly one or two arguments. (1:1)",
+      "reason": "The snapshot stored 'Unexpected token' but Babel now emits '`import()` requires exactly one or two arguments', confirming the Babel parser changed its error message."
+    },
+    {
+      "quote": "- Cannot use new with import(...). (1:5)\n     + Cannot use new with import(). (1:5)",
+      "reason": "Snapshot expected 'import(...)' in the error message but Babel now produces 'import()', indicating a Babel version upgrade changed the wording."
+    },
+    {
+      "quote": "- An implementation cannot be declared in ambient contexts. (1:1)\n     + An implementation cannot be declared in ambient contexts. (1:24)",
+      "reason": "The error message text is the same but the reported error location (column) differs between the snapshot and the received output, also indicating a Babel behaviour change."
+    },
+    {
+      "quote": "SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)",
+      "reason": "babel-ts now throws a SyntaxError for 'constructor(x = 1)' in an overload declaration instead of accepting/ignoring it, which is a new strictness introduced by an updated Babel version."
+    },
+    {
+      "quote": "13 snapshots failed from 2 test suites",
+      "reason": "The summary confirms 13 snapshot failures, consistent with Babel error-message changes across multiple parsers (babel, babel-flow, babel-ts) for the same input snippets."
+    }
+  ],
+  "suggested_fix": "Update the outdated Jest snapshots to reflect the new Babel error messages by running `jest --updateSnapshot` (or `jest -u`) scoped to the failing test files, then commit the refreshed snapshot files.",
+  "input": {
+    "context_path": "results/v2/holdout/raw/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 48106
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 841
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 28008.911,
+    "cache_key": "3f0c4900e03ebe7559a468dc9944b16ec9a9a0493e158035287244b4accacab5",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

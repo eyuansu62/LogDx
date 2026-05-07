@@ -1,0 +1,29 @@
+{
+  "case_id": "moby-buildx-bake-v2-001",
+  "split": "v2/dev",
+  "origin": "new_v2",
+  "ecosystem": "docker-buildkit",
+  "primary_language": "dockerfile",
+  "ci_provider": "github_actions",
+  "repo_visibility": "redacted",
+  "failure_category": "docker_build",
+  "framework": "docker",
+  "log_size_bucket": "medium",
+  "signal_position": "middle",
+  "evidence_formats": [
+    "docker_build_output",
+    "ansi_colored_block",
+    "github_annotation",
+    "package_manager_error"
+  ],
+  "noise_profile": [
+    "runner_setup",
+    "docker_layer_noise",
+    "log_group_noise"
+  ],
+  "multi_failure": false,
+  "flaky_or_transient": true,
+  "requires_repo_context": false,
+  "diagnosis_difficulty": "medium",
+  "notes": "Docker BuildKit `bake` failure where the surface is a clean docker_build error (`failed to solve: process ... exit code 1` at Dockerfile:336) and the underlying root cause is a transient GitHub 502 on a `RUN wget` step. signal_position = `middle` (~48% of 3979 lines) — uniquely stresses tail-200 because the failure block sits before ~2000 lines of post-failure coverage-upload action output. repo_visibility = `redacted` because case.json.redactions[0] strips an AKIA access key + AWS signature + akamai HMAC from a level=debug presigned-S3-URL in a quay.io image-pull line at L3814 (debug noise unrelated to the actual failure)."
+}

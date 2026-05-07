@@ -1,0 +1,70 @@
+{
+  "_doc": [
+    "Category-compatibility table for diagnosis_score_v1_1.",
+    "Used ONLY by evaluator scoring (category_match_score). Does NOT rewrite",
+    "ground-truth category labels.",
+    "",
+    "Each entry is keyed by the GROUND-TRUTH (post-alias) category. The 'partial'",
+    "list names predicted categories that score 0.5 instead of 0.0 when a diagnosis",
+    "lands on a related-but-not-identical bucket.",
+    "Exact match still scores 1.0 in every case; partial match scores 0.5; anything",
+    "not listed scores 0.0.",
+    "",
+    "Discipline:",
+    "  - Partial pairs must be defensible — i.e. an engineer reading the wrong",
+    "    category would still investigate the right area.",
+    "  - test_assertion is INTENTIONALLY paired with workflow gates",
+    "    (lint_failure, formatting_failure, github_actions_config) because those",
+    "    gates fail via assertion-style checks that look like test failures.",
+    "  - compile_error <-> type_error are paired because rustc / tsc error texts",
+    "    can read as either depending on the surface form.",
+    "  - dependency_install <-> network_or_flaky are paired because failed installs",
+    "    can be either a config issue or a network blip without distinguishing",
+    "    evidence.",
+    "  - permission_or_secret <-> github_actions_config are paired because token /",
+    "    workflow-permission misconfigurations land in either bucket.",
+    "  - docker_build <-> compile_error are paired (a Dockerfile compile-stage",
+    "    failure looks like both).",
+    "  - 'other' has NO partial entries on purpose — it must not silently absorb",
+    "    real misclassifications."
+  ],
+  "version": "v1.1",
+  "compatibility": {
+    "lint_failure": {
+      "partial": ["formatting_failure", "test_assertion"]
+    },
+    "formatting_failure": {
+      "partial": ["lint_failure", "test_assertion"]
+    },
+    "test_assertion": {
+      "partial": ["lint_failure", "formatting_failure", "github_actions_config"]
+    },
+    "github_actions_config": {
+      "partial": ["permission_or_secret", "test_assertion"]
+    },
+    "permission_or_secret": {
+      "partial": ["github_actions_config"]
+    },
+    "compile_error": {
+      "partial": ["type_error", "docker_build"]
+    },
+    "type_error": {
+      "partial": ["compile_error"]
+    },
+    "docker_build": {
+      "partial": ["compile_error", "dependency_install"]
+    },
+    "dependency_install": {
+      "partial": ["network_or_flaky", "docker_build"]
+    },
+    "network_or_flaky": {
+      "partial": ["dependency_install", "timeout_or_oom"]
+    },
+    "timeout_or_oom": {
+      "partial": ["network_or_flaky"]
+    },
+    "other": {
+      "partial": []
+    }
+  }
+}

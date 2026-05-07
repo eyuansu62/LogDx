@@ -1,0 +1,39 @@
+{
+  "case_id": "docbuild-hf-stress-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job 'doc_build_status_check' failed with exit code 1. The job contains a conditional step that checks if a previous step's result was 'success' or 'skipped', but the result was 'failure', indicating an upstream step in the documentation build pipeline failed.",
+  "root_cause_category": "unknown",
+  "root_cause": "An upstream step in the documentation build workflow produced a 'failure' result, causing a downstream conditional check step to exit with code 1. The context does not identify which specific step or command failed upstream.",
+  "confidence": 0.35,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]]",
+      "reason": "This shows the upstream job/step result was 'failure', not 'success' or 'skipped', meaning a prior step in the workflow did not complete successfully."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the step exited with a non-zero exit code, indicating failure of the current job step."
+    }
+  ],
+  "suggested_fix": "Investigate the upstream steps in the 'Build documentation' workflow that ran before the conditional check at line L000030 to identify which step produced the 'failure' status. The context does not provide enough detail to pinpoint the specific failing command.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-mock/docbuild-hf-stress-001.txt",
+    "context_tokens_estimate": 169
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 333
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 18457.493,
+    "cache_key": "ad2e6a46ef4afaae0696464fcf73d97b2a5a289dd59ca4098ad76ad0505de94f",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

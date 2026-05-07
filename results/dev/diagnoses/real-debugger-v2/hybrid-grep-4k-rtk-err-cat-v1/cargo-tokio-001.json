@@ -1,0 +1,63 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "A `trybuild` compile-fail test named `compile_fail_full` failed because the actual compiler errors emitted for `tests/fail/macros_type_mismatch.rs` did not match the expected `.stderr` snapshot. The mismatch involved `error[E0308]`, `error[E0277]`, and `error[E0271]` messages related to type mismatches in `tokio::main` async blocks. This caused 1 of 10 trybuild tests to fail, aborting the run.",
+  "root_cause_category": "compile_error",
+  "root_cause": "The trybuild test `compile_fail_full` failed because the compiler errors produced for `tests/fail/macros_type_mismatch.rs` did not match the stored `.stderr` snapshot. Multiple `error[E0308]` (mismatched types) and `error[E0271]`/`error[E0277]` errors were emitted by the compiler but differed from what trybuild expected, causing the snapshot assertion to panic.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "tests/fail/macros_type_mismatch.rs"
+  ],
+  "relevant_tests": [
+    "compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "test compile_fail_full ... FAILED",
+      "reason": "Identifies the specific trybuild test that failed."
+    },
+    {
+      "quote": "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.87s",
+      "reason": "Confirms exactly one test failed in the trybuild suite."
+    },
+    {
+      "quote": "thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13:",
+      "reason": "Shows the panic originated inside trybuild's run.rs, which is where trybuild asserts that compiler output matches the expected .stderr file."
+    },
+    {
+      "quote": "1 of 10 tests failed",
+      "reason": "Confirms 1 out of 10 compile-fail test cases in the trybuild suite did not match expectations."
+    },
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
+      "reason": "Shows the actual compiler error emitted for macros_type_mismatch.rs, which trybuild compared against a stored snapshot and found a mismatch."
+    },
+    {
+      "quote": "error[E0308]: mismatched types",
+      "reason": "Repeated mismatched-type errors are part of the actual compiler output that differed from the trybuild snapshot."
+    },
+    {
+      "quote": "Cancelling due to test failure",
+      "reason": "Confirms the overall test run was cancelled as a result of the compile_fail_full failure."
+    }
+  ],
+  "suggested_fix": "Update the trybuild `.stderr` snapshot file for `tests/fail/macros_type_mismatch.rs` to match the current compiler output (e.g., by deleting or regenerating the snapshot so trybuild re-records it on the next run with `TRYBUILD=overwrite`).",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-4k-rtk-err-cat-v1/cargo-tokio-001.txt",
+    "context_tokens_estimate": 7362
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 657
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 33363.719,
+    "cache_key": "82d5bc2dca42117788fc12d0079873898246f2fa29f7db682aad73152e0c4fa5",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

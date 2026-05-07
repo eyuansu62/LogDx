@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CILogBench search-agent trace",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "case_id",
+    "split",
+    "agent_name",
+    "mode",
+    "status",
+    "safe_case_metadata",
+    "tool_budget",
+    "steps",
+    "usage",
+    "metadata"
+  ],
+  "properties": {
+    "case_id": {"type": "string"},
+    "split": {"type": "string"},
+    "agent_name": {"type": "string"},
+    "mode": {"const": "end_to_end_search_agent"},
+    "status": {
+      "enum": ["completed", "budget_exhausted", "provider_error", "invalid_action"]
+    },
+    "safe_case_metadata": {"type": "object"},
+    "tool_budget": {"type": "object"},
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step_index", "agent_action"],
+        "properties": {
+          "step_index": {"type": "integer"},
+          "agent_action": {"type": "object"},
+          "tool_observation": {"type": ["object", "null"]},
+          "runtime_ms": {"type": "number"},
+          "agent_input_tokens_estimate": {"type": "integer"},
+          "agent_output_tokens_estimate": {"type": "integer"}
+        }
+      }
+    },
+    "final_diagnosis_path": {"type": ["string", "null"]},
+    "usage": {
+      "type": "object",
+      "properties": {
+        "tool_call_count": {"type": "integer"},
+        "observed_line_count": {"type": "integer"},
+        "observed_byte_size": {"type": "integer"},
+        "observation_tokens_estimate": {"type": "integer"},
+        "agent_input_tokens_estimate": {"type": "integer"},
+        "agent_output_tokens_estimate": {"type": "integer"},
+        "total_agent_tokens_estimate": {"type": "integer"}
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "provider": {"type": "string"},
+        "prompt_sha256": {"type": "string"},
+        "config_sha256": {"type": "string"},
+        "runtime_ms": {"type": "number"},
+        "provider_error": {"type": ["string", "null"]},
+        "budget_exhausted": {"type": "boolean"}
+      }
+    }
+  }
+}

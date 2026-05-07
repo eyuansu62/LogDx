@@ -1,0 +1,65 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "mypy type checking failed due to hundreds of [attr-defined] errors reporting that PyArrow compute functions (e.g., `is_null`, `if_else`, `utf8_length`, `equal`, etc.) are missing attributes on the pyarrow module. This caused the downstream `mypy (stubtest)` step to also fail because it refused to check stubs given the mypy build errors.",
+  "root_cause_category": "type_error",
+  "root_cause": "mypy reports that a large number of pyarrow compute function attributes (e.g., `is_null`, `if_else`, `utf8_length`, `equal`, `add`, `divide`, etc.) are not recognized on the pyarrow module, producing [attr-defined] errors across multiple files. This indicates that the installed pyarrow version's type stubs or the pandas code accessing pyarrow.compute functions via a module alias no longer matches the expected API surface that mypy can resolve.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "pandas/compat/pyarrow.py",
+    "pandas/core/arrays/_arrow_string_mixins.py",
+    "pandas/core/arrays/arrow/accessors.py",
+    "pandas/core/arrays/arrow/array.py",
+    "pandas/core/arrays/datetimes.py",
+    "pandas/core/arrays/string_arrow.py",
+    "pandas/core/strings/accessor.py",
+    "pandas/io/feather_format.py",
+    "pandas/tests/reshape/test_get_dummies.py"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "mypy.....................................................................[41mFailed[m",
+      "reason": "Confirms mypy check failed as a top-level pre-commit hook result."
+    },
+    {
+      "quote": "pandas/compat/pyarrow.py:76: error: Module has no attribute \"is_null\"  [attr-defined]",
+      "reason": "Representative example of the [attr-defined] errors: mypy cannot find pyarrow compute attributes on the imported module."
+    },
+    {
+      "quote": "pandas/core/arrays/arrow/array.py:101: error: Module has no attribute \"equal\"  [attr-defined]",
+      "reason": "Shows the same class of error appearing in a core array file, confirming it is systemic across the pyarrow compute attribute usage."
+    },
+    {
+      "quote": "error: not checking stubs due to mypy build errors:",
+      "reason": "The stubtest step was also blocked because mypy itself reported build errors, cascading the failure."
+    },
+    {
+      "quote": "pandas/compat/pyarrow.py:69: error: Call to untyped function \"fill_null\" in typed context  [no-untyped-call]",
+      "reason": "Additional mypy error type showing pyarrow functions lack type annotations, compounding the attr-defined failures."
+    },
+    {
+      "quote": "pyright..................................................................[41mFailed[m\npyright reportGeneralTypeIssues..........................................[41mFailed[m",
+      "reason": "Pyright also failed, consistent with a systemic pyarrow type information problem rather than a pandas-code-only issue."
+    }
+  ],
+  "suggested_fix": "Investigate whether the pyarrow version installed exposes compute functions via `pyarrow.compute` rather than directly on the `pyarrow` module, and update the import paths or type stubs in the affected files (especially `pandas/compat/pyarrow.py` and `pandas/core/arrays/arrow/array.py`) so that mypy can resolve the `[attr-defined]` attributes correctly.",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-4k-rtk-err-cat-v1/mypy-pandas-001.txt",
+    "context_tokens_estimate": 18943
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 766
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 37124.801,
+    "cache_key": "aa91b4fde434fa548bbc8b545cf6c05003c57c4ed111ef3fd189c9240d53b638",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

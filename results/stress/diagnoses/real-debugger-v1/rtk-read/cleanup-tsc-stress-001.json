@@ -1,0 +1,47 @@
+{
+  "case_id": "cleanup-tsc-stress-001",
+  "context_method": "rtk-read",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Cleanup artifacts' job failed when attempting to delete build artifacts via the GitHub API. The gh api DELETE request was rejected with HTTP 403 'Resource not accessible by integration', indicating insufficient token permissions.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GITHUB_TOKEN lacks sufficient permissions to delete artifacts. The token has 'Actions: write' permission declared, but the DELETE request to /repos/microsoft/TypeScript/actions/artifacts/{artifact_id} is rejected with HTTP 403 Forbidden by the GitHub API, indicating the integration does not have authorization to perform artifact deletion.",
+  "confidence": 0.85,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "Direct error message from the gh CLI indicating the GitHub token lacks authorization for the artifact deletion operation"
+    },
+    {
+      "quote": "GITHUB_TOKEN Permissions\nActions: write\nMetadata: read",
+      "reason": "The declared token permissions; 'Actions: write' is present but insufficient for artifact deletion, or superseded by GitHub organization/repository policies"
+    },
+    {
+      "quote": "-X DELETE \\\n    -H \"Accept: application/vnd.github+json\" \\\n    /repos/microsoft/TypeScript/actions/artifacts/",
+      "reason": "The DELETE API endpoint call that fails, indicating the DELETE operation is not permitted by the current token"
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1",
+      "reason": "The shell script exited with error code 1 due to the gh api DELETE command failure"
+    }
+  ],
+  "suggested_fix": "Ensure the GITHUB_TOKEN has proper permissions for artifact deletion. Check if the repository or organization has policies restricting artifact deletion via GITHUB_TOKEN. Consider using a personal access token (PAT) with 'repo' or 'actions:manage' scope if available, or verify that the workflow's token permissions include artifact deletion capabilities.",
+  "input": {
+    "context_path": "results/stress/rtk-read/cleanup-tsc-stress-001.txt",
+    "context_tokens_estimate": 1291
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 491
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 19677.065,
+    "cache_key": "428d912ace0eddbcbd9404feea7583b7455350fa15f75e9f26b34c8f84a8c923",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

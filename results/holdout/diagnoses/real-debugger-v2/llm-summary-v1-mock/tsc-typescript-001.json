@@ -1,0 +1,51 @@
+{
+  "case_id": "tsc-typescript-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI coverage job failed during parallel test execution due to a test assertion mismatch. A test expected the string 'Add return type \\'Foo<string, string[…' but received 'Add return type \\'Foo<string>\\'' instead, indicating a TypeScript quick-fix or code action produces a different output than expected.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "A test assertion failed because the actual value 'Add return type \\'Foo<string>\\'' did not match the expected value 'Add return type \\'Foo<string, string[…'', indicating a mismatch in the output of a TypeScript code action or refactoring suggestion related to return type inference.",
+  "confidence": 0.82,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "AssertionError: expected 'Add return type \\'Foo<string>\\'' to equal 'Add return type \\'Foo<string, string[…'",
+      "reason": "This is the direct test assertion failure showing the actual vs expected string mismatch for a TypeScript return type code action."
+    },
+    {
+      "quote": "Error in do-runtests-parallel in 10m 38.9s",
+      "reason": "Confirms the parallel test runner task failed, which is the immediate cause of the job exit with code 1."
+    },
+    {
+      "quote": "Error: Process exited with code: 1",
+      "reason": "Confirms the test process terminated with a non-zero exit code due to the assertion failure."
+    },
+    {
+      "quote": "Failed tasks: do-runtests-parallel",
+      "reason": "Identifies the specific task that failed within the CI pipeline, consistent with the assertion error observed during test execution."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions reports the overall job as failed due to the non-zero exit code from the test runner."
+    }
+  ],
+  "suggested_fix": "Investigate the TypeScript code action responsible for generating 'Add return type' suggestions for generic types like 'Foo<string, string[]>' — the implementation appears to be truncating or simplifying the type argument list to just 'Foo<string>'. Update the relevant code action logic or update the test baseline to match the new intended output.",
+  "input": {
+    "context_path": "results/holdout/llm-summary-v1-mock/tsc-typescript-001.txt",
+    "context_tokens_estimate": 299
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 522
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 28446.561,
+    "cache_key": "68a251e1b70f45c71bd9adc95d0810d07b2d03584a8fb007fc3752ec7ca4263a",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

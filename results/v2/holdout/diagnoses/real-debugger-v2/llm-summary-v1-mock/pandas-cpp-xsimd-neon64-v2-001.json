@@ -1,0 +1,72 @@
+{
+  "case_id": "pandas-cpp-xsimd-neon64-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI build failed during compilation of pandas' SIMD/NEON C++ sources on macOS arm64. The clang++ compiler emitted errors about invalid explicit template instantiations in the SIMD moments headers, causing ninja to abort and pip metadata generation to fail.",
+  "root_cause_category": "compile_error",
+  "root_cause": "clang++ reports 'explicit instantiation of operator() does not refer to a function template, variable template, member function template, or static data member template' in pandas/_libs/include/pandas/simd/moments_simd.hpp at line 255 and in pandas/_libs/simd/moments_inst_neon.cpp at line 14, producing 2 compiler errors that abort the NEON and base SIMD library builds.",
+  "confidence": 0.93,
+  "relevant_files": [
+    "pandas/_libs/include/pandas/simd/moments_simd.hpp",
+    "pandas/_libs/simd/moments_inst_neon.cpp",
+    "pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o",
+    "pandas/_libs/simd/libmoments_base.a.p/moments.cpp.o"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "../../pandas/_libs/include/pandas/simd/moments_simd.hpp:255:50: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, m…",
+      "reason": "This is the primary compiler error — clang++ rejects an explicit instantiation of operator() in the SIMD header, indicating the template specialization syntax is invalid for this compiler version."
+    },
+    {
+      "quote": "../../pandas/_libs/simd/moments_inst_neon.cpp:14:43: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member funct…",
+      "reason": "A second distinct compiler error in the NEON instantiation file at line 14, confirming the explicit instantiation pattern used is rejected by the arm64/macOS clang++ toolchain."
+    },
+    {
+      "quote": "FAILED: [code=1] pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o",
+      "reason": "ninja reports the NEON object file compilation failed with exit code 1, directly caused by the above compiler errors."
+    },
+    {
+      "quote": "FAILED: [code=1] pandas/_libs/simd/libmoments_base.a.p/moments.cpp.o",
+      "reason": "The base moments object file also failed to compile for the same reason, showing the issue affects both NEON and base SIMD build targets."
+    },
+    {
+      "quote": "2 errors generated.",
+      "reason": "Clang confirms exactly 2 errors were generated for the NEON translation unit, matching the two error lines above."
+    },
+    {
+      "quote": "ninja: build stopped: subcommand failed.",
+      "reason": "ninja aborted the entire build due to the compiler errors, propagating the failure up to pip."
+    },
+    {
+      "quote": "arm64-apple-darwin20.0.0-clang++",
+      "reason": "Identifies the toolchain as arm64 Apple clang++, relevant because explicit instantiation rules for operator() may differ from other platforms/compilers."
+    },
+    {
+      "quote": "werror      : true",
+      "reason": "The build was configured with --werror, meaning any warning would also be fatal; however the log shows these are outright errors, not warnings promoted to errors."
+    },
+    {
+      "quote": "error: metadata-generation-failed",
+      "reason": "pip's top-level failure is a downstream consequence of the ninja/compiler failure, confirming the compile error is the root cause."
+    }
+  ],
+  "suggested_fix": "Fix the explicit instantiation of 'operator()' in 'pandas/_libs/include/pandas/simd/moments_simd.hpp' (line 255) and 'pandas/_libs/simd/moments_inst_neon.cpp' (line 14) to use a valid explicit instantiation form accepted by clang++ on arm64-apple-darwin — for example, replace the explicit instantiation of the call operator with an explicit instantiation of the enclosing class template instead.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-mock/pandas-cpp-xsimd-neon64-v2-001.txt",
+    "context_tokens_estimate": 1093
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 897
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 24948.251,
+    "cache_key": "b70f936c61709a12e1fef53ee3a93e3ee001054e2876a8bf0f6c303206820de5",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

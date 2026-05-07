@@ -1,0 +1,42 @@
+# CI Failure Summary
+
+## Primary Failure
+
+The `compile_fail_full` test in `tests-build::macros` failed due to trybuild compiler error message mismatches. The test verifies that code in `tests/fail/macros_type_mismatch.rs` fails to compile with expected error messages, but the actual compiler output no longer matches the expected snapshot.
+
+## Critical Evidence
+
+- `test compile_fail_full ... FAILED` (L002763)
+- `test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.87s` (L002770)
+- Exit code 100 (L003121)
+- Expected vs actual output mismatch in trybuild test (L002845–L003084)
+- Remediation hint: `If the actual output is the correct output you can bless it by rerunning your test with the environment variable TRYBUILD=overwrite` (L003085–L003086)
+
+## Failed Tests / Checks
+
+- `tests-build::macros compile_fail_full`
+- `1 of 10 tests failed` (L003091)
+
+## Relevant Files and Locations
+
+- `tests/fail/macros_type_mismatch.rs:5:5`
+- `tests/fail/macros_type_mismatch.rs:10:5`
+- `tests/fail/macros_type_mismatch.rs:23:5`
+- `tests/fail/macros_type_mismatch.rs:40:5` (multiple locations)
+- `tests/fail/macros_type_mismatch.rs:57:11`
+- `tests/fail/macros_type_mismatch.rs:66:5`
+
+## Commands and Exit Codes
+
+- Test command: `compile_fail_full` in `tests-build::macros` (L003119)
+- Exit code: `100` (L003121)
+
+## Possible Root Cause
+
+The expected compiler error messages in the trybuild snapshot no longer match the actual Rust compiler output from `tests/fail/macros_type_mismatch.rs`. This could indicate the compiler error message format changed (e.g., due to a Rust version upgrade, rustc error message refinement, or a change to the macro implementation being tested).
+
+## Uncertainties / Missing Context
+
+- Root cause of compiler error message changes (Rust version bump, compiler improvements, macro implementation change)
+- Whether the "actual output" is correct and the snapshot needs blessing, or if the macro implementation has a genuine bug
+- Full diff between expected and actual error messages not provided in log excerpts

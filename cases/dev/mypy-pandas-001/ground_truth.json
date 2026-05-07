@@ -1,0 +1,85 @@
+{
+  "root_cause": {
+    "summary": "The pre-commit `mypy (stubtest)` hook reports 279 type errors across 9 pandas source files. The overwhelming majority are `Module has no attribute \"X\" [attr-defined]` from pyarrow.compute usages; pyarrow's type stubs do not declare the compute functions pandas calls. A handful are `[no-untyped-call]` or `[assignment]`. Fix is on pandas' side (explicit annotations or `# type: ignore[attr-defined]`) or upstream in pyarrow stubs.",
+    "category": "type_error"
+  },
+  "required_signals": [
+    {
+      "type": "stack_location",
+      "file": "pandas/compat/pyarrow.py",
+      "line": 69,
+      "importance": "critical",
+      "evidence_lines": [[4150, 4150]]
+    },
+    {
+      "type": "compile_error",
+      "value": "error: Module has no attribute \"is_null\"  [attr-defined]",
+      "importance": "critical",
+      "evidence_lines": [[4151, 4151]]
+    },
+    {
+      "type": "compile_error",
+      "value": "error: Call to untyped function \"fill_null\" in typed context  [no-untyped-call]",
+      "importance": "important",
+      "evidence_lines": [[4150, 4150]]
+    },
+    {
+      "type": "assertion",
+      "value": "Found 279 errors in 9 files (checked 1458 source files)",
+      "importance": "critical",
+      "evidence_lines": [[4429, 4429]]
+    },
+    {
+      "type": "step_name",
+      "value": "mypy (stubtest)",
+      "importance": "critical",
+      "evidence_lines": [[4431, 4431]]
+    },
+    {
+      "type": "exit_code",
+      "value": "1",
+      "importance": "critical",
+      "evidence_lines": [[4716, 4716]]
+    }
+  ],
+  "relevant_files": [
+    "pandas/compat/pyarrow.py",
+    "pandas/core/arrays/arrow/array.py",
+    "pandas/core/arrays/_arrow_string_mixins.py",
+    "pandas/core/arrays/string_arrow.py",
+    "pandas/core/strings/accessor.py",
+    "pandas/io/feather_format.py"
+  ],
+  "relevant_tests": [],
+  "evidence_spans": [
+    {
+      "start_line": 4150,
+      "end_line": 4170,
+      "reason": "First ~20 mypy errors establish the dominant pattern: pyarrow compute attributes like is_null, if_else, utf8_length are flagged as undefined."
+    },
+    {
+      "start_line": 4429,
+      "end_line": 4436,
+      "reason": "Aggregated error count (279 in 9 files), mypy stubtest hook failure line, and 'not checking stubs due to mypy build errors' cause."
+    },
+    {
+      "start_line": 4716,
+      "end_line": 4716,
+      "reason": "GHA exit-code marker confirming the pre-commit step failed."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "mypy",
+      "pyarrow",
+      "type error",
+      "pandas"
+    ],
+    "must_not_claim": [
+      "pytest assertion failed",
+      "network failure",
+      "dependency installation failed",
+      "cargo compile error"
+    ]
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "case_id": "pnpm-jest-config-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed due to multiple dependency installation errors, including a permission error (EACCES) that prevented node-gyp from building fuse-native, a missing platform-specific native binding for @unrs/resolver-binding-linux-x64-gnu, and a digest-mismatch during package verification. These install-phase failures cascaded into test-time errors where Verdaccio plugins (verdaccio-htpasswd, verdaccio-audit) were not found, repeatedly failing integration tests throughout the run. The job ultimately exited with code 1.",
+  "root_cause_category": "dependency_install",
+  "root_cause": "Dependency installation failed on multiple packages: node-gyp could not be spawned for fuse-native due to an EACCES permission error, the platform-specific native binding @unrs/resolver-binding-linux-x64-gnu was not found on the filesystem and could not be installed via npm, and a digest-mismatch was recorded. As a result, Verdaccio plugins required by integration tests (verdaccio-htpasswd, verdaccio-audit) were unavailable at test time.",
+  "confidence": 0.68,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "Failed to find package \"@unrs/resolver-binding-linux-x64-gnu\" on the file system",
+      "reason": "The platform-specific native binding was absent from the local filesystem, indicating the package was not correctly installed."
+    },
+    {
+      "quote": "Failed to install package \"@unrs/resolver-binding-linux-x64-gnu\" using npm Cannot find module 'unrs-re…",
+      "reason": "A fallback attempt to install the missing binding via npm also failed, confirming the dependency could not be resolved."
+    },
+    {
+      "quote": "Error: spawn node-gyp EACCES",
+      "reason": "A permission error prevented node-gyp from being spawned to compile the fuse-native native addon, causing that package's install script to fail."
+    },
+    {
+      "quote": ".../node_modules/fuse-native install: Failed",
+      "reason": "Confirms the fuse-native install script did not complete successfully due to the EACCES error."
+    },
+    {
+      "quote": "digest-mismatch: error",
+      "reason": "A package integrity check failed during installation, indicating a corrupted or mismatched package in the local store."
+    },
+    {
+      "quote": "package not found, try to install verdaccio-htpasswd with a package manager",
+      "reason": "Verdaccio plugin verdaccio-htpasswd was missing at test runtime; this error recurs many times throughout the test run, indicating integration tests depending on a local Verdaccio instance with authentication were broken."
+    },
+    {
+      "quote": "package not found, try to install verdaccio-audit with a package manager",
+      "reason": "Same class of error for verdaccio-audit, confirming multiple Verdaccio plugins were not installed, disabling audit-related integration tests."
+    },
+    {
+      "quote": "[ELIFECYCLE] Command failed with exit code 1.",
+      "reason": "Final command exit code confirms the job terminated with a failure status."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions runner confirmed the job failed with a non-zero exit code."
+    }
+  ],
+  "suggested_fix": "Investigate why node-gyp cannot be spawned (EACCES) in the CI runner environment — check that the runner has execute permissions on the node-gyp binary and that the pnpm store/cache is not owned by a different user. Also ensure the optional platform-specific package @unrs/resolver-binding-linux-x64-gnu is available for linux-x64-gnu (it may need to be listed as an optional dependency or the lockfile may be out of date). Finally, verify that verdaccio-htpasswd and verdaccio-audit are included in the workspace dependencies so they are present when Verdaccio is started during integration tests.",
+  "input": {
+    "context_path": "results/v2/dev/llm-summary-v1-mock/pnpm-jest-config-v2-001.txt",
+    "context_tokens_estimate": 1701
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 907
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 46358.016,
+    "cache_key": "053a215a648288be87cc114444e9c21ff2b754b3eb5b0cb825156b55c6831e08",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

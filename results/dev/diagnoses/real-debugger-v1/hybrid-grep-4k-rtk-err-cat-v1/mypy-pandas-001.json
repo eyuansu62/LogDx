@@ -1,0 +1,61 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "mypy and pyright type checkers failed due to missing attributes on the PyArrow module. Both tools report that PyArrow functions like `is_null`, `if_else`, `utf8_length`, and many others are not found in the module's type definitions.",
+  "root_cause_category": "type_error",
+  "root_cause": "PyArrow type stubs are missing or incompatible with the installed PyArrow version. mypy cannot resolve numerous PyArrow functions across multiple files (pycompat/pyarrow.py, core/arrays/_arrow_string_mixins.py, core/arrays/arrow/array.py, etc.), causing type-checking to fail.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "pandas/compat/pyarrow.py",
+    "pandas/core/arrays/_arrow_string_mixins.py",
+    "pandas/core/arrays/arrow/array.py",
+    "pandas/core/arrays/arrow/accessors.py",
+    "pandas/core/arrays/datetimes.py",
+    "pandas/core/arrays/string_arrow.py",
+    "pandas/core/strings/accessor.py",
+    "pandas/io/feather_format.py",
+    "pandas/tests/reshape/test_get_dummies.py"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "pandas/compat/pyarrow.py:76: error: Module has no attribute \"is_null\"  [attr-defined]",
+      "reason": "Mypy cannot find the `is_null` function on the PyArrow module, indicating type stubs do not include this function."
+    },
+    {
+      "quote": "pandas/core/arrays/arrow/array.py:101: error: Module has no attribute \"equal\"  [attr-defined]",
+      "reason": "Pattern repeats across many files and functions, showing systematic absence of PyArrow functions in type stubs."
+    },
+    {
+      "quote": "mypy.....................................................................[41mFailed[m\npandas/compat/pyarrow.py:69: error: Call to untyped function \"fill_null\" in typed context  [no-untyped-call]",
+      "reason": "Both untyped function calls and missing attributes indicate PyArrow stubs are incomplete or absent."
+    },
+    {
+      "quote": "pyright..................................................................[41mFailed[m\npyright reportGeneralTypeIssues..........................................[41mFailed[m",
+      "reason": "Both mypy and pyright (independent type checkers) failed, confirming this is a type-checking issue, not a single tool misconfiguration."
+    },
+    {
+      "quote": "error: not checking stubs due to mypy build errors:",
+      "reason": "mypy explicitly reports it cannot check stubs due to type errors, preventing completion of type checking."
+    }
+  ],
+  "suggested_fix": "Update PyArrow type stubs (pyarrow-stubs or py.typed in pyarrow) to match the installed PyArrow version. If using a virtual environment, reinstall PyArrow with `pip install --force-reinstall pyarrow` to ensure type stubs are present, or check if `types-pyarrow` package is available and install it.",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-4k-rtk-err-cat-v1/mypy-pandas-001.txt",
+    "context_tokens_estimate": 18943
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 655
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 26431.521,
+    "cache_key": "a68ff9225c7b98b846553398ba05878dc24f135ec7dc74d96ebb973430486eb2",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

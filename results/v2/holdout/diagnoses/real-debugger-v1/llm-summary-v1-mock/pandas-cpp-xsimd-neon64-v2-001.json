@@ -1,0 +1,58 @@
+{
+  "case_id": "pandas-cpp-xsimd-neon64-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "C++ compilation failed on macOS arm64 during SIMD build due to invalid explicit template instantiation syntax for `operator()` in the NEON SIMD code. The clang++ compiler rejected the instantiation at two locations in the moments SIMD headers.",
+  "root_cause_category": "compile_error",
+  "root_cause": "Explicit template instantiation of 'operator()' in pandas/_libs/simd/moments_simd.hpp (line 255) and pandas/_libs/simd/moments_inst_neon.cpp (line 14) refers to a construct that is not a function template, variable template, member function template, or variable template specialization, causing two compilation errors with --werror enabled.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "pandas/_libs/include/pandas/simd/moments_simd.hpp",
+    "pandas/_libs/simd/moments_inst_neon.cpp"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "../../pandas/_libs/include/pandas/simd/moments_simd.hpp:255:50: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function template, or variable template specialization",
+      "reason": "Identifies the specific compilation error and its source location in the header file"
+    },
+    {
+      "quote": "../../pandas/_libs/simd/moments_inst_neon.cpp:14:43: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function template, or variable template specialization",
+      "reason": "Shows the same error is also triggered in the NEON instantiation file"
+    },
+    {
+      "quote": "2 errors generated.",
+      "reason": "Confirms multiple compilation errors from the libmoments_simd_neon target"
+    },
+    {
+      "quote": "ninja: build stopped: subcommand failed.",
+      "reason": "Indicates the build process halted due to the compilation failures"
+    },
+    {
+      "quote": "werror      : true",
+      "reason": "Shows that warnings/errors are treated as fatal via --werror flag"
+    },
+    {
+      "quote": "arm64-apple-darwin20.0.0-clang++",
+      "reason": "Identifies the ARM64 macOS clang++ compiler that rejected the template instantiation syntax"
+    }
+  ],
+  "suggested_fix": "Fix the explicit template instantiation syntax for `operator()` in pandas/_libs/simd/moments_simd.hpp at line 255 and pandas/_libs/simd/moments_inst_neon.cpp at line 14. Ensure that `operator()` is properly defined as a function template before attempting explicit instantiation, or verify that the instantiation syntax matches the template definition.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-mock/pandas-cpp-xsimd-neon64-v2-001.txt",
+    "context_tokens_estimate": 1093
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 595
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 23526.945,
+    "cache_key": "5a460e9367dc513d9de0d55c783db5ca78087c37e9aec5a954d5187aabe03709",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "case_id": "pytest-pandas-001",
+  "context_method": "rtk-log",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "NumPy nightly has deprecated the 'generic' unit for timedeltas; pandas test collection is failing with DeprecationWarnings across 70 unique errors in timedelta-related test files.",
+  "root_cause_category": "other",
+  "root_cause": "NumPy nightly deprecated the 'generic' unit for timedeltas. Pandas code or test code references this deprecated unit, causing pytest to error during test collection because deprecation warnings are treated as failures.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "pandas/tests/arrays/masked/test_indexing.py",
+    "pandas/tests/arrays/test_timedeltas.py",
+    "pandas/tests/series/indexing/test_indexing.py",
+    "pandas/tests/dtypes/test_missing.py",
+    "pandas/tests/indexes/timedeltas/test_indexing.py",
+    "pandas/tests/frame/indexing/test_indexing.py"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "ERROR pandas/tests/arrays/masked/test_indexing.py - DeprecationWarni...",
+      "reason": "Indicates test collection is failing due to DeprecationWarning"
+    },
+    {
+      "quote": "E   DeprecationWarning: The 'generic' unit for NumPy timedelta is de...",
+      "reason": "Explicitly states the deprecation warning being triggered"
+    },
+    {
+      "quote": "job_name: \"Numpy Nightly\"",
+      "reason": "Confirms the test is running against NumPy nightly builds where this deprecation was introduced"
+    },
+    {
+      "quote": "[error] 258 errors (70 unique)",
+      "reason": "Shows widespread collection failures from the same deprecation across multiple test files"
+    }
+  ],
+  "suggested_fix": "Update pandas code to replace usage of the 'generic' unit for timedeltas with a non-deprecated NumPy timedelta unit, or filter/suppress the specific DeprecationWarning in test configuration if the change is incompatible with stable NumPy versions.",
+  "input": {
+    "context_path": "results/dev/rtk-log/pytest-pandas-001.txt",
+    "context_tokens_estimate": 451
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 426
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 24119.684,
+    "cache_key": "7b30c14562ea91eacb4152ce5a47d1c7576b17ffd199bf7f2c2644877ab7dd25",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "root_cause": {
+    "summary": "The jest test `pnpm config get reads npm options but ignores other settings from .npmrc` in `test/config/get.ts:32` fails because `pnpm config get @my-org:registry` returns the registry URL with a trailing slash (`https://my-org.registry.example.com/`) while the test expects it without one (`https://my-org.registry.example.com`). The single failing assertion (1 of 485 tests) drives the pnpm CI test job to exit code 1.",
+    "category": "test_assertion"
+  },
+  "required_signals": [
+    {
+      "type": "failed_test",
+      "value": "pnpm config get reads npm options but ignores other settings from .npmrc",
+      "file": "test/config/get.ts",
+      "importance": "critical",
+      "evidence_lines": [[2957, 2957]]
+    },
+    {
+      "type": "assertion",
+      "value": "Expected: \"https://my-org.registry.example.com\"",
+      "importance": "critical",
+      "evidence_lines": [[2961, 2962]]
+    },
+    {
+      "type": "stack_location",
+      "value": "at Object.<anonymous> (test/config/get.ts:32:38)",
+      "file": "test/config/get.ts",
+      "line": 32,
+      "importance": "important",
+      "evidence_lines": [[2972, 2972]]
+    },
+    {
+      "type": "exit_code",
+      "value": "Command failed with exit code 1.",
+      "importance": "important",
+      "evidence_lines": [[3088, 3088]]
+    },
+    {
+      "type": "annotation",
+      "value": "##[error]Process completed with exit code 1.",
+      "importance": "optional",
+      "evidence_lines": [[3090, 3090]]
+    }
+  ],
+  "relevant_files": ["test/config/get.ts"],
+  "relevant_tests": [
+    "test/config/get.ts > pnpm config get reads npm options but ignores other settings from .npmrc"
+  ],
+  "evidence_spans": [
+    {
+      "start_line": 2956,
+      "end_line": 2972,
+      "reason": "Primary jest failure block: `FAIL test/config/get.ts` header, failing test name, the expect/Received assertion diff, the source-code excerpt around the failing assertion, and the stack location. Sufficient on its own to identify root cause."
+    },
+    {
+      "start_line": 3077,
+      "end_line": 3090,
+      "reason": "Jest test totals (1 failed of 485) plus the pnpm/ELIFECYCLE wrapper failure and `##[error]Process completed with exit code 1.` GHA annotation — confirms the single test failure propagated to the job exit code."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "test/config/get.ts",
+      "pnpm config get",
+      "trailing slash"
+    ],
+    "must_not_claim": [
+      "compile error",
+      "dependency installation failed",
+      "permission denied",
+      "network failure",
+      "timeout",
+      "snapshot mismatch"
+    ]
+  }
+}

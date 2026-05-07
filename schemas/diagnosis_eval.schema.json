@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CILogBench diagnosis evaluation",
+  "description": "Output of tools/evaluate_diagnosis.py — one file per diagnoser, with one block per context method, plus per-case rows. Metrics that cannot be computed are null (reported as N/A), not 0.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["split", "diagnoser", "case_count", "methods"],
+  "properties": {
+    "split":      {"type": "string"},
+    "diagnoser":  {"type": "string"},
+    "case_count": {"type": "integer", "minimum": 0},
+    "methods": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "context_method",
+          "diagnosis_success_rate",
+          "macro_category_accuracy",
+          "macro_required_signal_mention_recall",
+          "macro_critical_signal_mention_recall",
+          "macro_relevant_file_recall",
+          "macro_relevant_test_recall",
+          "macro_must_mention_coverage",
+          "macro_forbidden_claim_violations",
+          "macro_valid_evidence_quote_rate",
+          "abstention_rate",
+          "confident_error_rate",
+          "cases"
+        ],
+        "properties": {
+          "context_method":                       {"type": "string"},
+          "diagnosis_success_rate":               {"type": ["number", "null"]},
+          "macro_category_accuracy":              {"type": ["number", "null"]},
+          "macro_required_signal_mention_recall": {"type": ["number", "null"]},
+          "macro_critical_signal_mention_recall": {"type": ["number", "null"]},
+          "macro_relevant_file_recall":           {"type": ["number", "null"]},
+          "macro_relevant_test_recall":           {"type": ["number", "null"]},
+          "macro_must_mention_coverage":          {"type": ["number", "null"]},
+          "macro_forbidden_claim_violations":     {"type": ["number", "null"]},
+          "macro_valid_evidence_quote_rate":      {"type": ["number", "null"]},
+          "abstention_rate":                      {"type": ["number", "null"]},
+          "confident_error_rate":                 {"type": ["number", "null"]},
+          "macro_context_tokens":                 {"type": ["number", "null"]},
+          "macro_diagnosis_tokens":               {"type": ["number", "null"]},
+          "diagnosis_score_v1":                   {"type": ["number", "null"]},
+          "cases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["case_id", "diagnosis_success"],
+              "properties": {
+                "case_id":                        {"type": "string"},
+                "diagnosis_success":              {"type": "boolean"},
+                "provider_error":                 {"type": ["string", "null"]},
+                "root_cause_category":            {"type": "string"},
+                "confidence":                     {"type": "number"},
+                "category_accuracy":              {"type": ["number", "null"]},
+                "required_signal_mention_recall": {"type": ["number", "null"]},
+                "critical_signal_mention_recall": {"type": ["number", "null"]},
+                "relevant_file_recall":           {"type": ["number", "null"]},
+                "relevant_test_recall":           {"type": ["number", "null"]},
+                "must_mention_coverage":          {"type": ["number", "null"]},
+                "forbidden_claim_violations":     {"type": "array", "items": {"type": "string"}},
+                "valid_evidence_quote_rate":      {"type": ["number", "null"]},
+                "abstained":                      {"type": "boolean"},
+                "confident_error":                {"type": "boolean"},
+                "missed_signals":                 {"type": "array"},
+                "context_tokens":                 {"type": "integer"},
+                "diagnosis_tokens":               {"type": "integer"},
+                "diagnosis_score_v1":             {"type": ["number", "null"]}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

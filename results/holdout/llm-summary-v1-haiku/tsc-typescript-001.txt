@@ -1,0 +1,37 @@
+# CI Failure Summary
+
+## Primary Failure
+
+One fourslash test is failing in the code fix suggestion validation for generic types. The test expects a specific return type annotation suggestion text but the actual generated suggestion includes additional type parameters than expected.
+
+## Critical Evidence
+
+- `expected 'Add return type \'Foo<string>\'' to equal 'Add return type \'Foo<string, string[…'` (L000308)
+- Test assertion at `src/harness/fourslashImpl.ts:3435:20` (L000309)
+
+## Failed Tests / Checks
+
+- `tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts` (L000306)
+
+## Relevant Files and Locations
+
+- `tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts`
+- `src/harness/fourslashImpl.ts:3435`, `4711`, `4682`
+- `src/harness/fourslashInterfaceImpl.ts:206`
+- `src/testRunner/fourslashRunner.ts:59`
+
+## Commands and Exit Codes
+
+- Step: `do-runtests-parallel` (L000321)
+- Exit code: `1` (L000322)
+- GHA error: `##[error]Process completed with exit code 1.` (L000325)
+
+## Possible Root Cause
+
+The code fix for missing type annotations on generic exports is generating return type suggestions with more type parameters than the test expects. The suggestion appears to include an additional `string[]` type parameter beyond the expected `Foo<string>`.
+
+## Uncertainties / Missing Context
+
+- The complete expected versus actual output (suggestion text is truncated with `[…`)
+- Whether this is a recent change to the code fix logic for generics
+- Whether the test's expected value is incorrect or the fix generation is incorrect

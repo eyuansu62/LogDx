@@ -1,0 +1,50 @@
+{
+  "case_id": "prettier-react-stress-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Run prettier' CI job failed because Prettier detected unformatted code in at least two files. The job exited with code 1, indicating formatting violations were found.",
+  "root_cause_category": "formatting_failure",
+  "root_cause": "Prettier found unformatted code in 'packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js' and 'compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts', causing the formatter check to exit with code 1.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+    "compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+      "reason": "This file is listed immediately before the failure, consistent with Prettier reporting it as unformatted."
+    },
+    {
+      "quote": "compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts",
+      "reason": "This file is also listed before the failure, indicating it is another file flagged by Prettier as needing formatting."
+    },
+    {
+      "quote": "error Command failed with exit code 1.",
+      "reason": "Prettier exits with code 1 when it finds files that do not match its expected formatting, confirming the job failed due to formatting violations."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions records the process exit code as 1, corroborating the Prettier check failure."
+    }
+  ],
+  "suggested_fix": "Run Prettier locally on the two flagged files (e.g. `yarn prettier-all` or `yarn prettier --write packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts`) and commit the reformatted output.",
+  "input": {
+    "context_path": "results/stress/hybrid-grep-4k-rtk-err-cat-v1/prettier-react-stress-001.txt",
+    "context_tokens_estimate": 385
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 463
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 21705.267,
+    "cache_key": "25b289d4d8437a3daab695bed6475b64afa00634d9780893d67eb488815078fd",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

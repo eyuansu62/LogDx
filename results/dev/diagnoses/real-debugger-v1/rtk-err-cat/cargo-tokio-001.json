@@ -1,0 +1,51 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "A trybuild compile-fail test named `compile_fail_full` failed because the actual compiler error output does not match the expected error output. The test checks that code in `tests/fail/macros_type_mismatch.rs` produces specific compilation errors, but 1 of 10 error patterns did not match.",
+  "root_cause_category": "compile_error",
+  "root_cause": "Trybuild compile-fail test mismatch: the actual compiler errors produced by `macros_type_mismatch.rs` do not match the expected error output. The test framework detected a discrepancy in the number or type of errors (E0308, E0277, E0271) related to `#[tokio::main]` macro type mismatches.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "tests/fail/macros_type_mismatch.rs"
+  ],
+  "relevant_tests": [
+    "compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "test compile_fail_full ... FAILED",
+      "reason": "Directly states the test that failed"
+    },
+    {
+      "quote": "thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13",
+      "reason": "Indicates this is a trybuild test failure; trybuild validates compile-fail tests by comparing actual vs expected compiler errors"
+    },
+    {
+      "quote": "1 of 10 tests failed",
+      "reason": "Shows that one of ten error patterns in the compile-fail test did not match expectations"
+    },
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
+      "reason": "Concrete evidence of type mismatch errors related to async block return types in the macros test file"
+    }
+  ],
+  "suggested_fix": "Review `tests/fail/macros_type_mismatch.rs` and update the expected compiler error output file (typically `tests/fail/macros_type_mismatch.stderr`) to match the actual errors shown in the build log, or fix the test code if the expected behavior has changed.",
+  "input": {
+    "context_path": "results/dev/rtk-err-cat/cargo-tokio-001.txt",
+    "context_tokens_estimate": 7313
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 473
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 18353.31,
+    "cache_key": "17352e943efd40108ba8398505f3429da02cb36343a057cfbc455e65a141276d",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

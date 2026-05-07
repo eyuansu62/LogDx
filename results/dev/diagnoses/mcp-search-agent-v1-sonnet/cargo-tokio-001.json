@@ -1,0 +1,60 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "mcp-search-agent-v1-sonnet",
+  "diagnoser": "mcp-search-agent-v1-sonnet",
+  "diagnoser_name": "mcp-search-agent-v1-sonnet",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because the `compile_fail_full` test in `tests-build::macros` failed. This is a trybuild test that checks that certain code snippets produce specific compile errors. The actual compiler output did not match the expected output stored in the `.stderr` files — specifically around `macros_type_mismatch.rs`, where the error messages from the current compiler version differ from the blessed expected output.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The trybuild compile-fail test `compile_fail_full` in `tokio-macros` failed because the actual compiler error output for `tests/fail/macros_type_mismatch.rs` did not match the expected `.stderr` snapshot. 1 of 10 trybuild tests failed, causing the test suite to panic.",
+  "confidence": 0.93,
+  "relevant_files": [
+    "tests/macros.rs",
+    "tests/fail/macros_type_mismatch.rs"
+  ],
+  "relevant_tests": [
+    "tests-build::macros::compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13:\n    1 of 10 tests failed",
+      "reason": "The trybuild runner panicked because 1 out of 10 compile-fail tests did not produce the expected compiler output."
+    },
+    {
+      "quote": "FAIL [   9.875s] (396/396) tests-build::macros compile_fail_full",
+      "reason": "The nextest summary confirms this specific test failed as the only failure in the 396-test run."
+    },
+    {
+      "quote": "note: If the actual output is the correct output you can bless it by rerunning\n      your test with the environment variable TRYBUILD=overwrite",
+      "reason": "Trybuild is reporting that the actual compiler output diverges from the stored .stderr snapshot, offering the TRYBUILD=overwrite remedy."
+    },
+    {
+      "quote": "error[E0308]: mismatched types\n  --> tests/fail/macros_type_mismatch.rs:66:5",
+      "reason": "The actual compiler errors shown for macros_type_mismatch.rs differ from what was expected in the snapshot, indicating a compiler version change altered error message formatting."
+    }
+  ],
+  "suggested_fix": "Update the trybuild `.stderr` snapshot files by running `TRYBUILD=overwrite cargo test compile_fail_full` in the `tokio-macros` crate to bless the new compiler output, then commit the updated `.stderr` files. Alternatively, check whether the compiler version changed (e.g., new stable Rust release) and adjust the expected error messages accordingly.",
+  "input": {
+    "context_path": "cases/dev/cargo-tokio-001/raw.log",
+    "context_sha256": "",
+    "prompt_sha256": "ade615ac3768fe29e504357b83bac8bef99cb4c893fe795df167c5051da19d6e",
+    "context_tokens_estimate": 6875
+  },
+  "usage": {
+    "output_tokens_estimate": 932
+  },
+  "metadata": {
+    "method_type": "end_to_end_search_agent",
+    "trace_path": "results/dev/search_agents/mcp-search-agent-v1-sonnet/traces/cargo-tokio-001.json",
+    "tool_call_count": 2,
+    "observed_line_count": 572,
+    "observation_tokens_estimate": 6875,
+    "total_agent_tokens_estimate": 75779,
+    "budget_exhausted": false,
+    "provider_error": null,
+    "runtime_ms": 54804.170791001525,
+    "config_sha256": "fe3eb1c2a45c16fe8deb68126e56f4a272bea876af98fcfd7fb4a802866a72db",
+    "prompt_sha256": "ade615ac3768fe29e504357b83bac8bef99cb4c893fe795df167c5051da19d6e",
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/search_agent_shim_claude_cli.py"
+  }
+}

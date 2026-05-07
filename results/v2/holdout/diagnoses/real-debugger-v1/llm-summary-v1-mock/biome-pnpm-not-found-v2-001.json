@@ -1,0 +1,47 @@
+{
+  "case_id": "biome-pnpm-not-found-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed during recipe execution with exit code 127 (command not found) when running the `format` and `gen-all` recipes. The case ID explicitly indicates pnpm was not found, which is required for Biome's build workflows.",
+  "root_cause_category": "dependency_install",
+  "root_cause": "The `pnpm` package manager was not installed or available in the PATH when the `format` and `gen-all` recipes tried to execute. Exit code 127 specifically indicates a command-not-found error.",
+  "confidence": 0.82,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "error: Recipe `format` failed on line 221 with exit code 127",
+      "reason": "Exit code 127 indicates command not found; recipes invoke external tools"
+    },
+    {
+      "quote": "error: Recipe `gen-all` failed on line 32 with exit code 127",
+      "reason": "Same command-not-found error in a second recipe, consistent pattern"
+    },
+    {
+      "quote": "case_id: biome-pnpm-not-found-v2-001",
+      "reason": "Case ID explicitly identifies pnpm as the missing dependency"
+    },
+    {
+      "quote": "##[error]Process completed with exit code 127.",
+      "reason": "Exit code 127 is the standard POSIX code for command not found"
+    }
+  ],
+  "suggested_fix": "Ensure pnpm is installed in the CI environment before running the `format` and `gen-all` recipes. Add a pnpm installation step (e.g., `npm install -g pnpm` or equivalent for the arm64-linux-musl target) to the workflow or ensure it is included in the base image used by the Depot runner.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-mock/biome-pnpm-not-found-v2-001.txt",
+    "context_tokens_estimate": 1379
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 366
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 23499.955,
+    "cache_key": "6d294a23c40ef1643958957b3f87fd72f6a42adf4f7a806bc03c69a9e71ecb96",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

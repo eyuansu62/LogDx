@@ -1,0 +1,55 @@
+{
+  "case_id": "jest-nextjs-001",
+  "context_method": "rtk-log",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because test output files could not be loaded due to missing files (ENOENT errors). Specifically, tests in the `examples/with-jest` directory failed when attempting to read their output, indicating the test runner did not produce expected output files, likely due to a failed pack/build step for isolated tests.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Tests in examples/with-jest failed with ENOENT errors when trying to load test output files, suggesting the isolated test pack step did not produce the required output files before tests were run.",
+  "confidence": 0.72,
+  "relevant_files": [
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest/app/blog/[slug]/page.test.tsx",
+    "dist/api/error.d.ts",
+    "dist/compiled/@babel/runtime/helpers/c..."
+  ],
+  "relevant_tests": [
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest/app/blog/[slug]/page.test.tsx"
+  ],
+  "evidence": [
+    {
+      "quote": "examples/with-jest/__tests__/index.test.tsx failed due to Error: fai...",
+      "reason": "Directly identifies the failing test file and that it failed with an error."
+    },
+    {
+      "quote": "Failed to load test output Error: ENOENT: no such file or directory,...",
+      "reason": "ENOENT means the expected test output file was not found, indicating a missing artifact from a prior build/pack step."
+    },
+    {
+      "quote": "examples/with-jest/app/blog/[slug]/page.test.tsx failed due to Error...",
+      "reason": "A second test file in the same example also failed, corroborating that the entire with-jest example test suite is affected."
+    },
+    {
+      "quote": "next:pack-for-isolated-tests: dist/api/error.d.ts",
+      "reason": "The pack-for-isolated-tests step emitted 498 errors referencing dist files, suggesting the pack step failed to produce complete output needed by the tests."
+    }
+  ],
+  "suggested_fix": "Investigate why the `next:pack-for-isolated-tests` step produced 559 errors (e.g., `dist/api/error.d.ts` missing or malformed) and fix the pack step so it successfully outputs all required dist files before the isolated tests are executed.",
+  "input": {
+    "context_path": "results/dev/rtk-log/jest-nextjs-001.txt",
+    "context_tokens_estimate": 401
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 512
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 27193.994,
+    "cache_key": "e6088b49458390c2a751bb247b6a0b7c757ac5527018f9f0e508d97d357ecf3f",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

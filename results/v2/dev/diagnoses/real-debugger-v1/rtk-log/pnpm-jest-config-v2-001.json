@@ -1,0 +1,51 @@
+{
+  "case_id": "pnpm-jest-config-v2-001",
+  "context_method": "rtk-log",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed due to multiple dependency installation errors, primarily involving missing packages and native module (fuse-native) compilation failures. Package resolution issues and digest mismatches prevented the test suite from running successfully.",
+  "root_cause_category": "dependency_install",
+  "root_cause": "pnpm failed to install required dependencies, with multiple 'package not found' errors and fuse-native native module installation failures, as indicated by repeated package-not-found messages and digest-mismatch errors.",
+  "confidence": 0.78,
+  "relevant_files": [
+    "node_modules/fuse-native"
+  ],
+  "relevant_tests": [
+    "test/reportingErrors.ts"
+  ],
+  "evidence": [
+    {
+      "quote": "[×14] 2026-05-06T13:25:05.9712632Z ^[[31merror^[[39m^[[37m^[[34m---^[[37m package not found, try to ins...",
+      "reason": "Clear indication of package not found errors occurring 14 times during installation phase"
+    },
+    {
+      "quote": ".../node_modules/fuse-native install:     at onErrorNT (node:interna... throw er; // Unhandled '...",
+      "reason": "fuse-native native module installation throwing an unhandled error during the build"
+    },
+    {
+      "quote": "2026-05-06T13:24:48.4125425Z   digest-mismatch: error",
+      "reason": "Package integrity or lockfile digest mismatch indicating resolution failure"
+    },
+    {
+      "quote": "[×4] 2026-05-06T13:24:47.2776850Z [WARN] Failed to create bin at /home/runner/work/pnpm/pnpm/agent/ser...",
+      "reason": "Failure to create binary symlinks, a downstream symptom of incomplete dependency installation"
+    }
+  ],
+  "suggested_fix": "Clear the pnpm cache and node_modules, then reinstall dependencies: `pnpm install --force` or `rm -rf node_modules pnpm-lock.yaml && pnpm install`. Additionally, verify fuse-native's compatibility with Node.js 24 in this environment.",
+  "input": {
+    "context_path": "results/v2/dev/rtk-log/pnpm-jest-config-v2-001.txt",
+    "context_tokens_estimate": 415
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 439
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 24741.912,
+    "cache_key": "ce8949e2cbb3935a6bad7e6fe30af13f6c724d40c56949542ed6e23cc61c9dc5",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

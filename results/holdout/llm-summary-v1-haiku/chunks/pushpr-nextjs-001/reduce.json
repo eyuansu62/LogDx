@@ -1,0 +1,10 @@
+{
+  "content": "# CI Failure Summary\n\n## Primary Failure\n\nA GitHub Actions workflow executing `sync-react.js` failed at the git push stage with a 403 authentication error. The nextjs-bot user was denied push permission to the vercel/next.js repository when attempting to push an update branch for React 19.3.0-canary.\n\n## Critical Evidence\n\n- `An error occurred while minifying. The result will not be minified.` (L000886)\n- `git push origin update/react/19.3.0-canary-142cfde8-20260422` (L001000)\n- `exit code 128` (L001001)\n- `remote: Permission to vercel/next.js.git denied to nextjs-bot.` (L001004)\n- `fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403` (L001005)\n- `ncc: Version 0.34.0` (L000566+)\n\n## Failed Tests / Checks\n\n- _(none identified)_\n\n## Relevant Files and Locations\n\n- `/home/runner/work/next.js/next.js/scripts/sync-react.js:645`\n- `/home/runner/work/next.js/next.js/node_modules/.pnpm/execa@2.0.3/node_modules/execa/lib/error.js:58`\n\n## Commands and Exit Codes\n\n- `ncc` minification (version 0.34.0)\n- `git push origin update/react/19.3.0-canary-142cfde8-20260422` — **exit code 128**\n- Overall job — **exit code 1**\n\n## Possible Root Cause\n\nThe GitHub credentials used by nextjs-bot have insufficient permissions or are invalid/expired, preventing authentication to the vercel/next.js repository. The HTTP 403 error indicates authentication failure rather than network issues.\n\n## Uncertainties / Missing Context\n\n- Whether the minification error (L000886) caused downstream issues or is unrelated\n- Current permission status of the nextjs-bot user on vercel/next.js\n- Whether credentials were recently rotated or revoked\n- Whether this represents a new failure or regression in the sync-react workflow\n- Whether the token requires elevation or scoping adjustment",
+  "provider": "claude-cli",
+  "model": "haiku",
+  "usage": {
+    "input_tokens": 9,
+    "output_tokens": 1499,
+    "total_cost_usd": 0.01806595
+  }
+}

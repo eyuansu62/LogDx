@@ -1,0 +1,47 @@
+{
+  "case_id": "cleanup-tsc-stress-001",
+  "context_method": "rtk-read",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Cleanup artifacts' job failed because the GitHub token lacked permission to delete artifacts via the GitHub API. The DELETE request to the artifacts endpoint returned HTTP 403.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GITHUB_TOKEN used by the job does not have sufficient permissions to delete artifacts. The API call to DELETE /repos/microsoft/TypeScript/actions/artifacts/{artifact_id} returned HTTP 403 with message 'Resource not accessible by integration'.",
+  "confidence": 0.95,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "This is the direct error from the GitHub CLI when attempting to delete an artifact, indicating the token lacks the required permission."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the step failed due to the 403 error from the DELETE API call."
+    },
+    {
+      "quote": "Actions: write\nMetadata: read",
+      "reason": "The GITHUB_TOKEN permissions listed show only 'Actions: write' and 'Metadata: read', which may be insufficient for deleting artifacts via the artifacts API endpoint."
+    },
+    {
+      "quote": "-X DELETE \\\n    -H \"Accept: application/vnd.github+json\" \\\n    /repos/microsoft/TypeScript/actions/artifacts/\"$artifact_id\"",
+      "reason": "This is the exact API call that triggered the 403, confirming the permission failure is on artifact deletion."
+    }
+  ],
+  "suggested_fix": "Grant the workflow job explicit permission to delete artifacts by adding 'actions: write' at the job or workflow level in the workflow YAML, or verify that the token scope includes artifact deletion permissions for the microsoft/TypeScript repository.",
+  "input": {
+    "context_path": "results/stress/rtk-read/cleanup-tsc-stress-001.txt",
+    "context_tokens_estimate": 1291
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 428
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 17480.733,
+    "cache_key": "1f7f274e391d73a7456babcb909f76b334b565b47895bfa56bdae06e47a63550",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

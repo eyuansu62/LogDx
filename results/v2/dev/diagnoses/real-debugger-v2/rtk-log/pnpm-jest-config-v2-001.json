@@ -1,0 +1,57 @@
+{
+  "case_id": "pnpm-jest-config-v2-001",
+  "context_method": "rtk-log",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed primarily due to native module installation errors for fuse-native, which threw unhandled errors during its install script. This cascaded into 28 'package not found' errors and a digest-mismatch error, with at least one test also reporting a missing ShellJS command.",
+  "root_cause_category": "dependency_install",
+  "root_cause": "The fuse-native native addon failed during its install script with an unhandled 'error' event, causing package resolution failures across the dependency tree.",
+  "confidence": 0.62,
+  "relevant_files": [],
+  "relevant_tests": [
+    "test/reportingErrors.ts"
+  ],
+  "evidence": [
+    {
+      "quote": ".../node_modules/fuse-native install:       throw er; // Unhandled '...",
+      "reason": "An unhandled error was thrown during the fuse-native install script, indicating the native module failed to build or install."
+    },
+    {
+      "quote": ".../node_modules/fuse-native install:     at onErrorNT (node:interna...",
+      "reason": "Stack trace originating inside the fuse-native install hook confirms the install script crashed with a Node.js internal error."
+    },
+    {
+      "quote": "package not found, try to ins...",
+      "reason": "This error appeared 28 times (14+14), suggesting multiple packages could not be resolved after the failed native-module install step."
+    },
+    {
+      "quote": "digest-mismatch: error",
+      "reason": "A digest mismatch during install further corroborates that the dependency installation step encountered integrity or resolution errors."
+    },
+    {
+      "quote": "[WARN] Failed to create bin at /home/runner/work/pnpm/pnpm/agent/ser...",
+      "reason": "Bin creation warnings indicate that some installed packages were not correctly set up, consistent with a broken install phase."
+    },
+    {
+      "quote": "Error: Missing ShellJS command name",
+      "reason": "A runtime test error referencing a missing ShellJS command is consistent with a dependency (shelljs or a wrapper) that was not successfully installed."
+    }
+  ],
+  "suggested_fix": "Investigate why fuse-native's install script is throwing an unhandled error on ubuntu-latest with Node.js 24 — this is likely a native-addon compatibility issue with Node 24. Pin or replace fuse-native with a version that supports Node.js 24, or add a .npmrc/pnpmfile override to skip its optional install if it is not required for the test suite.",
+  "input": {
+    "context_path": "results/v2/dev/rtk-log/pnpm-jest-config-v2-001.txt",
+    "context_tokens_estimate": 415
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 566
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 41965.072,
+    "cache_key": "e81fc153188ff6bf0e50bf57ef2be71e67af9ed14e637fe6b213c328a01ee1e4",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

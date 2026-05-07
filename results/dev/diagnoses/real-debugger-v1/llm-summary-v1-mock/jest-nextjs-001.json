@@ -1,0 +1,43 @@
+{
+  "case_id": "jest-nextjs-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "CI job failed with exit code 1 after encountering a Git 'dubious ownership' error, which prevented git status operations from completing. The error occurred when Git attempted to access repository metadata in a Docker container or different user context.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "Git detected dubious ownership of the repository at '/work', likely due to a mismatch between the repository owner and the user running Git operations in the container. This is a security check introduced in Git 2.36+ to prevent privilege escalation.",
+  "confidence": 0.82,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "fatal: detected dubious ownership in repository at '/work'",
+      "reason": "Explicit Git error message indicating the root cause of the failure; appears at line L001147"
+    },
+    {
+      "quote": "failed to get git status for dirty hash: Git error: fatal: detected dubious ownership in repository at '/work'",
+      "reason": "Confirms the dubious ownership error blocked git status operations required by the build process; appears at line L001192"
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms job failure with exit code 1; appears at line L010976"
+    }
+  ],
+  "suggested_fix": "Configure the GitHub Actions environment to handle Git repository ownership by running `git config --global --add safe.directory '*'` before the test step, or ensure the container user matches the repository owner",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-mock/jest-nextjs-001.txt",
+    "context_tokens_estimate": 1240
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 368
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 15983.467,
+    "cache_key": "9db924ec41bcd039c13aee4f9c709defcd3780b670c27d20a0cee9f089e736c7",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

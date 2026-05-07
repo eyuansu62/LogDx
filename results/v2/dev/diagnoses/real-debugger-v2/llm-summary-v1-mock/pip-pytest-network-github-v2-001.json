@@ -1,0 +1,45 @@
+{
+  "case_id": "pip-pytest-network-github-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The functional test suite failed with exit code 1. The context shows all unit tests passing, but the pytest run targeting tests/functional exited non-zero. No specific failing test or assertion error is identified in the provided context.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The command 'pytest tests/functional' exited with code 1, indicating at least one functional test failed, but the specific failing test and assertion details are not present in the provided context.",
+  "confidence": 0.3,
+  "relevant_files": [
+    "tests/unit/test_exceptions.py"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "Command pytest tests/functional --verbose --numprocesses auto --showlocals --durations=15 failed with exit code 1",
+      "reason": "Confirms the functional test suite is the step that failed and produced a non-zero exit code, causing the CI job to fail."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions records the process exit code as 1, confirming the job-level failure."
+    },
+    {
+      "quote": "non-zero exit code.  Passing True also implies allow_stderr_error",
+      "reason": "Appears in test output and may indicate a test that invokes a subprocess and received an unexpected non-zero exit code, but the specific test is not named."
+    }
+  ],
+  "suggested_fix": "Re-run the functional tests locally with 'pytest tests/functional --verbose --showlocals' to surface the specific failing test and its assertion or subprocess output, then address the identified failure.",
+  "input": {
+    "context_path": "results/v2/dev/llm-summary-v1-mock/pip-pytest-network-github-v2-001.txt",
+    "context_tokens_estimate": 1940
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 378
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 25312.897,
+    "cache_key": "243da0aa8c78fff9ed177fda88b3b52f6c53d3757b31b9ea6c4c4e63768b4154",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

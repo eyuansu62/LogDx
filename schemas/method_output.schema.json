@@ -1,0 +1,95 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CILogBench method_output manifest row",
+  "description": "One row in results/<split>/<method>.jsonl. Describes how a context-provider baseline handled a single case.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "case_id",
+    "method",
+    "mode",
+    "raw_log_path",
+    "context_path",
+    "input_line_count",
+    "output_line_count",
+    "input_byte_size",
+    "output_byte_size",
+    "reduction_ratio",
+    "included_line_ranges",
+    "metadata"
+  ],
+  "properties": {
+    "case_id": {"type": "string", "minLength": 1},
+    "method": {"type": "string", "minLength": 1},
+    "mode": {"type": "string", "const": "context_provider"},
+    "raw_log_path": {"type": "string", "minLength": 1},
+    "context_path": {"type": "string", "minLength": 1},
+    "input_line_count":  {"type": "integer", "minimum": 0},
+    "output_line_count": {"type": "integer", "minimum": 0},
+    "input_byte_size":   {"type": "integer", "minimum": 0},
+    "output_byte_size":  {"type": "integer", "minimum": 0},
+    "reduction_ratio": {"type": "number", "minimum": 0, "maximum": 1},
+    "included_line_ranges": {
+      "type": "array",
+      "description": "1-indexed inclusive [start, end] ranges of lines from the original raw.log that appear in the method's context output. Empty when line_mapping_available=false.",
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "items": {"type": "integer", "minimum": 1}
+      }
+    },
+    "line_mapping_available": {
+      "type": "boolean",
+      "default": true,
+      "description": "True when included_line_ranges reliably reflects original line numbers (raw/tail/grep). False when the method transformed content without preserving line numbers (RTK, LLM summary); the evaluator should score via text-based preservation in that case."
+    },
+    "mapping_type": {
+      "type": "string",
+      "enum": ["line", "text", "none"],
+      "description": "How the method's output relates to the original raw log. 'line' = included_line_ranges are authoritative; 'text' = scored via substring match on the output; 'none' = no preservation claim (unused in practice)."
+    },
+    "external_tool": {
+      "type": "object",
+      "description": "Required when a method shells out to an external binary (e.g. RTK).",
+      "required": ["name", "command", "exit_code", "runtime_ms"],
+      "properties": {
+        "name":        {"type": "string", "minLength": 1},
+        "version":     {"type": "string"},
+        "binary_path": {"type": "string"},
+        "command":     {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "exit_code":   {"type": "integer"},
+        "runtime_ms":  {"type": "number", "minimum": 0},
+        "stderr_path": {"type": ["string", "null"]}
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Method-specific metadata. For LLM methods this carries provider/model/prompt versions, chunk stats, cache stats, usage, and final_context_tokens_estimate.",
+      "properties": {
+        "provider":              {"type": "string"},
+        "model":                 {"type": ["string", "null"]},
+        "prompt_version":        {"type": "string"},
+        "map_prompt_sha256":     {"type": "string"},
+        "reduce_prompt_sha256":  {"type": "string"},
+        "temperature":           {"type": "number", "minimum": 0},
+        "chunk_lines":           {"type": "integer", "minimum": 1},
+        "chunk_overlap_lines":   {"type": "integer", "minimum": 0},
+        "chunk_count":           {"type": "integer", "minimum": 0},
+        "non_empty_chunk_count": {"type": "integer", "minimum": 0},
+        "cache_hit_count":       {"type": "integer", "minimum": 0},
+        "cache_miss_count":      {"type": "integer", "minimum": 0},
+        "usage": {
+          "type": "object",
+          "properties": {
+            "input_tokens":  {"type": "integer", "minimum": 0},
+            "output_tokens": {"type": "integer", "minimum": 0},
+            "usage_source":  {"type": "string", "enum": ["provider_reported", "estimated", "mixed"]}
+          }
+        },
+        "final_context_tokens_estimate": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": true
+    }
+  }
+}

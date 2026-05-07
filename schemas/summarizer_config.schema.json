@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CILogBench summarizer config (M7)",
+  "description": "Fixed configuration for an M7 real-summarizer experiment. Committed under configs/summarizers/. The config is SHA-256 hashed into the experiment manifest; any change to the config invalidates the LLM-summary cache.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "summarizer_name", "method_name", "provider",
+    "prompts", "model", "chunking", "privacy"
+  ],
+  "properties": {
+    "summarizer_name": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*[a-z0-9]$",
+      "description": "Stable slug identifying the summarizer (e.g. my-summarizer-v1). Must not contain API keys or private endpoints."
+    },
+    "method_name": {
+      "type": "string",
+      "pattern": "^llm-summary-v1-(?!mock$)[a-z0-9][a-z0-9-]*$",
+      "description": "Method identifier used in result paths. MUST start with 'llm-summary-v1-' and MUST NOT equal 'llm-summary-v1-mock' — that name is reserved for the built-in mock baseline."
+    },
+    "provider": {
+      "type": "string",
+      "enum": ["command", "mock"]
+    },
+    "command_env_var": {
+      "type": "string",
+      "description": "Env variable holding the shim command string (e.g. LLM_SUMMARY_COMMAND)."
+    },
+    "command_override": {
+      "type": ["string", "null"],
+      "description": "Explicit command; overrides command_env_var when set."
+    },
+    "prompts": {
+      "type": "object",
+      "required": ["map_prompt_path", "reduce_prompt_path"],
+      "properties": {
+        "map_prompt_path":    {"type": "string"},
+        "reduce_prompt_path": {"type": "string"}
+      }
+    },
+    "model": {
+      "type": "object",
+      "required": ["provider_name", "model_name", "temperature"],
+      "properties": {
+        "provider_name":     {"type": "string"},
+        "model_name":        {"type": "string"},
+        "model_version":     {"type": "string"},
+        "temperature":       {"type": "number", "minimum": 0},
+        "top_p":             {"type": "number", "minimum": 0, "maximum": 1},
+        "max_output_tokens": {"type": "integer", "minimum": 1},
+        "json_mode":         {"type": "boolean"},
+        "deterministic":     {"type": "boolean"}
+      }
+    },
+    "chunking": {
+      "type": "object",
+      "required": ["on_context_too_large"],
+      "properties": {
+        "chunk_tokens":         {"type": "integer", "minimum": 1},
+        "chunk_overlap_tokens": {"type": "integer", "minimum": 0},
+        "chunk_lines":          {"type": "integer", "minimum": 1,
+          "description": "Direct line-based chunk size passed through to run_llm_summary_baseline.py. If omitted, the wrapper converts chunk_tokens using a ~16 tokens/line rule."},
+        "chunk_overlap_lines":  {"type": "integer", "minimum": 0},
+        "max_chunks":           {"type": ["integer", "null"], "minimum": 1},
+        "on_context_too_large": {
+          "type": "string",
+          "enum": ["chunk", "error", "mark_unsupported"]
+        }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "required": [
+        "requires_explicit_external_llm_opt_in",
+        "redaction_mode",
+        "allow_secret_values_in_results"
+      ],
+      "properties": {
+        "requires_explicit_external_llm_opt_in": {"type": "boolean"},
+        "redaction_mode": {
+          "type": "string",
+          "enum": ["audit_only", "none"]
+        },
+        "allow_secret_values_in_results": {"type": "boolean"}
+      }
+    }
+  }
+}

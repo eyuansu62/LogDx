@@ -1,0 +1,47 @@
+{
+  "root_cause": {
+    "summary": "The 'Cleanup artifacts' step calls `gh api DELETE /repos/kubernetes/kubernetes/actions/artifacts/...` and receives HTTP 403 ('Resource not accessible by integration'). The token used for the cleanup lacks write access to workflow artifacts. Fix on the workflow: grant the token `actions:write` (or the appropriate fine-grained permission).",
+    "category": "permission_or_secret"
+  },
+  "required_signals": [
+    {
+      "type": "step_name",
+      "value": "Cleanup artifacts",
+      "importance": "critical",
+      "evidence_lines": [[28, 28]]
+    },
+    {
+      "type": "command",
+      "value": "Deleting artifacts for run ID: 23485708914",
+      "importance": "important",
+      "evidence_lines": [[80, 80]]
+    },
+    {
+      "type": "exception",
+      "value": "gh: Resource not accessible by integration (HTTP 403)",
+      "importance": "critical",
+      "evidence_lines": [[81, 81]]
+    },
+    {
+      "type": "annotation",
+      "value": "##[error]Process completed with exit code 1.",
+      "importance": "critical",
+      "evidence_lines": [[82, 82]]
+    },
+    {
+      "type": "exit_code",
+      "value": "1",
+      "importance": "critical",
+      "evidence_lines": [[82, 82]]
+    }
+  ],
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence_spans": [
+    {"start_line": 80, "end_line": 82, "reason": "The DELETE call, the 403 response, and the GHA exit marker — three consecutive lines carry the entire story."}
+  ],
+  "expected_diagnosis": {
+    "must_mention": ["gh", "403", "artifacts", "Resource not accessible", "permission"],
+    "must_not_claim": ["test assertion failed", "compile error", "formatting", "network failure"]
+  }
+}

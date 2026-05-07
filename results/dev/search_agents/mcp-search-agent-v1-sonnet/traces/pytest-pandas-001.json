@@ -1,0 +1,137 @@
+{
+  "case_id": "pytest-pandas-001",
+  "split": "dev",
+  "agent_name": "mcp-search-agent-v1-sonnet",
+  "mode": "end_to_end_search_agent",
+  "status": "completed",
+  "safe_case_metadata": {
+    "case_id": "pytest-pandas-001",
+    "repo": "pandas-dev/pandas",
+    "source": "github_actions",
+    "workflow_name": "Unit Tests",
+    "job_name": "Numpy Nightly",
+    "framework": "pytest"
+  },
+  "tool_budget": {
+    "max_tool_calls": 8,
+    "max_total_observation_tokens": 16000,
+    "max_single_observation_tokens": 4000,
+    "max_matches_per_search": 30,
+    "max_ranges_per_get_lines": 5,
+    "max_lines_per_get_lines": 200,
+    "max_lines_per_get_tail_or_head": 500
+  },
+  "steps": [
+    {
+      "step_index": 0,
+      "agent_action": {
+        "type": "seed_observation",
+        "tool": "get_log_metadata"
+      },
+      "tool_observation": {
+        "tokens_estimate": 53,
+        "preview": {
+          "case_id": "pytest-pandas-001",
+          "line_count": 3788,
+          "byte_size": 540660,
+          "framework": "pytest",
+          "repo": "pandas-dev/pandas",
+          "workflow_name": "Unit Tests",
+          "job_name": "Numpy Nightly",
+          "source": "github_actions"
+        }
+      },
+      "runtime_ms": 0
+    },
+    {
+      "step_index": 1,
+      "agent_action": {
+        "type": "tool_call",
+        "tool": "find_error_blocks",
+        "arguments": {
+          "before": 3,
+          "after": 10,
+          "max_blocks": 5
+        },
+        "rationale": "Find the main error blocks to identify root cause of the CI failure"
+      },
+      "tool_observation": {
+        "tokens_estimate": 3819,
+        "preview_keys": [
+          "after",
+          "before",
+          "block_count",
+          "blocks",
+          "max_blocks",
+          "regex",
+          "total_match_count",
+          "truncated"
+        ]
+      },
+      "runtime_ms": 11768.47412501229,
+      "agent_input_tokens_estimate": 15925,
+      "agent_output_tokens_estimate": 53
+    },
+    {
+      "step_index": 2,
+      "agent_action": {
+        "type": "tool_call",
+        "tool": "search_log",
+        "arguments": {
+          "query": "FAILED|short test summary|ERROR.*test_",
+          "regex": true,
+          "case_sensitive": false,
+          "before": 2,
+          "after": 5,
+          "max_matches": 10
+        },
+        "rationale": "Search for actual pytest test failures and the short test summary to identify which tests failed"
+      },
+      "tool_observation": {
+        "tokens_estimate": 3791,
+        "preview_keys": [
+          "after",
+          "before",
+          "case_sensitive",
+          "match_count",
+          "matches",
+          "max_matches",
+          "query",
+          "regex",
+          "truncated"
+        ]
+      },
+      "runtime_ms": 14561.885083967354,
+      "agent_input_tokens_estimate": 23135,
+      "agent_output_tokens_estimate": 177
+    },
+    {
+      "step_index": 3,
+      "agent_action": {
+        "type": "final_diagnosis"
+      },
+      "tool_observation": null,
+      "runtime_ms": 31885.061500011943,
+      "agent_input_tokens_estimate": 30096,
+      "agent_output_tokens_estimate": 1429
+    }
+  ],
+  "final_diagnosis_path": "results/dev/diagnoses/mcp-search-agent-v1-sonnet/pytest-pandas-001.json",
+  "usage": {
+    "tool_call_count": 2,
+    "observed_line_count": 638,
+    "observed_byte_size": 30652,
+    "observation_tokens_estimate": 7663,
+    "agent_input_tokens_estimate": 69156,
+    "agent_output_tokens_estimate": 1659,
+    "total_agent_tokens_estimate": 78478
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ade615ac3768fe29e504357b83bac8bef99cb4c893fe795df167c5051da19d6e",
+    "config_sha256": "fe3eb1c2a45c16fe8deb68126e56f4a272bea876af98fcfd7fb4a802866a72db",
+    "runtime_ms": 58215.436375001445,
+    "provider_error": null,
+    "budget_exhausted": false
+  }
+}

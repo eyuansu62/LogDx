@@ -1,0 +1,39 @@
+{
+  "case_id": "biome-pnpm-not-found-v2-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "All Rust unit tests passed successfully, but the CI job failed at a later step when running a `just` recipe. The `format` recipe exited with code 127 (command not found), which caused the parent `gen-all` recipe to also fail with exit code 127.",
+  "root_cause_category": "other",
+  "root_cause": "The `just` recipe named `format` (at line 221 of the justfile) failed with exit code 127, indicating that a command invoked by that recipe was not found on PATH. Exit code 127 means the shell could not locate the executable — based on the case metadata hint ('pnpm-not-found'), this is consistent with `pnpm` not being installed or not on PATH in the CI environment when the `format` recipe ran.",
+  "confidence": 0.72,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "error: Recipe `format` failed on line 221 with exit code 127",
+      "reason": "Exit code 127 universally means 'command not found' in POSIX shells; the `format` recipe invoked a binary that was not present on PATH."
+    },
+    {
+      "quote": "error: Recipe `gen-all` failed on line 32 with exit code 127",
+      "reason": "The parent recipe `gen-all` propagated the failure from `format`, confirming this is the upstream root cause."
+    }
+  ],
+  "suggested_fix": "Ensure the command required by the `format` recipe (e.g., `pnpm`) is installed and available on PATH before the `gen-all` / `format` step runs in the CI workflow — for example, by adding a setup step that installs Node.js and runs `npm install -g pnpm` or uses the official pnpm setup action prior to invoking `just gen-all`.",
+  "input": {
+    "context_path": "results/v2/holdout/rtk-err-cat/biome-pnpm-not-found-v2-001.txt",
+    "context_tokens_estimate": 28979
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 388
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 24626.246,
+    "cache_key": "1fc696788bebb86afcf084df37fc114f873874f21b43200d2822a862bb1437a0",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

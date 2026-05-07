@@ -1,0 +1,56 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "rtk-read",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The trybuild compile-fail test `compile_fail_full` fails because the Rust 1.95.0 compiler emits additional `error[E0271]` diagnostics that are not present in the stored expected output for `tests/fail/macros_type_mismatch.rs`. The expected fixture was written against an older compiler and no longer matches the actual output produced by the newly installed stable toolchain.",
+  "root_cause_category": "compile_error",
+  "root_cause": "Rust stable was upgraded from 1.94.1 to 1.95.0 (released 2026-04-16), which emits extra `error[E0271]` diagnostics for the `#[tokio::main]` macro type-mismatch cases. The trybuild fixture file for `tests/fail/macros_type_mismatch.rs` does not include those new errors, causing a mismatch between EXPECTED and ACTUAL OUTPUT.",
+  "confidence": 0.97,
+  "relevant_files": [
+    "tests-build/tests/macros.rs",
+    "tests/fail/macros_type_mismatch.rs"
+  ],
+  "relevant_tests": [
+    "tests-build::macros compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "stable-x86_64-unknown-linux-gnu updated - rustc 1.95.0 (59807616e 2026-04-14) (from rustc 1.94.1 (e408947bf 2026-03-25))",
+      "reason": "Confirms the Rust stable toolchain was upgraded to 1.95.0 during this run, which is the version that produces the changed error output."
+    },
+    {
+      "quote": "test tests/fail/macros_type_mismatch.rs [should fail to compile] ... mismatch",
+      "reason": "Trybuild reports a mismatch for this specific compile-fail test file, indicating the stored expected output diverges from actual compiler output."
+    },
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
+      "reason": "This error[E0271] appears in ACTUAL OUTPUT but is absent from the EXPECTED section, showing the new compiler emits an additional diagnostic that the fixture does not anticipate."
+    },
+    {
+      "quote": "note: If the actual output is the correct output you can bless it by rerunning your test with the environment variable TRYBUILD=overwrite",
+      "reason": "Trybuild's own note confirms this is a fixture staleness problem caused by changed compiler output, and describes the standard remediation."
+    },
+    {
+      "quote": "FAIL [   9.875s] (396/396) tests-build::macros compile_fail_full",
+      "reason": "Single failing test in the second nextest run; all 395 other tests pass, isolating the failure to this trybuild fixture mismatch."
+    }
+  ],
+  "suggested_fix": "Update the trybuild fixture for `tests/fail/macros_type_mismatch.rs` to match Rust 1.95.0 output by running the test suite with `TRYBUILD=overwrite cargo nextest run --workspace --features full,test-util -E 'test(compile_fail_full)'`, then commit the updated `.stderr` file.",
+  "input": {
+    "context_path": "results/dev/rtk-read/cargo-tokio-001.txt",
+    "context_tokens_estimate": 99259
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 670
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 67555.932,
+    "cache_key": "78f08570a6612ad28790810347b0ce6f76169b5e8bb3cc7d739eb1af96bd0756",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

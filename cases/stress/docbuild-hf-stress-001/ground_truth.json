@@ -1,0 +1,47 @@
+{
+  "root_cause": {
+    "summary": "A `doc_build_status_check` step fails because the upstream `doc_build` job ended in 'failure'. The step's shell conditional `if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]]` falls through to `exit 1`. The real fix is in whichever job produced the 'failure' outcome; this step is a gate, not a bug.",
+    "category": "github_actions_config"
+  },
+  "required_signals": [
+    {
+      "type": "step_name",
+      "value": "doc_build_status_check",
+      "importance": "critical",
+      "evidence_lines": [[29, 29]]
+    },
+    {
+      "type": "command",
+      "value": "if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\",
+      "importance": "critical",
+      "evidence_lines": [[30, 30]]
+    },
+    {
+      "type": "command",
+      "value": "exit 1",
+      "importance": "critical",
+      "evidence_lines": [[35, 35]]
+    },
+    {
+      "type": "annotation",
+      "value": "##[error]Process completed with exit code 1.",
+      "importance": "critical",
+      "evidence_lines": [[39, 39]]
+    },
+    {
+      "type": "exit_code",
+      "value": "1",
+      "importance": "critical",
+      "evidence_lines": [[39, 39]]
+    }
+  ],
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence_spans": [
+    {"start_line": 29, "end_line": 39, "reason": "Job name, the shell conditional whose string-comparison arms hard-code 'failure', the else/exit 1 branch, and the GHA exit marker."}
+  ],
+  "expected_diagnosis": {
+    "must_mention": ["doc_build", "status check", "failure", "exit 1", "upstream"],
+    "must_not_claim": ["test assertion failed", "compile error", "formatting", "dependency installation failed", "permission denied"]
+  }
+}

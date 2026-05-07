@@ -1,0 +1,43 @@
+{
+  "case_id": "docbuild-hf-stress-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The doc_build_status_check job failed because an upstream job it depends on did not succeed or was skipped in an acceptable state. The status check script evaluated the upstream job statuses as 'failure' and 'skipped', neither of which satisfied the 'success' condition, causing the script to exit with code 1.",
+  "root_cause_category": "github_actions_config",
+  "root_cause": "The status gate script requires the upstream doc build job to have a status of 'success' or 'skipped', but the actual status was 'failure'. The condition `[[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]]` evaluated to false, triggering `exit 1`.",
+  "confidence": 0.82,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\\n   [[ \"skipped\" == \"success\" || \"skipped\" == \"skipped\" ]]; then",
+      "reason": "The shell condition hardcodes the upstream job statuses as 'failure' and 'skipped'. The first condition evaluates to false because 'failure' is neither 'success' nor 'skipped', causing the else branch to execute."
+    },
+    {
+      "quote": "exit 1",
+      "reason": "The else branch executes exit 1, confirming the status check failed because the upstream build job did not succeed."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the job terminated with a non-zero exit code, consistent with the upstream doc build having failed."
+    }
+  ],
+  "suggested_fix": "Investigate why the upstream documentation build job returned a 'failure' status and fix the underlying build failure. The status check job itself is working as intended — it correctly blocks the pipeline when the doc build fails.",
+  "input": {
+    "context_path": "results/stress/hybrid-grep-4k-rtk-err-cat-v1/docbuild-hf-stress-001.txt",
+    "context_tokens_estimate": 274
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 424
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 19477.059,
+    "cache_key": "e93a6741631f5370beefb31c18f1155f643b187c1014cb4398b1873b00945502",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

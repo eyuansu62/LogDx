@@ -1,0 +1,60 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "MyPy type checker reports hundreds of missing attributes on PyArrow compute module functions across multiple pandas source files. Type information for PyArrow compute functions (utf8_length, if_else, is_null, etc.) is not being found by mypy.",
+  "root_cause_category": "type_error",
+  "root_cause": "PyArrow type stubs or type annotations are missing or incomplete. MyPy cannot resolve type information for PyArrow compute module functions, reporting `[attr-defined]` errors for standard compute functions that should exist (is_null, if_else, utf8_*, fill_null*, etc.) across pandas/compat/pyarrow.py, pandas/core/arrays/, and related files.",
+  "confidence": 0.78,
+  "relevant_files": [
+    "pandas/compat/pyarrow.py",
+    "pandas/core/arrays/_arrow_string_mixins.py",
+    "pandas/core/arrays/arrow/accessors.py",
+    "pandas/core/arrays/arrow/array.py",
+    "pandas/core/arrays/string_arrow.py",
+    "pandas/core/strings/accessor.py",
+    "pandas/io/feather_format.py",
+    "pandas/core/arrays/datetimes.py"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "pandas/compat/pyarrow.py:76: error: Module has no attribute \"is_null\"  [attr-defined]",
+      "reason": "MyPy cannot find the is_null attribute on the PyArrow module, indicating missing type information"
+    },
+    {
+      "quote": "pandas/core/arrays/_arrow_string_mixins.py:110: error: Module has no attribute \"utf8_length\"  [attr-defined]",
+      "reason": "Similar attribute-not-found error for a standard PyArrow string compute function"
+    },
+    {
+      "quote": "pandas/core/arrays/arrow/array.py:101: error: Module has no attribute \"equal\"  [attr-defined]",
+      "reason": "Widespread pattern of mypy failing to resolve PyArrow compute function attributes across the codebase"
+    },
+    {
+      "quote": "pandas/io/feather_format.py:70: error: Call to untyped function \"write_feather\" in typed context  [no-untyped-call]",
+      "reason": "MyPy also cannot find type signatures for PyArrow I/O functions, reinforcing that type stubs are incomplete"
+    },
+    {
+      "quote": "mypy.....................................................................[41mFailed[m",
+      "reason": "MyPy hook execution failed during pre-commit, blocking the CI job"
+    }
+  ],
+  "suggested_fix": "Verify PyArrow is installed with type stubs or that a compatible version of pyarrow-stubs (if needed) is available. Check that mypy can locate PyArrow type information via py.typed markers or .pyi stub files. May require updating PyArrow version or its type support dependencies.",
+  "input": {
+    "context_path": "results/dev/rtk-err-cat/mypy-pandas-001.txt",
+    "context_tokens_estimate": 18893
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 603
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 23569.84,
+    "cache_key": "33546840519afa16d03e7f4375790cc0544df93cf1ce460492a476e3b688b3c8",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

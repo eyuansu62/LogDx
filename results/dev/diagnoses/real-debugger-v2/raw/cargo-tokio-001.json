@@ -1,0 +1,55 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "raw",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The trybuild compile-fail test `tests-build::macros::compile_fail_full` failed because the `.stderr` snapshot for `tests/fail/macros_type_mismatch.rs` no longer matches the actual compiler output from rustc 1.95.0. The new compiler emits additional `error[E0271]` diagnostics pointing at the `#[tokio::main]` attribute that were not present in the blessed expected output.",
+  "root_cause_category": "compile_error",
+  "root_cause": "rustc 1.95.0 (upgraded from 1.94.1) now emits extra `error[E0271]: expected ... to be a future that resolves to ...` diagnostics at the `#[tokio::main]` call site for each type-mismatch case in `tests/fail/macros_type_mismatch.rs`. The trybuild `.stderr` snapshot was blessed against an older compiler that did not emit these E0271 errors, so the expected and actual outputs diverge.",
+  "confidence": 0.97,
+  "relevant_files": [
+    "tests-build/tests/fail/macros_type_mismatch.rs"
+  ],
+  "relevant_tests": [
+    "tests-build::macros compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "stable-x86_64-unknown-linux-gnu updated - rustc 1.95.0 (59807616e 2026-04-14) (from rustc 1.94.1 (e408947bf 2026-03-25))",
+      "reason": "The toolchain was just upgraded to rustc 1.95.0, which changed the compiler diagnostic output for this case."
+    },
+    {
+      "quote": "test tests/fail/macros_type_mismatch.rs [should fail to compile] ... mismatch",
+      "reason": "The trybuild test explicitly reports a mismatch between expected and actual stderr for this file."
+    },
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
+      "reason": "This is a new E0271 diagnostic in the ACTUAL OUTPUT that is absent from the EXPECTED section, confirming the new compiler emits an additional error."
+    },
+    {
+      "quote": "note: If the actual output is the correct output you can bless it by rerunning\n          your test with the environment variable TRYBUILD=overwrite",
+      "reason": "trybuild itself confirms the fix path: re-bless the snapshot files to match the new compiler output."
+    },
+    {
+      "quote": "1 of 10 tests failed",
+      "reason": "Only one of the ten compile-fail sub-tests failed, confirming the issue is isolated to macros_type_mismatch.rs whose expected stderr is stale."
+    }
+  ],
+  "suggested_fix": "Re-bless the trybuild snapshot for `tests/fail/macros_type_mismatch.rs` by running the test suite with `TRYBUILD=overwrite cargo test` inside `tests-build`, then commit the updated `.stderr` file that includes the new `error[E0271]` diagnostics emitted by rustc 1.95.0.",
+  "input": {
+    "context_path": "results/dev/raw/cargo-tokio-001.txt",
+    "context_tokens_estimate": 99259
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 638
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 59004.852,
+    "cache_key": "a49db3b77adb2e97c275dee8d0eae13489eb7690d95254f88a572552ebeae6ae",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

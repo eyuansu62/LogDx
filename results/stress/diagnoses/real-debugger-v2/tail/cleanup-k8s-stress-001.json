@@ -1,0 +1,47 @@
+{
+  "case_id": "cleanup-k8s-stress-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Cleanup artifacts' job failed when attempting to delete a GitHub Actions artifact via the API. The deletion request returned HTTP 403, indicating the token lacks the required permissions to delete artifacts.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GITHUB_TOKEN used by the job does not have permission to delete artifacts. The API call to DELETE /repos/kubernetes/kubernetes/actions/artifacts/{artifact_id} returned HTTP 403 with the message 'Resource not accessible by integration'.",
+  "confidence": 0.92,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "Explicit HTTP 403 error from the GitHub API indicates the token is not authorized to perform the DELETE operation on artifacts."
+    },
+    {
+      "quote": "Actions: write\n  Metadata: read",
+      "reason": "The GITHUB_TOKEN permissions listed show only 'Actions: write' and 'Metadata: read'. The artifact deletion endpoint may require additional scopes not granted here."
+    },
+    {
+      "quote": "Secret source: None",
+      "reason": "No external secret source is configured, meaning the job relies solely on the default GITHUB_TOKEN, which may have restricted permissions for this repository."
+    },
+    {
+      "quote": "-X DELETE \\\n    -H \"Accept: application/vnd.github+json\" \\\n    /repos/kubernetes/kubernetes/actions/artifacts/\"$artifact_id\"",
+      "reason": "This is the exact API call that failed — a DELETE request to the artifacts endpoint, which returned 403."
+    }
+  ],
+  "suggested_fix": "Grant the workflow's GITHUB_TOKEN explicit write permissions for artifacts by adding 'actions: write' under the job or workflow-level 'permissions' block in the workflow YAML, and verify that the token's repository access policy allows artifact deletion for the kubernetes/kubernetes repository.",
+  "input": {
+    "context_path": "results/stress/tail/cleanup-k8s-stress-001.txt",
+    "context_tokens_estimate": 1291
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 458
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 18003.502,
+    "cache_key": "439407896be401e9d5869363fb38caacd23357c727c90a9cc53f46e32639aed7",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

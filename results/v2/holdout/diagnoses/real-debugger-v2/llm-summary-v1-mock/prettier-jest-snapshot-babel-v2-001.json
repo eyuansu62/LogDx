@@ -1,0 +1,51 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "Multiple Jest snapshot tests failed because thrown error messages no longer match stored snapshots. The stack traces repeatedly point to `toThrowErrorMatchingSnapshot` assertions failing, and the Babel parse error creation path is visible in the call stacks, suggesting a Babel parser error message change caused the mismatch. The process exited with code 1.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Jest `toThrowErrorMatchingSnapshot` assertions failed across multiple test files because the actual thrown error messages (produced via `createBabelParseError`) no longer match the stored snapshots, likely due to a change in Babel parser error message formatting.",
+  "confidence": 0.72,
+  "relevant_files": [
+    "src/common/parser-create-error.js",
+    "src/language-js/parse/utilities/create-babel-parse-error.js",
+    "node_modules/expect/build/index.js"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "at Object.toThrowErrorMatchingSnapshot (/home/runner/work/prettier/prettier/node_modules/expect/build/index.js:2155:20)",
+      "reason": "Repeated appearances of this call in stack traces indicate Jest snapshot assertions are failing — the thrown error does not match the stored snapshot string."
+    },
+    {
+      "quote": "at createBabelParseError (file:///home/runner/work/prettier/prettier/src/language-js/parse/utilities/create-babel-parse-error.js:33:10)",
+      "reason": "The error being thrown originates in the Babel parse error utility, pointing to a change in Babel parser error message text as the source of the snapshot mismatch."
+    },
+    {
+      "quote": "at createError (file:///home/runner/work/prettier/prettier/src/common/parser-create-error.js:5:17)",
+      "reason": "This is the upstream error construction path, confirming the thrown error message content is what diverges from the snapshot."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the CI job failed, consistent with Jest exiting non-zero due to snapshot mismatches."
+    }
+  ],
+  "suggested_fix": "Update the Jest snapshots to reflect the current Babel parser error messages by running `yarn jest --updateSnapshot` (or equivalent) for the affected test files, then commit the updated snapshot files.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-mock/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 2665
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 546
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 32499.358,
+    "cache_key": "d1480239fc901ee711302167723db7aa47f9808dd03b45be37e59ed4b853702d",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

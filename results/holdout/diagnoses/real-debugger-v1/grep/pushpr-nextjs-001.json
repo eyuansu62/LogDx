@@ -1,0 +1,43 @@
+{
+  "case_id": "pushpr-nextjs-001",
+  "context_method": "grep",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The GitHub Actions workflow attempted to push a branch using the `nextjs-bot` user but was denied with HTTP 403 permission error. The bot lacks push access to the repository.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "Authentication credentials for `nextjs-bot` are invalid, expired, or lack push permissions to vercel/next.js.git. The git push command failed with 'remote: Permission to vercel/next.js.git denied to nextjs-bot.'",
+  "confidence": 0.9,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "remote: Permission to vercel/next.js.git denied to nextjs-bot.",
+      "reason": "Explicitly states the bot user is denied access to the repository."
+    },
+    {
+      "quote": "fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403",
+      "reason": "HTTP 403 Forbidden error indicates authentication or authorization failure for the git push operation."
+    },
+    {
+      "quote": "Error: Command failed with exit code 128 (Unknown system error -128): git push origin update/react/19.3.0-canary-142cfde8-20260422",
+      "reason": "The git push command definitively failed with exit code 128, which maps to permission/auth errors."
+    }
+  ],
+  "suggested_fix": "Verify and refresh the GitHub personal access token or deploy key used by the nextjs-bot user. Ensure the token has 'repo' (push) scope and has not expired. Check the GitHub Actions workflow secrets configuration.",
+  "input": {
+    "context_path": "results/holdout/grep/pushpr-nextjs-001.txt",
+    "context_tokens_estimate": 2488
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 355
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 15082.049,
+    "cache_key": "7d17c01076ebfb6bb3a982d3a95b245049c39863e3e1b680c4a0c646ad2132a0",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "case_id": "pytest-sklearn-stress-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "A doctest in doc/callbacks.rst failed because the expected output shows a progress bar rendering ('LogisticRegression - fit ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:03:12') but the actual output is just 'LogisticRegression()'. The doctest at line 48 of callbacks.rst is not marked with +SKIP unlike the preceding example, so it runs and produces the plain estimator repr instead of the expected progress bar output.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The doctest at doc/callbacks.rst line 48 expects a rich progress bar output but gets 'LogisticRegression()' instead, because the doctest is not skipped and the progress bar callback does not produce the expected terminal output in the CI environment.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst"
+  ],
+  "relevant_tests": [
+    "callbacks.rst::callbacks.rst"
+  ],
+  "evidence": [
+    {
+      "quote": "Expected:\n    LogisticRegression - fit ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:03:12\nGot:\n    LogisticRegression()",
+      "reason": "This is the exact assertion mismatch: the doctest expects a progress bar string but gets the plain estimator repr, which is the direct cause of the failure."
+    },
+    {
+      "quote": "/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst:48: DocTestFailure",
+      "reason": "Confirms the failing file and line number."
+    },
+    {
+      "quote": "FAILED ../doc/callbacks.rst::callbacks.rst",
+      "reason": "Confirms the test identifier that failed."
+    },
+    {
+      "quote": "039     >>> estimator.set_callbacks(progress_bar) # doctest: +SKIP\n040 \n041 .. TODO: remove the doctest skip",
+      "reason": "The set_callbacks call is skipped but the subsequent fit call is not, meaning the callback is never actually registered, so no progress bar output is produced when fit is called."
+    }
+  ],
+  "suggested_fix": "Add '# doctest: +SKIP' to the '>>> estimator.fit(X, y)' line at doc/callbacks.rst:48, or update the expected output to match 'LogisticRegression()', until the progress bar rendering in CI is properly supported.",
+  "input": {
+    "context_path": "results/stress/tail/pytest-sklearn-stress-001.txt",
+    "context_tokens_estimate": 11243
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 508
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 21657.906,
+    "cache_key": "a93e8d0d1e92206f3a10b250086d012870e83f1d53bfca1127deab2f028b41bc",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

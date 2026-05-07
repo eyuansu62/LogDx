@@ -1,0 +1,53 @@
+{
+  "case_id": "pushpr-nextjs-001",
+  "context_method": "mcp-search-agent-v1-sonnet",
+  "diagnoser": "mcp-search-agent-v1-sonnet",
+  "diagnoser_name": "mcp-search-agent-v1-sonnet",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed when trying to push a branch to GitHub. The bot account 'nextjs-bot' was denied permission to push to vercel/next.js.git, resulting in a 403 error and exit code 128.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GitHub bot account 'nextjs-bot' does not have write permission to vercel/next.js.git, causing 'git push origin update/react/19.3.0-canary-142cfde8-20260422' to fail with HTTP 403.",
+  "confidence": 0.97,
+  "relevant_files": [
+    "scripts/sync-react.js"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "remote: Permission to vercel/next.js.git denied to nextjs-bot.\\n\" +\n    \"fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403\"",
+      "reason": "This is the direct error from the git push command showing that nextjs-bot lacks push permission to the repo."
+    },
+    {
+      "quote": "Error: Command failed with exit code 128 (Unknown system error -128): git push origin update/react/19.3.0-canary-142cfde8-20260422",
+      "reason": "The command that failed and the exit code confirming the git push was rejected."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions confirms the step failed with a non-zero exit code."
+    }
+  ],
+  "suggested_fix": "Ensure that the 'nextjs-bot' GitHub account (or the token/credential used in the workflow) has write access to vercel/next.js.git. Check that the repository's Actions secrets include a valid PAT or GitHub App token with the 'contents: write' permission, and that the token is correctly configured in the workflow's checkout/auth steps.",
+  "input": {
+    "context_path": "cases/holdout/pushpr-nextjs-001/raw.log",
+    "context_sha256": "",
+    "prompt_sha256": "ade615ac3768fe29e504357b83bac8bef99cb4c893fe795df167c5051da19d6e",
+    "context_tokens_estimate": 4029
+  },
+  "usage": {
+    "output_tokens_estimate": 696
+  },
+  "metadata": {
+    "method_type": "end_to_end_search_agent",
+    "trace_path": "results/holdout/search_agents/mcp-search-agent-v1-sonnet/traces/pushpr-nextjs-001.json",
+    "tool_call_count": 2,
+    "observed_line_count": 335,
+    "observation_tokens_estimate": 4029,
+    "total_agent_tokens_estimate": 63605,
+    "budget_exhausted": false,
+    "provider_error": null,
+    "runtime_ms": 45891.786249994766,
+    "config_sha256": "fe3eb1c2a45c16fe8deb68126e56f4a272bea876af98fcfd7fb4a802866a72db",
+    "prompt_sha256": "ade615ac3768fe29e504357b83bac8bef99cb4c893fe795df167c5051da19d6e",
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/search_agent_shim_claude_cli.py"
+  }
+}

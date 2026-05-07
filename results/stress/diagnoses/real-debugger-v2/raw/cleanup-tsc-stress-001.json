@@ -1,0 +1,47 @@
+{
+  "case_id": "cleanup-tsc-stress-001",
+  "context_method": "raw",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Cleanup artifacts' job failed because the GitHub token lacked sufficient permissions to delete artifacts via the GitHub API. The DELETE request to the artifacts endpoint returned HTTP 403.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GITHUB_TOKEN used by the job does not have permission to delete artifacts. The GitHub API returned 'Resource not accessible by integration (HTTP 403)' when attempting a DELETE request to /repos/microsoft/TypeScript/actions/artifacts/<artifact_id>.",
+  "confidence": 0.92,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "This is the direct error returned by the GitHub CLI when attempting to delete an artifact, indicating the token lacks the required permissions."
+    },
+    {
+      "quote": "Actions: write",
+      "reason": "The GITHUB_TOKEN permissions block shows only 'Actions: write' and 'Metadata: read' — there is no explicit 'artifacts: write' or broader permission that would allow artifact deletion via the API."
+    },
+    {
+      "quote": "Secret source: None",
+      "reason": "No additional secrets are injected, meaning no elevated token is available beyond the default GITHUB_TOKEN with its limited permission set."
+    },
+    {
+      "quote": "-X DELETE \\\n    -H \"Accept: application/vnd.github+json\" \\\n    /repos/microsoft/TypeScript/actions/artifacts/\"$artifact_id\"",
+      "reason": "This is the exact API call that triggered the 403, confirming the operation being blocked is artifact deletion."
+    }
+  ],
+  "suggested_fix": "Grant the workflow's GITHUB_TOKEN explicit write permission for actions artifacts by adding 'actions: write' (or the appropriate permission scope for artifact deletion) to the workflow's permissions block, or use a PAT with sufficient scopes as the GH_TOKEN secret.",
+  "input": {
+    "context_path": "results/stress/raw/cleanup-tsc-stress-001.txt",
+    "context_tokens_estimate": 1291
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 453
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 18191.229,
+    "cache_key": "9f6efcc8f1d23f791a18567b8f3cf0d12a9cbb28cdd08835006526888023b178",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

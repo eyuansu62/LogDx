@@ -1,0 +1,47 @@
+{
+  "case_id": "cleanup-k8s-stress-001",
+  "context_method": "rtk-read",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Cleanup artifacts' CI job failed when attempting to delete a GitHub Actions artifact via the API. The deletion request returned HTTP 403, indicating the GITHUB_TOKEN lacks the required permissions to delete artifacts.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GITHUB_TOKEN used by the workflow does not have permission to delete artifacts. The GitHub API returned HTTP 403 ('Resource not accessible by integration') when the job attempted a DELETE request to /repos/kubernetes/kubernetes/actions/artifacts/<id>.",
+  "confidence": 0.92,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "This is the direct error message from the gh CLI indicating the token lacks permission for the DELETE operation on the artifacts endpoint."
+    },
+    {
+      "quote": "Actions: write\nMetadata: read",
+      "reason": "The GITHUB_TOKEN permissions block shows only 'Actions: write' and 'Metadata: read' are granted. The 'actions' write permission may not be sufficient or the token scope does not cover artifact deletion in this context."
+    },
+    {
+      "quote": "Secret source: None",
+      "reason": "No additional secrets are injected, confirming the job relies solely on the default GITHUB_TOKEN, which is restricted in what operations it can perform on the repository."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the job step failed with a non-zero exit code, triggered by the 403 response from the API."
+    }
+  ],
+  "suggested_fix": "Add explicit `actions: write` permission at the job or workflow level and ensure that artifact deletion is permitted for this token scope. If the default GITHUB_TOKEN is insufficient for cross-run artifact deletion, consider using a PAT (Personal Access Token) with the required `repo` or `actions` scope stored as a repository secret and referenced via `GH_TOKEN`.",
+  "input": {
+    "context_path": "results/stress/rtk-read/cleanup-k8s-stress-001.txt",
+    "context_tokens_estimate": 1291
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 477
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 18633.265,
+    "cache_key": "18e4f49ecfeb03ce95d8a118224abffa3f550cea4ae04469b4939ce6b5bcfe1f",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

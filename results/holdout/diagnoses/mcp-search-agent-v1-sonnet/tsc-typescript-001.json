@@ -1,0 +1,62 @@
+{
+  "case_id": "tsc-typescript-001",
+  "context_method": "mcp-search-agent-v1-sonnet",
+  "diagnoser": "mcp-search-agent-v1-sonnet",
+  "diagnoser_name": "mcp-search-agent-v1-sonnet",
+  "mode": "root_cause_diagnosis",
+  "summary": "A fourslash test assertion failed in the TypeScript CI coverage job. The test 'codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts' expected a different return type string than what was produced, causing the test runner to exit with code 1.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "AssertionError in fourslash test: expected 'Add return type \\'Foo<string>\\'' but the actual value was truncated/different, indicating the code fix for missing type annotations produced an oversimplified generic type instead of the expected one.",
+  "confidence": 0.93,
+  "relevant_files": [
+    "tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts",
+    "src/harness/fourslashImpl.ts",
+    "src/harness/fourslashInterfaceImpl.ts",
+    "src/testRunner/fourslashRunner.ts"
+  ],
+  "relevant_tests": [
+    "fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts runs correctly"
+  ],
+  "evidence": [
+    {
+      "quote": "AssertionError: expected 'Add return type \\'Foo<string>\\'' to equal 'Add return type \\'Foo<string, string[…'",
+      "reason": "This is the direct assertion failure showing the actual vs expected return type string mismatch in the fourslash code fix test."
+    },
+    {
+      "quote": "at _TestState.verifyCodeFix (src/harness/fourslashImpl.ts:3435:20)",
+      "reason": "Stack trace confirms the failure occurred in the verifyCodeFix method, which checks that the code fix produces the expected output."
+    },
+    {
+      "quote": "Error in do-runtests-parallel in 10m 38.9s\nError: Process exited with code: 1",
+      "reason": "Confirms the test runner process failed with exit code 1 due to this assertion error."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions step-level error confirming the job failed."
+    }
+  ],
+  "suggested_fix": "Investigate the code fix logic for missing type annotations on exports with generic types — specifically the case where `Foo<string, string[]>` was being simplified to `Foo<string>`. Update either the fix implementation to produce the correct full generic type, or update the test baseline if the simplified output is intentional.",
+  "input": {
+    "context_path": "cases/holdout/tsc-typescript-001/raw.log",
+    "context_sha256": "",
+    "prompt_sha256": "ade615ac3768fe29e504357b83bac8bef99cb4c893fe795df167c5051da19d6e",
+    "context_tokens_estimate": 1440
+  },
+  "usage": {
+    "output_tokens_estimate": 736
+  },
+  "metadata": {
+    "method_type": "end_to_end_search_agent",
+    "trace_path": "results/holdout/search_agents/mcp-search-agent-v1-sonnet/traces/tsc-typescript-001.json",
+    "tool_call_count": 1,
+    "observed_line_count": 120,
+    "observation_tokens_estimate": 1440,
+    "total_agent_tokens_estimate": 36460,
+    "budget_exhausted": false,
+    "provider_error": null,
+    "runtime_ms": 31371.46475003101,
+    "config_sha256": "fe3eb1c2a45c16fe8deb68126e56f4a272bea876af98fcfd7fb4a802866a72db",
+    "prompt_sha256": "ade615ac3768fe29e504357b83bac8bef99cb4c893fe795df167c5051da19d6e",
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/search_agent_shim_claude_cli.py"
+  }
+}

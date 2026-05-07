@@ -1,0 +1,89 @@
+{
+  "root_cause": {
+    "summary": "The trybuild-based compile-fail test `tests-build::macros compile_fail_full` fails because the expected rustc diagnostics for `tests/fail/macros_type_mismatch.rs` no longer match the actual rustc output. Rustc's error messages have drifted (additional `help:` suggestions such as `consider using Result::expect`). Fix: regenerate the expected .stderr with `TRYBUILD=overwrite cargo test` and commit the refreshed expectations.",
+    "category": "compile_error"
+  },
+  "required_signals": [
+    {
+      "type": "failed_test",
+      "value": "tests-build::macros compile_fail_full",
+      "aliases": ["compile_fail_full"],
+      "importance": "critical",
+      "evidence_lines": [[2759, 2759]]
+    },
+    {
+      "type": "stack_location",
+      "file": "tests/fail/macros_type_mismatch.rs",
+      "line": 5,
+      "importance": "critical",
+      "evidence_lines": [[2793, 2793]]
+    },
+    {
+      "type": "compile_error",
+      "value": "error[E0308]: mismatched types",
+      "importance": "critical",
+      "evidence_lines": [[2792, 2792]]
+    },
+    {
+      "type": "assertion",
+      "value": "1 of 10 tests failed",
+      "importance": "critical",
+      "evidence_lines": [[3092, 3092]]
+    },
+    {
+      "type": "panic",
+      "value": "thread 'compile_fail_full' (25975) panicked at",
+      "importance": "important",
+      "evidence_lines": [[3091, 3091]]
+    },
+    {
+      "type": "assertion",
+      "value": "396 tests run: 395 passed, 1 failed, 1 skipped",
+      "importance": "critical",
+      "evidence_lines": [[3118, 3118]]
+    },
+    {
+      "type": "exit_code",
+      "value": "100",
+      "importance": "critical",
+      "evidence_lines": [[3121, 3121]]
+    }
+  ],
+  "relevant_files": [
+    "tests/fail/macros_type_mismatch.rs"
+  ],
+  "relevant_tests": [
+    "tests-build::macros compile_fail_full"
+  ],
+  "evidence_spans": [
+    {
+      "start_line": 2759,
+      "end_line": 2763,
+      "reason": "trybuild harness reports the single failing compile_fail test with explicit FAIL + FAILED lines."
+    },
+    {
+      "start_line": 2788,
+      "end_line": 2829,
+      "reason": "First two rustc error blocks from the EXPECTED section showing the precise scenario (macros_type_mismatch.rs lines 5 and 10) that no longer matches actual output."
+    },
+    {
+      "start_line": 3091,
+      "end_line": 3121,
+      "reason": "Trybuild panic with '1 of 10 tests failed', nextest summary (395 passed, 1 failed), test-run-failed marker, and GHA exit code 100."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "trybuild",
+      "compile_fail",
+      "macros_type_mismatch",
+      "expected vs actual"
+    ],
+    "must_not_claim": [
+      "runtime test assertion",
+      "dependency installation failed",
+      "network failure",
+      "GitHub Actions permission error"
+    ]
+  }
+}

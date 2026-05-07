@@ -1,0 +1,85 @@
+{
+  "case_id": "jest-nextjs-001",
+  "context_method": "grep",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "All 14 example test files failed because each test process exited with code 1 and produced no results file. The test runner reports '0 matches' for every pattern, meaning the tests themselves never ran or produced output, and the runner then failed to find the expected results JSON files.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "Git reports 'fatal: detected dubious ownership in repository at '/work'' twice before tests run, indicating the working directory is owned by a different user than the runner process. While the tests appear to start, turbo also warns 'failed to get git status for dirty hash: Git error: fatal: detected dubious ownership in repository at '/work''. Every test pattern resolves to '0 matches' and exits with code 1, suggesting the test isolation/setup step that depends on git (e.g., determining the correct package or test scope) fails silently due to this ownership error, leaving no results files behind.",
+  "confidence": 0.72,
+  "relevant_files": [
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest-babel/__tests__/index.test.tsx",
+    "examples/with-jest/app/blog/[slug]/page.test.tsx",
+    "examples/with-jest/app/counter.test.tsx",
+    "examples/with-jest/app/utils/add.test.ts",
+    "examples/with-jest/app/page.test.tsx",
+    "examples/with-mocha/test/index.test.js",
+    "examples/with-typescript-graphql/test/index.test.tsx",
+    "examples/with-vitest/__tests__/Home.test.tsx",
+    "examples/with-vitest/app/blog/[slug]/page.test.tsx",
+    "examples/with-vitest/app/counter.test.tsx",
+    "examples/with-vitest/app/page.test.tsx",
+    "examples/with-vitest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts"
+  ],
+  "relevant_tests": [
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest-babel/__tests__/index.test.tsx",
+    "examples/with-jest/app/blog/[slug]/page.test.tsx",
+    "examples/with-jest/app/counter.test.tsx",
+    "examples/with-jest/app/utils/add.test.ts",
+    "examples/with-jest/app/page.test.tsx",
+    "examples/with-mocha/test/index.test.js",
+    "examples/with-typescript-graphql/test/index.test.tsx",
+    "examples/with-vitest/__tests__/Home.test.tsx",
+    "examples/with-vitest/app/blog/[slug]/page.test.tsx",
+    "examples/with-vitest/app/counter.test.tsx",
+    "examples/with-vitest/app/page.test.tsx",
+    "examples/with-vitest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts"
+  ],
+  "evidence": [
+    {
+      "quote": "fatal: detected dubious ownership in repository at '/work'",
+      "reason": "Git refuses to operate on /work because it is owned by a different user, blocking any git-dependent setup steps before tests run."
+    },
+    {
+      "quote": "WARNING  failed to get git status for dirty hash: Git error: fatal: detected dubious ownership in repository at '/work'",
+      "reason": "Turbo also fails to read git state, confirming the ownership problem affects the entire build/test pipeline running in /work."
+    },
+    {
+      "quote": "Pattern: examples/with-jest/__tests__/index.test.tsx - 0 matches",
+      "reason": "Zero test matches means the test process exited before any test was discovered or executed, consistent with an environment setup failure."
+    },
+    {
+      "quote": "examples/with-jest/__tests__/index.test.tsx failed due to Error: failed with code: 1",
+      "reason": "The test runner subprocess returned exit code 1 for every test file, indicating a hard failure at startup rather than individual test assertion failures."
+    },
+    {
+      "quote": "Failed to load test output Error: ENOENT: no such file or directory, open 'examples/with-jest/__tests__/index.test.tsx.results.json'",
+      "reason": "No results file was written, confirming the test process never reached the point of recording any test outcome."
+    },
+    {
+      "quote": "git config --global --add safe.directory /work",
+      "reason": "Git itself prints the remediation command, confirming this is a directory-ownership (safe.directory) permission issue that was never resolved before tests ran."
+    }
+  ],
+  "suggested_fix": "Add `git config --global --add safe.directory /work` (or the equivalent `actions/checkout` `safe.directory` setting) to the CI job's setup steps before running tests, so git recognizes /work as a safe directory and all git-dependent tooling (turbo dirty-hash, test isolation scripts) can operate normally.",
+  "input": {
+    "context_path": "results/dev/grep/jest-nextjs-001.txt",
+    "context_tokens_estimate": 60269
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1049
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 44780.607,
+    "cache_key": "54c2b349c1ab194ac0c15c5d8d031beb3a7f9a60ce4bea0ec8e264595f1b8430",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

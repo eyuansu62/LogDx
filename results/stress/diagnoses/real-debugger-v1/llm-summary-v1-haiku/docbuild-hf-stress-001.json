@@ -1,0 +1,45 @@
+{
+  "case_id": "docbuild-hf-stress-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The doc_build_status_check validation step found an upstream documentation build status of 'failure', which violates its requirement that all statuses be either 'success' or 'skipped'. The underlying documentation build or check that produced the failure status is the actual root cause, but its identity and reason for failure are not revealed in the provided context.",
+  "root_cause_category": "unknown",
+  "root_cause": "An upstream documentation build returned a 'failure' status. The specific build, error, and files involved are not visible in the provided context.",
+  "confidence": 0.5,
+  "relevant_files": [],
+  "relevant_tests": [
+    "doc_build_status_check"
+  ],
+  "evidence": [
+    {
+      "quote": "if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && [[ \"skipped\" == \"success\" || \"skipped\" == \"skipped\" ]];",
+      "reason": "The conditional rejects the 'failure' status because it matches neither 'success' nor 'skipped', causing the check to fail"
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions error marker confirms the step exited with code 1 due to the failed conditional"
+    },
+    {
+      "quote": "A documentation build or related check returned a \"failure\" status. The upstream build or check that produced the \"failure\" status is the likely source.",
+      "reason": "The context identifies that an upstream build failed but does not provide details on which build, why it failed, or what files were affected"
+    }
+  ],
+  "suggested_fix": "Inspect the upstream documentation build logs (the build that returned 'failure' status) to identify the specific error, then remediate the root cause in the documentation source or build configuration.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-haiku/docbuild-hf-stress-001.txt",
+    "context_tokens_estimate": 373
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 421
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 34260.236,
+    "cache_key": "f754090e870a77562f67dee140d838ecb9ac1f260475c7da64b54c6b689523ab",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

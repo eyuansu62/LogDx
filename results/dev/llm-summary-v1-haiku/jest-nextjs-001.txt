@@ -1,0 +1,56 @@
+# CI Failure Summary
+
+## Primary Failure
+
+Jest test discovery failure across 17+ example projects during test execution. All test invocations report `No tests found, exiting with code 1` with pattern matching yielding 0 matches, followed by secondary ENOENT errors when the test runner attempts to read results JSON files that were never written.
+
+## Critical Evidence
+
+- `No tests found, exiting with code 1` (L010167, L010181, L010196, L010211, L010226, L010254, L010282, L010297, L010313, L010328, L010343, L010370, L010398, L010414, L010429, L010443, L010458)
+- `Pattern: examples/with-jest/__tests__/index.test.tsx - 0 matches` (L010175, L010204, L010234, L010290, L010320, L010350)
+- `ENOENT: no such file or directory, open 'examples/with-jest/__tests__/index.test.tsx.results.json'` (L010239)
+- `ENOENT: no such file or directory, open 'examples/with-vitest/app/utils/add.test.ts.results.json'` (L010962)
+- Stack location: `/work/run-tests.js:927:29` — `readFileSync` attempting to open results files (L010242, L010938)
+
+## Failed Tests / Checks
+
+- `examples/with-jest/__tests__/index.test.tsx`
+- `examples/with-jest-babel/__tests__/index.test.tsx`
+- `examples/with-jest/app/blog/[slug]/page.test.tsx`
+- `examples/with-jest/app/counter.test.tsx`
+- `examples/with-jest/app/utils/add.test.ts`
+- `examples/with-jest/app/page.test.tsx`
+- `examples/with-mocha/test/index.test.js`
+- `examples/with-typescript-graphql/test/index.test.tsx`
+- `examples/with-vitest/__tests__/Home.test.tsx`
+- `examples/with-vitest/app/blog/[slug]/page.test.tsx`
+- `examples/with-vitest/app/counter.test.tsx`
+- `examples/with-vitest/app/page.test.tsx`
+- `examples/with-vitest/app/utils/add.test.ts`
+- `examples/with-zones/home/test/next-config.test.ts`
+
+## Relevant Files and Locations
+
+- `/work/run-tests.js:927:29` — readFileSync call attempting to load results file
+- `/work/run-tests.js:991:9` — async test runner loop
+- `/work/run-tests.js:975:19` — main function entry point
+- Test directories: `examples/with-*/` (jest, jest-babel, mocha, typescript-graphql, vitest, zones)
+
+## Commands and Exit Codes
+
+- `/work/node_modules/.bin/jest '--runInBand' '--forceExit' '--no-cache' '--verbose' '--json' '--outputFile=examples/with-jest/app/utils/add.test.ts.results.json' 'examples/with-jest/app/utils/add.test.ts'` — exit code 1 (L010457)
+- `taskr release` — build and test step initiated (L000898)
+- All Jest invocations exit with code 1 (L010237, L010265, L010353, L010381, L010469, L010497, L010585, L010613, L010701, L010729, L010817, L010845, L010933, L010960)
+- GHA error marker: `##[error]Process completed with exit code 1.` (L010976)
+
+## Possible Root Cause
+
+Jest pattern matching is finding zero test files in the expected locations despite explicit file paths being passed to the command. The test files either do not exist in the container at those paths, or Jest configuration prevents them from being discovered (e.g., exclusion patterns, missing file extensions in config, or unbuilt/uncompiled test sources).
+
+## Uncertainties / Missing Context
+
+- Whether test files physically exist in the build artifact (build step succeeded at L000902 but no verification shown)
+- Whether Jest configuration or `.jestignore` patterns were modified to exclude test files
+- Whether TypeScript/Babel transpilation of test files succeeded before Jest invocation
+- Whether the `examples/with-*/` directories were properly included in the release build
+- Root cause of initial WASM pattern warning at L000961-L000962 and whether it indicates broader build artifact issues

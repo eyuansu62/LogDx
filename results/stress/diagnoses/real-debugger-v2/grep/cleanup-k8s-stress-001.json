@@ -1,0 +1,43 @@
+{
+  "case_id": "cleanup-k8s-stress-001",
+  "context_method": "grep",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Cleanup artifacts' job failed because the GitHub Actions token lacked permission to delete artifacts for the specified run. The API call returned HTTP 403, indicating an authorization failure.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GitHub Actions integration token does not have sufficient permissions to delete artifacts via the GitHub API, resulting in a 403 Forbidden response.",
+  "confidence": 0.92,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "Explicit HTTP 403 error from the GitHub CLI indicating the token used by the integration lacks the required permissions to access or delete the artifact resource."
+    },
+    {
+      "quote": "Deleting artifacts for run ID: 23485708914",
+      "reason": "Confirms the action being attempted was artifact deletion, which requires specific GitHub Actions permissions (e.g., 'actions: write') that appear to be missing."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "The non-zero exit code confirms the job failed as a direct result of the 403 error."
+    }
+  ],
+  "suggested_fix": "Add `actions: write` permission to the workflow job or workflow-level permissions block so the GitHub Actions token is authorized to delete artifacts via the API.",
+  "input": {
+    "context_path": "results/stress/grep/cleanup-k8s-stress-001.txt",
+    "context_tokens_estimate": 83
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 331
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 15719.253,
+    "cache_key": "3d1d6b54d6522de87908e52e75dc02fff91c625b3b9f621b5223ba2c1fc4a25b",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

@@ -1,0 +1,1736 @@
+# E9 review pack — `e9_v1_3_hybrid_vs_grep_human_001`
+
+> Reviewer: **`human_a`** · Items: **48** · Generated: 2026-05-04T04:50:26.311328+00:00
+
+Read each item, then write the matching label entry into `review/batches/e9_v1_3_hybrid_vs_grep_human_001/labels/reviewer_human_a.jsonl`. The label skeleton has one TODO line per `review_item_id` you can fill in directly. **Do NOT** open `manifest.json` — it reveals the method names. **Do NOT** name methods (`raw`, `tail`, `grep`, `rtk-*`, `llm-summary-*`) in your `notes`.
+
+## case `actions-terraform-001`
+
+- **repo:** `hashicorp/terraform`
+- **workflow:** `PR checks`
+- **job:** `Check Changelog Entry`
+- **framework:** `generic`
+
+**Ground-truth summary** (the actual cause; use this as the standard you score against):
+
+> The PR fails the 'Check Changelog Entry' gate because it does not contain a changelog entry under `.changes/v1.16/` and does not carry the `no-changelog-needed` label. The workflow calls `core.setFailed(...)` with a human-readable remediation message. This is a workflow gate, not a code failure.
+
+<details><summary>Required-evidence excerpt (raw log)</summary>
+
+```text
+
+if (missingChangelogEntry) {
+    await createOrUpdateChangelogComment(`Currently this PR would target a v${onlyExpectedChangeVersion} release. Please add a changelog entry for in the .changes/v${onlyExpectedChangeVersion} folder, or discuss which release you'd like to target with your reviewer. If you believe this change does not need a changelog entry, please add the 'no-changelog-needed' label.`);
+    return;
+}
+
+if (unexpectedChangelogEntry.length > 0) {
+    await createOrUpdateChangelogComment(`Please remove the changelog entry for the following paths: ${unexpectedChangelogEntry.join(", ")}. If you believe this change does not need a changelog entry, please add the 'no-changelog-needed' label.`);
+    return;
+}
+
+```
+
+</details>
+
+### `abs-0011` (absolute)
+
+- **summary:** The CI job 'Check Changelog Entry' failed because the PR is missing a changelog entry in the .changes/v1.16 folder. The job detected that the PR targets a v1.16 release but no corresponding changelog file was added.
+- **root_cause_category:** `other`
+- **root_cause:** The PR does not include a changelog entry in the .changes/v1.16 folder, which is required by the repository's contribution policy for changes targeting the v1.16 release.
+- **confidence:** 0.95
+- **relevant_files:** ['.changes/v1.16']
+- **evidence:**
+    - quote: `Currently this PR would target a v1.16 release. Please add a changelog entry for in the .changes/v1.16 folder, or discuss which release you'd like to target with your reviewer.`
+      reason: This is the explicit error message set by core.setFailed(), directly stating the missing changelog entry is the reason for failure.
+    - quote: `If you believe this change does not need a changelog entry, please add the 'no-changelog-needed' label.`
+      reason: This confirms the job enforces a policy requiring either a changelog entry or an explicit label to bypass the check.
+- **suggested_fix:** Add a changelog entry file in the .changes/v1.16 folder describing the change, or add the 'no-changelog-needed' label to the PR if the change does not warrant a changelog entry.
+
+### `abs-0012` (absolute)
+
+- **summary:** The CI job 'Check Changelog Entry' failed because the PR is targeting a v1.16 release but is missing a required changelog entry in the '.changes/v1.16' folder. The workflow explicitly calls out that a changelog entry must be added or the 'no-changelog-needed' label must be applied.
+- **root_cause_category:** `other`
+- **root_cause:** The PR lacks a changelog entry in the '.changes/v1.16' folder for a change targeting the v1.16 release, which is enforced by the 'Check Changelog Entry' CI job.
+- **confidence:** 0.95
+- **relevant_files:** ['.changes/v1.16']
+- **relevant_tests:** ['Check Changelog Entry']
+- **evidence:**
+    - quote: `Currently this PR would target a v1.16 release. Please add a changelog entry for in the .changes/v1.16 folder, or discuss which release you'd like to target with your reviewer.`
+      reason: This is the explicit error message emitted by core.setFailed(), directly stating the cause of the CI failure.
+    - quote: `If you believe this change does not need a changelog entry, please add the 'no-changelog-needed' label.`
+      reason: This indicates there is an alternative resolution path, confirming the failure is a process/policy enforcement check rather than a code or test issue.
+- **suggested_fix:** Add a changelog entry file in the '.changes/v1.16' folder describing the change, or add the 'no-changelog-needed' label to the PR if no changelog entry is required for this change.
+
+### `pair-0006` (pairwise)
+
+**Diagnosis A:**
+
+- **summary:** The CI job 'Check Changelog Entry' failed because the PR is targeting a v1.16 release but is missing a required changelog entry in the '.changes/v1.16' folder. The workflow explicitly calls out that a changelog entry must be added or the 'no-changelog-needed' label must be applied.
+- **root_cause_category:** `other`
+- **root_cause:** The PR lacks a changelog entry in the '.changes/v1.16' folder for a change targeting the v1.16 release, which is enforced by the 'Check Changelog Entry' CI job.
+- **confidence:** 0.95
+- **relevant_files:** ['.changes/v1.16']
+- **relevant_tests:** ['Check Changelog Entry']
+- **evidence:**
+    - quote: `Currently this PR would target a v1.16 release. Please add a changelog entry for in the .changes/v1.16 folder, or discuss which release you'd like to target with your reviewer.`
+      reason: This is the explicit error message emitted by core.setFailed(), directly stating the cause of the CI failure.
+    - quote: `If you believe this change does not need a changelog entry, please add the 'no-changelog-needed' label.`
+      reason: This indicates there is an alternative resolution path, confirming the failure is a process/policy enforcement check rather than a code or test issue.
+- **suggested_fix:** Add a changelog entry file in the '.changes/v1.16' folder describing the change, or add the 'no-changelog-needed' label to the PR if no changelog entry is required for this change.
+
+**Diagnosis B:**
+
+- **summary:** The CI job 'Check Changelog Entry' failed because the PR is missing a changelog entry in the .changes/v1.16 folder. The job detected that the PR targets a v1.16 release but no corresponding changelog file was added.
+- **root_cause_category:** `other`
+- **root_cause:** The PR does not include a changelog entry in the .changes/v1.16 folder, which is required by the repository's contribution policy for changes targeting the v1.16 release.
+- **confidence:** 0.95
+- **relevant_files:** ['.changes/v1.16']
+- **evidence:**
+    - quote: `Currently this PR would target a v1.16 release. Please add a changelog entry for in the .changes/v1.16 folder, or discuss which release you'd like to target with your reviewer.`
+      reason: This is the explicit error message set by core.setFailed(), directly stating the missing changelog entry is the reason for failure.
+    - quote: `If you believe this change does not need a changelog entry, please add the 'no-changelog-needed' label.`
+      reason: This confirms the job enforces a policy requiring either a changelog entry or an explicit label to bypass the check.
+- **suggested_fix:** Add a changelog entry file in the .changes/v1.16 folder describing the change, or add the 'no-changelog-needed' label to the PR if the change does not warrant a changelog entry.
+
+---
+
+## case `cargo-tokio-001`
+
+- **repo:** `tokio-rs/tokio`
+- **workflow:** `CI`
+- **job:** `test all crates in the workspace with all features (ubuntu-latest)`
+- **framework:** `cargo`
+
+**Ground-truth summary** (the actual cause; use this as the standard you score against):
+
+> The trybuild-based compile-fail test `tests-build::macros compile_fail_full` fails because the expected rustc diagnostics for `tests/fail/macros_type_mismatch.rs` no longer match the actual rustc output. Rustc's error messages have drifted (additional `help:` suggestions such as `consider using Result::expect`). Fix: regenerate the expected .stderr with `TRYBUILD=overwrite cargo test` and commit the refreshed expectations.
+
+<details><summary>Required-evidence excerpt (raw log)</summary>
+
+```text
+2026-04-22T16:11:56.9997008Z [31;1m        FAIL[0m [   9.875s] (396/396) [35;1mtests-build::macros[0m [34;1mcompile_fail_full[0m
+2026-04-22T16:11:56.9998658Z [31;1m [0m [31;1mstdout[0m [31;1m───[0m
+2026-04-22T16:11:56.9999019Z 
+2026-04-22T16:11:56.9999147Z     running 1 test
+2026-04-22T16:11:56.9999496Z     test compile_fail_full ... FAILED
+```
+
+</details>
+
+### `abs-0001` (absolute)
+
+- **summary:** A `trybuild` compile-fail test named `compile_fail_full` failed because the actual compiler errors emitted for `tests/fail/macros_type_mismatch.rs` did not match the expected `.stderr` snapshot. The mismatch involved `error[E0308]`, `error[E0277]`, and `error[E0271]` messages related to type mismatches in `tokio::main` async blocks. This caused 1 of 10 trybuild tests to fail, aborting the run.
+- **root_cause_category:** `compile_error`
+- **root_cause:** The trybuild test `compile_fail_full` failed because the compiler errors produced for `tests/fail/macros_type_mismatch.rs` did not match the stored `.stderr` snapshot. Multiple `error[E0308]` (mismatched types) and `error[E0271]`/`error[E0277]` errors were emitted by the compiler but differed from what trybuild expected, causing the snapshot assertion to panic.
+- **confidence:** 0.82
+- **relevant_files:** ['tests/fail/macros_type_mismatch.rs']
+- **relevant_tests:** ['compile_fail_full']
+- **evidence:**
+    - quote: `test compile_fail_full ... FAILED`
+      reason: Identifies the specific trybuild test that failed.
+    - quote: `test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.87s`
+      reason: Confirms exactly one test failed in the trybuild suite.
+    - quote: `thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13:`
+      reason: Shows the panic originated inside trybuild's run.rs, which is where trybuild asserts that compiler output matches the expected .stderr file.
+    - quote: `1 of 10 tests failed`
+      reason: Confirms 1 out of 10 compile-fail test cases in the trybuild suite did not match expectations.
+    - quote: `error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>``
+      reason: Shows the actual compiler error emitted for macros_type_mismatch.rs, which trybuild compared against a stored snapshot and found a mismatch.
+    - quote: `error[E0308]: mismatched types`
+      reason: Repeated mismatched-type errors are part of the actual compiler output that differed from the trybuild snapshot.
+    - quote: `Cancelling due to test failure`
+      reason: Confirms the overall test run was cancelled as a result of the compile_fail_full failure.
+- **suggested_fix:** Update the trybuild `.stderr` snapshot file for `tests/fail/macros_type_mismatch.rs` to match the current compiler output (e.g., by deleting or regenerating the snapshot so trybuild re-records it on the next run with `TRYBUILD=overwrite`).
+
+### `abs-0002` (absolute)
+
+- **summary:** The trybuild `compile_fail_full` test in `tests-build::macros` failed because the actual compiler output for `tests/fail/macros_type_mismatch.rs` includes additional `error[E0271]` diagnostics that are not present in the stored `.stderr` snapshot files. A newer version of the Rust compiler emits extra type-mismatch notes via `error[E0271]` on the `#[tokio::main]` attribute, causing the expected vs. actual output comparison to diverge.
+- **root_cause_category:** `compile_error`
+- **root_cause:** The trybuild snapshot for `tests/fail/macros_type_mismatch.rs` does not match the actual compiler output: the current Rust stable toolchain emits additional `error[E0271]` diagnostics on `#[tokio::main]` attributes that are absent from the stored expected output, causing `1 of 10 tests failed` in the trybuild runner.
+- **confidence:** 0.92
+- **relevant_files:** ['tests/fail/macros_type_mismatch.rs']
+- **relevant_tests:** ['tests-build::macros compile_fail_full']
+- **evidence:**
+    - quote: `EXPECTED:
+    ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+    error[E0308]: mismatched types
+     --> tests/fail/macros_type_mismatch.rs:5:5`
+      reason: The stored snapshot starts with E0308; no E0271 errors are present in the expected output.
+    - quote: `ACTUAL OUTPUT:
+    ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+    error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolve`
+      reason: The actual compiler output contains new E0271 errors not present in the expected snapshot, confirming the divergence.
+    - quote: `1 of 10 tests failed`
+      reason: Trybuild reports exactly one failing test case out of ten, confirming the failure is isolated to the snapshot mismatch.
+    - quote: `thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13`
+      reason: The panic originates in trybuild's run method when expected and actual compiler output differ.
+    - quote: `FAIL [   9.875s] (396/396) tests-build::macros compile_fail_full`
+      reason: Confirms the failing test identifier and its location in the test suite.
+- **suggested_fix:** Update the `.stderr` snapshot file for `tests/fail/macros_type_mismatch.rs` to include the additional `error[E0271]` diagnostics emitted by the current Rust stable compiler, so the trybuild expected output matches actual compiler output.
+
+### `pair-0001` (pairwise)
+
+**Diagnosis A:**
+
+- **summary:** The trybuild `compile_fail_full` test in `tests-build::macros` failed because the actual compiler output for `tests/fail/macros_type_mismatch.rs` includes additional `error[E0271]` diagnostics that are not present in the stored `.stderr` snapshot files. A newer version of the Rust compiler emits extra type-mismatch notes via `error[E0271]` on the `#[tokio::main]` attribute, causing the expected vs. actual output comparison to diverge.
+- **root_cause_category:** `compile_error`
+- **root_cause:** The trybuild snapshot for `tests/fail/macros_type_mismatch.rs` does not match the actual compiler output: the current Rust stable toolchain emits additional `error[E0271]` diagnostics on `#[tokio::main]` attributes that are absent from the stored expected output, causing `1 of 10 tests failed` in the trybuild runner.
+- **confidence:** 0.92
+- **relevant_files:** ['tests/fail/macros_type_mismatch.rs']
+- **relevant_tests:** ['tests-build::macros compile_fail_full']
+- **evidence:**
+    - quote: `EXPECTED:
+    ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+    error[E0308]: mismatched types
+     --> tests/fail/macros_type_mismatch.rs:5:5`
+      reason: The stored snapshot starts with E0308; no E0271 errors are present in the expected output.
+    - quote: `ACTUAL OUTPUT:
+    ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+    error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolve`
+      reason: The actual compiler output contains new E0271 errors not present in the expected snapshot, confirming the divergence.
+    - quote: `1 of 10 tests failed`
+      reason: Trybuild reports exactly one failing test case out of ten, confirming the failure is isolated to the snapshot mismatch.
+    - quote: `thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13`
+      reason: The panic originates in trybuild's run method when expected and actual compiler output differ.
+    - quote: `FAIL [   9.875s] (396/396) tests-build::macros compile_fail_full`
+      reason: Confirms the failing test identifier and its location in the test suite.
+- **suggested_fix:** Update the `.stderr` snapshot file for `tests/fail/macros_type_mismatch.rs` to include the additional `error[E0271]` diagnostics emitted by the current Rust stable compiler, so the trybuild expected output matches actual compiler output.
+
+**Diagnosis B:**
+
+- **summary:** A `trybuild` compile-fail test named `compile_fail_full` failed because the actual compiler errors emitted for `tests/fail/macros_type_mismatch.rs` did not match the expected `.stderr` snapshot. The mismatch involved `error[E0308]`, `error[E0277]`, and `error[E0271]` messages related to type mismatches in `tokio::main` async blocks. This caused 1 of 10 trybuild tests to fail, aborting the run.
+- **root_cause_category:** `compile_error`
+- **root_cause:** The trybuild test `compile_fail_full` failed because the compiler errors produced for `tests/fail/macros_type_mismatch.rs` did not match the stored `.stderr` snapshot. Multiple `error[E0308]` (mismatched types) and `error[E0271]`/`error[E0277]` errors were emitted by the compiler but differed from what trybuild expected, causing the snapshot assertion to panic.
+- **confidence:** 0.82
+- **relevant_files:** ['tests/fail/macros_type_mismatch.rs']
+- **relevant_tests:** ['compile_fail_full']
+- **evidence:**
+    - quote: `test compile_fail_full ... FAILED`
+      reason: Identifies the specific trybuild test that failed.
+    - quote: `test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.87s`
+      reason: Confirms exactly one test failed in the trybuild suite.
+    - quote: `thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13:`
+      reason: Shows the panic originated inside trybuild's run.rs, which is where trybuild asserts that compiler output matches the expected .stderr file.
+    - quote: `1 of 10 tests failed`
+      reason: Confirms 1 out of 10 compile-fail test cases in the trybuild suite did not match expectations.
+    - quote: `error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>``
+      reason: Shows the actual compiler error emitted for macros_type_mismatch.rs, which trybuild compared against a stored snapshot and found a mismatch.
+    - quote: `error[E0308]: mismatched types`
+      reason: Repeated mismatched-type errors are part of the actual compiler output that differed from the trybuild snapshot.
+    - quote: `Cancelling due to test failure`
+      reason: Confirms the overall test run was cancelled as a result of the compile_fail_full failure.
+- **suggested_fix:** Update the trybuild `.stderr` snapshot file for `tests/fail/macros_type_mismatch.rs` to match the current compiler output (e.g., by deleting or regenerating the snapshot so trybuild re-records it on the next run with `TRYBUILD=overwrite`).
+
+---
+
+## case `cleanup-k8s-stress-001`
+
+- **repo:** `kubernetes/kubernetes`
+- **workflow:** `CI`
+- **job:** `Cleanup artifacts`
+- **framework:** `generic`
+
+**Ground-truth summary** (the actual cause; use this as the standard you score against):
+
+> The 'Cleanup artifacts' step calls `gh api DELETE /repos/kubernetes/kubernetes/actions/artifacts/...` and receives HTTP 403 ('Resource not accessible by integration'). The token used for the cleanup lacks write access to workflow artifacts. Fix on the workflow: grant the token `actions:write` (or the appropriate fine-grained permission).
+
+<details><summary>Required-evidence excerpt (raw log)</summary>
+
+```text
+2026-03-24T10:56:22.9006049Z Deleting artifacts for run ID: 23485708914
+2026-03-24T10:56:23.2243611Z gh: Resource not accessible by integration (HTTP 403)
+2026-03-24T10:56:23.2273398Z ##[error]Process completed with exit code 1.
+```
+
+</details>
+
+### `abs-0021` (absolute)
+
+- **summary:** The CI cleanup job failed while attempting to delete artifacts for a specific run. A 403 Forbidden error was returned by the GitHub API, indicating the token used lacks the required permissions to delete artifacts.
+- **root_cause_category:** `permission_or_secret`
+- **root_cause:** The GitHub Actions token does not have permission to delete artifacts via the GitHub API, resulting in an HTTP 403 error when calling the artifacts deletion endpoint.
+- **confidence:** 0.92
+- **evidence:**
+    - quote: `gh: Resource not accessible by integration (HTTP 403)`
+      reason: This is the direct error message indicating a permission denial from the GitHub API when attempting to delete artifacts.
+    - quote: `Deleting artifacts for run ID: 23485708914`
+      reason: Confirms the action being performed at the time of the 403 error was artifact deletion, not some other API call.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: Confirms the process exited with a failure status code as a result of the 403 error, causing the job to fail.
+- **suggested_fix:** Grant the GitHub Actions workflow token the `actions: write` permission so it can delete artifacts, or update the workflow's permissions block to include `actions: write`.
+
+### `abs-0022` (absolute)
+
+- **summary:** The 'Cleanup artifacts' job failed because the GitHub Actions token lacked permission to delete artifacts for the specified run. The API call returned HTTP 403, indicating an authorization failure.
+- **root_cause_category:** `permission_or_secret`
+- **root_cause:** The GitHub Actions integration token does not have sufficient permissions to delete artifacts via the GitHub API, resulting in a 403 Forbidden response.
+- **confidence:** 0.92
+- **evidence:**
+    - quote: `gh: Resource not accessible by integration (HTTP 403)`
+      reason: Explicit HTTP 403 error from the GitHub CLI indicating the token used by the integration lacks the required permissions to access or delete the artifact resource.
+    - quote: `Deleting artifacts for run ID: 23485708914`
+      reason: Confirms the action being attempted was artifact deletion, which requires specific GitHub Actions permissions (e.g., 'actions: write') that appear to be missing.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: The non-zero exit code confirms the job failed as a direct result of the 403 error.
+- **suggested_fix:** Add `actions: write` permission to the workflow job or workflow-level permissions block so the GitHub Actions token is authorized to delete artifacts via the API.
+
+### `pair-0011` (pairwise)
+
+**Diagnosis A:**
+
+- **summary:** The 'Cleanup artifacts' job failed because the GitHub Actions token lacked permission to delete artifacts for the specified run. The API call returned HTTP 403, indicating an authorization failure.
+- **root_cause_category:** `permission_or_secret`
+- **root_cause:** The GitHub Actions integration token does not have sufficient permissions to delete artifacts via the GitHub API, resulting in a 403 Forbidden response.
+- **confidence:** 0.92
+- **evidence:**
+    - quote: `gh: Resource not accessible by integration (HTTP 403)`
+      reason: Explicit HTTP 403 error from the GitHub CLI indicating the token used by the integration lacks the required permissions to access or delete the artifact resource.
+    - quote: `Deleting artifacts for run ID: 23485708914`
+      reason: Confirms the action being attempted was artifact deletion, which requires specific GitHub Actions permissions (e.g., 'actions: write') that appear to be missing.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: The non-zero exit code confirms the job failed as a direct result of the 403 error.
+- **suggested_fix:** Add `actions: write` permission to the workflow job or workflow-level permissions block so the GitHub Actions token is authorized to delete artifacts via the API.
+
+**Diagnosis B:**
+
+- **summary:** The CI cleanup job failed while attempting to delete artifacts for a specific run. A 403 Forbidden error was returned by the GitHub API, indicating the token used lacks the required permissions to delete artifacts.
+- **root_cause_category:** `permission_or_secret`
+- **root_cause:** The GitHub Actions token does not have permission to delete artifacts via the GitHub API, resulting in an HTTP 403 error when calling the artifacts deletion endpoint.
+- **confidence:** 0.92
+- **evidence:**
+    - quote: `gh: Resource not accessible by integration (HTTP 403)`
+      reason: This is the direct error message indicating a permission denial from the GitHub API when attempting to delete artifacts.
+    - quote: `Deleting artifacts for run ID: 23485708914`
+      reason: Confirms the action being performed at the time of the 403 error was artifact deletion, not some other API call.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: Confirms the process exited with a failure status code as a result of the 403 error, causing the job to fail.
+- **suggested_fix:** Grant the GitHub Actions workflow token the `actions: write` permission so it can delete artifacts, or update the workflow's permissions block to include `actions: write`.
+
+---
+
+## case `cleanup-tsc-stress-001`
+
+- **repo:** `microsoft/TypeScript`
+- **workflow:** `CI`
+- **job:** `Cleanup artifacts`
+- **framework:** `generic`
+
+**Ground-truth summary** (the actual cause; use this as the standard you score against):
+
+> The 'Cleanup artifacts' post-job step calls `gh api DELETE /repos/microsoft/TypeScript/actions/artifacts/...` and receives HTTP 403 ('Resource not accessible by integration'). Same fix pattern as the kubernetes companion: grant the cleanup token `actions:write`.
+
+<details><summary>Required-evidence excerpt (raw log)</summary>
+
+```text
+2026-04-23T07:54:32.6603209Z Deleting artifacts for run ID: 24823635328
+2026-04-23T07:54:32.8652668Z gh: Resource not accessible by integration (HTTP 403)
+2026-04-23T07:54:32.8682224Z ##[error]Process completed with exit code 1.
+```
+
+</details>
+
+### `abs-0023` (absolute)
+
+- **summary:** The CI job 'Cleanup artifacts' failed because the GitHub Actions integration token lacked permission to delete artifacts via the GitHub API. The gh CLI returned HTTP 403, causing the process to exit with code 1.
+- **root_cause_category:** `permission_or_secret`
+- **root_cause:** The GitHub Actions token used by the workflow does not have sufficient permissions to delete artifacts for the specified run, resulting in a 403 Forbidden response from the GitHub API.
+- **confidence:** 0.92
+- **evidence:**
+    - quote: `gh: Resource not accessible by integration (HTTP 403)`
+      reason: Explicit 403 error from the GitHub API indicating the integration token lacks the required permissions to access/delete the artifact resource.
+    - quote: `Deleting artifacts for run ID: 24823635328`
+      reason: Confirms the job was attempting an artifact deletion operation when the permission error occurred.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: The non-zero exit code confirms the job step failed as a direct result of the 403 error.
+- **suggested_fix:** Grant the workflow the `actions: write` permission in the workflow YAML so the GitHub Actions token is authorized to delete artifacts via the API.
+
+### `abs-0024` (absolute)
+
+- **summary:** The 'Cleanup artifacts' CI job failed because the GitHub Actions integration token lacked permission to delete artifacts for the specified run. The API call returned HTTP 403, causing the process to exit with code 1.
+- **root_cause_category:** `permission_or_secret`
+- **root_cause:** The GitHub Actions integration token does not have sufficient permissions to delete artifacts via the GitHub API, resulting in a 403 Forbidden response when attempting to delete artifacts for run ID 24823635328.
+- **confidence:** 0.92
+- **evidence:**
+    - quote: `gh: Resource not accessible by integration (HTTP 403)`
+      reason: This error message directly indicates that the GitHub Actions integration token was denied access to the resource, confirming a permissions failure.
+    - quote: `Deleting artifacts for run ID: 24823635328`
+      reason: This shows the operation being attempted (artifact deletion) that triggered the 403 error.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: Confirms the job failed as a result of the 403 permission error from the gh CLI call.
+- **suggested_fix:** Grant the workflow's GITHUB_TOKEN the 'actions: write' permission in the workflow YAML so that the integration can delete artifacts via the GitHub API.
+
+### `pair-0012` (pairwise)
+
+**Diagnosis A:**
+
+- **summary:** The 'Cleanup artifacts' CI job failed because the GitHub Actions integration token lacked permission to delete artifacts for the specified run. The API call returned HTTP 403, causing the process to exit with code 1.
+- **root_cause_category:** `permission_or_secret`
+- **root_cause:** The GitHub Actions integration token does not have sufficient permissions to delete artifacts via the GitHub API, resulting in a 403 Forbidden response when attempting to delete artifacts for run ID 24823635328.
+- **confidence:** 0.92
+- **evidence:**
+    - quote: `gh: Resource not accessible by integration (HTTP 403)`
+      reason: This error message directly indicates that the GitHub Actions integration token was denied access to the resource, confirming a permissions failure.
+    - quote: `Deleting artifacts for run ID: 24823635328`
+      reason: This shows the operation being attempted (artifact deletion) that triggered the 403 error.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: Confirms the job failed as a result of the 403 permission error from the gh CLI call.
+- **suggested_fix:** Grant the workflow's GITHUB_TOKEN the 'actions: write' permission in the workflow YAML so that the integration can delete artifacts via the GitHub API.
+
+**Diagnosis B:**
+
+- **summary:** The CI job 'Cleanup artifacts' failed because the GitHub Actions integration token lacked permission to delete artifacts via the GitHub API. The gh CLI returned HTTP 403, causing the process to exit with code 1.
+- **root_cause_category:** `permission_or_secret`
+- **root_cause:** The GitHub Actions token used by the workflow does not have sufficient permissions to delete artifacts for the specified run, resulting in a 403 Forbidden response from the GitHub API.
+- **confidence:** 0.92
+- **evidence:**
+    - quote: `gh: Resource not accessible by integration (HTTP 403)`
+      reason: Explicit 403 error from the GitHub API indicating the integration token lacks the required permissions to access/delete the artifact resource.
+    - quote: `Deleting artifacts for run ID: 24823635328`
+      reason: Confirms the job was attempting an artifact deletion operation when the permission error occurred.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: The non-zero exit code confirms the job step failed as a direct result of the 403 error.
+- **suggested_fix:** Grant the workflow the `actions: write` permission in the workflow YAML so the GitHub Actions token is authorized to delete artifacts via the API.
+
+---
+
+## case `dependabot-cargo-001`
+
+- **repo:** `rust-lang/cargo`
+- **workflow:** `Dependabot Updates`
+- **job:** `Dependabot`
+- **framework:** `cargo`
+
+**Ground-truth summary** (the actual cause; use this as the standard you score against):
+
+> Dependabot ran a security-update job for the `rand` crate and reported one error of type `security_update_not_needed` — Dependabot concluded no update was required, but the security job is set to fail when an update is not produced. Resolution: review the security alert for `rand` and either dismiss it or expand the version range so Dependabot can update.
+
+<details><summary>Required-evidence excerpt (raw log)</summary>
+
+```text
+2026-04-22T22:27:49.5545991Z Dependabot encountered '1' error(s) during execution, please check the logs for more details.
+2026-04-22T22:27:49.5546804Z +----------------------------------------------------------+
+2026-04-22T22:27:49.5547328Z |                          Errors                          |
+2026-04-22T22:27:49.5547817Z +----------------------------+-----------------------------+
+2026-04-22T22:27:49.5548307Z | Type                       | Details                     |
+2026-04-22T22:27:49.5548815Z +----------------------------+-----------------------------+
+2026-04-22T22:27:49.5549386Z | security_update_not_needed | {                           |
+2026-04-22T22:27:49.5549912Z |                            |   "dependency-name": "rand" |
+2026-04-22T22:27:49.5550353Z |                            | }                           |
+2026-04-22T22:27:49.5550821Z +----------------------------+-----------------------------+
+2026-04-22T22:27:49.6871682Z Failure running container 4d986eac50248057b7f3fa031163542ffb36990efbcff66eb3aed0e408c150fa: Error: Command failed with exit code 1: /bin/sh -c $DEPENDABOT_HOME/dependabot-updater/bin/run update_files
+2026-04-22T22:27:49.9442988Z Cleaned up container 4d986eac50248057b7f3fa031163542ffb36990efbcff66eb3aed0e408c150fa
+```
+
+</details>
+
+### `abs-0013` (absolute)
+
+- **summary:** The Dependabot security update job for the `rand` crate failed because Dependabot determined the dependency is no longer vulnerable at its latest version (0.10.1). The updater reported a `security_update_not_needed` error and exited with code 1, causing the CI job to fail.
+- **root_cause_category:** `other`
+- **root_cause:** Dependabot's security update job for `rand` exited with error type `security_update_not_needed` because the latest available version (0.10.1) is outside all affected version ranges listed in the security advisory. The updater treats this condition as a reportable error and exits non-zero, failing the CI job even though the dependency is safe.
+- **confidence:** 0.92
+- **evidence:**
+    - quote: `no security update needed as rand is no longer vulnerable`
+      reason: The updater explicitly states the dependency is no longer vulnerable, which is the direct trigger for the failure.
+    - quote: `Latest version is 0.10.1`
+      reason: Version 0.10.1 falls outside all affected ranges in the advisory (= 0.10.0, >= 0.9.0 < 0.9.3, >= 0.7.0 < 0.8.6), confirming why no update is needed.
+    - quote: `| security_update_not_needed | {                           |
+|                            |   "dependency-name": "rand" |`
+      reason: The updater's results table records the specific error type `security_update_not_needed` for the `rand` dependency, confirming the root cause.
+    - quote: `Failure running container 4d986eac50248057b7f3fa031163542ffb36990efbcff66eb3aed0e408c150fa: Error: Command failed with exit code 1`
+      reason: The container exited with code 1 as a direct consequence of the `security_update_not_needed` error, propagating the failure to the CI job.
+    - quote: `Dependabot encountered an error performing the update`
+      reason: The GitHub Actions step surfaced the container's non-zero exit as a workflow-level error, marking the job as failed.
+- **suggested_fix:** Close or dismiss the stale Dependabot security alert for `rand` in the repository's security tab, since the advisory no longer applies to the version in use. This will prevent Dependabot from re-queuing a security update job for a dependency that is already safe.
+
+### `abs-0014` (absolute)
+
+- **summary:** Dependabot's security update job for the `rand` crate determined that no update was needed because the installed version is no longer vulnerable. The updater reported this as a `security_update_not_needed` error, causing the job to exit with code 1 and the CI run to be marked as failed.
+- **root_cause_category:** `other`
+- **root_cause:** The Dependabot security update job failed because the `rand` dependency is no longer vulnerable (latest version is 0.10.1 which is not covered by the advisory), so the updater reported `security_update_not_needed` and exited with a non-zero exit code, which GitHub Actions treated as a failure.
+- **confidence:** 0.92
+- **evidence:**
+    - quote: `no security update needed as rand is no longer vulnerable`
+      reason: The updater explicitly states the reason it did not proceed with the update.
+    - quote: `security_update_not_needed | {                           |
+|                            |   "dependency-name": "rand" |`
+      reason: The error table confirms the error type and the affected dependency that triggered the non-zero exit.
+    - quote: `Latest version is 0.10.1`
+      reason: The resolved latest version (0.10.1) is outside the advisory's affected ranges, confirming no patch is needed.
+    - quote: `Failure running container 4d986eac50248057b7f3fa031163542ffb36990efbcff66eb3aed0e408c150fa: Error: Command failed with exit code 1`
+      reason: The container exited with code 1 due to the security_update_not_needed error, which propagated as a CI failure.
+    - quote: `Dependabot encountered an error performing the update`
+      reason: GitHub Actions recorded this as an error, causing the job to be marked failed.
+- **suggested_fix:** Close or dismiss the existing Dependabot security alert for `rand` if the latest version (0.10.1) is confirmed safe, so Dependabot stops generating a security update job for it. Alternatively, update the security advisory configuration to exclude versions that are no longer vulnerable.
+
+### `pair-0007` (pairwise)
+
+**Diagnosis A:**
+
+- **summary:** Dependabot's security update job for the `rand` crate determined that no update was needed because the installed version is no longer vulnerable. The updater reported this as a `security_update_not_needed` error, causing the job to exit with code 1 and the CI run to be marked as failed.
+- **root_cause_category:** `other`
+- **root_cause:** The Dependabot security update job failed because the `rand` dependency is no longer vulnerable (latest version is 0.10.1 which is not covered by the advisory), so the updater reported `security_update_not_needed` and exited with a non-zero exit code, which GitHub Actions treated as a failure.
+- **confidence:** 0.92
+- **evidence:**
+    - quote: `no security update needed as rand is no longer vulnerable`
+      reason: The updater explicitly states the reason it did not proceed with the update.
+    - quote: `security_update_not_needed | {                           |
+|                            |   "dependency-name": "rand" |`
+      reason: The error table confirms the error type and the affected dependency that triggered the non-zero exit.
+    - quote: `Latest version is 0.10.1`
+      reason: The resolved latest version (0.10.1) is outside the advisory's affected ranges, confirming no patch is needed.
+    - quote: `Failure running container 4d986eac50248057b7f3fa031163542ffb36990efbcff66eb3aed0e408c150fa: Error: Command failed with exit code 1`
+      reason: The container exited with code 1 due to the security_update_not_needed error, which propagated as a CI failure.
+    - quote: `Dependabot encountered an error performing the update`
+      reason: GitHub Actions recorded this as an error, causing the job to be marked failed.
+- **suggested_fix:** Close or dismiss the existing Dependabot security alert for `rand` if the latest version (0.10.1) is confirmed safe, so Dependabot stops generating a security update job for it. Alternatively, update the security advisory configuration to exclude versions that are no longer vulnerable.
+
+**Diagnosis B:**
+
+- **summary:** The Dependabot security update job for the `rand` crate failed because Dependabot determined the dependency is no longer vulnerable at its latest version (0.10.1). The updater reported a `security_update_not_needed` error and exited with code 1, causing the CI job to fail.
+- **root_cause_category:** `other`
+- **root_cause:** Dependabot's security update job for `rand` exited with error type `security_update_not_needed` because the latest available version (0.10.1) is outside all affected version ranges listed in the security advisory. The updater treats this condition as a reportable error and exits non-zero, failing the CI job even though the dependency is safe.
+- **confidence:** 0.92
+- **evidence:**
+    - quote: `no security update needed as rand is no longer vulnerable`
+      reason: The updater explicitly states the dependency is no longer vulnerable, which is the direct trigger for the failure.
+    - quote: `Latest version is 0.10.1`
+      reason: Version 0.10.1 falls outside all affected ranges in the advisory (= 0.10.0, >= 0.9.0 < 0.9.3, >= 0.7.0 < 0.8.6), confirming why no update is needed.
+    - quote: `| security_update_not_needed | {                           |
+|                            |   "dependency-name": "rand" |`
+      reason: The updater's results table records the specific error type `security_update_not_needed` for the `rand` dependency, confirming the root cause.
+    - quote: `Failure running container 4d986eac50248057b7f3fa031163542ffb36990efbcff66eb3aed0e408c150fa: Error: Command failed with exit code 1`
+      reason: The container exited with code 1 as a direct consequence of the `security_update_not_needed` error, propagating the failure to the CI job.
+    - quote: `Dependabot encountered an error performing the update`
+      reason: The GitHub Actions step surfaced the container's non-zero exit as a workflow-level error, marking the job as failed.
+- **suggested_fix:** Close or dismiss the stale Dependabot security alert for `rand` in the repository's security tab, since the advisory no longer applies to the version in use. This will prevent Dependabot from re-queuing a security update job for a dependency that is already safe.
+
+---
+
+## case `docbuild-hf-stress-001`
+
+- **repo:** `huggingface/transformers`
+- **workflow:** `Build documentation`
+- **job:** `doc_build_status_check`
+- **framework:** `generic`
+
+**Ground-truth summary** (the actual cause; use this as the standard you score against):
+
+> A `doc_build_status_check` step fails because the upstream `doc_build` job ended in 'failure'. The step's shell conditional `if [[ "failure" == "success" || "failure" == "skipped" ]]` falls through to `exit 1`. The real fix is in whichever job produced the 'failure' outcome; this step is a gate, not a bug.
+
+<details><summary>Required-evidence excerpt (raw log)</summary>
+
+```text
+2026-04-23T11:39:41.7452786Z Complete job name: doc_build_status_check
+2026-04-23T11:39:41.8054670Z ##[group]Run if [[ "failure" == "success" || "failure" == "skipped" ]] && \
+2026-04-23T11:39:41.8055787Z [36;1mif [[ "failure" == "success" || "failure" == "skipped" ]] && \[0m
+2026-04-23T11:39:41.8056687Z [36;1m   [[ "skipped" == "success" || "skipped" == "skipped" ]]; then[0m
+2026-04-23T11:39:41.8057493Z [36;1m  echo "OK"[0m
+2026-04-23T11:39:41.8058178Z [36;1melse[0m
+2026-04-23T11:39:41.8058627Z [36;1m  exit 1[0m
+2026-04-23T11:39:41.8059139Z [36;1mfi[0m
+2026-04-23T11:39:41.8903281Z shell: /usr/bin/bash -e {0}
+2026-04-23T11:39:41.8904913Z ##[endgroup]
+2026-04-23T11:39:41.9444083Z ##[error]Process completed with exit code 1.
+```
+
+</details>
+
+### `abs-0025` (absolute)
+
+- **summary:** The doc_build_status_check job failed because an upstream job it depends on did not succeed or was skipped in an acceptable state. The status check script evaluated the upstream job statuses as 'failure' and 'skipped', neither of which satisfied the 'success' condition, causing the script to exit with code 1.
+- **root_cause_category:** `github_actions_config`
+- **root_cause:** The status gate script requires the upstream doc build job to have a status of 'success' or 'skipped', but the actual status was 'failure'. The condition `[[ "failure" == "success" || "failure" == "skipped" ]]` evaluated to false, triggering `exit 1`.
+- **confidence:** 0.82
+- **evidence:**
+    - quote: `if [[ "failure" == "success" || "failure" == "skipped" ]] && \
+   [[ "skipped" == "success" || "skipped" == "skipped" ]]; then`
+      reason: The shell condition hardcodes the upstream job statuses as 'failure' and 'skipped'. The first condition evaluates to false because 'failure' is neither 'success' nor 'skipped', causing the else branch
+    - quote: `exit 1`
+      reason: The else branch executes exit 1, confirming the status check failed because the upstream build job did not succeed.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: Confirms the job terminated with a non-zero exit code, consistent with the upstream doc build having failed.
+- **suggested_fix:** Investigate why the upstream documentation build job returned a 'failure' status and fix the underlying build failure. The status check job itself is working as intended — it correctly blocks the pipeline when the doc build fails.
+
+### `abs-0026` (absolute)
+
+- **summary:** The doc_build_status_check job failed because it is a gate step that checks whether upstream doc build jobs succeeded. The condition evaluated 'failure' (an upstream job result) against 'success' or 'skipped', and since neither matched, the script exited with code 1.
+- **root_cause_category:** `github_actions_config`
+- **root_cause:** The status-check gate script received 'failure' as the result of an upstream documentation build job. The condition `[[ "failure" == "success" || "failure" == "skipped" ]]` evaluated to false, causing the script to execute `exit 1`.
+- **confidence:** 0.88
+- **evidence:**
+    - quote: `if [[ "failure" == "success" || "failure" == "skipped" ]] && \`
+      reason: The first operand is literally 'failure', meaning an upstream job reported a failure status, which does not match 'success' or 'skipped', so the condition is false.
+    - quote: `exit 1`
+      reason: The else branch executes exit 1 when the upstream job did not succeed or get skipped, confirming the job intentionally fails to signal an upstream problem.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: Confirms the script exited with code 1, i.e., the gate check determined the upstream doc build did not pass.
+    - quote: `[[ "skipped" == "success" || "skipped" == "skipped" ]]`
+      reason: The second condition checks another upstream job whose result is 'skipped', which does pass, but the first condition (failure) already prevents the overall AND from being true.
+- **suggested_fix:** Investigate why the upstream documentation build job reported a 'failure' status (it ran before this gate job). Fix the root cause in the doc build step so it completes with 'success', which will allow this gate's condition to pass.
+
+### `pair-0013` (pairwise)
+
+**Diagnosis A:**
+
+- **summary:** The doc_build_status_check job failed because it is a gate step that checks whether upstream doc build jobs succeeded. The condition evaluated 'failure' (an upstream job result) against 'success' or 'skipped', and since neither matched, the script exited with code 1.
+- **root_cause_category:** `github_actions_config`
+- **root_cause:** The status-check gate script received 'failure' as the result of an upstream documentation build job. The condition `[[ "failure" == "success" || "failure" == "skipped" ]]` evaluated to false, causing the script to execute `exit 1`.
+- **confidence:** 0.88
+- **evidence:**
+    - quote: `if [[ "failure" == "success" || "failure" == "skipped" ]] && \`
+      reason: The first operand is literally 'failure', meaning an upstream job reported a failure status, which does not match 'success' or 'skipped', so the condition is false.
+    - quote: `exit 1`
+      reason: The else branch executes exit 1 when the upstream job did not succeed or get skipped, confirming the job intentionally fails to signal an upstream problem.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: Confirms the script exited with code 1, i.e., the gate check determined the upstream doc build did not pass.
+    - quote: `[[ "skipped" == "success" || "skipped" == "skipped" ]]`
+      reason: The second condition checks another upstream job whose result is 'skipped', which does pass, but the first condition (failure) already prevents the overall AND from being true.
+- **suggested_fix:** Investigate why the upstream documentation build job reported a 'failure' status (it ran before this gate job). Fix the root cause in the doc build step so it completes with 'success', which will allow this gate's condition to pass.
+
+**Diagnosis B:**
+
+- **summary:** The doc_build_status_check job failed because an upstream job it depends on did not succeed or was skipped in an acceptable state. The status check script evaluated the upstream job statuses as 'failure' and 'skipped', neither of which satisfied the 'success' condition, causing the script to exit with code 1.
+- **root_cause_category:** `github_actions_config`
+- **root_cause:** The status gate script requires the upstream doc build job to have a status of 'success' or 'skipped', but the actual status was 'failure'. The condition `[[ "failure" == "success" || "failure" == "skipped" ]]` evaluated to false, triggering `exit 1`.
+- **confidence:** 0.82
+- **evidence:**
+    - quote: `if [[ "failure" == "success" || "failure" == "skipped" ]] && \
+   [[ "skipped" == "success" || "skipped" == "skipped" ]]; then`
+      reason: The shell condition hardcodes the upstream job statuses as 'failure' and 'skipped'. The first condition evaluates to false because 'failure' is neither 'success' nor 'skipped', causing the else branch
+    - quote: `exit 1`
+      reason: The else branch executes exit 1, confirming the status check failed because the upstream build job did not succeed.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: Confirms the job terminated with a non-zero exit code, consistent with the upstream doc build having failed.
+- **suggested_fix:** Investigate why the upstream documentation build job returned a 'failure' status and fix the underlying build failure. The status check job itself is working as intended — it correctly blocks the pipeline when the doc build fails.
+
+---
+
+## case `docs-transformers-001`
+
+- **repo:** `huggingface/transformers`
+- **workflow:** `build`
+- **job:** `build_pr_documentation`
+- **framework:** `generic`
+
+**Ground-truth summary** (the actual cause; use this as the standard you score against):
+
+> transformers/modeling_utils.py contains an unresolved git merge-conflict marker ('<<<<<<< sonic-moe') on line 1974. Python cannot parse the file, so doc-builder's MDX conversion of llama.md fails with SyntaxError while trying to import the llama model module. Fix: resolve the merge conflict in modeling_utils.py and re-run the doc build.
+
+<details><summary>Required-evidence excerpt (raw log)</summary>
+
+```text
+2026-04-23T11:39:34.3296686Z     from .processing_utils import Unpack
+2026-04-23T11:39:34.3297752Z   File "/home/runner/work/transformers/transformers/.venv/lib/python3.10/site-packages/transformers/processing_utils.py", line 79, in <module>
+2026-04-23T11:39:34.3298870Z     from .modeling_utils import PreTrainedAudioTokenizerBase
+2026-04-23T11:39:34.3299977Z   File "/home/runner/work/transformers/transformers/.venv/lib/python3.10/site-packages/transformers/modeling_utils.py", line 1974
+2026-04-23T11:39:34.3300845Z     <<<<<<< sonic-moe
+2026-04-23T11:39:34.3301128Z     ^^
+2026-04-23T11:39:34.3301422Z SyntaxError: invalid syntax
+2026-04-23T11:39:34.3301653Z 
+```
+
+</details>
+
+### `abs-0015` (absolute)
+
+- **summary:** The documentation build failed because a git merge conflict marker was left unresolved in `transformers/modeling_utils.py` at line 1974. When the doc builder attempted to import the transformers module to generate autodoc for `llama.md`, Python raised a SyntaxError on the conflict marker, crashing the build.
+- **root_cause_category:** `compile_error`
+- **root_cause:** An unresolved git merge conflict marker (`<<<<<<< sonic-moe`) was committed into `transformers/modeling_utils.py` at line 1974, making the file syntactically invalid Python. The doc builder triggered a module import that hit this file, producing a SyntaxError and aborting the build.
+- **confidence:** 0.97
+- **relevant_files:** ['transformers/modeling_utils.py', 'docs/source/en/model_doc/llama.md']
+- **evidence:**
+    - quote: `<<<<<<< sonic-moe`
+      reason: This is a git merge conflict marker present in the source file, which is invalid Python syntax and directly caused the SyntaxError.
+    - quote: `File "/home/runner/work/transformers/transformers/.venv/lib/python3.10/site-packages/transformers/modeling_utils.py", line 1974`
+      reason: Identifies the exact file and line number where the conflict marker resides, triggering the SyntaxError.
+    - quote: `SyntaxError: invalid syntax`
+      reason: Python's parser rejected the merge conflict marker as invalid syntax, causing the import to fail.
+    - quote: `SyntaxError: There was an error when converting ../transformers/docs/source/en/model_doc/llama.md to the MDX format.`
+      reason: The doc builder propagated the SyntaxError as a failure while processing llama.md, which triggered the import of modeling_utils.py via autodoc.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: Confirms the job exited with a non-zero status, marking the CI run as failed.
+- **suggested_fix:** Remove the unresolved merge conflict markers from `transformers/modeling_utils.py` around line 1974 (resolve the `<<<<<<< sonic-moe` conflict) and commit the corrected file.
+
+### `abs-0016` (absolute)
+
+- **summary:** The documentation build failed because `transformers/modeling_utils.py` contains an unresolved git merge conflict marker (`<<<<<<< sonic-moe`), which causes a Python SyntaxError when the doc builder tries to import the module. The error originates at line 1974 of `modeling_utils.py` and propagates while building docs for `llama.md`.
+- **root_cause_category:** `compile_error`
+- **root_cause:** A git merge conflict marker was left unresolved in `transformers/modeling_utils.py` at line 1974, causing a SyntaxError when Python attempts to parse the file during the documentation build.
+- **confidence:** 0.97
+- **relevant_files:** ['transformers/modeling_utils.py', '../transformers/docs/source/en/model_doc/llama.md']
+- **evidence:**
+    - quote: `File "/home/runner/work/transformers/transformers/.venv/lib/python3.10/site-packages/transformers/modeling_utils.py", line 1974
+    <<<<<<< sonic-moe`
+      reason: This shows a git merge conflict marker present in the source file at line 1974, which is not valid Python syntax.
+    - quote: `SyntaxError: invalid syntax`
+      reason: Python raises a SyntaxError because the conflict marker `<<<<<<< sonic-moe` cannot be parsed as valid Python.
+    - quote: `SyntaxError: There was an error when converting ../transformers/docs/source/en/model_doc/llama.md to the MDX format.
+invalid syntax`
+      reason: The doc builder surfaces the SyntaxError as a conversion failure when processing llama.md, confirming the build breaks due to this syntax issue.
+- **suggested_fix:** Resolve the git merge conflict in `transformers/modeling_utils.py` at line 1974 by removing the conflict markers (`<<<<<<< sonic-moe`, `=======`, `>>>>>>>`) and keeping the correct code, then re-run the documentation build.
+
+### `pair-0008` (pairwise)
+
+**Diagnosis A:**
+
+- **summary:** The documentation build failed because `transformers/modeling_utils.py` contains an unresolved git merge conflict marker (`<<<<<<< sonic-moe`), which causes a Python SyntaxError when the doc builder tries to import the module. The error originates at line 1974 of `modeling_utils.py` and propagates while building docs for `llama.md`.
+- **root_cause_category:** `compile_error`
+- **root_cause:** A git merge conflict marker was left unresolved in `transformers/modeling_utils.py` at line 1974, causing a SyntaxError when Python attempts to parse the file during the documentation build.
+- **confidence:** 0.97
+- **relevant_files:** ['transformers/modeling_utils.py', '../transformers/docs/source/en/model_doc/llama.md']
+- **evidence:**
+    - quote: `File "/home/runner/work/transformers/transformers/.venv/lib/python3.10/site-packages/transformers/modeling_utils.py", line 1974
+    <<<<<<< sonic-moe`
+      reason: This shows a git merge conflict marker present in the source file at line 1974, which is not valid Python syntax.
+    - quote: `SyntaxError: invalid syntax`
+      reason: Python raises a SyntaxError because the conflict marker `<<<<<<< sonic-moe` cannot be parsed as valid Python.
+    - quote: `SyntaxError: There was an error when converting ../transformers/docs/source/en/model_doc/llama.md to the MDX format.
+invalid syntax`
+      reason: The doc builder surfaces the SyntaxError as a conversion failure when processing llama.md, confirming the build breaks due to this syntax issue.
+- **suggested_fix:** Resolve the git merge conflict in `transformers/modeling_utils.py` at line 1974 by removing the conflict markers (`<<<<<<< sonic-moe`, `=======`, `>>>>>>>`) and keeping the correct code, then re-run the documentation build.
+
+**Diagnosis B:**
+
+- **summary:** The documentation build failed because a git merge conflict marker was left unresolved in `transformers/modeling_utils.py` at line 1974. When the doc builder attempted to import the transformers module to generate autodoc for `llama.md`, Python raised a SyntaxError on the conflict marker, crashing the build.
+- **root_cause_category:** `compile_error`
+- **root_cause:** An unresolved git merge conflict marker (`<<<<<<< sonic-moe`) was committed into `transformers/modeling_utils.py` at line 1974, making the file syntactically invalid Python. The doc builder triggered a module import that hit this file, producing a SyntaxError and aborting the build.
+- **confidence:** 0.97
+- **relevant_files:** ['transformers/modeling_utils.py', 'docs/source/en/model_doc/llama.md']
+- **evidence:**
+    - quote: `<<<<<<< sonic-moe`
+      reason: This is a git merge conflict marker present in the source file, which is invalid Python syntax and directly caused the SyntaxError.
+    - quote: `File "/home/runner/work/transformers/transformers/.venv/lib/python3.10/site-packages/transformers/modeling_utils.py", line 1974`
+      reason: Identifies the exact file and line number where the conflict marker resides, triggering the SyntaxError.
+    - quote: `SyntaxError: invalid syntax`
+      reason: Python's parser rejected the merge conflict marker as invalid syntax, causing the import to fail.
+    - quote: `SyntaxError: There was an error when converting ../transformers/docs/source/en/model_doc/llama.md to the MDX format.`
+      reason: The doc builder propagated the SyntaxError as a failure while processing llama.md, which triggered the import of modeling_utils.py via autodoc.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: Confirms the job exited with a non-zero status, marking the CI run as failed.
+- **suggested_fix:** Remove the unresolved merge conflict markers from `transformers/modeling_utils.py` around line 1974 (resolve the `<<<<<<< sonic-moe` conflict) and commit the corrected file.
+
+---
+
+## case `jest-nextjs-001`
+
+- **repo:** `vercel/next.js`
+- **workflow:** `build-and-deploy`
+- **job:** `Test Examples (20)`
+- **framework:** `jest`
+
+**Ground-truth summary** (the actual cause; use this as the standard you score against):
+
+> The runner container's checked-out workspace at /work is owned by a different UID than the process that invokes git, so git refuses to operate with `fatal: detected dubious ownership in repository at '/work'`. The test harness falls back to running jest against an empty view of the repository, which reports `No tests found, exiting with code 1` for every example. The surface symptom is jest failing; the fix is upstream in the runner setup: add `git config --global --add safe.directory /work` (or equivalent) before running tests.
+
+<details><summary>Required-evidence excerpt (raw log)</summary>
+
+```text
+2026-04-22T16:27:50.8673728Z fatal: detected dubious ownership in repository at '/work'
+2026-04-22T16:27:50.8674362Z To add an exception for this directory, call:
+2026-04-22T16:27:50.8674645Z 
+2026-04-22T16:27:50.8674889Z 	git config --global --add safe.directory /work
+2026-04-22T16:27:50.8683167Z Running tests with concurrency: 2 in test mode start
+2026-04-22T16:27:50.8689738Z 
+2026-04-22T16:27:50.8690041Z Test profile:
+2026-04-22T16:27:50.8690405Z   os=linux
+2026-04-22T16:27:50.8690693Z   branch=
+2026-04-22T16:27:50.8691950Z   sha=
+2026-04-22T16:27:50.8693255Z   node=20
+2026-04-22T16:27:50.8694187Z   type=examples
+```
+
+</details>
+
+### `abs-0003` (absolute)
+
+- **summary:** All example tests across multiple frameworks (Jest, Vitest, Mocha) failed with exit code 1 and produced no output files. A git dubious ownership error in the '/work' repository was logged before the test failures, suggesting the test runner environment could not properly initialize due to a file-ownership permission issue.
+- **root_cause_category:** `permission_or_secret`
+- **root_cause:** Git reports 'fatal: detected dubious ownership in repository at '/work'' which indicates a file ownership mismatch in the CI workspace. This upstream permission problem likely causes the test harness to fail during setup before any test can execute, which is why no .results.json files are written and every test process exits with code 1.
+- **confidence:** 0.62
+- **relevant_files:** ['examples/with-jest/__tests__/index.test.tsx', 'examples/with-jest-babel/__tests__/index.test.tsx', 'examples/with-jest/app/blog/[slug]/page.test.tsx', 'examples/with-jest/app/counter.test.tsx', 'examples/with-jest/app/utils/add.test.ts', 'examples/with-jest/app/page.test.tsx', 'examples/with-mocha/test/index.test.js', 'examples/with-typescript-graphql/test/index.test.tsx', 'examples/with-vitest/__tests__/Home.test.tsx', 'examples/with-vitest/app/blog/[slug]/page.test.tsx', 'examples/with-vitest/app/counter.test.tsx', 'examples/with-vitest/app/page.test.tsx', 'examples/with-vitest/app/utils/add.test.ts', 'examples/with-zones/home/test/next-config.test.ts']
+- **relevant_tests:** ['examples/with-jest/__tests__/index.test.tsx', 'examples/with-jest-babel/__tests__/index.test.tsx', 'examples/with-jest/app/blog/[slug]/page.test.tsx', 'examples/with-jest/app/counter.test.tsx', 'examples/with-jest/app/utils/add.test.ts', 'examples/with-jest/app/page.test.tsx', 'examples/with-mocha/test/index.test.js', 'examples/with-typescript-graphql/test/index.test.tsx', 'examples/with-vitest/__tests__/Home.test.tsx', 'examples/with-vitest/app/blog/[slug]/page.test.tsx', 'examples/with-vitest/app/counter.test.tsx', 'examples/with-vitest/app/page.test.tsx', 'examples/with-vitest/app/utils/add.test.ts', 'examples/with-zones/home/test/next-config.test.ts']
+- **evidence:**
+    - quote: `fatal: detected dubious ownership in repository at '/work'`
+      reason: Git explicitly rejects operating on the '/work' directory due to a file ownership mismatch. This is a hard git error that occurs before the tests run and can prevent any git-dependent setup steps from
+    - quote: `WARNING  failed to get git status for dirty hash: Git error: fatal: detected dubious ownership in repository at '/work'`
+      reason: The CI tooling could not retrieve git status because of the ownership problem, indicating the workspace directory is owned by a different user than the one running the CI process.
+    - quote: `examples/with-jest/__tests__/index.test.tsx failed due to Error: failed with code: 1`
+      reason: The test process exited with a non-zero code without producing any assertion output, consistent with a crash during environment setup rather than a test logic failure.
+    - quote: `Failed to load test output Error: ENOENT: no such file or directory, open 'examples/with-jest/__tests__/index.test.tsx.results.json'`
+      reason: The results file was never created, meaning the test runner exited before writing any output — characteristic of a pre-test initialization failure rather than a test assertion failure.
+    - quote: `examples/with-jest/__tests__/index.test.tsx failed to pass within 2 retries`
+      reason: All tests failed consistently across every retry, ruling out transient flakiness and pointing to a systemic environmental issue.
+- **suggested_fix:** Add a 'git config --global --add safe.directory /work' step (or equivalent) in the GitHub Actions workflow before the test steps run, so that git treats the '/work' directory as safe regardless of ownership differences between the checkout user and the running user.
+
+### `abs-0004` (absolute)
+
+- **summary:** All 14 example test files failed because each test process exited with code 1 and produced no results file. The test runner reports '0 matches' for every pattern, meaning the tests themselves never ran or produced output, and the runner then failed to find the expected results JSON files.
+- **root_cause_category:** `permission_or_secret`
+- **root_cause:** Git reports 'fatal: detected dubious ownership in repository at '/work'' twice before tests run, indicating the working directory is owned by a different user than the runner process. While the tests appear to start, turbo also warns 'failed to get git status for dirty hash: Git error: fatal: detected dubious ownership in repository at '/work''. Every test pattern resolves to '0 matches' and exits with code 1, suggesting the test isolation/setup step that depends on git (e.g., determining the correct package or test scope) fails silently due to this ownership error, leaving no results files behind.
+- **confidence:** 0.72
+- **relevant_files:** ['examples/with-jest/__tests__/index.test.tsx', 'examples/with-jest-babel/__tests__/index.test.tsx', 'examples/with-jest/app/blog/[slug]/page.test.tsx', 'examples/with-jest/app/counter.test.tsx', 'examples/with-jest/app/utils/add.test.ts', 'examples/with-jest/app/page.test.tsx', 'examples/with-mocha/test/index.test.js', 'examples/with-typescript-graphql/test/index.test.tsx', 'examples/with-vitest/__tests__/Home.test.tsx', 'examples/with-vitest/app/blog/[slug]/page.test.tsx', 'examples/with-vitest/app/counter.test.tsx', 'examples/with-vitest/app/page.test.tsx', 'examples/with-vitest/app/utils/add.test.ts', 'examples/with-zones/home/test/next-config.test.ts']
+- **relevant_tests:** ['examples/with-jest/__tests__/index.test.tsx', 'examples/with-jest-babel/__tests__/index.test.tsx', 'examples/with-jest/app/blog/[slug]/page.test.tsx', 'examples/with-jest/app/counter.test.tsx', 'examples/with-jest/app/utils/add.test.ts', 'examples/with-jest/app/page.test.tsx', 'examples/with-mocha/test/index.test.js', 'examples/with-typescript-graphql/test/index.test.tsx', 'examples/with-vitest/__tests__/Home.test.tsx', 'examples/with-vitest/app/blog/[slug]/page.test.tsx', 'examples/with-vitest/app/counter.test.tsx', 'examples/with-vitest/app/page.test.tsx', 'examples/with-vitest/app/utils/add.test.ts', 'examples/with-zones/home/test/next-config.test.ts']
+- **evidence:**
+    - quote: `fatal: detected dubious ownership in repository at '/work'`
+      reason: Git refuses to operate on /work because it is owned by a different user, blocking any git-dependent setup steps before tests run.
+    - quote: `WARNING  failed to get git status for dirty hash: Git error: fatal: detected dubious ownership in repository at '/work'`
+      reason: Turbo also fails to read git state, confirming the ownership problem affects the entire build/test pipeline running in /work.
+    - quote: `Pattern: examples/with-jest/__tests__/index.test.tsx - 0 matches`
+      reason: Zero test matches means the test process exited before any test was discovered or executed, consistent with an environment setup failure.
+    - quote: `examples/with-jest/__tests__/index.test.tsx failed due to Error: failed with code: 1`
+      reason: The test runner subprocess returned exit code 1 for every test file, indicating a hard failure at startup rather than individual test assertion failures.
+    - quote: `Failed to load test output Error: ENOENT: no such file or directory, open 'examples/with-jest/__tests__/index.test.tsx.results.json'`
+      reason: No results file was written, confirming the test process never reached the point of recording any test outcome.
+    - quote: `git config --global --add safe.directory /work`
+      reason: Git itself prints the remediation command, confirming this is a directory-ownership (safe.directory) permission issue that was never resolved before tests ran.
+- **suggested_fix:** Add `git config --global --add safe.directory /work` (or the equivalent `actions/checkout` `safe.directory` setting) to the CI job's setup steps before running tests, so git recognizes /work as a safe directory and all git-dependent tooling (turbo dirty-hash, test isolation scripts) can operate normally.
+
+### `pair-0002` (pairwise)
+
+**Diagnosis A:**
+
+- **summary:** All 14 example test files failed because each test process exited with code 1 and produced no results file. The test runner reports '0 matches' for every pattern, meaning the tests themselves never ran or produced output, and the runner then failed to find the expected results JSON files.
+- **root_cause_category:** `permission_or_secret`
+- **root_cause:** Git reports 'fatal: detected dubious ownership in repository at '/work'' twice before tests run, indicating the working directory is owned by a different user than the runner process. While the tests appear to start, turbo also warns 'failed to get git status for dirty hash: Git error: fatal: detected dubious ownership in repository at '/work''. Every test pattern resolves to '0 matches' and exits with code 1, suggesting the test isolation/setup step that depends on git (e.g., determining the correct package or test scope) fails silently due to this ownership error, leaving no results files behind.
+- **confidence:** 0.72
+- **relevant_files:** ['examples/with-jest/__tests__/index.test.tsx', 'examples/with-jest-babel/__tests__/index.test.tsx', 'examples/with-jest/app/blog/[slug]/page.test.tsx', 'examples/with-jest/app/counter.test.tsx', 'examples/with-jest/app/utils/add.test.ts', 'examples/with-jest/app/page.test.tsx', 'examples/with-mocha/test/index.test.js', 'examples/with-typescript-graphql/test/index.test.tsx', 'examples/with-vitest/__tests__/Home.test.tsx', 'examples/with-vitest/app/blog/[slug]/page.test.tsx', 'examples/with-vitest/app/counter.test.tsx', 'examples/with-vitest/app/page.test.tsx', 'examples/with-vitest/app/utils/add.test.ts', 'examples/with-zones/home/test/next-config.test.ts']
+- **relevant_tests:** ['examples/with-jest/__tests__/index.test.tsx', 'examples/with-jest-babel/__tests__/index.test.tsx', 'examples/with-jest/app/blog/[slug]/page.test.tsx', 'examples/with-jest/app/counter.test.tsx', 'examples/with-jest/app/utils/add.test.ts', 'examples/with-jest/app/page.test.tsx', 'examples/with-mocha/test/index.test.js', 'examples/with-typescript-graphql/test/index.test.tsx', 'examples/with-vitest/__tests__/Home.test.tsx', 'examples/with-vitest/app/blog/[slug]/page.test.tsx', 'examples/with-vitest/app/counter.test.tsx', 'examples/with-vitest/app/page.test.tsx', 'examples/with-vitest/app/utils/add.test.ts', 'examples/with-zones/home/test/next-config.test.ts']
+- **evidence:**
+    - quote: `fatal: detected dubious ownership in repository at '/work'`
+      reason: Git refuses to operate on /work because it is owned by a different user, blocking any git-dependent setup steps before tests run.
+    - quote: `WARNING  failed to get git status for dirty hash: Git error: fatal: detected dubious ownership in repository at '/work'`
+      reason: Turbo also fails to read git state, confirming the ownership problem affects the entire build/test pipeline running in /work.
+    - quote: `Pattern: examples/with-jest/__tests__/index.test.tsx - 0 matches`
+      reason: Zero test matches means the test process exited before any test was discovered or executed, consistent with an environment setup failure.
+    - quote: `examples/with-jest/__tests__/index.test.tsx failed due to Error: failed with code: 1`
+      reason: The test runner subprocess returned exit code 1 for every test file, indicating a hard failure at startup rather than individual test assertion failures.
+    - quote: `Failed to load test output Error: ENOENT: no such file or directory, open 'examples/with-jest/__tests__/index.test.tsx.results.json'`
+      reason: No results file was written, confirming the test process never reached the point of recording any test outcome.
+    - quote: `git config --global --add safe.directory /work`
+      reason: Git itself prints the remediation command, confirming this is a directory-ownership (safe.directory) permission issue that was never resolved before tests ran.
+- **suggested_fix:** Add `git config --global --add safe.directory /work` (or the equivalent `actions/checkout` `safe.directory` setting) to the CI job's setup steps before running tests, so git recognizes /work as a safe directory and all git-dependent tooling (turbo dirty-hash, test isolation scripts) can operate normally.
+
+**Diagnosis B:**
+
+- **summary:** All example tests across multiple frameworks (Jest, Vitest, Mocha) failed with exit code 1 and produced no output files. A git dubious ownership error in the '/work' repository was logged before the test failures, suggesting the test runner environment could not properly initialize due to a file-ownership permission issue.
+- **root_cause_category:** `permission_or_secret`
+- **root_cause:** Git reports 'fatal: detected dubious ownership in repository at '/work'' which indicates a file ownership mismatch in the CI workspace. This upstream permission problem likely causes the test harness to fail during setup before any test can execute, which is why no .results.json files are written and every test process exits with code 1.
+- **confidence:** 0.62
+- **relevant_files:** ['examples/with-jest/__tests__/index.test.tsx', 'examples/with-jest-babel/__tests__/index.test.tsx', 'examples/with-jest/app/blog/[slug]/page.test.tsx', 'examples/with-jest/app/counter.test.tsx', 'examples/with-jest/app/utils/add.test.ts', 'examples/with-jest/app/page.test.tsx', 'examples/with-mocha/test/index.test.js', 'examples/with-typescript-graphql/test/index.test.tsx', 'examples/with-vitest/__tests__/Home.test.tsx', 'examples/with-vitest/app/blog/[slug]/page.test.tsx', 'examples/with-vitest/app/counter.test.tsx', 'examples/with-vitest/app/page.test.tsx', 'examples/with-vitest/app/utils/add.test.ts', 'examples/with-zones/home/test/next-config.test.ts']
+- **relevant_tests:** ['examples/with-jest/__tests__/index.test.tsx', 'examples/with-jest-babel/__tests__/index.test.tsx', 'examples/with-jest/app/blog/[slug]/page.test.tsx', 'examples/with-jest/app/counter.test.tsx', 'examples/with-jest/app/utils/add.test.ts', 'examples/with-jest/app/page.test.tsx', 'examples/with-mocha/test/index.test.js', 'examples/with-typescript-graphql/test/index.test.tsx', 'examples/with-vitest/__tests__/Home.test.tsx', 'examples/with-vitest/app/blog/[slug]/page.test.tsx', 'examples/with-vitest/app/counter.test.tsx', 'examples/with-vitest/app/page.test.tsx', 'examples/with-vitest/app/utils/add.test.ts', 'examples/with-zones/home/test/next-config.test.ts']
+- **evidence:**
+    - quote: `fatal: detected dubious ownership in repository at '/work'`
+      reason: Git explicitly rejects operating on the '/work' directory due to a file ownership mismatch. This is a hard git error that occurs before the tests run and can prevent any git-dependent setup steps from
+    - quote: `WARNING  failed to get git status for dirty hash: Git error: fatal: detected dubious ownership in repository at '/work'`
+      reason: The CI tooling could not retrieve git status because of the ownership problem, indicating the workspace directory is owned by a different user than the one running the CI process.
+    - quote: `examples/with-jest/__tests__/index.test.tsx failed due to Error: failed with code: 1`
+      reason: The test process exited with a non-zero code without producing any assertion output, consistent with a crash during environment setup rather than a test logic failure.
+    - quote: `Failed to load test output Error: ENOENT: no such file or directory, open 'examples/with-jest/__tests__/index.test.tsx.results.json'`
+      reason: The results file was never created, meaning the test runner exited before writing any output — characteristic of a pre-test initialization failure rather than a test assertion failure.
+    - quote: `examples/with-jest/__tests__/index.test.tsx failed to pass within 2 retries`
+      reason: All tests failed consistently across every retry, ruling out transient flakiness and pointing to a systemic environmental issue.
+- **suggested_fix:** Add a 'git config --global --add safe.directory /work' step (or equivalent) in the GitHub Actions workflow before the test steps run, so that git treats the '/work' directory as safe regardless of ownership differences between the checkout user and the running user.
+
+---
+
+## case `lint-react-001`
+
+- **repo:** `facebook/react`
+- **workflow:** `(commit)`
+- **job:** `Run prettier`
+- **framework:** `generic`
+
+**Ground-truth summary** (the actual cause; use this as the standard you score against):
+
+> `yarn prettier-check` (the React repo's Run prettier step) reports one file whose formatting does not match the project's Prettier configuration: packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js. The step exits non-zero. Fix: run `yarn prettier-all` locally and commit the reformatted file.
+
+<details><summary>Required-evidence excerpt (raw log)</summary>
+
+```text
+2026-04-23T04:10:26.7178496Z   This project uses prettier to format all JavaScript code.
+2026-04-23T04:10:26.7179394Z     Please run yarn prettier-all and add changes to files listed below to your commit:
+2026-04-23T04:10:26.7179907Z 
+2026-04-23T04:10:26.7179918Z 
+2026-04-23T04:10:26.7180508Z packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js
+2026-04-23T04:10:27.0330683Z error Command failed with exit code 1.
+2026-04-23T04:10:27.0331435Z info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.
+2026-04-23T04:10:27.0411864Z ##[error]Process completed with exit code 1.
+```
+
+</details>
+
+### `abs-0005` (absolute)
+
+- **summary:** The 'Run prettier' CI job failed because the file `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` did not pass prettier formatting checks. The yarn command exited with code 1, indicating unformatted code was detected.
+- **root_cause_category:** `formatting_failure`
+- **root_cause:** The file `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` is not formatted according to prettier's rules, causing the prettier check to fail with exit code 1.
+- **confidence:** 0.82
+- **relevant_files:** ['packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js']
+- **evidence:**
+    - quote: `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js`
+      reason: This file path appears immediately before the failure, indicating it is the file that failed the prettier formatting check.
+    - quote: `error Command failed with exit code 1.`
+      reason: The yarn run command exited with code 1, confirming the prettier check failed.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: GitHub Actions recorded the job as failed due to the non-zero exit code from the prettier run.
+- **suggested_fix:** Run prettier on `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` (e.g., `yarn prettier-all` or the equivalent project command) and commit the formatted result.
+
+### `abs-0006` (absolute)
+
+- **summary:** The 'Run prettier' CI job failed because the file `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` did not pass prettier formatting checks. The yarn command exited with code 1, indicating unformatted code was detected.
+- **root_cause_category:** `formatting_failure`
+- **root_cause:** The file `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` is not formatted according to prettier rules, causing the prettier check to exit with code 1.
+- **confidence:** 0.82
+- **relevant_files:** ['packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js']
+- **evidence:**
+    - quote: `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js`
+      reason: This file path was printed by the prettier check immediately before the failure, indicating it is the file that failed the formatting check.
+    - quote: `error Command failed with exit code 1.`
+      reason: The yarn command running prettier exited with a non-zero exit code, confirming the formatting check failed.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: GitHub Actions confirmed the overall process failed with exit code 1, consistent with a prettier formatting violation.
+- **suggested_fix:** Run prettier on `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` locally (e.g., `yarn prettier-all` or the equivalent prettier format command used in this repo) and commit the formatted result.
+
+### `pair-0003` (pairwise)
+
+**Diagnosis A:**
+
+- **summary:** The 'Run prettier' CI job failed because the file `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` did not pass prettier formatting checks. The yarn command exited with code 1, indicating unformatted code was detected.
+- **root_cause_category:** `formatting_failure`
+- **root_cause:** The file `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` is not formatted according to prettier rules, causing the prettier check to exit with code 1.
+- **confidence:** 0.82
+- **relevant_files:** ['packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js']
+- **evidence:**
+    - quote: `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js`
+      reason: This file path was printed by the prettier check immediately before the failure, indicating it is the file that failed the formatting check.
+    - quote: `error Command failed with exit code 1.`
+      reason: The yarn command running prettier exited with a non-zero exit code, confirming the formatting check failed.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: GitHub Actions confirmed the overall process failed with exit code 1, consistent with a prettier formatting violation.
+- **suggested_fix:** Run prettier on `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` locally (e.g., `yarn prettier-all` or the equivalent prettier format command used in this repo) and commit the formatted result.
+
+**Diagnosis B:**
+
+- **summary:** The 'Run prettier' CI job failed because the file `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` did not pass prettier formatting checks. The yarn command exited with code 1, indicating unformatted code was detected.
+- **root_cause_category:** `formatting_failure`
+- **root_cause:** The file `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` is not formatted according to prettier's rules, causing the prettier check to fail with exit code 1.
+- **confidence:** 0.82
+- **relevant_files:** ['packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js']
+- **evidence:**
+    - quote: `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js`
+      reason: This file path appears immediately before the failure, indicating it is the file that failed the prettier formatting check.
+    - quote: `error Command failed with exit code 1.`
+      reason: The yarn run command exited with code 1, confirming the prettier check failed.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: GitHub Actions recorded the job as failed due to the non-zero exit code from the prettier run.
+- **suggested_fix:** Run prettier on `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` (e.g., `yarn prettier-all` or the equivalent project command) and commit the formatted result.
+
+---
+
+## case `mypy-pandas-001`
+
+- **repo:** `pandas-dev/pandas`
+- **workflow:** `Code Checks`
+- **job:** `Docstring validation, typing, and other manual pre-commit hooks`
+- **framework:** `generic`
+
+**Ground-truth summary** (the actual cause; use this as the standard you score against):
+
+> The pre-commit `mypy (stubtest)` hook reports 279 type errors across 9 pandas source files. The overwhelming majority are `Module has no attribute "X" [attr-defined]` from pyarrow.compute usages; pyarrow's type stubs do not declare the compute functions pandas calls. A handful are `[no-untyped-call]` or `[assignment]`. Fix is on pandas' side (explicit annotations or `# type: ignore[attr-defined]`) or upstream in pyarrow stubs.
+
+<details><summary>Required-evidence excerpt (raw log)</summary>
+
+```text
+2026-04-23T08:38:17.8953892Z pandas/compat/pyarrow.py:69: error: Call to untyped function "fill_null" in typed context  [no-untyped-call]
+2026-04-23T08:38:17.8955331Z pandas/compat/pyarrow.py:76: error: Module has no attribute "is_null"  [attr-defined]
+2026-04-23T08:38:17.8956689Z pandas/compat/pyarrow.py:78: error: Module has no attribute "if_else"  [attr-defined]
+2026-04-23T08:38:17.8957639Z pandas/compat/pyarrow.py:79: error: Module has no attribute "if_else"  [attr-defined]
+2026-04-23T08:38:17.8958644Z pandas/compat/pyarrow.py:89: error: Module has no attribute "if_else"  [attr-defined]
+2026-04-23T08:38:17.8959578Z pandas/compat/pyarrow.py:89: error: Module has no attribute "is_null"  [attr-defined]
+2026-04-23T08:38:17.8960507Z pandas/compat/pyarrow.py:91: error: Module has no attribute "if_else"  [attr-defined]
+2026-04-23T08:38:17.8961406Z pandas/compat/pyarrow.py:91: error: Module has no attribute "is_null"  [attr-defined]
+2026-04-23T08:38:17.8962667Z pandas/core/arrays/_arrow_string_mixins.py:110: error: Module has no attribute "utf8_length"  [attr-defined]
+2026-04-23T08:38:17.8963876Z pandas/core/arrays/_arrow_string_mixins.py:114: error: Module has no attribute "utf8_lower"  [attr-defined]
+2026-04-23T08:38:17.8965452Z pandas/core/arrays/_arrow_string_mixins.py:117: error: Module has no attribute "utf8_upper"  [attr-defined]
+2026-04-23T08:38:17.8966721Z pandas/core/arrays/_arrow_string_mixins.py:121: error: Module has no attribute "utf8_trim_whitespace"  [attr-defined]
+```
+
+</details>
+
+### `abs-0007` (absolute)
+
+- **summary:** mypy type checking failed due to hundreds of [attr-defined] errors reporting that PyArrow compute functions (e.g., `is_null`, `if_else`, `utf8_length`, `equal`, etc.) are missing attributes on the pyarrow module. This caused the downstream `mypy (stubtest)` step to also fail because it refused to check stubs given the mypy build errors.
+- **root_cause_category:** `type_error`
+- **root_cause:** mypy reports that a large number of pyarrow compute function attributes (e.g., `is_null`, `if_else`, `utf8_length`, `equal`, `add`, `divide`, etc.) are not recognized on the pyarrow module, producing [attr-defined] errors across multiple files. This indicates that the installed pyarrow version's type stubs or the pandas code accessing pyarrow.compute functions via a module alias no longer matches the expected API surface that mypy can resolve.
+- **confidence:** 0.92
+- **relevant_files:** ['pandas/compat/pyarrow.py', 'pandas/core/arrays/_arrow_string_mixins.py', 'pandas/core/arrays/arrow/accessors.py', 'pandas/core/arrays/arrow/array.py', 'pandas/core/arrays/datetimes.py', 'pandas/core/arrays/string_arrow.py', 'pandas/core/strings/accessor.py', 'pandas/io/feather_format.py', 'pandas/tests/reshape/test_get_dummies.py']
+- **evidence:**
+    - quote: `mypy.....................................................................[41mFailed[m`
+      reason: Confirms mypy check failed as a top-level pre-commit hook result.
+    - quote: `pandas/compat/pyarrow.py:76: error: Module has no attribute "is_null"  [attr-defined]`
+      reason: Representative example of the [attr-defined] errors: mypy cannot find pyarrow compute attributes on the imported module.
+    - quote: `pandas/core/arrays/arrow/array.py:101: error: Module has no attribute "equal"  [attr-defined]`
+      reason: Shows the same class of error appearing in a core array file, confirming it is systemic across the pyarrow compute attribute usage.
+    - quote: `error: not checking stubs due to mypy build errors:`
+      reason: The stubtest step was also blocked because mypy itself reported build errors, cascading the failure.
+    - quote: `pandas/compat/pyarrow.py:69: error: Call to untyped function "fill_null" in typed context  [no-untyped-call]`
+      reason: Additional mypy error type showing pyarrow functions lack type annotations, compounding the attr-defined failures.
+    - quote: `pyright..................................................................[41mFailed[m
+pyright reportGeneralTypeIssues..........................................[41mFailed[m`
+      reason: Pyright also failed, consistent with a systemic pyarrow type information problem rather than a pandas-code-only issue.
+- **suggested_fix:** Investigate whether the pyarrow version installed exposes compute functions via `pyarrow.compute` rather than directly on the `pyarrow` module, and update the import paths or type stubs in the affected files (especially `pandas/compat/pyarrow.py` and `pandas/core/arrays/arrow/array.py`) so that mypy can resolve the `[attr-defined]` attributes correctly.
+
+### `abs-0008` (absolute)
+
+- **summary:** The CI job failed because both mypy and pyright type checkers report that numerous `pyarrow.compute` module attributes (e.g., `is_null`, `if_else`, `utf8_lower`, `equal`, `fill_null_forward`, etc.) are not recognized, resulting in 279 mypy errors and 4+69 pyright errors across multiple files. The stubtest hook also failed because it could not proceed due to the same underlying mypy build errors.
+- **root_cause_category:** `type_error`
+- **root_cause:** The installed version of pyarrow's type stubs does not expose the majority of `pyarrow.compute` functions as known attributes, causing both mypy (`[attr-defined]`) and pyright (`reportAttributeAccessIssue`, `reportPrivateImportUsage`) to report hundreds of errors across pandas' arrow-backed array implementation files.
+- **confidence:** 0.95
+- **relevant_files:** ['pandas/compat/pyarrow.py', 'pandas/core/arrays/_arrow_string_mixins.py', 'pandas/core/arrays/arrow/array.py', 'pandas/core/arrays/arrow/accessors.py', 'pandas/core/arrays/arrow/extension_types.py', 'pandas/core/arrays/datetimes.py', 'pandas/core/arrays/string_arrow.py', 'pandas/core/strings/accessor.py', 'pandas/io/orc.py', 'pandas/io/parquet.py', 'pandas/io/feather_format.py', 'pandas/tests/reshape/test_get_dummies.py']
+- **evidence:**
+    - quote: `mypy.....................................................................[41mFailed[m
+[2m- hook id: mypy[m
+[2m- duration: 108.37s[m
+[2m- exit code: 1[m`
+      reason: mypy hook exited with code 1, confirming the type-checking step failed.
+    - quote: `pandas/compat/pyarrow.py:76: error: Module has no attribute "is_null"  [attr-defined]`
+      reason: Representative mypy error showing pyarrow.compute attributes are not recognized by the installed stubs.
+    - quote: `Found 279 errors in 9 files (checked 1458 source files)`
+      reason: Total count of mypy errors confirms the scope and that it is a systematic stubs mismatch, not an isolated code change.
+    - quote: `/home/runner/work/pandas/pandas/pandas/core/arrays/arrow/accessors.py:319:14 - error: "Expression" is not exported from module "pyarrow.compute" (reportPrivateImportUsage)`
+      reason: Pyright also fails on pyarrow.compute symbols, confirming the issue is with the pyarrow stubs not exposing these symbols publicly.
+    - quote: `pyright reportGeneralTypeIssues..........................................[41mFailed[m
+[2m- hook id: pyright[m
+[2m- exit code: 1[m`
+      reason: Pyright hook also failed with exit code 1, corroborating the type error root cause.
+    - quote: `error: not checking stubs due to mypy build errors:`
+      reason: stubtest hook was blocked from running because mypy itself reported errors, showing the downstream cascade effect.
+    - quote: `pandas/core/arrays/arrow/array.py:101: error: Module has no attribute "equal"  [attr-defined]`
+      reason: Even basic pyarrow.compute functions like `equal` are missing from the stubs, indicating a broad stubs incompatibility rather than a single missing attribute.
+- **suggested_fix:** Update the pyarrow stubs (pyarrow-stubs or the stubs bundled with pyarrow) to a version that exports the full `pyarrow.compute` API, or add `# type: ignore[attr-defined]` suppressions / a `pyrightconfig.json` exclusion for the affected pyarrow.compute attribute accesses until compatible stubs are available.
+
+### `pair-0004` (pairwise)
+
+**Diagnosis A:**
+
+- **summary:** The CI job failed because both mypy and pyright type checkers report that numerous `pyarrow.compute` module attributes (e.g., `is_null`, `if_else`, `utf8_lower`, `equal`, `fill_null_forward`, etc.) are not recognized, resulting in 279 mypy errors and 4+69 pyright errors across multiple files. The stubtest hook also failed because it could not proceed due to the same underlying mypy build errors.
+- **root_cause_category:** `type_error`
+- **root_cause:** The installed version of pyarrow's type stubs does not expose the majority of `pyarrow.compute` functions as known attributes, causing both mypy (`[attr-defined]`) and pyright (`reportAttributeAccessIssue`, `reportPrivateImportUsage`) to report hundreds of errors across pandas' arrow-backed array implementation files.
+- **confidence:** 0.95
+- **relevant_files:** ['pandas/compat/pyarrow.py', 'pandas/core/arrays/_arrow_string_mixins.py', 'pandas/core/arrays/arrow/array.py', 'pandas/core/arrays/arrow/accessors.py', 'pandas/core/arrays/arrow/extension_types.py', 'pandas/core/arrays/datetimes.py', 'pandas/core/arrays/string_arrow.py', 'pandas/core/strings/accessor.py', 'pandas/io/orc.py', 'pandas/io/parquet.py', 'pandas/io/feather_format.py', 'pandas/tests/reshape/test_get_dummies.py']
+- **evidence:**
+    - quote: `mypy.....................................................................[41mFailed[m
+[2m- hook id: mypy[m
+[2m- duration: 108.37s[m
+[2m- exit code: 1[m`
+      reason: mypy hook exited with code 1, confirming the type-checking step failed.
+    - quote: `pandas/compat/pyarrow.py:76: error: Module has no attribute "is_null"  [attr-defined]`
+      reason: Representative mypy error showing pyarrow.compute attributes are not recognized by the installed stubs.
+    - quote: `Found 279 errors in 9 files (checked 1458 source files)`
+      reason: Total count of mypy errors confirms the scope and that it is a systematic stubs mismatch, not an isolated code change.
+    - quote: `/home/runner/work/pandas/pandas/pandas/core/arrays/arrow/accessors.py:319:14 - error: "Expression" is not exported from module "pyarrow.compute" (reportPrivateImportUsage)`
+      reason: Pyright also fails on pyarrow.compute symbols, confirming the issue is with the pyarrow stubs not exposing these symbols publicly.
+    - quote: `pyright reportGeneralTypeIssues..........................................[41mFailed[m
+[2m- hook id: pyright[m
+[2m- exit code: 1[m`
+      reason: Pyright hook also failed with exit code 1, corroborating the type error root cause.
+    - quote: `error: not checking stubs due to mypy build errors:`
+      reason: stubtest hook was blocked from running because mypy itself reported errors, showing the downstream cascade effect.
+    - quote: `pandas/core/arrays/arrow/array.py:101: error: Module has no attribute "equal"  [attr-defined]`
+      reason: Even basic pyarrow.compute functions like `equal` are missing from the stubs, indicating a broad stubs incompatibility rather than a single missing attribute.
+- **suggested_fix:** Update the pyarrow stubs (pyarrow-stubs or the stubs bundled with pyarrow) to a version that exports the full `pyarrow.compute` API, or add `# type: ignore[attr-defined]` suppressions / a `pyrightconfig.json` exclusion for the affected pyarrow.compute attribute accesses until compatible stubs are available.
+
+**Diagnosis B:**
+
+- **summary:** mypy type checking failed due to hundreds of [attr-defined] errors reporting that PyArrow compute functions (e.g., `is_null`, `if_else`, `utf8_length`, `equal`, etc.) are missing attributes on the pyarrow module. This caused the downstream `mypy (stubtest)` step to also fail because it refused to check stubs given the mypy build errors.
+- **root_cause_category:** `type_error`
+- **root_cause:** mypy reports that a large number of pyarrow compute function attributes (e.g., `is_null`, `if_else`, `utf8_length`, `equal`, `add`, `divide`, etc.) are not recognized on the pyarrow module, producing [attr-defined] errors across multiple files. This indicates that the installed pyarrow version's type stubs or the pandas code accessing pyarrow.compute functions via a module alias no longer matches the expected API surface that mypy can resolve.
+- **confidence:** 0.92
+- **relevant_files:** ['pandas/compat/pyarrow.py', 'pandas/core/arrays/_arrow_string_mixins.py', 'pandas/core/arrays/arrow/accessors.py', 'pandas/core/arrays/arrow/array.py', 'pandas/core/arrays/datetimes.py', 'pandas/core/arrays/string_arrow.py', 'pandas/core/strings/accessor.py', 'pandas/io/feather_format.py', 'pandas/tests/reshape/test_get_dummies.py']
+- **evidence:**
+    - quote: `mypy.....................................................................[41mFailed[m`
+      reason: Confirms mypy check failed as a top-level pre-commit hook result.
+    - quote: `pandas/compat/pyarrow.py:76: error: Module has no attribute "is_null"  [attr-defined]`
+      reason: Representative example of the [attr-defined] errors: mypy cannot find pyarrow compute attributes on the imported module.
+    - quote: `pandas/core/arrays/arrow/array.py:101: error: Module has no attribute "equal"  [attr-defined]`
+      reason: Shows the same class of error appearing in a core array file, confirming it is systemic across the pyarrow compute attribute usage.
+    - quote: `error: not checking stubs due to mypy build errors:`
+      reason: The stubtest step was also blocked because mypy itself reported build errors, cascading the failure.
+    - quote: `pandas/compat/pyarrow.py:69: error: Call to untyped function "fill_null" in typed context  [no-untyped-call]`
+      reason: Additional mypy error type showing pyarrow functions lack type annotations, compounding the attr-defined failures.
+    - quote: `pyright..................................................................[41mFailed[m
+pyright reportGeneralTypeIssues..........................................[41mFailed[m`
+      reason: Pyright also failed, consistent with a systemic pyarrow type information problem rather than a pandas-code-only issue.
+- **suggested_fix:** Investigate whether the pyarrow version installed exposes compute functions via `pyarrow.compute` rather than directly on the `pyarrow` module, and update the import paths or type stubs in the affected files (especially `pandas/compat/pyarrow.py` and `pandas/core/arrays/arrow/array.py`) so that mypy can resolve the `[attr-defined]` attributes correctly.
+
+---
+
+## case `prettier-react-stress-001`
+
+- **repo:** `facebook/react`
+- **workflow:** `(commit)`
+- **job:** `Run prettier`
+- **framework:** `generic`
+
+**Ground-truth summary** (the actual cause; use this as the standard you score against):
+
+> `yarn prettier-check` reports two files whose formatting is out of date: `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` and `compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts`. Fix: run `yarn prettier-all` locally and commit the reformatted files.
+
+<details><summary>Required-evidence excerpt (raw log)</summary>
+
+```text
+2026-04-23T10:42:44.7465725Z   This project uses prettier to format all JavaScript code.
+2026-04-23T10:42:44.7466789Z     Please run yarn prettier-all and add changes to files listed below to your commit:
+2026-04-23T10:42:44.7467406Z 
+2026-04-23T10:42:44.7467417Z 
+2026-04-23T10:42:44.7468044Z packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js
+2026-04-23T10:42:44.7469387Z compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts
+2026-04-23T10:42:45.0308857Z error Command failed with exit code 1.
+2026-04-23T10:42:45.0310370Z info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.
+2026-04-23T10:42:45.0394351Z ##[error]Process completed with exit code 1.
+```
+
+</details>
+
+### `abs-0027` (absolute)
+
+- **summary:** The 'Run prettier' CI job failed because Prettier detected unformatted code in at least two files. The job exited with code 1, indicating formatting violations were found.
+- **root_cause_category:** `formatting_failure`
+- **root_cause:** Prettier found unformatted code in 'packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js' and 'compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts', causing the formatter check to exit with code 1.
+- **confidence:** 0.82
+- **relevant_files:** ['packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js', 'compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts']
+- **evidence:**
+    - quote: `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js`
+      reason: This file is listed immediately before the failure, consistent with Prettier reporting it as unformatted.
+    - quote: `compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts`
+      reason: This file is also listed before the failure, indicating it is another file flagged by Prettier as needing formatting.
+    - quote: `error Command failed with exit code 1.`
+      reason: Prettier exits with code 1 when it finds files that do not match its expected formatting, confirming the job failed due to formatting violations.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: GitHub Actions records the process exit code as 1, corroborating the Prettier check failure.
+- **suggested_fix:** Run Prettier locally on the two flagged files (e.g. `yarn prettier-all` or `yarn prettier --write packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts`) and commit the reformatted output.
+
+### `abs-0028` (absolute)
+
+- **summary:** The 'Run prettier' CI job failed because Prettier found unformatted code in two files. The command exited with code 1, indicating formatting violations were detected.
+- **root_cause_category:** `formatting_failure`
+- **root_cause:** Prettier reported that two files are not properly formatted: 'packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js' and 'compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts'.
+- **confidence:** 0.85
+- **relevant_files:** ['packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js', 'compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts']
+- **evidence:**
+    - quote: `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js`
+      reason: This file is listed as having a formatting violation detected by Prettier.
+    - quote: `compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts`
+      reason: This file is also listed as having a formatting violation detected by Prettier.
+    - quote: `error Command failed with exit code 1.`
+      reason: The Prettier check command exited with code 1, indicating formatting violations were found.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: GitHub Actions reported the job step failed due to the non-zero exit code from the Prettier command.
+- **suggested_fix:** Run 'yarn prettier-all' (or the equivalent Prettier format command for this repo) on the two listed files and commit the formatted output before pushing.
+
+### `pair-0014` (pairwise)
+
+**Diagnosis A:**
+
+- **summary:** The 'Run prettier' CI job failed because Prettier found unformatted code in two files. The command exited with code 1, indicating formatting violations were detected.
+- **root_cause_category:** `formatting_failure`
+- **root_cause:** Prettier reported that two files are not properly formatted: 'packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js' and 'compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts'.
+- **confidence:** 0.85
+- **relevant_files:** ['packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js', 'compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts']
+- **evidence:**
+    - quote: `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js`
+      reason: This file is listed as having a formatting violation detected by Prettier.
+    - quote: `compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts`
+      reason: This file is also listed as having a formatting violation detected by Prettier.
+    - quote: `error Command failed with exit code 1.`
+      reason: The Prettier check command exited with code 1, indicating formatting violations were found.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: GitHub Actions reported the job step failed due to the non-zero exit code from the Prettier command.
+- **suggested_fix:** Run 'yarn prettier-all' (or the equivalent Prettier format command for this repo) on the two listed files and commit the formatted output before pushing.
+
+**Diagnosis B:**
+
+- **summary:** The 'Run prettier' CI job failed because Prettier detected unformatted code in at least two files. The job exited with code 1, indicating formatting violations were found.
+- **root_cause_category:** `formatting_failure`
+- **root_cause:** Prettier found unformatted code in 'packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js' and 'compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts', causing the formatter check to exit with code 1.
+- **confidence:** 0.82
+- **relevant_files:** ['packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js', 'compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts']
+- **evidence:**
+    - quote: `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js`
+      reason: This file is listed immediately before the failure, consistent with Prettier reporting it as unformatted.
+    - quote: `compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts`
+      reason: This file is also listed before the failure, indicating it is another file flagged by Prettier as needing formatting.
+    - quote: `error Command failed with exit code 1.`
+      reason: Prettier exits with code 1 when it finds files that do not match its expected formatting, confirming the job failed due to formatting violations.
+    - quote: `##[error]Process completed with exit code 1.`
+      reason: GitHub Actions records the process exit code as 1, corroborating the Prettier check failure.
+- **suggested_fix:** Run Prettier locally on the two flagged files (e.g. `yarn prettier-all` or `yarn prettier --write packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts`) and commit the reformatted output.
+
+---
+
+## case `pushpr-nextjs-001`
+
+- **repo:** `vercel/next.js`
+- **workflow:** `sync-react`
+- **job:** `create-pull-request`
+- **framework:** `generic`
+
+**Ground-truth summary** (the actual cause; use this as the standard you score against):
+
+> The sync-react workflow invokes `git push origin update/react/...` via scripts/sync-react.js, and the push is rejected with HTTP 403: `remote: Permission to vercel/next.js.git denied to nextjs-bot`. The bot token or workflow permissions are not allowed to push to the repository. Fix on the workflow side (grant write access, swap to a PAT, or review Dependabot-like bot permissions).
+
+<details><summary>Required-evidence excerpt (raw log)</summary>
+
+```text
+2026-04-22T17:03:53.4331183Z Error: Command failed with exit code 128 (Unknown system error -128): git push origin update/react/19.3.0-canary-142cfde8-20260422
+2026-04-22T17:03:53.4332954Z     at makeError (/home/runner/work/next.js/next.js/node_modules/.pnpm/execa@2.0.3/node_modules/execa/lib/error.js:58:11)
+2026-04-22T17:03:53.4334153Z     at handlePromise (/home/runner/work/next.js/next.js/node_modules/.pnpm/execa@2.0.3/node_modules/execa/index.js:112:26)
+2026-04-22T17:03:53.4335056Z     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2026-04-22T17:03:53.4335770Z     at async main (/home/runner/work/next.js/next.js/scripts/sync-react.js:645:5) {
+2026-04-22T17:03:53.4336395Z   command: 'git push origin update/react/19.3.0-canary-142cfde8-20260422',
+2026-04-22T17:03:53.4336811Z   exitCode: 128,
+2026-04-22T17:03:53.4337092Z   exitCodeName: 'Unknown system error -128',
+2026-04-22T17:03:53.4337397Z   stdout: '',
+2026-04-22T17:03:53.4337804Z   stderr: 'remote: Permission to vercel/next.js.git denied to nextjs-bot.\n' +
+2026-04-22T17:03:53.4338575Z     "fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403",
+2026-04-22T17:03:53.4339304Z   all: 'remote: Permission to vercel/next.js.git denied to nextjs-bot.\n' +
+```
+
+</details>
+
+### `abs-0017` (absolute)
+
+- **summary:** The sync-react workflow failed when attempting to push a new branch to GitHub. The bot account 'nextjs-bot' was denied push access to vercel/next.js with a 403 Permission Denied error.
+- **root_cause_category:** `permission_or_secret`
+- **root_cause:** The GitHub token used by 'nextjs-bot' does not have write/push permission to vercel/next.js repository, causing the git push to fail with a 403 error.
+- **confidence:** 0.95
+- **relevant_files:** ['scripts/sync-react.js']
+- **evidence:**
+    - quote: `remote: Permission to vercel/next.js.git denied to nextjs-bot.`
+      reason: Explicitly states the push was denied to the bot account performing the operation.
+    - quote: `fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403`
+      reason: HTTP 403 confirms an authorization/permission failure on the remote.
+    - quote: `Error: Command failed with exit code 128 (Unknown system error -128): git push origin update/react/19.3.0-canary-142cfde8-20260422`
+      reason: The failing command was a git push, and exit code 128 is the standard git exit code for fatal errors including auth failures.
+- **suggested_fix:** Verify that the GitHub token or credentials configured for 'nextjs-bot' in the workflow secrets have write access to the vercel/next.js repository, and that the token has not expired or been revoked.
+
+### `abs-0018` (absolute)
+
+- **summary:** The CI job failed because the bot account 'nextjs-bot' was denied push access to the vercel/next.js repository. The git push command returned a 403 error with 'Permission to vercel/next.js.git denied to nextjs-bot.', indicating an authentication/authorization failure for the push operation.
+- **root_cause_category:** `permission_or_secret`
+- **root_cause:** The GitHub bot account 'nextjs-bot' does not have push permission to vercel/next.js.git, or its credentials/token are invalid or expired. The remote returned HTTP 403 when the script attempted to push the branch 'update/react/19.3.0-canary-142cfde8-20260422'.
+- **confidence:** 0.95
+- **relevant_files:** ['scripts/sync-react.js']
+- **evidence:**
+    - quote: `remote: Permission to vercel/next.js.git denied to nextjs-bot.`
+      reason: Explicitly states the remote rejected the push due to insufficient permissions for the nextjs-bot account.
+    - quote: `fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403`
+      reason: HTTP 403 confirms the token or credentials used for the push were unauthorized.
+    - quote: `git push origin update/react/19.3.0-canary-142cfde8-20260422`
+      reason: This is the exact command that failed, showing the branch being pushed and confirming the operation attempted.
+    - quote: `exitCode: 128`
+      reason: Git exit code 128 is consistent with an authentication/authorization failure on a remote operation.
+- **suggested_fix:** Verify that the GitHub token or SSH key configured for 'nextjs-bot' in the workflow secrets is valid, not expired, and has 'contents: write' permission (or repo scope) for vercel/next.js. Re-generate and update the secret if necessary.
+
+### `pair-0009` (pairwise)
+
+**Diagnosis A:**
+
+- **summary:** The CI job failed because the bot account 'nextjs-bot' was denied push access to the vercel/next.js repository. The git push command returned a 403 error with 'Permission to vercel/next.js.git denied to nextjs-bot.', indicating an authentication/authorization failure for the push operation.
+- **root_cause_category:** `permission_or_secret`
+- **root_cause:** The GitHub bot account 'nextjs-bot' does not have push permission to vercel/next.js.git, or its credentials/token are invalid or expired. The remote returned HTTP 403 when the script attempted to push the branch 'update/react/19.3.0-canary-142cfde8-20260422'.
+- **confidence:** 0.95
+- **relevant_files:** ['scripts/sync-react.js']
+- **evidence:**
+    - quote: `remote: Permission to vercel/next.js.git denied to nextjs-bot.`
+      reason: Explicitly states the remote rejected the push due to insufficient permissions for the nextjs-bot account.
+    - quote: `fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403`
+      reason: HTTP 403 confirms the token or credentials used for the push were unauthorized.
+    - quote: `git push origin update/react/19.3.0-canary-142cfde8-20260422`
+      reason: This is the exact command that failed, showing the branch being pushed and confirming the operation attempted.
+    - quote: `exitCode: 128`
+      reason: Git exit code 128 is consistent with an authentication/authorization failure on a remote operation.
+- **suggested_fix:** Verify that the GitHub token or SSH key configured for 'nextjs-bot' in the workflow secrets is valid, not expired, and has 'contents: write' permission (or repo scope) for vercel/next.js. Re-generate and update the secret if necessary.
+
+**Diagnosis B:**
+
+- **summary:** The sync-react workflow failed when attempting to push a new branch to GitHub. The bot account 'nextjs-bot' was denied push access to vercel/next.js with a 403 Permission Denied error.
+- **root_cause_category:** `permission_or_secret`
+- **root_cause:** The GitHub token used by 'nextjs-bot' does not have write/push permission to vercel/next.js repository, causing the git push to fail with a 403 error.
+- **confidence:** 0.95
+- **relevant_files:** ['scripts/sync-react.js']
+- **evidence:**
+    - quote: `remote: Permission to vercel/next.js.git denied to nextjs-bot.`
+      reason: Explicitly states the push was denied to the bot account performing the operation.
+    - quote: `fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403`
+      reason: HTTP 403 confirms an authorization/permission failure on the remote.
+    - quote: `Error: Command failed with exit code 128 (Unknown system error -128): git push origin update/react/19.3.0-canary-142cfde8-20260422`
+      reason: The failing command was a git push, and exit code 128 is the standard git exit code for fatal errors including auth failures.
+- **suggested_fix:** Verify that the GitHub token or credentials configured for 'nextjs-bot' in the workflow secrets have write access to the vercel/next.js repository, and that the token has not expired or been revoked.
+
+---
+
+## case `pytest-pandas-001`
+
+- **repo:** `pandas-dev/pandas`
+- **workflow:** `Unit Tests`
+- **job:** `Numpy Nightly`
+- **framework:** `pytest`
+
+**Ground-truth summary** (the actual cause; use this as the standard you score against):
+
+> pytest fails collection and many runtime tests because NumPy (nightly) now raises DeprecationWarning when constructing np.datetime64 values with the 'generic' timedelta unit, and pandas' warning-as-error configuration turns this into test failures. The fix belongs on pandas' side: update affected tests/implementations to use a specific timedelta unit, or adjust the warning filter.
+
+<details><summary>Required-evidence excerpt (raw log)</summary>
+
+```text
+2026-04-23T08:47:06.2359629Z ==================================== ERRORS ====================================
+2026-04-23T08:47:06.2360060Z _________ ERROR collecting pandas/tests/arrays/masked/test_indexing.py _________
+2026-04-23T08:47:06.2360475Z pandas/tests/arrays/masked/test_indexing.py:11: in <module>
+2026-04-23T08:47:06.2360795Z     class TestSetitemValidation:
+2026-04-23T08:47:06.2361131Z pandas/tests/arrays/masked/test_indexing.py:43: in TestSetitemValidation
+2026-04-23T08:47:06.2361470Z     np.datetime64("NaT"),
+2026-04-23T08:47:06.2361674Z     ^^^^^^^^^^^^^^^^^^^^
+2026-04-23T08:47:06.2362386Z E   DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific unit instead.
+```
+
+</details>
+
+### `abs-0009` (absolute)
+
+- **summary:** The Numpy Nightly CI job produced 45 failed tests and 52 collection errors across many pandas test modules. Every failure carries the same error: NumPy nightly now emits a DeprecationWarning for use of the 'generic' timedelta unit (including implicit bare-integer arithmetic), and that warning is being treated as a hard error by the pytest configuration, causing both collection-time crashes and runtime test failures.
+- **root_cause_category:** `test_assertion`
+- **root_cause:** NumPy nightly deprecated the 'generic' unit for NumPy timedelta (including implicit conversion of bare integers such as `+ 1`). The pandas test suite uses this pattern in many places, and the pytest run is configured to turn DeprecationWarnings into errors, causing widespread collection failures and test failures wherever pandas code triggers the deprecated behaviour.
+- **confidence:** 0.92
+- **relevant_files:** ['pandas/tests/arrays/masked/test_indexing.py', 'pandas/tests/arrays/test_timedeltas.py', 'pandas/tests/dtypes/test_inference.py', 'pandas/tests/dtypes/test_missing.py', 'pandas/tests/frame/indexing/test_indexing.py', 'pandas/tests/frame/test_constructors.py', 'pandas/tests/indexes/datetimes/methods/test_insert.py', 'pandas/tests/indexes/test_index_new.py', 'pandas/tests/indexes/timedeltas/test_indexing.py', 'pandas/tests/io/json/test_ujson.py', 'pandas/tests/scalar/timestamp/test_constructors.py', 'pandas/tests/series/indexing/test_indexing.py', 'pandas/tests/util/test_assert_almost_equal.py', 'pandas/tests/arithmetic/test_datetime64.py', 'pandas/tests/arithmetic/test_timedelta64.py', 'pandas/tests/reshape/concat/test_append.py', 'pandas/tests/reshape/concat/test_categorical.py', 'pandas/tests/reshape/concat/test_datetimes.py', 'pandas/tests/scalar/timedelta/test_arithmetic.py', 'pandas/tests/series/methods/test_equals.py', 'pandas/tests/indexes/categorical/test_indexing.py', 'pandas/tests/indexes/datetimes/test_indexing.py', 'pandas/tests/test_algos.py', 'pandas/tests/tools/test_to_datetime.py', 'pandas/tests/indexes/timedeltas/methods/test_insert.py', 'pandas/tests/tslibs/test_array_to_datetime.py', 'pandas/tests/util/test_assert_index_equal.py', 'pandas/tests/frame/methods/test_rank.py', 'pandas/tests/groupby/methods/test_nth.py', 'pandas/tests/io/sas/test_sas7bdat.py']
+- **relevant_tests:** ['pandas/tests/arithmetic/test_datetime64.py::TestDatetimeIndexComparisons::test_dti_cmp_nat_behaves_like_float_cmp_nan', 'pandas/tests/reshape/concat/test_append.py::TestAppend::test_append_dtype_coerce[True]', 'pandas/tests/reshape/concat/test_append.py::TestAppend::test_append_dtype_coerce[False]', 'pandas/tests/reshape/concat/test_categorical.py::TestCategoricalConcat::test_concat_categorical_datetime', 'pandas/tests/reshape/concat/test_datetimes.py::TestDatetimeConcat::test_concat_NaT_dataframes[None]', 'pandas/tests/reshape/concat/test_datetimes.py::TestDatetimeConcat::test_concat_NaT_dataframes_all_NaT_axis_0[item1-None-None]', 'pandas/tests/reshape/concat/test_datetimes.py::TestDatetimeConcat::test_concat_NaT_series_dataframe_all_NaT[None-None]', 'pandas/tests/reshape/concat/test_datetimes.py::test_concat_datetime64_different_resolutions', 'pandas/tests/scalar/timedelta/test_arithmetic.py::TestTimedeltaAdditionSubtraction::test_td_rsub_nat', 'pandas/tests/scalar/timedelta/test_arithmetic.py::TestTimedeltaMultiplicationDivision::test_td_rdiv_na_scalar', 'pandas/tests/series/methods/test_equals.py::test_equals_matching_nas', 'pandas/tests/indexes/categorical/test_indexing.py::TestContains::test_contains_na_dtype[True]', 'pandas/tests/indexes/categorical/test_indexing.py::TestContains::test_contains_na_dtype[False]', 'pandas/tests/indexes/datetimes/test_indexing.py::TestGetLoc::test_get_loc_nat', 'pandas/tests/arithmetic/test_timedelta64.py::TestTimedeltaArraylikeAddSubOps::test_td64arr_add_datetime64_nat[Index]', 'pandas/tests/arithmetic/test_timedelta64.py::TestTimedeltaArraylikeAddSubOps::test_td64arr_add_datetime64_nat[Series]', 'pandas/tests/arithmetic/test_timedelta64.py::TestTimedeltaArraylikeAddSubOps::test_td64arr_add_datetime64_nat[DataFrame]', 'pandas/tests/arithmetic/test_timedelta64.py::TestTimedeltaArraylikeAddSubOps::test_td64arr_add_datetime64_nat[array]', 'pandas/tests/test_algos.py::TestDuplicated::test_datetime_likes', 'pandas/tests/tools/test_to_datetime.py::test_nullable_integer_to_datetime', 'pandas/tests/indexes/timedeltas/methods/test_insert.py::TestTimedeltaIndexInsert::test_insert_invalid_na', 'pandas/tests/tslibs/test_array_to_datetime.py::TestArrayToDatetimeResolutionInference::test_infer_homogeoneous_date_objects', 'pandas/tests/tslibs/test_array_to_datetime.py::TestArrayToDatetimeResolutionInference::test_infer_homogeoneous_dt64', 'pandas/tests/tslibs/test_array_to_datetime.py::TestArrayToDatetimeResolutionInference::test_infer_homogeoneous_timestamps', 'pandas/tests/tslibs/test_array_to_datetime.py::TestArrayToDatetimeResolutionInference::test_infer_homogeoneous_datetimes_strings', 'pandas/tests/util/test_assert_index_equal.py::test_assert_index_equal_different_inferred_types', 'pandas/tests/groupby/methods/test_nth.py::test_first_categorical_and_datetime_data_nat', 'pandas/tests/io/sas/test_sas7bdat.py::test_null_date']
+- **evidence:**
+    - quote: `DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific u`
+      reason: This is the single error message appearing on every FAILED test line and every ERROR collection line, establishing it as the uniform root cause across all failures.
+    - quote: `_________ ERROR collecting pandas/tests/arrays/masked/test_indexing.py _________`
+      reason: Collection-time errors (not just runtime failures) confirm that the DeprecationWarning is being raised at import/parametrize time and is being treated as a hard error, preventing the test module from 
+    - quote: `FAILED pandas/tests/arithmetic/test_timedelta64.py::TestTimedeltaArraylikeAddSubOps::test_td64arr_add_datetime64_nat[Index] - DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated`
+      reason: The FAILED lines show the same DeprecationWarning is the direct reported reason for each individual test failure.
+    - quote: `meson setup /home/runner/work/pandas/pandas /home/runner/work/pandas/pandas/build/numpy-nightly`
+      reason: Confirms this is the Numpy Nightly build path, meaning the numpy version used is a pre-release nightly that introduced the stricter timedelta unit deprecation.
+    - quote: `= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s (0:12:39) =`
+      reason: Summary confirms 45 test failures and 52 collection errors, all attributable to the single DeprecationWarning being treated as an error.
+- **suggested_fix:** Update pandas source code to replace all uses of the deprecated 'generic' NumPy timedelta unit and bare-integer timedelta arithmetic (e.g. `+ 1` without an explicit unit) with unit-qualified equivalents (e.g. `np.timedelta64(1, 'ns')`), addressing the NumPy nightly deprecation before it becomes a hard error.
+
+### `abs-0010` (absolute)
+
+- **summary:** The Numpy Nightly CI job failed because a nightly NumPy build introduced a new `DeprecationWarning` that treats bare `np.datetime64("NaT")` (without an explicit unit) as a 'generic' timedelta, triggering the warning as an error under the `-Werror` build flag. This caused 45 test failures and 52 collection errors across dozens of test files.
+- **root_cause_category:** `test_assertion`
+- **root_cause:** A nightly NumPy version deprecated the 'generic' unit for NumPy timedelta, emitting a DeprecationWarning whenever `np.datetime64("NaT")` is used without an explicit unit. Because pandas is built with `--werror` and pytest treats this as a failure, all tests and test modules that reference `np.datetime64("NaT")` at class/module scope or in test bodies fail.
+- **confidence:** 0.95
+- **relevant_files:** ['pandas/tests/arrays/masked/test_indexing.py', 'pandas/tests/arrays/test_timedeltas.py', 'pandas/tests/dtypes/test_inference.py', 'pandas/tests/dtypes/test_missing.py', 'pandas/tests/frame/indexing/test_indexing.py', 'pandas/tests/frame/test_constructors.py', 'pandas/tests/indexes/datetimes/methods/test_insert.py', 'pandas/tests/indexes/test_index_new.py', 'pandas/tests/indexes/timedeltas/test_indexing.py', 'pandas/tests/io/json/test_ujson.py', 'pandas/tests/scalar/timestamp/test_constructors.py', 'pandas/tests/series/indexing/test_indexing.py', 'pandas/tests/util/test_assert_almost_equal.py', 'pandas/tests/arithmetic/test_datetime64.py', 'pandas/tests/reshape/concat/test_append.py', 'pandas/tests/reshape/concat/test_categorical.py', 'pandas/tests/reshape/concat/test_datetimes.py', 'pandas/tests/scalar/timedelta/test_arithmetic.py', 'pandas/tests/series/methods/test_equals.py', 'pandas/tests/indexes/categorical/test_indexing.py', 'pandas/tests/indexes/datetimes/test_indexing.py', 'pandas/tests/arithmetic/test_timedelta64.py', 'pandas/tests/test_algos.py', 'pandas/tests/tools/test_to_datetime.py', 'pandas/tests/indexes/timedeltas/methods/test_insert.py', 'pandas/tests/tslibs/test_array_to_datetime.py', 'pandas/tests/util/test_assert_index_equal.py', 'pandas/tests/frame/methods/test_rank.py', 'pandas/tests/groupby/methods/test_nth.py', 'pandas/tests/io/sas/test_sas7bdat.py', 'pandas/core/internals/concat.py']
+- **relevant_tests:** ['pandas/tests/arithmetic/test_datetime64.py::TestDatetimeIndexComparisons::test_dti_cmp_nat_behaves_like_float_cmp_nan', 'pandas/tests/reshape/concat/test_append.py::TestAppend::test_append_dtype_coerce[True]', 'pandas/tests/reshape/concat/test_append.py::TestAppend::test_append_dtype_coerce[False]', 'pandas/tests/reshape/concat/test_categorical.py::TestCategoricalConcat::test_concat_categorical_datetime', 'pandas/tests/reshape/concat/test_datetimes.py::TestDatetimeConcat::test_concat_NaT_dataframes[None]', 'pandas/tests/reshape/concat/test_datetimes.py::TestDatetimeConcat::test_concat_NaT_dataframes_all_NaT_axis_0[item1-None-None]', 'pandas/tests/reshape/concat/test_datetimes.py::TestDatetimeConcat::test_concat_NaT_series_dataframe_all_NaT[None-None]', 'pandas/tests/reshape/concat/test_datetimes.py::test_concat_datetime64_different_resolutions', 'pandas/tests/scalar/timedelta/test_arithmetic.py::TestTimedeltaAdditionSubtraction::test_td_rsub_nat', 'pandas/tests/scalar/timedelta/test_arithmetic.py::TestTimedeltaMultiplicationDivision::test_td_rdiv_na_scalar', 'pandas/tests/series/methods/test_equals.py::test_equals_matching_nas', 'pandas/tests/indexes/categorical/test_indexing.py::TestContains::test_contains_na_dtype[True]', 'pandas/tests/indexes/categorical/test_indexing.py::TestContains::test_contains_na_dtype[False]', 'pandas/tests/indexes/datetimes/test_indexing.py::TestGetLoc::test_get_loc_nat', 'pandas/tests/arithmetic/test_timedelta64.py::TestTimedeltaArraylikeAddSubOps::test_td64arr_add_datetime64_nat[Index]', 'pandas/tests/arithmetic/test_timedelta64.py::TestTimedeltaArraylikeAddSubOps::test_td64arr_add_datetime64_nat[Series]', 'pandas/tests/arithmetic/test_timedelta64.py::TestTimedeltaArraylikeAddSubOps::test_td64arr_add_datetime64_nat[DataFrame]', 'pandas/tests/arithmetic/test_timedelta64.py::TestTimedeltaArraylikeAddSubOps::test_td64arr_add_datetime64_nat[array]', 'pandas/tests/test_algos.py::TestDuplicated::test_datetime_likes', 'pandas/tests/tools/test_to_datetime.py::test_nullable_integer_to_datetime', 'pandas/tests/indexes/timedeltas/methods/test_insert.py::TestTimedeltaIndexInsert::test_insert_invalid_na', 'pandas/tests/tslibs/test_array_to_datetime.py::TestArrayToDatetimeResolutionInference::test_infer_homogeoneous_date_objects', 'pandas/tests/tslibs/test_array_to_datetime.py::TestArrayToDatetimeResolutionInference::test_infer_homogeoneous_dt64', 'pandas/tests/tslibs/test_array_to_datetime.py::TestArrayToDatetimeResolutionInference::test_infer_homogeoneous_timestamps', 'pandas/tests/tslibs/test_array_to_datetime.py::TestArrayToDatetimeResolutionInference::test_infer_homogeoneous_datetimes_strings', 'pandas/tests/tslibs/test_array_to_datetime.py::TestArrayToDatetimeResolutionInference::test_infer_with_nat_int_float_str[nan]', 'pandas/tests/util/test_assert_index_equal.py::test_assert_index_equal_different_inferred_types', 'pandas/tests/frame/methods/test_rank.py::TestRank::test_rank_inf_and_nan[DataFrame-contents0-float64]', 'pandas/tests/groupby/methods/test_nth.py::test_first_categorical_and_datetime_data_nat', 'pandas/tests/io/sas/test_sas7bdat.py::test_null_date']
+- **evidence:**
+    - quote: `DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific u`
+      reason: This is the exact error message attached to every single test failure and collection error in the run, identifying the root cause as a NumPy nightly deprecation.
+    - quote: `np.datetime64("NaT"),
+    ^^^^^^^^^^^^^^^^^^^^
+E   DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated`
+      reason: Shows that calling np.datetime64("NaT") without a unit triggers the deprecation in the nightly NumPy build.
+    - quote: `return dtype.type("NaT")
+           ^^^^^^^^^^^^^^^^^
+E           DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated`
+      reason: Shows that even pandas internal code in pandas/core/internals/concat.py triggers the deprecation when constructing NaT values for datetime/timedelta dtypes.
+    - quote: `= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s (0:12:39) =`
+      reason: Summary confirms widespread failure (45 FAILED + 52 ERROR) all attributable to the same deprecation warning.
+    - quote: `Environment: numpy-nightly`
+      reason: Confirms the job runs against a nightly NumPy build, which introduced the new deprecation before it was applied in stable releases.
+- **suggested_fix:** Replace all occurrences of bare `np.datetime64("NaT")` (without an explicit time unit) in pandas tests and source code with `np.datetime64("NaT", "ns")` (or another appropriate unit like "us", "ms", "s") to satisfy the new NumPy requirement. Also fix `pandas/core/internals/concat.py:412` where `dtype.type("NaT")` produces a generic-unit timedelta.
+
+### `pair-0005` (pairwise)
+
+**Diagnosis A:**
+
+- **summary:** The Numpy Nightly CI job produced 45 failed tests and 52 collection errors across many pandas test modules. Every failure carries the same error: NumPy nightly now emits a DeprecationWarning for use of the 'generic' timedelta unit (including implicit bare-integer arithmetic), and that warning is being treated as a hard error by the pytest configuration, causing both collection-time crashes and runtime test failures.
+- **root_cause_category:** `test_assertion`
+- **root_cause:** NumPy nightly deprecated the 'generic' unit for NumPy timedelta (including implicit conversion of bare integers such as `+ 1`). The pandas test suite uses this pattern in many places, and the pytest run is configured to turn DeprecationWarnings into errors, causing widespread collection failures and test failures wherever pandas code triggers the deprecated behaviour.
+- **confidence:** 0.92
+- **relevant_files:** ['pandas/tests/arrays/masked/test_indexing.py', 'pandas/tests/arrays/test_timedeltas.py', 'pandas/tests/dtypes/test_inference.py', 'pandas/tests/dtypes/test_missing.py', 'pandas/tests/frame/indexing/test_indexing.py', 'pandas/tests/frame/test_constructors.py', 'pandas/tests/indexes/datetimes/methods/test_insert.py', 'pandas/tests/indexes/test_index_new.py', 'pandas/tests/indexes/timedeltas/test_indexing.py', 'pandas/tests/io/json/test_ujson.py', 'pandas/tests/scalar/timestamp/test_constructors.py', 'pandas/tests/series/indexing/test_indexing.py', 'pandas/tests/util/test_assert_almost_equal.py', 'pandas/tests/arithmetic/test_datetime64.py', 'pandas/tests/arithmetic/test_timedelta64.py', 'pandas/tests/reshape/concat/test_append.py', 'pandas/tests/reshape/concat/test_categorical.py', 'pandas/tests/reshape/concat/test_datetimes.py', 'pandas/tests/scalar/timedelta/test_arithmetic.py', 'pandas/tests/series/methods/test_equals.py', 'pandas/tests/indexes/categorical/test_indexing.py', 'pandas/tests/indexes/datetimes/test_indexing.py', 'pandas/tests/test_algos.py', 'pandas/tests/tools/test_to_datetime.py', 'pandas/tests/indexes/timedeltas/methods/test_insert.py', 'pandas/tests/tslibs/test_array_to_datetime.py', 'pandas/tests/util/test_assert_index_equal.py', 'pandas/tests/frame/methods/test_rank.py', 'pandas/tests/groupby/methods/test_nth.py', 'pandas/tests/io/sas/test_sas7bdat.py']
+- **relevant_tests:** ['pandas/tests/arithmetic/test_datetime64.py::TestDatetimeIndexComparisons::test_dti_cmp_nat_behaves_like_float_cmp_nan', 'pandas/tests/reshape/concat/test_append.py::TestAppend::test_append_dtype_coerce[True]', 'pandas/tests/reshape/concat/test_append.py::TestAppend::test_append_dtype_coerce[False]', 'pandas/tests/reshape/concat/test_categorical.py::TestCategoricalConcat::test_concat_categorical_datetime', 'pandas/tests/reshape/concat/test_datetimes.py::TestDatetimeConcat::test_concat_NaT_dataframes[None]', 'pandas/tests/reshape/concat/test_datetimes.py::TestDatetimeConcat::test_concat_NaT_dataframes_all_NaT_axis_0[item1-None-None]', 'pandas/tests/reshape/concat/test_datetimes.py::TestDatetimeConcat::test_concat_NaT_series_dataframe_all_NaT[None-None]', 'pandas/tests/reshape/concat/test_datetimes.py::test_concat_datetime64_different_resolutions', 'pandas/tests/scalar/timedelta/test_arithmetic.py::TestTimedeltaAdditionSubtraction::test_td_rsub_nat', 'pandas/tests/scalar/timedelta/test_arithmetic.py::TestTimedeltaMultiplicationDivision::test_td_rdiv_na_scalar', 'pandas/tests/series/methods/test_equals.py::test_equals_matching_nas', 'pandas/tests/indexes/categorical/test_indexing.py::TestContains::test_contains_na_dtype[True]', 'pandas/tests/indexes/categorical/test_indexing.py::TestContains::test_contains_na_dtype[False]', 'pandas/tests/indexes/datetimes/test_indexing.py::TestGetLoc::test_get_loc_nat', 'pandas/tests/arithmetic/test_timedelta64.py::TestTimedeltaArraylikeAddSubOps::test_td64arr_add_datetime64_nat[Index]', 'pandas/tests/arithmetic/test_timedelta64.py::TestTimedeltaArraylikeAddSubOps::test_td64arr_add_datetime64_nat[Series]', 'pandas/tests/arithmetic/test_timedelta64.py::TestTimedeltaArraylikeAddSubOps::test_td64arr_add_datetime64_nat[DataFrame]', 'pandas/tests/arithmetic/test_timedelta64.py::TestTimedeltaArraylikeAddSubOps::test_td64arr_add_datetime64_nat[array]', 'pandas/tests/test_algos.py::TestDuplicated::test_datetime_likes', 'pandas/tests/tools/test_to_datetime.py::test_nullable_integer_to_datetime', 'pandas/tests/indexes/timedeltas/methods/test_insert.py::TestTimedeltaIndexInsert::test_insert_invalid_na', 'pandas/tests/tslibs/test_array_to_datetime.py::TestArrayToDatetimeResolutionInference::test_infer_homogeoneous_date_objects', 'pandas/tests/tslibs/test_array_to_datetime.py::TestArrayToDatetimeResolutionInference::test_infer_homogeoneous_dt64', 'pandas/tests/tslibs/test_array_to_datetime.py::TestArrayToDatetimeResolutionInference::test_infer_homogeoneous_timestamps', 'pandas/tests/tslibs/test_array_to_datetime.py::TestArrayToDatetimeResolutionInference::test_infer_homogeoneous_datetimes_strings', 'pandas/tests/util/test_assert_index_equal.py::test_assert_index_equal_different_inferred_types', 'pandas/tests/groupby/methods/test_nth.py::test_first_categorical_and_datetime_data_nat', 'pandas/tests/io/sas/test_sas7bdat.py::test_null_date']
+- **evidence:**
+    - quote: `DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific u`
+      reason: This is the single error message appearing on every FAILED test line and every ERROR collection line, establishing it as the uniform root cause across all failures.
+    - quote: `_________ ERROR collecting pandas/tests/arrays/masked/test_indexing.py _________`
+      reason: Collection-time errors (not just runtime failures) confirm that the DeprecationWarning is being raised at import/parametrize time and is being treated as a hard error, preventing the test module from 
+    - quote: `FAILED pandas/tests/arithmetic/test_timedelta64.py::TestTimedeltaArraylikeAddSubOps::test_td64arr_add_datetime64_nat[Index] - DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated`
+      reason: The FAILED lines show the same DeprecationWarning is the direct reported reason for each individual test failure.
+    - quote: `meson setup /home/runner/work/pandas/pandas /home/runner/work/pandas/pandas/build/numpy-nightly`
+      reason: Confirms this is the Numpy Nightly build path, meaning the numpy version used is a pre-release nightly that introduced the stricter timedelta unit deprecation.
+    - quote: `= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s (0:12:39) =`
+      reason: Summary confirms 45 test failures and 52 collection errors, all attributable to the single DeprecationWarning being treated as an error.
+- **suggested_fix:** Update pandas source code to replace all uses of the deprecated 'generic' NumPy timedelta unit and bare-integer timedelta arithmetic (e.g. `+ 1` without an explicit unit) with unit-qualified equivalents (e.g. `np.timedelta64(1, 'ns')`), addressing the NumPy nightly deprecation before it becomes a hard error.
+
+**Diagnosis B:**
+
+- **summary:** The Numpy Nightly CI job failed because a nightly NumPy build introduced a new `DeprecationWarning` that treats bare `np.datetime64("NaT")` (without an explicit unit) as a 'generic' timedelta, triggering the warning as an error under the `-Werror` build flag. This caused 45 test failures and 52 collection errors across dozens of test files.
+- **root_cause_category:** `test_assertion`
+- **root_cause:** A nightly NumPy version deprecated the 'generic' unit for NumPy timedelta, emitting a DeprecationWarning whenever `np.datetime64("NaT")` is used without an explicit unit. Because pandas is built with `--werror` and pytest treats this as a failure, all tests and test modules that reference `np.datetime64("NaT")` at class/module scope or in test bodies fail.
+- **confidence:** 0.95
+- **relevant_files:** ['pandas/tests/arrays/masked/test_indexing.py', 'pandas/tests/arrays/test_timedeltas.py', 'pandas/tests/dtypes/test_inference.py', 'pandas/tests/dtypes/test_missing.py', 'pandas/tests/frame/indexing/test_indexing.py', 'pandas/tests/frame/test_constructors.py', 'pandas/tests/indexes/datetimes/methods/test_insert.py', 'pandas/tests/indexes/test_index_new.py', 'pandas/tests/indexes/timedeltas/test_indexing.py', 'pandas/tests/io/json/test_ujson.py', 'pandas/tests/scalar/timestamp/test_constructors.py', 'pandas/tests/series/indexing/test_indexing.py', 'pandas/tests/util/test_assert_almost_equal.py', 'pandas/tests/arithmetic/test_datetime64.py', 'pandas/tests/reshape/concat/test_append.py', 'pandas/tests/reshape/concat/test_categorical.py', 'pandas/tests/reshape/concat/test_datetimes.py', 'pandas/tests/scalar/timedelta/test_arithmetic.py', 'pandas/tests/series/methods/test_equals.py', 'pandas/tests/indexes/categorical/test_indexing.py', 'pandas/tests/indexes/datetimes/test_indexing.py', 'pandas/tests/arithmetic/test_timedelta64.py', 'pandas/tests/test_algos.py', 'pandas/tests/tools/test_to_datetime.py', 'pandas/tests/indexes/timedeltas/methods/test_insert.py', 'pandas/tests/tslibs/test_array_to_datetime.py', 'pandas/tests/util/test_assert_index_equal.py', 'pandas/tests/frame/methods/test_rank.py', 'pandas/tests/groupby/methods/test_nth.py', 'pandas/tests/io/sas/test_sas7bdat.py', 'pandas/core/internals/concat.py']
+- **relevant_tests:** ['pandas/tests/arithmetic/test_datetime64.py::TestDatetimeIndexComparisons::test_dti_cmp_nat_behaves_like_float_cmp_nan', 'pandas/tests/reshape/concat/test_append.py::TestAppend::test_append_dtype_coerce[True]', 'pandas/tests/reshape/concat/test_append.py::TestAppend::test_append_dtype_coerce[False]', 'pandas/tests/reshape/concat/test_categorical.py::TestCategoricalConcat::test_concat_categorical_datetime', 'pandas/tests/reshape/concat/test_datetimes.py::TestDatetimeConcat::test_concat_NaT_dataframes[None]', 'pandas/tests/reshape/concat/test_datetimes.py::TestDatetimeConcat::test_concat_NaT_dataframes_all_NaT_axis_0[item1-None-None]', 'pandas/tests/reshape/concat/test_datetimes.py::TestDatetimeConcat::test_concat_NaT_series_dataframe_all_NaT[None-None]', 'pandas/tests/reshape/concat/test_datetimes.py::test_concat_datetime64_different_resolutions', 'pandas/tests/scalar/timedelta/test_arithmetic.py::TestTimedeltaAdditionSubtraction::test_td_rsub_nat', 'pandas/tests/scalar/timedelta/test_arithmetic.py::TestTimedeltaMultiplicationDivision::test_td_rdiv_na_scalar', 'pandas/tests/series/methods/test_equals.py::test_equals_matching_nas', 'pandas/tests/indexes/categorical/test_indexing.py::TestContains::test_contains_na_dtype[True]', 'pandas/tests/indexes/categorical/test_indexing.py::TestContains::test_contains_na_dtype[False]', 'pandas/tests/indexes/datetimes/test_indexing.py::TestGetLoc::test_get_loc_nat', 'pandas/tests/arithmetic/test_timedelta64.py::TestTimedeltaArraylikeAddSubOps::test_td64arr_add_datetime64_nat[Index]', 'pandas/tests/arithmetic/test_timedelta64.py::TestTimedeltaArraylikeAddSubOps::test_td64arr_add_datetime64_nat[Series]', 'pandas/tests/arithmetic/test_timedelta64.py::TestTimedeltaArraylikeAddSubOps::test_td64arr_add_datetime64_nat[DataFrame]', 'pandas/tests/arithmetic/test_timedelta64.py::TestTimedeltaArraylikeAddSubOps::test_td64arr_add_datetime64_nat[array]', 'pandas/tests/test_algos.py::TestDuplicated::test_datetime_likes', 'pandas/tests/tools/test_to_datetime.py::test_nullable_integer_to_datetime', 'pandas/tests/indexes/timedeltas/methods/test_insert.py::TestTimedeltaIndexInsert::test_insert_invalid_na', 'pandas/tests/tslibs/test_array_to_datetime.py::TestArrayToDatetimeResolutionInference::test_infer_homogeoneous_date_objects', 'pandas/tests/tslibs/test_array_to_datetime.py::TestArrayToDatetimeResolutionInference::test_infer_homogeoneous_dt64', 'pandas/tests/tslibs/test_array_to_datetime.py::TestArrayToDatetimeResolutionInference::test_infer_homogeoneous_timestamps', 'pandas/tests/tslibs/test_array_to_datetime.py::TestArrayToDatetimeResolutionInference::test_infer_homogeoneous_datetimes_strings', 'pandas/tests/tslibs/test_array_to_datetime.py::TestArrayToDatetimeResolutionInference::test_infer_with_nat_int_float_str[nan]', 'pandas/tests/util/test_assert_index_equal.py::test_assert_index_equal_different_inferred_types', 'pandas/tests/frame/methods/test_rank.py::TestRank::test_rank_inf_and_nan[DataFrame-contents0-float64]', 'pandas/tests/groupby/methods/test_nth.py::test_first_categorical_and_datetime_data_nat', 'pandas/tests/io/sas/test_sas7bdat.py::test_null_date']
+- **evidence:**
+    - quote: `DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific u`
+      reason: This is the exact error message attached to every single test failure and collection error in the run, identifying the root cause as a NumPy nightly deprecation.
+    - quote: `np.datetime64("NaT"),
+    ^^^^^^^^^^^^^^^^^^^^
+E   DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated`
+      reason: Shows that calling np.datetime64("NaT") without a unit triggers the deprecation in the nightly NumPy build.
+    - quote: `return dtype.type("NaT")
+           ^^^^^^^^^^^^^^^^^
+E           DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated`
+      reason: Shows that even pandas internal code in pandas/core/internals/concat.py triggers the deprecation when constructing NaT values for datetime/timedelta dtypes.
+    - quote: `= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s (0:12:39) =`
+      reason: Summary confirms widespread failure (45 FAILED + 52 ERROR) all attributable to the same deprecation warning.
+    - quote: `Environment: numpy-nightly`
+      reason: Confirms the job runs against a nightly NumPy build, which introduced the new deprecation before it was applied in stable releases.
+- **suggested_fix:** Replace all occurrences of bare `np.datetime64("NaT")` (without an explicit time unit) in pandas tests and source code with `np.datetime64("NaT", "ns")` (or another appropriate unit like "us", "ms", "s") to satisfy the new NumPy requirement. Also fix `pandas/core/internals/concat.py:412` where `dtype.type("NaT")` produces a generic-unit timedelta.
+
+---
+
+## case `pytest-sklearn-stress-001`
+
+- **repo:** `scikit-learn/scikit-learn`
+- **workflow:** `CI`
+- **job:** `Linux pylatest_pip_openblas_pandas`
+- **framework:** `pytest`
+
+**Ground-truth summary** (the actual cause; use this as the standard you score against):
+
+> A doctest in scikit-learn's doc/callbacks.rst expects a rich-progress-bar string for `LogisticRegression.fit`, but the actual output is the plain `LogisticRegression()` repr. 41 doctests pass; only callbacks.rst fails. Fix on the docs side: relax the doctest (e.g. `# doctest: +SKIP`) or regenerate the expected output.
+
+<details><summary>Required-evidence excerpt (raw log)</summary>
+
+```text
+2026-04-23T11:20:00.6871766Z =================================== FAILURES ===================================
+2026-04-23T11:20:00.6872289Z [31m[1m___________________________ [doctest] callbacks.rst ____________________________[0m
+2026-04-23T11:20:00.6872775Z 039     >>> estimator.set_callbacks(progress_bar) # doctest: +SKIP
+2026-04-23T11:20:00.6873135Z 040 
+2026-04-23T11:20:00.6873416Z 041 .. TODO: remove the doctest skip
+2026-04-23T11:20:00.6873723Z 042 
+2026-04-23T11:20:00.6874184Z 043 Now that the progress bar is registered on the estimator, calling its `fit` method will
+2026-04-23T11:20:00.6874915Z 044 display a bar monitoring the progress of the `fit` execution::
+2026-04-23T11:20:00.6875615Z 045 
+2026-04-23T11:20:00.6875929Z 046     >>> from sklearn.datasets import load_iris
+2026-04-23T11:20:00.6876381Z 047     >>> X, y = load_iris(return_X_y=True)
+2026-04-23T11:20:00.6876757Z 048     >>> estimator.fit(X, y)
+```
+
+</details>
+
+### `abs-0029` (absolute)
+
+- **summary:** The CI job failed due to a DocTest failure in the documentation file `doc/callbacks.rst` at line 48. All pytest unit tests passed (41234 passed), but a separate doctest run on documentation files caught a failure in callbacks.rst.
+- **root_cause_category:** `test_assertion`
+- **root_cause:** A DocTest in doc/callbacks.rst at line 48 failed, causing the overall job to fail with 1 failed test in the doctest run.
+- **confidence:** 0.92
+- **relevant_files:** ['doc/callbacks.rst']
+- **relevant_tests:** ['callbacks.rst']
+- **evidence:**
+    - quote: `/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst:48: DocTestFailure`
+      reason: This is the explicit failure message identifying the file and line where the DocTest failed.
+    - quote: `FAILED ../doc/callbacks.rst::callbacks.rst`
+      reason: Confirms the test identifier that failed is the doctest for callbacks.rst.
+    - quote: `1 failed, 41 passed, 2 skipped, 59 warnings in 71.85s (0:01:11)`
+      reason: Shows that the doctest run had exactly 1 failure, corresponding to the callbacks.rst doctest.
+    - quote: `41234 passed, 6097 skipped, 237 xfailed, 121 xpassed, 5890 warnings in 806.51s (0:13:26)`
+      reason: Confirms that the main pytest unit test suite passed completely; the failure is isolated to the doctest run.
+- **suggested_fix:** Inspect doc/callbacks.rst at line 48 to identify the failing doctest example, then update either the code or the expected doctest output in callbacks.rst to match the current behavior.
+
+### `abs-0030` (absolute)
+
+- **summary:** The CI job failed during the documentation test phase. A doctest in `doc/callbacks.rst` failed because the output of a code example did not match the expected output — specifically, the test got `LogisticRegression()` but the expected output was something else (the expected value is not shown but the mismatch triggered a DocTestFailure). All 41234 unit tests passed; only this single doctest failed.
+- **root_cause_category:** `test_assertion`
+- **root_cause:** A doctest in `doc/callbacks.rst` at line 48 produced unexpected output `LogisticRegression()` instead of the expected output, causing a DocTestFailure in the `test_docs.sh` step.
+- **confidence:** 0.92
+- **relevant_files:** ['doc/callbacks.rst']
+- **relevant_tests:** ['callbacks.rst::callbacks.rst']
+- **evidence:**
+    - quote: `FAILED ../doc/callbacks.rst::callbacks.rst`
+      reason: Identifies the exact failing test — a doctest in the callbacks.rst documentation file.
+    - quote: `/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst:48: DocTestFailure`
+      reason: Pinpoints the file and line number where the doctest assertion failed.
+    - quote: `Got:
+    LogisticRegression()`
+      reason: Shows the actual output produced by the doctest, which did not match the expected output defined in the doc.
+    - quote: `1 failed, 41 passed, 2 skipped, 59 warnings in 71.85s`
+      reason: Confirms only one test failed in the docs test run, and it was the callbacks.rst doctest.
+    - quote: `41234 passed, 6097 skipped, 237 xfailed, 121 xpassed, 5890 warnings in 806.51s`
+      reason: Confirms the main pytest suite passed entirely; the failure is isolated to the documentation doctest step.
+    - quote: `Process completed with exit code 1.`
+      reason: Confirms the job exited with a non-zero code due to the doctest failure.
+- **suggested_fix:** Update the expected output in `doc/callbacks.rst` around line 48 to match the actual output `LogisticRegression()`, or fix the code example so it produces the originally intended output.
+
+### `pair-0015` (pairwise)
+
+**Diagnosis A:**
+
+- **summary:** The CI job failed due to a DocTest failure in the documentation file `doc/callbacks.rst` at line 48. All pytest unit tests passed (41234 passed), but a separate doctest run on documentation files caught a failure in callbacks.rst.
+- **root_cause_category:** `test_assertion`
+- **root_cause:** A DocTest in doc/callbacks.rst at line 48 failed, causing the overall job to fail with 1 failed test in the doctest run.
+- **confidence:** 0.92
+- **relevant_files:** ['doc/callbacks.rst']
+- **relevant_tests:** ['callbacks.rst']
+- **evidence:**
+    - quote: `/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst:48: DocTestFailure`
+      reason: This is the explicit failure message identifying the file and line where the DocTest failed.
+    - quote: `FAILED ../doc/callbacks.rst::callbacks.rst`
+      reason: Confirms the test identifier that failed is the doctest for callbacks.rst.
+    - quote: `1 failed, 41 passed, 2 skipped, 59 warnings in 71.85s (0:01:11)`
+      reason: Shows that the doctest run had exactly 1 failure, corresponding to the callbacks.rst doctest.
+    - quote: `41234 passed, 6097 skipped, 237 xfailed, 121 xpassed, 5890 warnings in 806.51s (0:13:26)`
+      reason: Confirms that the main pytest unit test suite passed completely; the failure is isolated to the doctest run.
+- **suggested_fix:** Inspect doc/callbacks.rst at line 48 to identify the failing doctest example, then update either the code or the expected doctest output in callbacks.rst to match the current behavior.
+
+**Diagnosis B:**
+
+- **summary:** The CI job failed during the documentation test phase. A doctest in `doc/callbacks.rst` failed because the output of a code example did not match the expected output — specifically, the test got `LogisticRegression()` but the expected output was something else (the expected value is not shown but the mismatch triggered a DocTestFailure). All 41234 unit tests passed; only this single doctest failed.
+- **root_cause_category:** `test_assertion`
+- **root_cause:** A doctest in `doc/callbacks.rst` at line 48 produced unexpected output `LogisticRegression()` instead of the expected output, causing a DocTestFailure in the `test_docs.sh` step.
+- **confidence:** 0.92
+- **relevant_files:** ['doc/callbacks.rst']
+- **relevant_tests:** ['callbacks.rst::callbacks.rst']
+- **evidence:**
+    - quote: `FAILED ../doc/callbacks.rst::callbacks.rst`
+      reason: Identifies the exact failing test — a doctest in the callbacks.rst documentation file.
+    - quote: `/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst:48: DocTestFailure`
+      reason: Pinpoints the file and line number where the doctest assertion failed.
+    - quote: `Got:
+    LogisticRegression()`
+      reason: Shows the actual output produced by the doctest, which did not match the expected output defined in the doc.
+    - quote: `1 failed, 41 passed, 2 skipped, 59 warnings in 71.85s`
+      reason: Confirms only one test failed in the docs test run, and it was the callbacks.rst doctest.
+    - quote: `41234 passed, 6097 skipped, 237 xfailed, 121 xpassed, 5890 warnings in 806.51s`
+      reason: Confirms the main pytest suite passed entirely; the failure is isolated to the documentation doctest step.
+    - quote: `Process completed with exit code 1.`
+      reason: Confirms the job exited with a non-zero code due to the doctest failure.
+- **suggested_fix:** Update the expected output in `doc/callbacks.rst` around line 48 to match the actual output `LogisticRegression()`, or fix the code example so it produces the originally intended output.
+
+---
+
+## case `pytest-sklearn-stress-002`
+
+- **repo:** `scikit-learn/scikit-learn`
+- **workflow:** `CI`
+- **job:** `Linux x86-64 pylatest_conda_forge_mkl`
+- **framework:** `pytest`
+
+**Ground-truth summary** (the actual cause; use this as the standard you score against):
+
+> Same doctest failure as pytest-sklearn-stress-001, reproduced in the conda-forge MKL environment: `doc/callbacks.rst:48` expects a rich-progress-bar string, but `LogisticRegression.fit` emits the plain `LogisticRegression()` repr. Fix belongs in the docs.
+
+<details><summary>Required-evidence excerpt (raw log)</summary>
+
+```text
+2026-04-23T11:14:57.4811590Z 039     >>> estimator.set_callbacks(progress_bar) # doctest: +SKIP
+2026-04-23T11:14:57.4812294Z 040 
+2026-04-23T11:14:57.4812533Z 041 .. TODO: remove the doctest skip
+2026-04-23T11:14:57.4812850Z 042 
+2026-04-23T11:14:57.4813296Z 043 Now that the progress bar is registered on the estimator, calling its `fit` method will
+2026-04-23T11:14:57.4814017Z 044 display a bar monitoring the progress of the `fit` execution::
+2026-04-23T11:14:57.4814462Z 045 
+2026-04-23T11:14:57.4814783Z 046     >>> from sklearn.datasets import load_iris
+2026-04-23T11:14:57.4815204Z 047     >>> X, y = load_iris(return_X_y=True)
+2026-04-23T11:14:57.4815596Z 048     >>> estimator.fit(X, y)
+2026-04-23T11:14:57.4815905Z Expected:
+2026-04-23T11:14:57.4816515Z     LogisticRegression - fit ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:03:12
+```
+
+</details>
+
+### `abs-0031` (absolute)
+
+- **summary:** A doctest in the documentation file `doc/callbacks.rst` failed at line 48. The main pytest suite passed (39699 tests), but a separate doctest run reported 1 failure in `callbacks.rst`.
+- **root_cause_category:** `test_assertion`
+- **root_cause:** The doctest embedded in `doc/callbacks.rst` at line 48 produced output that did not match the expected output, causing a `DocTestFailure`.
+- **confidence:** 0.88
+- **relevant_files:** ['doc/callbacks.rst']
+- **relevant_tests:** ['callbacks.rst']
+- **evidence:**
+    - quote: `/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst:48: DocTestFailure`
+      reason: This line explicitly identifies the failing test as a DocTestFailure at line 48 of doc/callbacks.rst.
+    - quote: `FAILED ../doc/callbacks.rst::callbacks.rst`
+      reason: Confirms the test identifier and that the failure is in the callbacks.rst doctest.
+    - quote: `1 failed, 41 passed, 2 skipped, 59 warnings in 95.39s (0:01:35)`
+      reason: Shows the doctest run resulted in exactly 1 failure, consistent with a single doctest mismatch in callbacks.rst.
+- **suggested_fix:** Inspect `doc/callbacks.rst` at line 48 and update the expected doctest output to match the actual output produced by the current code, or fix the code/example so it produces the documented output.
+
+### `abs-0032` (absolute)
+
+- **summary:** The CI job failed during the documentation test phase. A doctest in `doc/callbacks.rst` failed because the output produced by running the example did not match the expected output in the file.
+- **root_cause_category:** `test_assertion`
+- **root_cause:** The doctest in `doc/callbacks.rst` at line 48 failed: the test expected no output (or different output) after calling `fit`, but instead got `LogisticRegression()` as output, causing a DocTestFailure.
+- **confidence:** 0.92
+- **relevant_files:** ['doc/callbacks.rst']
+- **relevant_tests:** ['[doctest] callbacks.rst']
+- **evidence:**
+    - quote: `FAILED ../doc/callbacks.rst::[1mcallbacks.rst[0m`
+      reason: Explicitly identifies the failing doctest as being in doc/callbacks.rst
+    - quote: `/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst[0m:48: DocTestFailure`
+      reason: Points to the exact file and line number where the DocTestFailure was raised
+    - quote: `Got:
+     LogisticRegression()`
+      reason: Shows the unexpected actual output that caused the doctest assertion to fail — the test did not expect this repr to be printed
+    - quote: `1 failed[0m, [32m41 passed[0m, [33m2 skipped[0m, [33m59 warnings[0m[31m in 95.39s`
+      reason: Confirms exactly 1 test failed in the doc test run, consistent with the single callbacks.rst failure
+    - quote: `Process completed with exit code 1.`
+      reason: Confirms the job exited with a non-zero code due to the test failure
+- **suggested_fix:** Update the doctest in `doc/callbacks.rst` around line 48 to either expect the `LogisticRegression()` repr that is now produced by the `fit` call, or suppress the output using `# doctest: +ELLIPSIS` / `# doctest: +SKIP` if the output is intentionally variable or not meant to be tested.
+
+### `pair-0016` (pairwise)
+
+**Diagnosis A:**
+
+- **summary:** A doctest in the documentation file `doc/callbacks.rst` failed at line 48. The main pytest suite passed (39699 tests), but a separate doctest run reported 1 failure in `callbacks.rst`.
+- **root_cause_category:** `test_assertion`
+- **root_cause:** The doctest embedded in `doc/callbacks.rst` at line 48 produced output that did not match the expected output, causing a `DocTestFailure`.
+- **confidence:** 0.88
+- **relevant_files:** ['doc/callbacks.rst']
+- **relevant_tests:** ['callbacks.rst']
+- **evidence:**
+    - quote: `/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst:48: DocTestFailure`
+      reason: This line explicitly identifies the failing test as a DocTestFailure at line 48 of doc/callbacks.rst.
+    - quote: `FAILED ../doc/callbacks.rst::callbacks.rst`
+      reason: Confirms the test identifier and that the failure is in the callbacks.rst doctest.
+    - quote: `1 failed, 41 passed, 2 skipped, 59 warnings in 95.39s (0:01:35)`
+      reason: Shows the doctest run resulted in exactly 1 failure, consistent with a single doctest mismatch in callbacks.rst.
+- **suggested_fix:** Inspect `doc/callbacks.rst` at line 48 and update the expected doctest output to match the actual output produced by the current code, or fix the code/example so it produces the documented output.
+
+**Diagnosis B:**
+
+- **summary:** The CI job failed during the documentation test phase. A doctest in `doc/callbacks.rst` failed because the output produced by running the example did not match the expected output in the file.
+- **root_cause_category:** `test_assertion`
+- **root_cause:** The doctest in `doc/callbacks.rst` at line 48 failed: the test expected no output (or different output) after calling `fit`, but instead got `LogisticRegression()` as output, causing a DocTestFailure.
+- **confidence:** 0.92
+- **relevant_files:** ['doc/callbacks.rst']
+- **relevant_tests:** ['[doctest] callbacks.rst']
+- **evidence:**
+    - quote: `FAILED ../doc/callbacks.rst::[1mcallbacks.rst[0m`
+      reason: Explicitly identifies the failing doctest as being in doc/callbacks.rst
+    - quote: `/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst[0m:48: DocTestFailure`
+      reason: Points to the exact file and line number where the DocTestFailure was raised
+    - quote: `Got:
+     LogisticRegression()`
+      reason: Shows the unexpected actual output that caused the doctest assertion to fail — the test did not expect this repr to be printed
+    - quote: `1 failed[0m, [32m41 passed[0m, [33m2 skipped[0m, [33m59 warnings[0m[31m in 95.39s`
+      reason: Confirms exactly 1 test failed in the doc test run, consistent with the single callbacks.rst failure
+    - quote: `Process completed with exit code 1.`
+      reason: Confirms the job exited with a non-zero code due to the test failure
+- **suggested_fix:** Update the doctest in `doc/callbacks.rst` around line 48 to either expect the `LogisticRegression()` repr that is now produced by the `fit` call, or suppress the output using `# doctest: +ELLIPSIS` / `# doctest: +SKIP` if the output is intentionally variable or not meant to be tested.
+
+---
+
+## case `tsc-typescript-001`
+
+- **repo:** `microsoft/TypeScript`
+- **workflow:** `CI`
+- **job:** `coverage`
+- **framework:** `tsc`
+
+**Ground-truth summary** (the actual cause; use this as the standard you score against):
+
+> A single TypeScript fourslash test fails because the emitted 'Add return type' codefix suggestion (`Foo<string>`) does not match the expected string that tests for the fully generic form (`Foo<string, string[…]>`). 106366 tests pass; the test harness exits with code 1.
+
+<details><summary>Required-evidence excerpt (raw log)</summary>
+
+```text
+2026-04-19T17:23:25.7010603Z   106366 passing (10m)
+2026-04-19T17:23:25.7011110Z   1 failing
+2026-04-19T17:23:25.7011886Z 
+2026-04-19T17:23:25.7017137Z   1) 
+2026-04-19T17:23:25.7017451Z        
+2026-04-19T17:23:25.7017647Z          fourslash tests
+2026-04-19T17:23:25.7018263Z            tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts
+2026-04-19T17:23:25.7019234Z              fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts runs correctly:
+2026-04-19T17:23:25.7020621Z      AssertionError: expected 'Add return type \'Foo<string>\'' to equal 'Add return type \'Foo<string, string[…'
+2026-04-19T17:23:25.7021827Z       at _TestState.verifyCodeFix (src/harness/fourslashImpl.ts:3435:20)
+2026-04-19T17:23:25.7022415Z       at Verify.codeFix (src/harness/fourslashInterfaceImpl.ts:206:20)
+2026-04-19T17:23:25.7023077Z       at eval (codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.js:13:8)
+```
+
+</details>
+
+### `abs-0019` (absolute)
+
+- **summary:** A fourslash test assertion failed because the 'Add return type' code fix produced an oversimplified type annotation ('Foo<string>') instead of the expected one ('Foo<string, string[…'). This caused the parallel test run to exit with code 1.
+- **root_cause_category:** `test_assertion`
+- **root_cause:** The fourslash test 'codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts' failed because the code fix generated a return type of 'Foo<string>' but the test expected 'Foo<string, string[…', indicating the type annotation logic oversimplifies generic type arguments.
+- **confidence:** 0.92
+- **relevant_files:** ['tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts', 'src/harness/fourslashImpl.ts', 'src/harness/fourslashInterfaceImpl.ts', 'src/testRunner/fourslashRunner.ts']
+- **relevant_tests:** ['fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts runs correctly']
+- **evidence:**
+    - quote: `AssertionError: expected 'Add return type \'Foo<string>\'' to equal 'Add return type \'Foo<string, string[…'`
+      reason: This is the direct assertion failure showing the actual vs expected return type annotation produced by the code fix.
+    - quote: `at _TestState.verifyCodeFix (src/harness/fourslashImpl.ts:3435:20)`
+      reason: Points to the specific harness method that caught the mismatch during code fix verification.
+    - quote: `Error in do-runtests-parallel in 10m 38.9s
+Error: Process exited with code: 1`
+      reason: Confirms the test run failed and exited with a non-zero code due to this assertion failure.
+    - quote: `tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts`
+      reason: Identifies the exact test file that failed, whose name includes 'oversimplification', matching the assertion that the generic type was oversimplified.
+- **suggested_fix:** Fix the code fix logic responsible for generating return type annotations for exported functions with generic types so that it preserves all type arguments (e.g., 'Foo<string, string[]>') instead of collapsing them to a single argument ('Foo<string>'). The relevant implementation is likely in the code fix for missing type annotations, invoked via 'src/harness/fourslashInterfaceImpl.ts:206'.
+
+### `abs-0020` (absolute)
+
+- **summary:** A fourslash test assertion failed because the code fix for missing type annotation on exports produced 'Add return type \'Foo<string>\'' instead of the expected 'Add return type \'Foo<string, string[…\'' (truncated). This indicates the TypeScript compiler's type annotation inference is oversimplifying generic types in the code fix suggestion.
+- **root_cause_category:** `test_assertion`
+- **root_cause:** The fourslash test `codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts` failed because `verifyCodeFix` expected the code fix description to include a fuller generic type (e.g., `Foo<string, string[…>`) but the actual fix description produced only `Foo<string>`, indicating the code fix logic is oversimplifying generic type annotations.
+- **confidence:** 0.92
+- **relevant_files:** ['tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts', 'src/harness/fourslashImpl.ts', 'src/harness/fourslashInterfaceImpl.ts', 'src/testRunner/fourslashRunner.ts']
+- **relevant_tests:** ['fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts runs correctly']
+- **evidence:**
+    - quote: `AssertionError: expected 'Add return type \'Foo<string>\'' to equal 'Add return type \'Foo<string, string[…'`
+      reason: This is the exact assertion mismatch: the actual value is a simplified generic type while the expected value contains additional type parameters, confirming the test failure cause.
+    - quote: `at _TestState.verifyCodeFix (src/harness/fourslashImpl.ts:3435:20)`
+      reason: Identifies the specific method and file where the assertion failure occurs, pointing to the code fix verification logic.
+    - quote: `tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts`
+      reason: Names the specific test file that failed, which is explicitly about generics oversimplification in code fix missing type annotation on exports.
+- **suggested_fix:** Investigate the code fix logic for missing type annotations on exports to ensure it preserves all type parameters in generic types rather than oversimplifying them (e.g., producing `Foo<string>` instead of the full `Foo<string, string[]>` or similar).
+
+### `pair-0010` (pairwise)
+
+**Diagnosis A:**
+
+- **summary:** A fourslash test assertion failed because the 'Add return type' code fix produced an oversimplified type annotation ('Foo<string>') instead of the expected one ('Foo<string, string[…'). This caused the parallel test run to exit with code 1.
+- **root_cause_category:** `test_assertion`
+- **root_cause:** The fourslash test 'codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts' failed because the code fix generated a return type of 'Foo<string>' but the test expected 'Foo<string, string[…', indicating the type annotation logic oversimplifies generic type arguments.
+- **confidence:** 0.92
+- **relevant_files:** ['tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts', 'src/harness/fourslashImpl.ts', 'src/harness/fourslashInterfaceImpl.ts', 'src/testRunner/fourslashRunner.ts']
+- **relevant_tests:** ['fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts runs correctly']
+- **evidence:**
+    - quote: `AssertionError: expected 'Add return type \'Foo<string>\'' to equal 'Add return type \'Foo<string, string[…'`
+      reason: This is the direct assertion failure showing the actual vs expected return type annotation produced by the code fix.
+    - quote: `at _TestState.verifyCodeFix (src/harness/fourslashImpl.ts:3435:20)`
+      reason: Points to the specific harness method that caught the mismatch during code fix verification.
+    - quote: `Error in do-runtests-parallel in 10m 38.9s
+Error: Process exited with code: 1`
+      reason: Confirms the test run failed and exited with a non-zero code due to this assertion failure.
+    - quote: `tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts`
+      reason: Identifies the exact test file that failed, whose name includes 'oversimplification', matching the assertion that the generic type was oversimplified.
+- **suggested_fix:** Fix the code fix logic responsible for generating return type annotations for exported functions with generic types so that it preserves all type arguments (e.g., 'Foo<string, string[]>') instead of collapsing them to a single argument ('Foo<string>'). The relevant implementation is likely in the code fix for missing type annotations, invoked via 'src/harness/fourslashInterfaceImpl.ts:206'.
+
+**Diagnosis B:**
+
+- **summary:** A fourslash test assertion failed because the code fix for missing type annotation on exports produced 'Add return type \'Foo<string>\'' instead of the expected 'Add return type \'Foo<string, string[…\'' (truncated). This indicates the TypeScript compiler's type annotation inference is oversimplifying generic types in the code fix suggestion.
+- **root_cause_category:** `test_assertion`
+- **root_cause:** The fourslash test `codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts` failed because `verifyCodeFix` expected the code fix description to include a fuller generic type (e.g., `Foo<string, string[…>`) but the actual fix description produced only `Foo<string>`, indicating the code fix logic is oversimplifying generic type annotations.
+- **confidence:** 0.92
+- **relevant_files:** ['tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts', 'src/harness/fourslashImpl.ts', 'src/harness/fourslashInterfaceImpl.ts', 'src/testRunner/fourslashRunner.ts']
+- **relevant_tests:** ['fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts runs correctly']
+- **evidence:**
+    - quote: `AssertionError: expected 'Add return type \'Foo<string>\'' to equal 'Add return type \'Foo<string, string[…'`
+      reason: This is the exact assertion mismatch: the actual value is a simplified generic type while the expected value contains additional type parameters, confirming the test failure cause.
+    - quote: `at _TestState.verifyCodeFix (src/harness/fourslashImpl.ts:3435:20)`
+      reason: Identifies the specific method and file where the assertion failure occurs, pointing to the code fix verification logic.
+    - quote: `tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts`
+      reason: Names the specific test file that failed, which is explicitly about generics oversimplification in code fix missing type annotation on exports.
+- **suggested_fix:** Investigate the code fix logic for missing type annotations on exports to ensure it preserves all type parameters in generic types rather than oversimplifying them (e.g., producing `Foo<string>` instead of the full `Foo<string, string[]>` or similar).
+
+---
+

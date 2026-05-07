@@ -1,0 +1,78 @@
+{
+  "root_cause": {
+    "summary": "The sync-react workflow invokes `git push origin update/react/...` via scripts/sync-react.js, and the push is rejected with HTTP 403: `remote: Permission to vercel/next.js.git denied to nextjs-bot`. The bot token or workflow permissions are not allowed to push to the repository. Fix on the workflow side (grant write access, swap to a PAT, or review Dependabot-like bot permissions).",
+    "category": "permission_or_secret"
+  },
+  "required_signals": [
+    {
+      "type": "step_name",
+      "value": "create-pull-request",
+      "importance": "important",
+      "evidence_lines": [[46, 46]]
+    },
+    {
+      "type": "command",
+      "value": "git push origin update/react/19.3.0-canary-142cfde8-20260422",
+      "importance": "critical",
+      "evidence_lines": [[995, 995]]
+    },
+    {
+      "type": "exception",
+      "value": "Error: Command failed with exit code 128",
+      "importance": "critical",
+      "evidence_lines": [[995, 995]]
+    },
+    {
+      "type": "exception",
+      "value": "remote: Permission to vercel/next.js.git denied to nextjs-bot.",
+      "importance": "critical",
+      "evidence_lines": [[1004, 1004]]
+    },
+    {
+      "type": "exception",
+      "value": "fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403",
+      "importance": "critical",
+      "evidence_lines": [[1005, 1005]]
+    },
+    {
+      "type": "stack_location",
+      "file": "/home/runner/work/next.js/next.js/scripts/sync-react.js",
+      "line": 645,
+      "importance": "important",
+      "evidence_lines": [[999, 999]]
+    },
+    {
+      "type": "exit_code",
+      "value": "1",
+      "importance": "critical",
+      "evidence_lines": [[1015, 1015]]
+    }
+  ],
+  "relevant_files": [
+    "scripts/sync-react.js"
+  ],
+  "relevant_tests": [],
+  "evidence_spans": [
+    {
+      "start_line": 995,
+      "end_line": 1015,
+      "reason": "git-push failure, 403 permission-denied stderr, sync-react.js stack frame, pnpm ELIFECYCLE and GHA exit marker."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "git push",
+      "Permission",
+      "vercel/next.js",
+      "403",
+      "nextjs-bot"
+    ],
+    "must_not_claim": [
+      "test assertion failed",
+      "compile error",
+      "dependency installation failed",
+      "user code runtime exception",
+      "type error"
+    ]
+  }
+}

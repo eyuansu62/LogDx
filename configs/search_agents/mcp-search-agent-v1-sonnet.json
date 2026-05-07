@@ -1,0 +1,56 @@
+{
+  "agent_name": "mcp-search-agent-v1-sonnet",
+  "mode": "end_to_end_search_agent",
+  "provider": "command",
+  "command_env_var": "SEARCH_AGENT_COMMAND",
+  "command_override": null,
+  "prompt_path": "prompts/search_agent_v1.md",
+
+  "model": {
+    "provider_name": "anthropic",
+    "model_name": "claude-sonnet-4-6",
+    "model_version": "2026-04-25",
+    "temperature": 0,
+    "top_p": 1,
+    "max_output_tokens": 1200,
+    "json_mode": true,
+    "tool_use": "json_action_loop",
+    "web_access": false
+  },
+
+  "tool_budget": {
+    "max_tool_calls": 8,
+    "max_total_observation_tokens": 16000,
+    "max_single_observation_tokens": 4000,
+    "max_matches_per_search": 30,
+    "max_ranges_per_get_lines": 5,
+    "max_lines_per_get_lines": 200,
+    "max_lines_per_get_tail_or_head": 500
+  },
+
+  "allowed_tools": [
+    "get_log_metadata",
+    "search_log",
+    "get_lines",
+    "get_tail",
+    "get_head",
+    "find_error_blocks",
+    "list_github_steps"
+  ],
+
+  "privacy": {
+    "requires_explicit_external_llm_opt_in": true,
+    "redaction_mode": "audit_only",
+    "allow_secret_values_in_results": false
+  },
+
+  "anti_leakage": {
+    "uses_ground_truth": false,
+    "uses_failure_category": false,
+    "uses_static_method_outputs": false,
+    "uses_signal_eval": false,
+    "uses_diagnosis_eval": false,
+    "uses_review_labels": false,
+    "_doc": "The agent receives only safe_case_metadata + tool observations over raw.log. It cannot read ground_truth.json, failure_category, required_signals, evidence_spans, eval_*.json, review labels, or any static method's pre-computed context output."
+  }
+}

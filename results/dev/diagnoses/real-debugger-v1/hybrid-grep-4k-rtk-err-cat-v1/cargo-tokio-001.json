@@ -1,0 +1,55 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The `compile_fail_full` trybuild test failed because the actual compiler error messages produced by rustc do not match the expected error output defined in the `.stderr` file for `tests/fail/macros_type_mismatch.rs`.",
+  "root_cause_category": "compile_error",
+  "root_cause": "Trybuild compile-fail test mismatch: actual rustc error output (type mismatches and `?` operator issues in async blocks) does not match expected compiler errors in the `.stderr` snapshot file.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "tests/fail/macros_type_mismatch.rs"
+  ],
+  "relevant_tests": [
+    "compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "test compile_fail_full ... FAILED",
+      "reason": "Explicitly identifies the failing test as a compile-fail snapshot test."
+    },
+    {
+      "quote": "error[E0308]: mismatched types",
+      "reason": "Multiple type mismatch errors reported by rustc that appear in the actual output."
+    },
+    {
+      "quote": "error[E0277]: the `?` operator can only be used in an async block that returns `Result` or `Option`",
+      "reason": "Compiler error that suggests mismatched expected vs actual error messages."
+    },
+    {
+      "quote": "thread 'compile_fail_full' panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13: 1 of 10 tests failed",
+      "reason": "Confirms this is a trybuild framework test failure where expected error count or format does not match actual."
+    },
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs",
+      "reason": "Errors reference the test file, indicating compiler output differs from the expected .stderr snapshot."
+    }
+  ],
+  "suggested_fix": "Review and update the `.stderr` snapshot file(s) in `tests/fail/` to match the actual rustc error messages currently being produced, or investigate whether recent changes to the `tokio::main` macro implementation caused different error reporting.",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-4k-rtk-err-cat-v1/cargo-tokio-001.txt",
+    "context_tokens_estimate": 7362
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 466
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 37454.557,
+    "cache_key": "67c03f7c1d09b133509f5cced6f22788391f617d2eccd6dfa6382f152e26e663",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

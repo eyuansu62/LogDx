@@ -1,0 +1,48 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "A trybuild compile-fail test failed because the actual compiler error output does not match the expected `.stderr` file. The test verifies that specific code patterns in `tests/fail/macros_type_mismatch.rs` produce certain compiler errors, but the actual errors differ from what was documented.",
+  "root_cause_category": "compile_error",
+  "root_cause": "The trybuild compile-fail test `compile_fail_full` in `tests/macros.rs` detected a mismatch between actual compiler diagnostics and the expected output stored in `tests/fail/macros_type_mismatch.stderr`. The compiler produced different error messages than what the test expected, likely due to changes in compiler error formatting or Rust version differences.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "tests/fail/macros_type_mismatch.rs",
+    "tests/macros.rs"
+  ],
+  "relevant_tests": [
+    "macros::compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "note: If the actual output is the correct output you can bless it by rerunning your test with the environment variable TRYBUILD=overwrite",
+      "reason": "This is the standard trybuild diagnostic message indicating a mismatch between actual and expected compiler error output in `.stderr` files."
+    },
+    {
+      "quote": "thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13: 1 of 10 tests failed",
+      "reason": "Confirms this is a trybuild test failure (trybuild-1.0.116) and identifies the test name as `compile_fail_full`."
+    },
+    {
+      "quote": "FAIL [   9.875s] (396/396) tests-build::macros compile_fail_full",
+      "reason": "Shows the failing test is `compile_fail_full` in the macros test suite."
+    }
+  ],
+  "suggested_fix": "Run the test with the environment variable TRYBUILD=overwrite to update the `.stderr` files to match the current compiler output, or review and fix the source code in `tests/fail/macros_type_mismatch.rs` to align with compiler expectations.",
+  "input": {
+    "context_path": "results/dev/tail/cargo-tokio-001.txt",
+    "context_tokens_estimate": 4374
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 482
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 20538.449,
+    "cache_key": "b2fd7a8b3809b0898c15cb68ee64fdef917c9d73348318b99ee11063d7b26ef4",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

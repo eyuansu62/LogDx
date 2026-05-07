@@ -1,0 +1,94 @@
+{
+  "root_cause": {
+    "summary": "The PR fails the 'Check Changelog Entry' gate because it does not contain a changelog entry under `.changes/v1.16/` and does not carry the `no-changelog-needed` label. The workflow calls `core.setFailed(...)` with a human-readable remediation message. This is a workflow gate, not a code failure.",
+    "category": "github_actions_config"
+  },
+  "required_signals": [
+    {
+      "type": "step_name",
+      "value": "Check Changelog Entry",
+      "importance": "critical",
+      "evidence_lines": [
+        [
+          34,
+          34
+        ]
+      ]
+    },
+    {
+      "type": "command",
+      "value": "core.setFailed(commentDetails);",
+      "importance": "important",
+      "evidence_lines": [
+        [
+          195,
+          195
+        ]
+      ]
+    },
+    {
+      "type": "assertion",
+      "value": "Please add a changelog entry",
+      "importance": "critical",
+      "evidence_lines": [
+        [
+          282,
+          282
+        ]
+      ]
+    },
+    {
+      "type": "assertion",
+      "value": "no-changelog-needed",
+      "importance": "critical",
+      "evidence_lines": [
+        [
+          246,
+          246
+        ]
+      ]
+    },
+    {
+      "type": "annotation",
+      "value": "##[error]Currently this PR would target a v1.16 release.",
+      "importance": "critical",
+      "evidence_lines": [
+        [
+          301,
+          301
+        ]
+      ]
+    }
+  ],
+  "relevant_files": [
+    ".changes/v1.16/"
+  ],
+  "relevant_tests": [],
+  "evidence_spans": [
+    {
+      "start_line": 280,
+      "end_line": 290,
+      "reason": "The script block where `core.setFailed` fires with the changelog-gate message, including the alternative `no-changelog-needed` label hint."
+    },
+    {
+      "start_line": 301,
+      "end_line": 301,
+      "reason": "The GHA ##[error] marker that summarizes the gate failure."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "changelog",
+      "v1.16",
+      "no-changelog-needed",
+      "Check Changelog Entry"
+    ],
+    "must_not_claim": [
+      "test assertion failed",
+      "compile error",
+      "dependency installation failed",
+      "network failure",
+      "runtime exception in user code"
+    ]
+  }
+}

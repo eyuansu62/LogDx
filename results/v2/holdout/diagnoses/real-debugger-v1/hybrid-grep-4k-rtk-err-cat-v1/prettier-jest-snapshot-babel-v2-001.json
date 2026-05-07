@@ -1,0 +1,56 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest snapshot tests failed because error outputs no longer match saved snapshots. 13 snapshots failed across 2 test suites, primarily related to Babel parsing errors in error-throwing tests.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Jest snapshot mismatches: tests using `.rejects.toThrowErrorMatchingSnapshot()` failed because actual error output no longer matches the stored snapshots, likely due to Babel v2 changing error message formatting or content.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "src/common/parser-create-error.js",
+    "src/language-js/parse/utilities/create-babel-parse-error.js"
+  ],
+  "relevant_tests": [
+    "tests with `.rejects.toThrowErrorMatchingSnapshot()` matchers across 2 test suites"
+  ],
+  "evidence": [
+    {
+      "quote": "Error: expect(received).rejects.toThrowErrorMatchingSnapshot()",
+      "reason": "This Jest matcher failed multiple times, indicating snapshot mismatch on error assertions"
+    },
+    {
+      "quote": "› 13 snapshots failed from 2 test suites.",
+      "reason": "Explicit count of failed snapshots, showing the scope of the test assertion failures"
+    },
+    {
+      "quote": "Snapshots: 13 failed, 12086 passed, 12099 total",
+      "reason": "Summary shows 13 snapshot mismatches while most tests pass, isolating the issue to snapshot comparisons"
+    },
+    {
+      "quote": "SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)",
+      "reason": "The actual error being thrown by Babel and compared against snapshots; error message format or specificity may have changed in Babel v2"
+    },
+    {
+      "quote": "Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "Jest itself recommends updating snapshots as the remediation for snapshot mismatches"
+    }
+  ],
+  "suggested_fix": "Run jest with the `-u` flag to update snapshots to match the current Babel v2 error output, then verify the updated error messages are correct.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-4k-rtk-err-cat-v1/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 1397
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 468
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 27072.576,
+    "cache_key": "a5f1d616436289f1d0c0a25e2e89194bc1d6e785c98c46462331b944163dd7e5",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

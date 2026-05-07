@@ -1,0 +1,55 @@
+{
+  "case_id": "pandas-cpp-xsimd-neon64-v2-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "C++ compilation failed on macOS ARM64 when building NEON SIMD code. The compiler (clang++) rejected explicit instantiation of operator() in moments_simd.hpp, stating it does not refer to a valid function template or member function.",
+  "root_cause_category": "compile_error",
+  "root_cause": "Explicit instantiation of operator() in pandas/_libs/include/pandas/simd/moments_simd.hpp:255:50 does not refer to a valid function template, variable template, member function, member class, or static data member. This error occurred during C++20 compilation with -Werror flag on arm64-apple-darwin with clang++.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "pandas/_libs/include/pandas/simd/moments_simd.hpp",
+    "pandas/_libs/simd/moments_inst_neon.cpp",
+    "pandas/_libs/simd/moments.cpp"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "reason": "This is the primary compiler error that stopped the build, appearing twice in the context for both NEON and base moments compilation"
+    },
+    {
+      "quote": "FAILED: [code=1] pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o",
+      "reason": "Indicates compilation failure with exit code 1 in NEON SIMD object file generation"
+    },
+    {
+      "quote": "../../pandas/_libs/include/pandas/simd/moments_simd.hpp:255:50: error: explicit instantiation",
+      "reason": "Points to the exact location of the compilation error in the SIMD header file"
+    },
+    {
+      "quote": "arm64-apple-darwin20.0.0-clang++ ... -Werror -std=c++20 ... -DPANDAS_SIMD_NEON",
+      "reason": "Shows the compilation is using C++20 standard with NEON SIMD support on ARM64 macOS with all warnings treated as errors"
+    },
+    {
+      "quote": "ninja: build stopped: subcommand failed",
+      "reason": "Confirms the build system (ninja/meson) halted due to the compilation failure"
+    }
+  ],
+  "suggested_fix": "Review and correct the explicit instantiation syntax of operator() at line 255, column 50 in pandas/_libs/include/pandas/simd/moments_simd.hpp to ensure it refers to a valid function template or member function definition.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-4k-rtk-err-cat-v1/pandas-cpp-xsimd-neon64-v2-001.txt",
+    "context_tokens_estimate": 1179
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 537
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 26220.068,
+    "cache_key": "56e5d9a84186b3f8b09911e72832030c3675ab7b10ff55194b6fce1bc3d0fcae",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

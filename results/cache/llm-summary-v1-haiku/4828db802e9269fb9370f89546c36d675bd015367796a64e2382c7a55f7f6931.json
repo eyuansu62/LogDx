@@ -1,0 +1,25 @@
+{
+  "key_parts": {
+    "case_id": "mypy-pandas-001",
+    "raw_sha": "690bce9d2e5d62f59498ce350a9b519a0a122dd9314a39f4e33736d7b0c46896",
+    "prompt_version": "llm_summary_v1",
+    "prompt_sha": "e3739738b7136af3956f3712e7b76babd9224b6854dcc60ff16546a3fbb16702",
+    "provider": "command",
+    "method": "llm-summary-v1-haiku",
+    "chunk_index": -1,
+    "chunk_sha": "b495e14ea4a9178db265430a89d31a4cc05f98f36191effe0e7d285c0275f9a9",
+    "temperature": 0.0,
+    "max_output_chars": 12000,
+    "stage": "reduce"
+  },
+  "response": {
+    "content": "# CI Failure Summary\n\n## Primary Failure\n\nType checking failures in pandas type checkers (pyright and mypy) due to missing pyarrow module attributes. Multiple pyarrow.compute and pyarrow.fs functions are reported as not exported/not found, causing 279 total type errors across 9 files. The issue blocks the `mypy (stubtest)` check with exit code 1.\n\n## Critical Evidence\n\n- `\"Expression\" is not exported from module \"pyarrow.compute\"` (L004055)\n- `\"FileSystem\" is not exported from module \"pyarrow.fs\"` (L004059)\n- `\"is_null\" is not a known attribute of module \"pyarrow.compute\"` (L004068)\n- `\"if_else\" is not a known attribute of module \"pyarrow.compute\"` (L004069)\n- `Module has no attribute \"is_null\"  [attr-defined]` (L004151)\n- `Module has no attribute \"if_else\"  [attr-defined]` (L004152)\n- `Found 279 errors in 9 files (checked 1458 source files)` (L004429)\n- `error: not checking stubs due to mypy build errors:` (L004436)\n\n## Failed Tests / Checks\n\n- `pyright` (L004049, exit code 1)\n- `pyright reportGeneralTypeIssues` (L004062, exit code 1)\n- `mypy` (L004145, exit code 1)\n- `mypy (stubtest)` (L004431, exit code 1)\n\n## Relevant Files and Locations\n\n- `/home/runner/work/pandas/pandas/pandas/core/arrays/arrow/accessors.py:319`\n\n## Commands and Exit Codes\n\n- `pip install -e . --no-build-isolation -v --no-deps -Csetup-args=\"--werror\"` (L003134)\n- `meson setup /home/runner/work/pandas/pandas /home/runner/work/pandas/pandas/build/cp311 -Dbuildtype=release ...` (L003154)\n- `/home/runner/micromamba/envs/test/bin/ninja` (L003200)\n- `##[error]Process completed with exit code 1.` (L004716)\n\n## Possible Root Cause\n\nPyArrow version mismatch or outdated type stubs: the code references pyarrow.compute functions (`is_null`, `if_else`, `equal`, `utf8_length`, etc.) and pyarrow.fs (`FileSystem`) that are either not present in the installed pyarrow version or not properly exported in the type stubs. The error pattern is consistent across both pyright and mypy, ruling out linter bugs and pointing to an upstream pyarrow version/stub incompatibility.\n\n## Uncertainties / Missing Context\n\n- Installed version of pyarrow and its type stub versions\n- Whether the build environment has the correct pyarrow version pinned in dependencies\n- Whether this is a recent pyarrow release that removed/renamed these functions or updated exports\n- Exact pyarrow version constraints in setup.py or requirements files (not shown in provided chunks)",
+    "provider": "claude-cli",
+    "model": "haiku",
+    "usage": {
+      "input_tokens": 9,
+      "output_tokens": 1384,
+      "total_cost_usd": 0.01864795
+    }
+  }
+}

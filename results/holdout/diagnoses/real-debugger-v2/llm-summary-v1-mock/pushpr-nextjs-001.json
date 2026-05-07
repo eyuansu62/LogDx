@@ -1,0 +1,49 @@
+{
+  "case_id": "pushpr-nextjs-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed when attempting to push a branch to GitHub, receiving a 403 error. Git was unable to push to 'https://github.com/vercel/next.js/' due to an authorization failure, resulting in exit code 128.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The git push command failed with HTTP 403 when attempting to push branch 'update/react/19.3.0-canary-142cfde8-20260422' to the remote repository, indicating the GitHub token or credential used by the workflow lacks write permission or is invalid.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "/home/runner/work/next.js/next.js/node_modules/.pnpm/execa@2.0.3/node_modules/execa/lib/error.js"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403",
+      "reason": "A 403 HTTP error on a git operation indicates the authentication token does not have the required write/push permissions to the repository."
+    },
+    {
+      "quote": "Error: Command failed with exit code 128 (Unknown system error -128): git push origin update/react/19.3.0-canary-142cfde8-20260422",
+      "reason": "Exit code 128 from git confirms the push command itself failed, and the specific command shows the branch being pushed, corroborating the 403 auth failure as the direct cause."
+    },
+    {
+      "quote": "exitCodeName: 'Unknown system error -128'",
+      "reason": "This confirms the underlying OS-level error code associated with the failed git push, consistent with a network/auth rejection."
+    },
+    {
+      "quote": "ELIFECYCLE  Command failed with exit code 1.",
+      "reason": "The overall process exited with code 1, propagating the git push failure up to the CI runner and causing the job to fail."
+    }
+  ],
+  "suggested_fix": "Ensure the GitHub Actions workflow token (GITHUB_TOKEN or a PAT) has 'contents: write' permission granted to allow pushing branches. Check the workflow's permissions block and confirm the token used has write access to 'vercel/next.js'.",
+  "input": {
+    "context_path": "results/holdout/llm-summary-v1-mock/pushpr-nextjs-001.txt",
+    "context_tokens_estimate": 535
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 490
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 25991.807,
+    "cache_key": "ad827b0d5fe823d4e04f56c0e3ca8e1f44ef593390cf6f8abf583b517eb5cccc",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

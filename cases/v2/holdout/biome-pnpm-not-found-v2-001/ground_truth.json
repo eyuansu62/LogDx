@@ -1,0 +1,71 @@
+{
+  "root_cause": {
+    "summary": "The biome `Test` job's `just gen-all` step failed because `pnpm` is not installed in the runner image. The Justfile recipe stack is: `gen-all` (line 32) → `format` (line 221) → `pnpm format`. The shell rejected `pnpm format` with `sh: 1: pnpm: not found` (exit 127), and `just` propagated the failure up the recipe chain (`error: Recipe format failed on line 221 with exit code 127`, then `error: Recipe gen-all failed on line 32 with exit code 127`), which surfaces in GHA as `##[error]Process completed with exit code 127.`. This is a workflow-setup error: the workflow needs to install pnpm (e.g. via a `setup-pnpm` action) before running `just gen-all`.",
+    "category": "github_actions_config"
+  },
+  "required_signals": [
+    {
+      "type": "exception",
+      "value": "sh: 1: pnpm: not found",
+      "importance": "critical",
+      "evidence_lines": [[15764, 15764]]
+    },
+    {
+      "type": "command",
+      "value": "pnpm format",
+      "importance": "critical",
+      "evidence_lines": [[15763, 15763]]
+    },
+    {
+      "type": "exception",
+      "value": "error: Recipe `format` failed on line 221 with exit code 127",
+      "importance": "important",
+      "evidence_lines": [[15765, 15765]]
+    },
+    {
+      "type": "exception",
+      "value": "error: Recipe `gen-all` failed on line 32 with exit code 127",
+      "importance": "important",
+      "evidence_lines": [[15766, 15766]]
+    },
+    {
+      "type": "annotation",
+      "value": "##[error]Process completed with exit code 127.",
+      "importance": "critical",
+      "evidence_lines": [[15767, 15767]]
+    },
+    {
+      "type": "exit_code",
+      "value": "exit code 127",
+      "importance": "important",
+      "evidence_lines": [[15765, 15765]]
+    }
+  ],
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence_spans": [
+    {
+      "start_line": 15763,
+      "end_line": 15767,
+      "reason": "The complete failure block: the `pnpm format` Justfile step that ran, the `sh: 1: pnpm: not found` from the shell, the two `just` recipe-failure error lines (`format` at line 221, then `gen-all` at line 32) showing the recipe stack, and the GHA `##[error]Process completed with exit code 127.` annotation. 5 lines total, sufficient on its own to identify root cause and the fix (install pnpm in the workflow before `just gen-all`)."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "pnpm",
+      "not found",
+      "127",
+      "just",
+      "gen-all"
+    ],
+    "must_not_claim": [
+      "test failed",
+      "compile error",
+      "permission denied",
+      "network failure",
+      "out of memory",
+      "the Justfile recipe is wrong",
+      "pnpm format exited with a non-zero status because of a formatting issue"
+    ]
+  }
+}

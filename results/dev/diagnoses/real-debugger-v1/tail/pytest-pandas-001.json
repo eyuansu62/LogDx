@@ -1,0 +1,56 @@
+{
+  "case_id": "pytest-pandas-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "45 tests failed and 52 errors occurred due to NumPy nightly deprecating the 'generic' unit for timedelta. Pandas code triggers this deprecation by implicitly converting bare integers or using unspecified timedelta units, causing test failures across multiple test modules.",
+  "root_cause_category": "other",
+  "root_cause": "NumPy nightly has deprecated the 'generic' unit for numpy.timedelta64, and pandas code is using deprecated timedelta behavior. The DeprecationWarnings appear to be treated as test failures, causing 45 test failures and 52 errors across multiple test files including test_constructors.py, test_insert.py, test_indexing.py, and others.",
+  "confidence": 0.72,
+  "relevant_files": [
+    "pandas/tests/frame/test_constructors.py",
+    "pandas/tests/indexes/datetimes/methods/test_insert.py",
+    "pandas/tests/indexes/test_index_new.py",
+    "pandas/tests/indexes/timedeltas/test_indexing.py",
+    "pandas/tests/io/json/test_ujson.py",
+    "pandas/tests/scalar/timestamp/test_constructors.py",
+    "pandas/tests/series/indexing/test_indexing.py",
+    "pandas/tests/util/test_assert_almost_equal.py"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific unit instead.",
+      "reason": "Exact deprecation message appearing across multiple test files, indicating NumPy nightly has deprecated this behavior"
+    },
+    {
+      "quote": "job_name\": \"Numpy Nightly\"",
+      "reason": "Confirms this job is specifically testing against NumPy nightly, which introduced the deprecation"
+    },
+    {
+      "quote": "= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s",
+      "reason": "Test summary showing 45 failures and 52 errors indicating widespread test failures from deprecation"
+    },
+    {
+      "quote": "ERROR pandas/tests/frame/test_constructors.py - DeprecationWarning",
+      "reason": "ERROR classification in pytest indicates collection or setup failure from the deprecation warning"
+    }
+  ],
+  "suggested_fix": "Update pandas code to use explicit timedelta units instead of the deprecated 'generic' unit. Replace implicit integer-to-timedelta conversions with explicit unit specifications (e.g., replace bare `+ 1` with `+ np.timedelta64(1, 'ns')` or use pandas Timedelta with explicit units)",
+  "input": {
+    "context_path": "results/dev/tail/pytest-pandas-001.txt",
+    "context_tokens_estimate": 7002
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 585
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 31680.317,
+    "cache_key": "cd2d994281101130e351813e87921f44e4d335a5e8afbb2a1b69e45a003b4774",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

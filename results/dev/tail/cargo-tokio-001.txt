@@ -1,0 +1,200 @@
+2026-04-22T16:11:57.0063964Z     help: a return type might be missing here
+2026-04-22T16:11:57.0064212Z        |
+2026-04-22T16:11:57.0064405Z      9 | async fn missing_return_type() -> _ {
+2026-04-22T16:11:57.0064663Z        |                                ++++
+2026-04-22T16:11:57.0065133Z     help: consider using `Result::expect` to unwrap the `Result<(), _>` value, panicking if the value is a `Result::Err`
+2026-04-22T16:11:57.0065600Z        |
+2026-04-22T16:11:57.0065779Z     10 |     return Ok(());.expect("REASON")
+2026-04-22T16:11:57.0066023Z        |                   +++++++++++++++++
+2026-04-22T16:11:57.0066185Z 
+2026-04-22T16:11:57.0066634Z     error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:13:1: 13:15}` to be a future that resolves to `Result<(), ()>`, but it resolves to `()`
+2026-04-22T16:11:57.0067279Z       --> tests/fail/macros_type_mismatch.rs:13:1
+2026-04-22T16:11:57.0067535Z        |
+2026-04-22T16:11:57.0067690Z     13 | #[tokio::main]
+2026-04-22T16:11:57.0067920Z        | ^^^^^^^^^^^^^^ expected `Result<(), ()>`, found `()`
+2026-04-22T16:11:57.0068417Z        |
+2026-04-22T16:11:57.0068608Z        = note:   expected enum `Result<(), ()>`
+2026-04-22T16:11:57.0068880Z                found unit type `()`
+2026-04-22T16:11:57.0069452Z        = note: required for the cast from `&{async block@$DIR/tests/fail/macros_type_mismatch.rs:13:1: 13:15}` to `&dyn Future<Output = Result<(), ()>>`
+2026-04-22T16:11:57.0070446Z        = note: this error originates in the attribute macro `tokio::main` (in Nightly builds, run with -Z macro-backtrace for more info)
+2026-04-22T16:11:57.0070901Z 
+2026-04-22T16:11:57.0070983Z     error[E0308]: mismatched types
+2026-04-22T16:11:57.0071243Z       --> tests/fail/macros_type_mismatch.rs:23:5
+2026-04-22T16:11:57.0071496Z        |
+2026-04-22T16:11:57.0071695Z     14 | async fn extra_semicolon() -> Result<(), ()> {
+2026-04-22T16:11:57.0072082Z        |                               -------------- expected `Result<(), ()>` because of return type
+2026-04-22T16:11:57.0072425Z     ...
+2026-04-22T16:11:57.0072574Z     23 |     Ok(());
+2026-04-22T16:11:57.0072789Z        |     ^^^^^^^ expected `Result<(), ()>`, found `()`
+2026-04-22T16:11:57.0073044Z        |
+2026-04-22T16:11:57.0073222Z        = note:   expected enum `Result<(), ()>`
+2026-04-22T16:11:57.0073482Z                found unit type `()`
+2026-04-22T16:11:57.0073768Z     help: try adding an expression at the end of the block
+2026-04-22T16:11:57.0074055Z        |
+2026-04-22T16:11:57.0074205Z     23 ~     Ok(());;
+2026-04-22T16:11:57.0074387Z     24 +     Ok(())
+2026-04-22T16:11:57.0074555Z        |
+2026-04-22T16:11:57.0074641Z 
+2026-04-22T16:11:57.0075048Z     error[E0277]: the `?` operator can only be used in an async block that returns `Result` or `Option` (or another type that implements `FromResidual`)
+2026-04-22T16:11:57.0075672Z       --> tests/fail/macros_type_mismatch.rs:40:9
+2026-04-22T16:11:57.0075929Z        |
+2026-04-22T16:11:57.0076086Z     38 | #[tokio::main]
+2026-04-22T16:11:57.0076394Z        | -------------- this function should return `Result` or `Option` to accept `?`
+2026-04-22T16:11:57.0076868Z     39 | async fn question_mark_operator_with_invalid_option() -> Option<()> {
+2026-04-22T16:11:57.0077212Z     40 |     None?;
+2026-04-22T16:11:57.0077593Z        |         ^ cannot use the `?` operator in an async block that returns `()`
+2026-04-22T16:11:57.0077862Z 
+2026-04-22T16:11:57.0078568Z     error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:38:1: 38:15}` to be a future that resolves to `Option<()>`, but it resolves to `()`
+2026-04-22T16:11:57.0079239Z       --> tests/fail/macros_type_mismatch.rs:38:1
+2026-04-22T16:11:57.0079497Z        |
+2026-04-22T16:11:57.0079659Z     38 | #[tokio::main]
+2026-04-22T16:11:57.0079917Z        | ^^^^^^^^^^^^^^ expected `Option<()>`, found `()`
+2026-04-22T16:11:57.0080176Z        |
+2026-04-22T16:11:57.0080348Z        = note:   expected enum `Option<()>`
+2026-04-22T16:11:57.0080605Z                found unit type `()`
+2026-04-22T16:11:57.0081160Z        = note: required for the cast from `&{async block@$DIR/tests/fail/macros_type_mismatch.rs:38:1: 38:15}` to `&dyn Future<Output = Option<()>>`
+2026-04-22T16:11:57.0082029Z        = note: this error originates in the attribute macro `tokio::main` (in Nightly builds, run with -Z macro-backtrace for more info)
+2026-04-22T16:11:57.0082495Z 
+2026-04-22T16:11:57.0082585Z     error[E0308]: mismatched types
+2026-04-22T16:11:57.0082852Z       --> tests/fail/macros_type_mismatch.rs:40:5
+2026-04-22T16:11:57.0083109Z        |
+2026-04-22T16:11:57.0083421Z     39 | async fn question_mark_operator_with_invalid_option() -> Option<()> {
+2026-04-22T16:11:57.0083901Z        |                                                          ---------- expected `Option<()>` because of return type
+2026-04-22T16:11:57.0084265Z     40 |     None?;
+2026-04-22T16:11:57.0084477Z        |     ^^^^^^ expected `Option<()>`, found `()`
+2026-04-22T16:11:57.0084732Z        |
+2026-04-22T16:11:57.0084914Z        = note:   expected enum `Option<()>`
+2026-04-22T16:11:57.0085176Z                found unit type `()`
+2026-04-22T16:11:57.0085469Z     help: try adding an expression at the end of the block
+2026-04-22T16:11:57.0085752Z        |
+2026-04-22T16:11:57.0085910Z     40 ~     None?;;
+2026-04-22T16:11:57.0086091Z     41 +     None
+2026-04-22T16:11:57.0086255Z        |
+2026-04-22T16:11:57.0086405Z     40 ~     None?;;
+2026-04-22T16:11:57.0086730Z     41 +     Some(())
+2026-04-22T16:11:57.0086899Z        |
+2026-04-22T16:11:57.0086991Z 
+2026-04-22T16:11:57.0087400Z     error[E0277]: the `?` operator can only be used in an async block that returns `Result` or `Option` (or another type that implements `FromResidual`)
+2026-04-22T16:11:57.0088014Z       --> tests/fail/macros_type_mismatch.rs:57:11
+2026-04-22T16:11:57.0088764Z        |
+2026-04-22T16:11:57.0088955Z     55 | #[tokio::main]
+2026-04-22T16:11:57.0089278Z        | -------------- this function should return `Result` or `Option` to accept `?`
+2026-04-22T16:11:57.0089761Z     56 | async fn question_mark_operator_with_invalid_result() -> Result<(), ()> {
+2026-04-22T16:11:57.0090111Z     57 |     Ok(())?;
+2026-04-22T16:11:57.0090393Z        |           ^ cannot use the `?` operator in an async block that returns `()`
+2026-04-22T16:11:57.0090656Z 
+2026-04-22T16:11:57.0091119Z     error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:55:1: 55:15}` to be a future that resolves to `Result<(), ()>`, but it resolves to `()`
+2026-04-22T16:11:57.0091812Z       --> tests/fail/macros_type_mismatch.rs:55:1
+2026-04-22T16:11:57.0092069Z        |
+2026-04-22T16:11:57.0092231Z     55 | #[tokio::main]
+2026-04-22T16:11:57.0092459Z        | ^^^^^^^^^^^^^^ expected `Result<(), ()>`, found `()`
+2026-04-22T16:11:57.0092715Z        |
+2026-04-22T16:11:57.0100414Z        = note:   expected enum `Result<(), ()>`
+2026-04-22T16:11:57.0100723Z                found unit type `()`
+2026-04-22T16:11:57.0101314Z        = note: required for the cast from `&{async block@$DIR/tests/fail/macros_type_mismatch.rs:55:1: 55:15}` to `&dyn Future<Output = Result<(), ()>>`
+2026-04-22T16:11:57.0102187Z        = note: this error originates in the attribute macro `tokio::main` (in Nightly builds, run with -Z macro-backtrace for more info)
+2026-04-22T16:11:57.0102644Z 
+2026-04-22T16:11:57.0102966Z     error[E0308]: mismatched types
+2026-04-22T16:11:57.0103255Z       --> tests/fail/macros_type_mismatch.rs:57:5
+2026-04-22T16:11:57.0103530Z        |
+2026-04-22T16:11:57.0103814Z     56 | async fn question_mark_operator_with_invalid_result() -> Result<(), ()> {
+2026-04-22T16:11:57.0104333Z        |                                                          -------------- expected `Result<(), ()>` because of return type
+2026-04-22T16:11:57.0104715Z     57 |     Ok(())?;
+2026-04-22T16:11:57.0104942Z        |     ^^^^^^^^ expected `Result<(), ()>`, found `()`
+2026-04-22T16:11:57.0105199Z        |
+2026-04-22T16:11:57.0105388Z        = note:   expected enum `Result<(), ()>`
+2026-04-22T16:11:57.0105655Z                found unit type `()`
+2026-04-22T16:11:57.0105941Z     help: try adding an expression at the end of the block
+2026-04-22T16:11:57.0106225Z        |
+2026-04-22T16:11:57.0106383Z     57 ~     Ok(())?;;
+2026-04-22T16:11:57.0106559Z     58 +     Ok(())
+2026-04-22T16:11:57.0106728Z        |
+2026-04-22T16:11:57.0106813Z 
+2026-04-22T16:11:57.0107271Z     error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:63:1: 63:15}` to be a future that resolves to `()`, but it resolves to `{integer}`
+2026-04-22T16:11:57.0107922Z       --> tests/fail/macros_type_mismatch.rs:63:1
+2026-04-22T16:11:57.0108464Z        |
+2026-04-22T16:11:57.0108648Z     63 | #[tokio::main]
+2026-04-22T16:11:57.0108879Z        | ^^^^^^^^^^^^^^ expected `()`, found integer
+2026-04-22T16:11:57.0109128Z        |
+2026-04-22T16:11:57.0109595Z        = note: required for the cast from `&{async block@$DIR/tests/fail/macros_type_mismatch.rs:63:1: 63:15}` to `&dyn Future<Output = ()>`
+2026-04-22T16:11:57.0110423Z        = note: this error originates in the attribute macro `tokio::main` (in Nightly builds, run with -Z macro-backtrace for more info)
+2026-04-22T16:11:57.0110870Z 
+2026-04-22T16:11:57.0110958Z     error[E0308]: mismatched types
+2026-04-22T16:11:57.0111214Z       --> tests/fail/macros_type_mismatch.rs:66:5
+2026-04-22T16:11:57.0111468Z        |
+2026-04-22T16:11:57.0111638Z     64 | async fn issue_4635() {
+2026-04-22T16:11:57.0112047Z        |                      - help: try adding a return type: `-> i32`
+2026-04-22T16:11:57.0112334Z     65 |     return 1;
+2026-04-22T16:11:57.0112518Z     66 |     ;
+2026-04-22T16:11:57.0112700Z        |     ^ expected `()`, found integer
+2026-04-22T16:11:57.0113173Z     ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+2026-04-22T16:11:57.0113589Z     note: If the actual output is the correct output you can bless it by rerunning
+2026-04-22T16:11:57.0114036Z           your test with the environment variable TRYBUILD=overwrite
+2026-04-22T16:11:57.0114274Z 
+2026-04-22T16:11:57.0114278Z 
+2026-04-22T16:11:57.0114282Z 
+2026-04-22T16:11:57.0114285Z 
+2026-04-22T16:11:57.0114903Z     [0m[31;1mthread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13:[0m
+2026-04-22T16:11:57.0115591Z     [31;1m1 of 10 tests failed[0m
+2026-04-22T16:11:57.0115831Z     stack backtrace:
+2026-04-22T16:11:57.0116034Z        0: __rustc::rust_begin_unwind
+2026-04-22T16:11:57.0116442Z                  at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/panicking.rs:689:5
+2026-04-22T16:11:57.0116871Z        1: core::panicking::panic_fmt
+2026-04-22T16:11:57.0117270Z                  at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/core/src/panicking.rs:80:14
+2026-04-22T16:11:57.0117718Z        2: trybuild::run::<impl trybuild::Runner>::run
+2026-04-22T16:11:57.0118463Z                  at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13
+2026-04-22T16:11:57.0119032Z        3: <trybuild::TestCases as core::ops::drop::Drop>::drop
+2026-04-22T16:11:57.0119552Z                  at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/lib.rs:342:38
+2026-04-22T16:11:57.0120066Z        4: core::ptr::drop_in_place<trybuild::TestCases>
+2026-04-22T16:11:57.0120646Z                  at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/core/src/ptr/mod.rs:805:1
+2026-04-22T16:11:57.0121072Z        5: core::mem::drop
+2026-04-22T16:11:57.0121438Z                  at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/core/src/mem/mod.rs:975:1
+2026-04-22T16:11:57.0121842Z        6: macros::compile_fail_full
+2026-04-22T16:11:57.0122088Z                  at ./tests/macros.rs:39:5
+2026-04-22T16:11:57.0122360Z        7: macros::compile_fail_full::{{closure}}
+2026-04-22T16:11:57.0122622Z                  at ./tests/macros.rs:3:23
+2026-04-22T16:11:57.0122880Z        8: core::ops::function::FnOnce::call_once
+2026-04-22T16:11:57.0123319Z                  at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/core/src/ops/function.rs:250:5
+2026-04-22T16:11:57.0123937Z        9: <fn() -> core::result::Result<(), alloc::string::String> as core::ops::function::FnOnce<()>>::call_once
+2026-04-22T16:11:57.0124544Z                  at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/core/src/ops/function.rs:250:5
+2026-04-22T16:11:57.0125217Z     note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.[0m
+2026-04-22T16:11:57.0125544Z 
+2026-04-22T16:11:57.0125721Z [31;1m  Cancelling[0m due to [31;1mtest failure[0m: 
+2026-04-22T16:11:57.0126016Z ────────────
+2026-04-22T16:11:57.0126557Z [31;1m     Summary[0m [   9.876s] [1m396[0m tests run: [1m395[0m [32;1mpassed[0m, [1m1[0m [31;1mfailed[0m, [1m1[0m [33;1mskipped[0m
+2026-04-22T16:11:57.0127386Z [31;1m        FAIL[0m [   9.875s] (396/396) [35;1mtests-build::macros[0m [34;1mcompile_fail_full[0m
+2026-04-22T16:11:57.0127816Z [31;1merror[0m: test run failed
+2026-04-22T16:11:57.0140535Z ##[error]Process completed with exit code 100.
+2026-04-22T16:11:57.0226823Z Post job cleanup.
+2026-04-22T16:11:57.1004186Z [command]/usr/bin/git version
+2026-04-22T16:11:57.1041302Z git version 2.53.0
+2026-04-22T16:11:57.1080863Z Temporarily overriding HOME='/home/runner/work/_temp/df00297c-7b76-40ec-8d64-1b398f630c4a' before making global git config changes
+2026-04-22T16:11:57.1081961Z Adding repository directory to the temporary git global config as a safe directory
+2026-04-22T16:11:57.1086399Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/tokio/tokio
+2026-04-22T16:11:57.1116424Z Removing SSH command configuration
+2026-04-22T16:11:57.1123313Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-04-22T16:11:57.1182636Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-04-22T16:11:57.1410376Z Removing HTTP extra header
+2026-04-22T16:11:57.1415840Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-04-22T16:11:57.1448946Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-04-22T16:11:57.1669237Z Removing includeIf entries pointing to credentials config files
+2026-04-22T16:11:57.1677759Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-04-22T16:11:57.1700292Z includeif.gitdir:/home/runner/work/tokio/tokio/.git.path
+2026-04-22T16:11:57.1700940Z includeif.gitdir:/home/runner/work/tokio/tokio/.git/worktrees/*.path
+2026-04-22T16:11:57.1701335Z includeif.gitdir:/github/workspace/.git.path
+2026-04-22T16:11:57.1701688Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+2026-04-22T16:11:57.1710769Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/tokio/tokio/.git.path
+2026-04-22T16:11:57.1731837Z /home/runner/work/_temp/git-credentials-f531b42c-1c5b-4513-af25-086223fca602.config
+2026-04-22T16:11:57.1742869Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/tokio/tokio/.git.path /home/runner/work/_temp/git-credentials-f531b42c-1c5b-4513-af25-086223fca602.config
+2026-04-22T16:11:57.1776600Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/tokio/tokio/.git/worktrees/*.path
+2026-04-22T16:11:57.1797831Z /home/runner/work/_temp/git-credentials-f531b42c-1c5b-4513-af25-086223fca602.config
+2026-04-22T16:11:57.1806459Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/tokio/tokio/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-f531b42c-1c5b-4513-af25-086223fca602.config
+2026-04-22T16:11:57.1836705Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+2026-04-22T16:11:57.1857216Z /github/runner_temp/git-credentials-f531b42c-1c5b-4513-af25-086223fca602.config
+2026-04-22T16:11:57.1865087Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-f531b42c-1c5b-4513-af25-086223fca602.config
+2026-04-22T16:11:57.1894670Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+2026-04-22T16:11:57.1915464Z /github/runner_temp/git-credentials-f531b42c-1c5b-4513-af25-086223fca602.config
+2026-04-22T16:11:57.1923793Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-f531b42c-1c5b-4513-af25-086223fca602.config
+2026-04-22T16:11:57.1957017Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-04-22T16:11:57.2181235Z Removing credentials config '/home/runner/work/_temp/git-credentials-f531b42c-1c5b-4513-af25-086223fca602.config'
+2026-04-22T16:11:57.2334177Z Cleaning up orphan processes

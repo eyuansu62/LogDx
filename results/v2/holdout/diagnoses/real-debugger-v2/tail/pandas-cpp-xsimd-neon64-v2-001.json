@@ -1,0 +1,59 @@
+{
+  "case_id": "pandas-cpp-xsimd-neon64-v2-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The pandas C++ build failed on macOS 15 (arm64/aarch64) because the SIMD moments code attempts to explicitly instantiate `accumulate_moments_simd::operator()<xsimd::neon64>`, but the function template is defined with `xsimd::neon` as its parameter type, not `xsimd::neon64`. This type mismatch causes two compile errors in the files that include `moments_simd.hpp`, stopping the ninja build with exit code 1.",
+  "root_cause_category": "compile_error",
+  "root_cause": "The explicit template instantiation in `pandas/_libs/include/pandas/simd/moments_simd.hpp` (line 255) and `pandas/_libs/simd/moments_inst_neon.cpp` (line 14) uses `xsimd::neon64`, but the actual template definition at `moments_simd.hpp:182` is specialized for `xsimd::neon`. Because `xsimd::neon64` and `xsimd::neon` are distinct types, the compiler cannot match the instantiation to the template, producing the error 'explicit instantiation of operator() does not refer to a function template'.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "pandas/_libs/include/pandas/simd/moments_simd.hpp",
+    "pandas/_libs/simd/moments_inst_neon.cpp",
+    "pandas/_libs/simd/moments.cpp"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "../../pandas/_libs/include/pandas/simd/moments_simd.hpp:255:50: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "reason": "This is the primary compile error indicating the explicit instantiation at line 255 of moments_simd.hpp cannot be matched to any template definition."
+    },
+    {
+      "quote": "255 | extern template Moments accumulate_moments_simd::operator()<xsimd::neon64>(",
+      "reason": "Shows the instantiation uses xsimd::neon64 as the template argument."
+    },
+    {
+      "quote": "note: candidate template ignored: could not match 'Moments (xsimd::neon64, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int) noexcept' (aka 'Moments (xsimd::neon64, span<const double>, int, optional<span<const unsigned char>>, int) noexcept') against 'Moments (xsimd::neon, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int)'",
+      "reason": "Confirms the template is defined for xsimd::neon but the instantiation requests xsimd::neon64, causing the type mismatch."
+    },
+    {
+      "quote": "../../pandas/_libs/simd/moments_inst_neon.cpp:14:43: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "reason": "A second compile unit (moments_inst_neon.cpp) triggers the same error, confirming the root cause is the neon vs neon64 type mismatch in the template instantiation."
+    },
+    {
+      "quote": "FAILED: [code=1] pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o",
+      "reason": "Confirms the compilation of the NEON SIMD object file failed, stopping the overall ninja build."
+    },
+    {
+      "quote": "-DPANDAS_SIMD_NEON",
+      "reason": "The compile command defines PANDAS_SIMD_NEON, confirming this is the NEON-specific code path being compiled on the aarch64 runner."
+    }
+  ],
+  "suggested_fix": "In `pandas/_libs/include/pandas/simd/moments_simd.hpp` at line 255 and in `pandas/_libs/simd/moments_inst_neon.cpp` at line 14, change the explicit instantiation template argument from `xsimd::neon64` to `xsimd::neon` to match the actual template definition at `moments_simd.hpp:182`.",
+  "input": {
+    "context_path": "results/v2/holdout/tail/pandas-cpp-xsimd-neon64-v2-001.txt",
+    "context_tokens_estimate": 5813
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 844
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 28423.856,
+    "cache_key": "48a3484d27501da9e8e6fa0f456ff8afda184fb5d82251023dd81b67f62d25d9",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

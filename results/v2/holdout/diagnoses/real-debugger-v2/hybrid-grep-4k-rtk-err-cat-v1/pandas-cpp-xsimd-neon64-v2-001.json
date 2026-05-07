@@ -1,0 +1,63 @@
+{
+  "case_id": "pandas-cpp-xsimd-neon64-v2-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The C++ build fails during compilation of SIMD-related source files on macOS ARM64 (Apple Silicon). Two translation units emit the same clang error about invalid explicit template instantiation of 'operator()', causing ninja to abort. The build is compiled with --werror, so these errors are fatal.",
+  "root_cause_category": "compile_error",
+  "root_cause": "Clang rejects an explicit instantiation of 'operator()' in pandas/simd/moments_simd.hpp at line 255 (and in moments_inst_neon.cpp at line 14) with the error 'explicit instantiation of operator() does not refer to a function template, variable template, member function, member class, or static data member'. This causes compilation failures for both libmoments_simd_neon and libmoments_base targets on arm64-apple-darwin.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "../../pandas/_libs/include/pandas/simd/moments_simd.hpp",
+    "../../pandas/_libs/simd/moments_inst_neon.cpp",
+    "../../pandas/_libs/simd/moments.cpp"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "../../pandas/_libs/include/pandas/simd/moments_simd.hpp:255:50: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "reason": "Primary compiler error appearing in both failing compilation units, identifying the exact file and line causing the build failure."
+    },
+    {
+      "quote": "../../pandas/_libs/simd/moments_inst_neon.cpp:14:43: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "reason": "Second occurrence of the same error in a different translation unit (the NEON-specific instantiation file), confirming the problem is in the explicit instantiation logic."
+    },
+    {
+      "quote": "FAILED: [code=1] pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o",
+      "reason": "Confirms the NEON SIMD compilation target failed due to the above error."
+    },
+    {
+      "quote": "FAILED: [code=1] pandas/_libs/simd/libmoments_base.a.p/moments.cpp.o",
+      "reason": "Confirms the base moments compilation target also failed with the same error."
+    },
+    {
+      "quote": "ninja: build stopped: subcommand failed.",
+      "reason": "Ninja aborted the build after the compiler errors, propagating the failure to the pip metadata generation step."
+    },
+    {
+      "quote": "--werror",
+      "reason": "The meson setup was invoked with --werror, meaning compiler warnings are treated as errors, making any diagnostic fatal."
+    },
+    {
+      "quote": "arm64-apple-darwin20.0.0-clang++",
+      "reason": "The failing compiler is clang++ targeting Apple Silicon (arm64), consistent with the macOS-15 job and NEON SIMD path being exercised."
+    }
+  ],
+  "suggested_fix": "Fix the explicit instantiation syntax for 'operator()' in pandas/_libs/include/pandas/simd/moments_simd.hpp at line 255 and in pandas/_libs/simd/moments_inst_neon.cpp at line 14. Clang (unlike some other compilers) does not allow explicit instantiation of a call operator that is not a function template; the instantiation must target a function template, member function, or static data member directly. Replace the explicit instantiation with a conforming form, or wrap the operator() in a named function template that can be explicitly instantiated.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-4k-rtk-err-cat-v1/pandas-cpp-xsimd-neon64-v2-001.txt",
+    "context_tokens_estimate": 1179
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 816
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 23721.119,
+    "cache_key": "ae45e9fdfde7cc347b6589cabe2c3dd92934a07c165cac4a98942f0200c1efa7",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "case_id": "tsc-typescript-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "A single fourslash test failed with an assertion error: the code fix produced a return type annotation of 'Foo<string>' but the test expected 'Foo<string, string[…'. All other 106,366 tests passed. The test runner exited with code 1, failing the coverage job.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The fourslash test 'codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts' failed because the code fix for missing type annotation generated an oversimplified generic return type 'Foo<string>' instead of the expected fuller form 'Foo<string, string[…'.",
+  "confidence": 0.97,
+  "relevant_files": [
+    "tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts",
+    "src/harness/fourslashImpl.ts",
+    "src/harness/fourslashInterfaceImpl.ts",
+    "src/testRunner/fourslashRunner.ts"
+  ],
+  "relevant_tests": [
+    "fourslash tests > tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts > fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts runs correctly"
+  ],
+  "evidence": [
+    {
+      "quote": "AssertionError: expected 'Add return type \\'Foo<string>\\'' to equal 'Add return type \\'Foo<string, string[…'",
+      "reason": "Explicit assertion mismatch: the code fix produced a simplified generic type argument list ('Foo<string>') while the test expected a more complete one ('Foo<string, string[…')."
+    },
+    {
+      "quote": "at _TestState.verifyCodeFix (src/harness/fourslashImpl.ts:3435:20)",
+      "reason": "Confirms the failure occurred inside the verifyCodeFix assertion in the fourslash test harness, pointing to a code-fix behavior regression."
+    },
+    {
+      "quote": "106366 passing (10m)\n  1 failing",
+      "reason": "Only one test out of over 100k failed, confirming this is a targeted regression rather than a build or infrastructure problem."
+    },
+    {
+      "quote": "Error in do-runtests-parallel in 10m 38.9s\nError: Process exited with code: 1",
+      "reason": "The single test failure caused the test runner to exit with code 1, which is what failed the CI job."
+    }
+  ],
+  "suggested_fix": "Update the code fix logic responsible for inferring generic type arguments (likely in the 'missing type annotation on exports' code fix) to preserve all type arguments rather than oversimplifying to a single argument, so that 'Foo<string, string[]>' (or the full form) is emitted instead of 'Foo<string>'.",
+  "input": {
+    "context_path": "results/holdout/tail/tsc-typescript-001.txt",
+    "context_tokens_estimate": 4212
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 593
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 35097.84,
+    "cache_key": "d185f9923450961f9654f6f772ed48aa742d1224d363735994dc4c5ce8b1ebbd",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

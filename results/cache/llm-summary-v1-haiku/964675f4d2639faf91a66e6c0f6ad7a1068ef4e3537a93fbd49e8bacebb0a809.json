@@ -1,0 +1,25 @@
+{
+  "key_parts": {
+    "case_id": "cleanup-tsc-stress-001",
+    "raw_sha": "4cf01b2d3fe6586a4eead5e3ae0ffe5b9ce5a04684015f3b38a9b220c72c1eb3",
+    "prompt_version": "llm_summary_v1",
+    "prompt_sha": "e3739738b7136af3956f3712e7b76babd9224b6854dcc60ff16546a3fbb16702",
+    "provider": "command",
+    "method": "llm-summary-v1-haiku",
+    "chunk_index": -1,
+    "chunk_sha": "3e78e57e818c4be8a74021a4fc13c0174bace0710e27c4ddb296b7ec84878a65",
+    "temperature": 0.0,
+    "max_output_chars": 12000,
+    "stage": "reduce"
+  },
+  "response": {
+    "content": "# CI Failure Summary\n\n## Primary Failure\n\nThe `Cleanup artifacts` step failed when attempting to delete GitHub Actions artifacts using the GitHub CLI (gh). The request was rejected with a 403 permission error, causing the workflow to exit with code 1.\n\n## Critical Evidence\n\n- `gh: Resource not accessible by integration (HTTP 403)` (L000081)\n- Process exit code 1 (L000082)\n\n## Failed Tests / Checks\n\n- _(none identified)_ — This is a CI step failure, not a test failure.\n\n## Relevant Files and Locations\n\n- GitHub Actions workflow step: lines L000066–L000070 (gh api DELETE command for artifact cleanup)\n\n## Commands and Exit Codes\n\n```\ngh api \\\n  --silent \\\n  -X DELETE \\\n  -H \"Accept: application/vnd.github+json\" \\\n  /repos/microsoft/TypeScript/actions/artifacts/\"$artifact_id\"\n```\n\nExit code: `1`\n\n## Possible Root Cause\n\nThe GitHub integration token or workflow permissions lack authorization to delete artifacts in the `microsoft/TypeScript` repository. Alternatively, the artifact referenced by `$artifact_id` may have already been deleted or the token may be scoped too narrowly.\n\n## Uncertainties / Missing Context\n\n- Value of `$artifact_id` variable (whether it was populated correctly)\n- Which artifacts were targeted for deletion and whether they exist\n- Token scopes and repository role permissions for the GitHub Actions integration\n- Whether this failure is intermittent or blocking the entire workflow",
+    "provider": "claude-cli",
+    "model": "haiku",
+    "usage": {
+      "input_tokens": 9,
+      "output_tokens": 780,
+      "total_cost_usd": 0.01271645
+    }
+  }
+}

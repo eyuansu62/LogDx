@@ -1,0 +1,85 @@
+{
+  "root_cause": {
+    "summary": "pytest fails collection and many runtime tests because NumPy (nightly) now raises DeprecationWarning when constructing np.datetime64 values with the 'generic' timedelta unit, and pandas' warning-as-error configuration turns this into test failures. The fix belongs on pandas' side: update affected tests/implementations to use a specific timedelta unit, or adjust the warning filter.",
+    "category": "test_assertion"
+  },
+  "required_signals": [
+    {
+      "type": "step_name",
+      "value": "==================================== ERRORS ====================================",
+      "importance": "important",
+      "evidence_lines": [[1275, 1275]]
+    },
+    {
+      "type": "stack_location",
+      "file": "pandas/tests/arrays/masked/test_indexing.py",
+      "line": 43,
+      "importance": "critical",
+      "evidence_lines": [[1277, 1280]]
+    },
+    {
+      "type": "exception",
+      "value": "DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated",
+      "importance": "critical",
+      "evidence_lines": [[1282, 1282]]
+    },
+    {
+      "type": "failed_test",
+      "value": "pandas/tests/arithmetic/test_datetime64.py::TestDatetimeIndexComparisons::test_dti_cmp_nat_behaves_like_float_cmp_nan",
+      "importance": "critical",
+      "evidence_lines": [[3522, 3522]]
+    },
+    {
+      "type": "assertion",
+      "value": "= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s",
+      "importance": "critical",
+      "evidence_lines": [[3619, 3619]]
+    },
+    {
+      "type": "exit_code",
+      "value": "1",
+      "importance": "critical",
+      "evidence_lines": [[3620, 3620]]
+    }
+  ],
+  "relevant_files": [
+    "pandas/tests/arrays/masked/test_indexing.py",
+    "pandas/tests/arrays/test_timedeltas.py",
+    "pandas/tests/dtypes/test_inference.py"
+  ],
+  "relevant_tests": [
+    "pandas/tests/arithmetic/test_datetime64.py::TestDatetimeIndexComparisons::test_dti_cmp_nat_behaves_like_float_cmp_nan",
+    "pandas/tests/reshape/concat/test_append.py::TestAppend::test_append_dtype_coerce"
+  ],
+  "evidence_spans": [
+    {
+      "start_line": 1275,
+      "end_line": 1282,
+      "reason": "First pytest collection ERROR block with the canonical traceback and the DeprecationWarning that triggers every failure."
+    },
+    {
+      "start_line": 3521,
+      "end_line": 3530,
+      "reason": "pytest short test summary info header plus first FAILED entries showing the same DeprecationWarning is the common root cause across tests."
+    },
+    {
+      "start_line": 3619,
+      "end_line": 3620,
+      "reason": "Final aggregated counts (45 failed, 52 errors) and the GHA exit-code marker."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "pytest",
+      "DeprecationWarning",
+      "numpy timedelta generic unit",
+      "pandas tests"
+    ],
+    "must_not_claim": [
+      "network failure",
+      "GitHub Actions permission error",
+      "dependency installation failed",
+      "out of memory or timeout"
+    ]
+  }
+}

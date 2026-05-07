@@ -1,0 +1,54 @@
+{
+  "case_id": "tsc-typescript-001",
+  "context_method": "raw",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "A single fourslash test failed because the 'Add return type' code fix produced an oversimplified generic type annotation. The fix emitted 'Add return type \\'Foo<string>\\'' but the test expected a fully-parameterized form beginning 'Add return type \\'Foo<string, string…'. All other 106,366 tests passed.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The code fix for missing type annotations on exports incorrectly simplifies generic return types, emitting 'Foo<string>' instead of the expected multi-parameter form 'Foo<string, string[…]', causing an AssertionError in the fourslash test harness.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts",
+    "src/harness/fourslashImpl.ts",
+    "src/harness/fourslashInterfaceImpl.ts",
+    "src/testRunner/fourslashRunner.ts"
+  ],
+  "relevant_tests": [
+    "fourslash tests > tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts > fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts runs correctly"
+  ],
+  "evidence": [
+    {
+      "quote": "AssertionError: expected 'Add return type \\'Foo<string>\\'' to equal 'Add return type \\'Foo<string, string[…'",
+      "reason": "This is the direct assertion mismatch: the actual code fix title is missing one or more type parameters compared to the expected value."
+    },
+    {
+      "quote": "1 failing",
+      "reason": "Confirms exactly one test failed, and the context identifies it as the fourslash test above."
+    },
+    {
+      "quote": "at _TestState.verifyCodeFix (src/harness/fourslashImpl.ts:3435:20)",
+      "reason": "The failure originates in the verifyCodeFix method, confirming this is a code-fix output mismatch, not a compilation or infrastructure error."
+    },
+    {
+      "quote": "codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts",
+      "reason": "The test name itself signals the scenario being tested: oversimplification of generics in the missing-type-annotation code fix, which matches the observed failure (type parameters being dropped)."
+    }
+  ],
+  "suggested_fix": "Update the code fix logic responsible for inferring return type annotations on exported declarations to preserve all type arguments when constructing the generic type node (e.g., 'Foo<string>' should be 'Foo<string, string[]>' or similar), so the generated label matches the expectation in tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts.",
+  "input": {
+    "context_path": "results/holdout/raw/tsc-typescript-001.txt",
+    "context_tokens_estimate": 7239
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 616
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 42458.878,
+    "cache_key": "12f5df1100ab3c60ece34ead0f38b75cff1fe2f5696c64675ac68e38e8b3eb25",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

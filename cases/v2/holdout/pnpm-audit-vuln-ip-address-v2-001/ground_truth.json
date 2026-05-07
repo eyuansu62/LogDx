@@ -1,0 +1,86 @@
+{
+  "root_cause": {
+    "summary": "The `pnpm audit` step in pnpm/pnpm's Audit workflow reported 1 moderate-severity vulnerability — `ip-address has XSS in Address6 HTML-emitting methods` (advisory GHSA-v2v4-37r5-5v8g) — in the transitive dependency `ip-address` at vulnerable versions `<=10.1.0`, with patched range `>=10.1.1`. The dependency reaches the project through the path `network__fetch > @pnpm/network.agent > @pnpm/network.proxy-agent > socks-proxy-agent > socks > ip-address`. By default pnpm audit exits 1 on any vulnerability finding, which propagates to the GHA job's `##[error]Process completed with exit code 1.`. This is an audit/security gate failure, not an install failure — deps install fine; the fix is to bump the transitive `ip-address` to >=10.1.1.",
+    "category": "dependency_install"
+  },
+  "required_signals": [
+    {
+      "type": "package",
+      "value": "ip-address",
+      "importance": "critical",
+      "evidence_lines": [[130, 130]]
+    },
+    {
+      "type": "exception",
+      "value": "ip-address has XSS in Address6 HTML-emitting methods",
+      "importance": "critical",
+      "evidence_lines": [[128, 128]]
+    },
+    {
+      "type": "version",
+      "value": "<=10.1.0",
+      "importance": "critical",
+      "evidence_lines": [[132, 132]]
+    },
+    {
+      "type": "version",
+      "value": ">=10.1.1",
+      "importance": "important",
+      "evidence_lines": [[134, 134]]
+    },
+    {
+      "type": "command",
+      "value": "pnpm audit",
+      "importance": "important",
+      "evidence_lines": [[122, 122]]
+    },
+    {
+      "type": "annotation",
+      "value": "##[error]Process completed with exit code 1.",
+      "importance": "important",
+      "evidence_lines": [[143, 143]]
+    },
+    {
+      "type": "exit_code",
+      "value": "1 vulnerabilities found",
+      "importance": "optional",
+      "evidence_lines": [[141, 141]]
+    }
+  ],
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence_spans": [
+    {
+      "start_line": 121,
+      "end_line": 122,
+      "reason": "GHA `##[group]Run pnpm audit` + the `pnpm audit` command line — establishes which step triggered the failure."
+    },
+    {
+      "start_line": 127,
+      "end_line": 140,
+      "reason": "The full ascii-table vulnerability report from pnpm audit: severity (moderate), vulnerability title (`ip-address has XSS in Address6 HTML-emitting methods`), Package, Vulnerable versions (<=10.1.0), Patched versions (>=10.1.1), the transitive dependency Path, and the GHSA advisory URL. Sufficient on its own to identify root cause, the affected package, the fix (bump to >=10.1.1), and the dependency path."
+    },
+    {
+      "start_line": 141,
+      "end_line": 143,
+      "reason": "Summary lines (`1 vulnerabilities found`, `Severity: 1 moderate`) plus the GHA `##[error]Process completed with exit code 1.` annotation that confirms the audit failure propagated to the job exit code."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "ip-address",
+      "pnpm audit",
+      "vulnerabilit",
+      "GHSA-v2v4-37r5-5v8g"
+    ],
+    "must_not_claim": [
+      "compile error",
+      "test failed",
+      "permission denied",
+      "syntax error",
+      "the user's code is broken",
+      "network failure",
+      "ip-address could not be installed"
+    ]
+  }
+}

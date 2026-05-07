@@ -1,0 +1,57 @@
+{
+  "case_id": "jest-nextjs-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest cannot discover test files in the examples/ directory because the Jest configuration's roots setting excludes that directory. Tests for examples/with-vitest and examples/with-zones report 'No tests found' with exit code 1.",
+  "root_cause_category": "other",
+  "root_cause": "Jest configuration has roots limited to [/work/test, /work/packages/next/src, /work/packages/next-codemod, /work/packages/eslint-plugin-internal, /work/packages/font/src, /work/packages/next-routing], which does not include the examples/ directory where the test files reside. When Jest attempts to match patterns like 'examples/with-vitest/app/page.test.tsx', it returns 0 matches because that path is outside the configured roots.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "examples/with-vitest/app/page.test.tsx",
+    "examples/with-vitest/app/counter.test.tsx",
+    "examples/with-vitest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts"
+  ],
+  "relevant_tests": [
+    "examples/with-vitest/app/page.test.tsx",
+    "examples/with-vitest/app/counter.test.tsx",
+    "examples/with-vitest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts"
+  ],
+  "evidence": [
+    {
+      "quote": "roots: /work/test, /work/packages/next/src, /work/packages/next-codemod, /work/packages/eslint-plugin-internal, /work/packages/font/src, /work/packages/next-routing - 14634 matches",
+      "reason": "Jest is configured with specific root directories that do not include examples/"
+    },
+    {
+      "quote": "Pattern: examples/with-vitest/app/page.test.tsx - 0 matches",
+      "reason": "Jest explicitly reports finding 0 matches for test files in the examples/ directory despite matching the testMatch pattern globally"
+    },
+    {
+      "quote": "No tests found, exiting with code 1",
+      "reason": "Jest exits with failure code because it cannot discover any tests after pattern matching against configured roots"
+    },
+    {
+      "quote": "Run with `--passWithNoTests` to exit with code 0",
+      "reason": "Jest's own suggestion confirms the issue is test discovery, not test execution"
+    }
+  ],
+  "suggested_fix": "Add examples/ directory to the Jest configuration roots, or configure testPathIgnorePatterns to exclude the examples directory if these should not be run by Jest. Alternatively, verify whether example projects like with-vitest should be tested with Vitest instead of Jest.",
+  "input": {
+    "context_path": "results/dev/tail/jest-nextjs-001.txt",
+    "context_tokens_estimate": 5404
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 576
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 28630.892,
+    "cache_key": "8c141f7f4636d14b99c5877822d3003ffaf5b4f28ba0b6a16d786d62833d3e67",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

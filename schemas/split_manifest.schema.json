@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CILogBench split manifest",
+  "description": "Enumerates the cases in one split, with per-case content hashes and framework/category tallies.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["split", "case_count", "cases", "framework_counts", "category_counts"],
+  "properties": {
+    "split": {"type": "string"},
+    "case_count": {"type": "integer", "minimum": 0},
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "case_id", "raw_log_sha256", "case_json_sha256", "ground_truth_sha256",
+          "line_count", "byte_size", "framework", "failure_category"
+        ],
+        "properties": {
+          "case_id":             {"type": "string"},
+          "raw_log_sha256":      {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "case_json_sha256":    {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "ground_truth_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "line_count":          {"type": "integer", "minimum": 0},
+          "byte_size":           {"type": "integer", "minimum": 0},
+          "framework":           {"type": "string"},
+          "failure_category":    {"type": "string"}
+        }
+      }
+    },
+    "framework_counts": {"type": "object"},
+    "category_counts":  {"type": "object"}
+  }
+}

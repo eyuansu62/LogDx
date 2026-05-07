@@ -1,0 +1,47 @@
+{
+  "case_id": "pushpr-nextjs-001",
+  "context_method": "rtk-log",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because a git push to GitHub could not be completed due to a network or transport error (exit code 128). The fatal error 'unable to access https://github.com/vercel/next.js/' with 'Unknown system error -128' indicates a transient network failure or a credential/auth issue during the git operation.",
+  "root_cause_category": "network_or_flaky",
+  "root_cause": "A git command failed with exit code 128 and 'Unknown system error -128' when attempting to access 'https://github.com/vercel/next.js/', indicating a transient network or transport failure prevented the git push/access operation from completing.",
+  "confidence": 0.78,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "fatal: unable to access 'https://github.com/vercel/next.js/': T...",
+      "reason": "This is the direct git error indicating the remote repository could not be reached over HTTPS."
+    },
+    {
+      "quote": "Error: Command failed with exit code 128 (Unknown system error -128)...",
+      "reason": "Exit code 128 from git typically signals a fatal git error, often network-related; 'Unknown system error -128' suggests a low-level transport failure."
+    },
+    {
+      "quote": "exitCodeName: 'Unknown system error -128'",
+      "reason": "This non-standard system error code further supports a transient or environmental network issue rather than a configuration or authentication problem."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the overall job step exited with a failure status after the git transport error."
+    }
+  ],
+  "suggested_fix": "Re-run the failed job to determine if this is a transient network issue. If failures persist, check GitHub Actions runner network connectivity and verify that any tokens or credentials used for HTTPS git access are valid and not expired.",
+  "input": {
+    "context_path": "results/holdout/rtk-log/pushpr-nextjs-001.txt",
+    "context_tokens_estimate": 353
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 449
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 25384.812,
+    "cache_key": "9152201f7f43fb0b3ab13c42eac3173a84ba23393ae4b9bb12f3c111763230e3",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

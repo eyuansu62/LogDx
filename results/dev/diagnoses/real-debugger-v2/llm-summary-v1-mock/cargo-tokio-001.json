@@ -1,0 +1,51 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed with exit code 100 due to trybuild compile-fail test mismatches in `tests/fail/macros_type_mismatch.rs`. Multiple `E0271` type errors about async block future return types were emitted, indicating the actual compiler output does not match the stored `.stderr` snapshot files expected by the trybuild harness.",
+  "root_cause_category": "compile_error",
+  "root_cause": "Trybuild compile-fail tests in `tests/fail/macros_type_mismatch.rs` produced `E0271` type mismatch errors whose output does not match the expected `.stderr` snapshot files, causing the trybuild test harness to exit with code 100.",
+  "confidence": 0.68,
+  "relevant_files": [
+    "tests/fail/macros_type_mismatch.rs"
+  ],
+  "relevant_tests": [
+    "tests/fail/macros_type_mismatch.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
+      "reason": "This is an E0271 type mismatch compile error emitted from a trybuild compile-fail test file; the `$DIR` placeholder is characteristic of trybuild's output substitution, indicating the expected .stderr snapshot did not match."
+    },
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:8:1: 8:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
+      "reason": "A second E0271 error from the same trybuild test file, confirming multiple snapshot mismatches in the same file."
+    },
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:13:1: 13:15}` to be a future that resolves to `Result<(), ()>`, but it resolves to `()`",
+      "reason": "A third E0271 error from the same file showing a different type mismatch direction, consistent with trybuild .stderr snapshot drift across multiple test cases."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 100.",
+      "reason": "Exit code 100 is the standard cargo test failure exit code, confirming the test run itself failed rather than a build or setup step."
+    }
+  ],
+  "suggested_fix": "Update the trybuild `.stderr` snapshot files for `tests/fail/macros_type_mismatch.rs` to match the current Rust compiler's E0271 error output (e.g., by running `TRYBUILD=overwrite cargo test` or deleting the stale `.stderr` files and re-running the tests to regenerate them).",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-mock/cargo-tokio-001.txt",
+    "context_tokens_estimate": 2264
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 588
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 52146.56,
+    "cache_key": "b2b97c3cbd2abfbc311c675f84b0df2bf2f47422bc81ef7db12c658f9ed2358d",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

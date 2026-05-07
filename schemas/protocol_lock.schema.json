@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CILogBench protocol lock",
+  "description": "Machine-readable freeze of a protocol version. Stored under protocols/<protocol_id>.lock.json. Every locked file is recorded by SHA-256 so `tools/validate_protocol_lock.py` can detect drift.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "protocol_id", "created_at", "splits",
+    "schemas", "prompts", "evaluators",
+    "baselines", "scoring"
+  ],
+  "properties": {
+    "protocol_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9.-]*[a-z0-9]$",
+      "description": "e.g. cilogbench-v1."
+    },
+    "created_at": {"type": "string"},
+    "regenerated": {"type": "boolean", "default": false},
+    "splits": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["path", "case_count", "manifest_path"],
+        "properties": {
+          "path": {"type": "string"},
+          "case_count": {"type": "integer", "minimum": 0},
+          "manifest_path": {"type": "string"}
+        }
+      }
+    },
+    "schemas": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["path", "sha256"],
+        "properties": {
+          "path":   {"type": "string"},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    },
+    "prompts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["path", "sha256"],
+        "properties": {
+          "path":   {"type": "string"},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    },
+    "evaluators": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["path", "sha256"],
+        "properties": {
+          "path":   {"type": "string"},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    },
+    "baselines": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "enabled":         {"type": "boolean"},
+          "tail_lines":      {"type": "integer"},
+          "regex":           {"type": "string"},
+          "before":          {"type": "integer"},
+          "after":           {"type": "integer"},
+          "external_tool":   {"type": "string"},
+          "version_policy":  {"type": "string"}
+        }
+      }
+    },
+    "scoring": {
+      "type": "object",
+      "required": ["signal_recall_version", "diagnosis_eval_version"],
+      "properties": {
+        "signal_recall_version":        {"type": "string"},
+        "diagnosis_eval_version":       {"type": "string"},
+        "diagnosis_score_v1_experimental": {"type": "boolean"}
+      }
+    }
+  }
+}

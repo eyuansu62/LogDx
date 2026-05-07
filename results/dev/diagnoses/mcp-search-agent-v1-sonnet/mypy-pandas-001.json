@@ -1,0 +1,60 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "mcp-search-agent-v1-sonnet",
+  "diagnoser": "mcp-search-agent-v1-sonnet",
+  "diagnoser_name": "mcp-search-agent-v1-sonnet",
+  "mode": "root_cause_diagnosis",
+  "summary": "The mypy type-checking step failed due to multiple `attr-defined` and `no-untyped-call` errors. Mypy reported that several PyArrow compute functions (e.g., `assume_timezone`, `utf8_capitalize`, `is_in`, `count_substring_regex`, `is_null`, `or_kleene`, `not_equal`, `list_value_length`, `max`, `min`, `list_slice`, `list_flatten`) are not found as attributes of their respective modules, and pyarrow's `write_feather`/`read_table` are untyped functions called in a typed context.",
+  "root_cause_category": "type_error",
+  "root_cause": "Mypy found missing attributes on PyArrow compute modules and untyped pyarrow function calls in pandas source files, causing the mypy step to exit with code 1.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "pandas/core/arrays/arrow/array.py",
+    "pandas/core/arrays/string_arrow.py",
+    "pandas/core/strings/accessor.py",
+    "pandas/io/feather_format.py"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "pandas/core/arrays/arrow/array.py:3551: error: Module has no attribute \"assume_timezone\"  [attr-defined]",
+      "reason": "Mypy attr-defined error showing a PyArrow compute function is not recognized"
+    },
+    {
+      "quote": "pandas/core/arrays/string_arrow.py:237: error: Module has no attribute \"utf8_capitalize\"  [attr-defined]",
+      "reason": "Missing attribute on PyArrow compute module"
+    },
+    {
+      "quote": "pandas/io/feather_format.py:70: error: Call to untyped function \"write_feather\" in typed context  [no-untyped-call]",
+      "reason": "PyArrow's write_feather lacks type stubs, causing a no-untyped-call mypy error"
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the mypy step failed with a non-zero exit code"
+    }
+  ],
+  "suggested_fix": "Update the type stubs or inline type annotations for PyArrow compute functions used in pandas (e.g., add `# type: ignore[attr-defined]` or update to a PyArrow version with complete type stubs). Alternatively, update the mypy configuration to ignore specific missing-attribute errors for the pyarrow.compute module until upstream stubs are available.",
+  "input": {
+    "context_path": "cases/dev/mypy-pandas-001/raw.log",
+    "context_sha256": "",
+    "prompt_sha256": "ade615ac3768fe29e504357b83bac8bef99cb4c893fe795df167c5051da19d6e",
+    "context_tokens_estimate": 8461
+  },
+  "usage": {
+    "output_tokens_estimate": 892
+  },
+  "metadata": {
+    "method_type": "end_to_end_search_agent",
+    "trace_path": "results/dev/search_agents/mcp-search-agent-v1-sonnet/traces/mypy-pandas-001.json",
+    "tool_call_count": 3,
+    "observed_line_count": 705,
+    "observation_tokens_estimate": 8461,
+    "total_agent_tokens_estimate": 99077,
+    "budget_exhausted": false,
+    "provider_error": null,
+    "runtime_ms": 61647.32825005194,
+    "config_sha256": "fe3eb1c2a45c16fe8deb68126e56f4a272bea876af98fcfd7fb4a802866a72db",
+    "prompt_sha256": "ade615ac3768fe29e504357b83bac8bef99cb4c893fe795df167c5051da19d6e",
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/search_agent_shim_claude_cli.py"
+  }
+}

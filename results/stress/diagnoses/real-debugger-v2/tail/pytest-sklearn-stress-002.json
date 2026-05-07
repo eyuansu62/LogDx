@@ -1,0 +1,51 @@
+{
+  "case_id": "pytest-sklearn-stress-002",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "A doctest in doc/callbacks.rst failed because the expected output shows a rich progress bar rendering ('LogisticRegression - fit ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:03:12') but the actual output is just 'LogisticRegression()'. The doctest was not marked with +SKIP unlike the preceding set_callbacks line, so it executed and produced the estimator repr instead of the progress bar display.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The doctest at line 48 of doc/callbacks.rst expects a progress bar string output from estimator.fit(X, y) but receives the default estimator repr 'LogisticRegression()' instead, because the progress bar callback was registered with '# doctest: +SKIP' on the set_callbacks line (line 39), meaning the callback was never actually attached before fit was called.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "doc/callbacks.rst"
+  ],
+  "relevant_tests": [
+    "callbacks.rst::callbacks.rst"
+  ],
+  "evidence": [
+    {
+      "quote": "FAILED ../doc/callbacks.rst::callbacks.rst",
+      "reason": "Confirms the failing test identifier and file"
+    },
+    {
+      "quote": "039     >>> estimator.set_callbacks(progress_bar) # doctest: +SKIP",
+      "reason": "The set_callbacks call is skipped, so the callback is never registered"
+    },
+    {
+      "quote": "Expected:\n    LogisticRegression - fit ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:03:12\nGot:\n    LogisticRegression()",
+      "reason": "Shows the exact mismatch: expected progress bar output but got plain estimator repr because the callback was not set up"
+    },
+    {
+      "quote": "/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst:48: DocTestFailure",
+      "reason": "Pinpoints the exact line where the doctest assertion fails"
+    }
+  ],
+  "suggested_fix": "Add '# doctest: +SKIP' to the estimator.fit(X, y) line (line 48 of doc/callbacks.rst), or add a '# doctest: +ELLIPSIS' directive and change the expected output to match the actual repr, consistent with the TODO comment on line 41 indicating the skip should be removed later.",
+  "input": {
+    "context_path": "results/stress/tail/pytest-sklearn-stress-002.txt",
+    "context_tokens_estimate": 11251
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 493
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 19811.037,
+    "cache_key": "ab0976bd967c1493aaae7c1bf9361980228cf895f64d7a017ec54757ac87de97",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "case_id": "pytest-pandas-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Pytest test collection is failing due to DeprecationWarnings about NumPy's deprecated 'generic' unit for timedelta that are being treated as errors. Multiple test files cannot be collected because code or test imports are raising these warnings when running against the numpy-nightly build.",
+  "root_cause_category": "other",
+  "root_cause": "Pandas code or test code is using NumPy's deprecated 'generic' unit for timedelta, which triggers DeprecationWarnings during test collection. In the numpy-nightly environment, these warnings are being treated as errors, preventing test collection from completing.",
+  "confidence": 0.8,
+  "relevant_files": [
+    "pandas/tests/arrays/masked/test_indexing.py",
+    "pandas/tests/arrays/test_timedeltas.py",
+    "pandas/tests/dtypes/test_inference.py",
+    "pandas/tests/dtypes/test_missing.py",
+    "pandas/tests/util/test_assert_almost_equal.py",
+    "pandas/tests/util/test_assert_index_equal.py"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "ERROR collecting pandas/tests/arrays/masked/test_indexing.py",
+      "reason": "Test collection is failing for multiple test modules"
+    },
+    {
+      "quote": "DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers",
+      "reason": "The specific deprecation warning causing collection errors is about NumPy timedelta's 'generic' unit"
+    },
+    {
+      "quote": "job_name: \"Numpy Nightly\"",
+      "reason": "The job is specifically testing against numpy-nightly, which has stricter deprecation handling"
+    },
+    {
+      "quote": "Process completed with exit code 1",
+      "reason": "Job failed with non-zero exit code due to collection errors"
+    }
+  ],
+  "suggested_fix": "Update pandas code and test code to use explicit timedelta units instead of the deprecated 'generic' unit, or suppress the DeprecationWarning during test collection if the usage is intentional for compatibility testing.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-mock/pytest-pandas-001.txt",
+    "context_tokens_estimate": 2056
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 476
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 23850.614,
+    "cache_key": "8af9d8f81e3222484a3033c00a1db6e6cdac65a597219e4aba9deb5ce399d938",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

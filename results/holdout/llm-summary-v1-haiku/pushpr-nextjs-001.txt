@@ -1,0 +1,41 @@
+# CI Failure Summary
+
+## Primary Failure
+
+A GitHub Actions workflow executing `sync-react.js` failed at the git push stage with a 403 authentication error. The nextjs-bot user was denied push permission to the vercel/next.js repository when attempting to push an update branch for React 19.3.0-canary.
+
+## Critical Evidence
+
+- `An error occurred while minifying. The result will not be minified.` (L000886)
+- `git push origin update/react/19.3.0-canary-142cfde8-20260422` (L001000)
+- `exit code 128` (L001001)
+- `remote: Permission to vercel/next.js.git denied to nextjs-bot.` (L001004)
+- `fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403` (L001005)
+- `ncc: Version 0.34.0` (L000566+)
+
+## Failed Tests / Checks
+
+- _(none identified)_
+
+## Relevant Files and Locations
+
+- `/home/runner/work/next.js/next.js/scripts/sync-react.js:645`
+- `/home/runner/work/next.js/next.js/node_modules/.pnpm/execa@2.0.3/node_modules/execa/lib/error.js:58`
+
+## Commands and Exit Codes
+
+- `ncc` minification (version 0.34.0)
+- `git push origin update/react/19.3.0-canary-142cfde8-20260422` — **exit code 128**
+- Overall job — **exit code 1**
+
+## Possible Root Cause
+
+The GitHub credentials used by nextjs-bot have insufficient permissions or are invalid/expired, preventing authentication to the vercel/next.js repository. The HTTP 403 error indicates authentication failure rather than network issues.
+
+## Uncertainties / Missing Context
+
+- Whether the minification error (L000886) caused downstream issues or is unrelated
+- Current permission status of the nextjs-bot user on vercel/next.js
+- Whether credentials were recently rotated or revoked
+- Whether this represents a new failure or regression in the sync-react workflow
+- Whether the token requires elevation or scoping adjustment

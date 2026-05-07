@@ -1,0 +1,47 @@
+{
+  "case_id": "docbuild-hf-stress-001",
+  "context_method": "raw",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The `doc_build_status_check` job is a gate that exits 1 whenever an upstream documentation build job reports a non-success, non-skipped status. The interpolated condition shows the upstream doc build job has status `\"failure\"`, causing the first clause of the guard to evaluate false and the job to call `exit 1`.",
+  "root_cause_category": "other",
+  "root_cause": "An upstream documentation build job finished with status 'failure'. The status-check gate script received that status interpolated as the literal string \"failure\", which satisfies neither '== \"success\"' nor '== \"skipped\"', so the script falls through to `exit 1`.",
+  "confidence": 0.92,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\",
+      "reason": "The upstream doc-build job status has been interpolated as the literal string 'failure'; neither equality check can be true, so the overall condition is false."
+    },
+    {
+      "quote": "exit 1",
+      "reason": "The else branch executes `exit 1` precisely when the upstream job did not succeed or was not skipped, confirming the job fails because the upstream build failed."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the script exited with code 1, consistent with the false guard condition caused by the upstream 'failure' status."
+    },
+    {
+      "quote": "workflow_name: \"Build documentation\"",
+      "reason": "Identifies this as the documentation build workflow, confirming the upstream failure is in the doc-build pipeline."
+    }
+  ],
+  "suggested_fix": "Investigate and fix the upstream documentation build job that returned status 'failure'. The status-check gate is working as intended — once the upstream doc build job passes, this gate will automatically pass too.",
+  "input": {
+    "context_path": "results/stress/raw/docbuild-hf-stress-001.txt",
+    "context_tokens_estimate": 606
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 449
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 43528.075,
+    "cache_key": "3a135e8f7a2b7fd9a28942e026106666914ebdc23037e8f5bdfb767980c221c1",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

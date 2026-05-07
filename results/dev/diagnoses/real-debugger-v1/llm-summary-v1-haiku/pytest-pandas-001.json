@@ -1,0 +1,63 @@
+{
+  "case_id": "pytest-pandas-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "NumPy has deprecated implicit conversion of bare integers to timedeltas with unspecified units. Pandas code uses patterns that trigger DeprecationWarnings, which are being treated as errors, causing 45 test failures and 52 errors.",
+  "root_cause_category": "other",
+  "root_cause": "NumPy API deprecation: implicit conversion of bare integers to timedelta64 with unspecified units is deprecated. Pandas code in pandas/core/internals/concat.py and pandas/core/reshape/concat.py uses patterns like `np.datetime64(\"NaT\")` and arithmetic operations (e.g., `+ 1`) that trigger DeprecationWarnings, which are treated as errors by the test framework.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "pandas/core/internals/concat.py",
+    "pandas/core/reshape/concat.py",
+    "pandas/tests/reshape/concat/test_datetimes.py",
+    "pandas/tests/arithmetic/test_datetime64.py"
+  ],
+  "relevant_tests": [
+    "TestDatetimeIndexComparisons.test_dti_cmp_nat_behaves_like_float_cmp_nan",
+    "TestAppend.test_append_dtype_coerce",
+    "TestCategoricalConcat.test_concat_categorical_datetime",
+    "TestDatetimeConcat.test_concat_NaT_dataframes",
+    "test_concat_datetime64_different_resolutions",
+    "TestTimedeltaAdditionSubtraction.test_td_rsub_nat"
+  ],
+  "evidence": [
+    {
+      "quote": "DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific unit instead.",
+      "reason": "Exact warning appearing repeatedly throughout test execution across multiple test files, indicating systematic deprecation of the implicit conversion pattern."
+    },
+    {
+      "quote": "`np.datetime64(\"NaT\")` is the source of the warning",
+      "reason": "Context explicitly identifies this pattern as the source triggering the deprecation."
+    },
+    {
+      "quote": "= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s",
+      "reason": "Demonstrates the scale of failures (45 failed + 52 errors) indicating a pervasive issue across the test suite."
+    },
+    {
+      "quote": "Either pytest is configured to treat warnings as errors (via `-W error` or `filterwarnings = error` in setup.cfg/pytest.ini), or NumPy's deprecation has been upgraded to an error in the version being tested.",
+      "reason": "Context acknowledges that warnings are being treated as errors, making them fail the test suite."
+    },
+    {
+      "quote": "pandas/core/internals/concat.py:145, :380, :412",
+      "reason": "Core files identified in the context as triggering the warning in concat/reshape operations handling NaT values."
+    }
+  ],
+  "suggested_fix": "Update pandas code to explicitly specify timedelta units instead of relying on implicit conversion. Replace patterns in concat.py and internals/concat.py with explicit unit specifications, e.g., use `np.datetime64(\"NaT\", 'ns')` instead of `np.datetime64(\"NaT\")` to comply with NumPy's deprecation requirements.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-haiku/pytest-pandas-001.txt",
+    "context_tokens_estimate": 1335
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 713
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 42883.33,
+    "cache_key": "3c08011016e712928ab424f66b2bd98f2b5df9621d57211d79df12223e234eea",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

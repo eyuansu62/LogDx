@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CILogBench case.json",
+  "description": "Describes the input for a benchmark case. Must not contain the answer.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "case_id",
+    "repo",
+    "source",
+    "framework",
+    "failure_category",
+    "raw_log_path",
+    "line_count",
+    "byte_size"
+  ],
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+      "description": "Lowercase, hyphen-separated. Should match the containing directory name."
+    },
+    "repo": {
+      "type": "string",
+      "description": "owner/repo when source=github_actions; free-form when local."
+    },
+    "source": {
+      "type": "string",
+      "enum": ["github_actions", "local_fixture", "unknown"]
+    },
+    "framework": {
+      "type": "string",
+      "enum": [
+        "pytest", "jest", "cargo", "npm", "pnpm", "yarn",
+        "docker", "ruff", "eslint", "tsc", "generic", "unknown"
+      ]
+    },
+    "failure_category": {
+      "type": "string",
+      "enum": [
+        "test_assertion", "snapshot_diff", "compile_error", "type_error",
+        "lint_error", "dependency_install", "docker_build",
+        "github_actions_config", "permission_or_secret",
+        "timeout_or_oom", "network_or_flaky", "generic_error", "unknown"
+      ]
+    },
+    "raw_log_path": {
+      "type": "string",
+      "description": "Path to raw.log, relative to the case directory."
+    },
+    "line_count": {"type": "integer", "minimum": 0},
+    "byte_size":  {"type": "integer", "minimum": 0},
+    "workflow_name": {"type": "string"},
+    "job_name":      {"type": "string"},
+    "notes":         {"type": "string"}
+  }
+}

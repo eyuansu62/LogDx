@@ -1,0 +1,52 @@
+{
+  "case_id": "tsc-typescript-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "A fourslash test for code fix generation failed with an assertion error: the code fix suggestion for a missing type annotation generated a simplified generic type `Foo<string>` instead of the expected `Foo<string, string[…]`, indicating a regression in the type annotation code fix logic.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The test `fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts` failed because the actual code fix message produced (`'Add return type \\'Foo<string>\\''`) does not match the expected message (`'Add return type \\'Foo<string, string[…'`). This indicates the code fix for missing type annotations is oversimplifying generic types.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts",
+    "src/harness/fourslashImpl.ts"
+  ],
+  "relevant_tests": [
+    "fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts"
+  ],
+  "evidence": [
+    {
+      "quote": "AssertionError: expected 'Add return type \\'Foo<string>\\'' to equal 'Add return type \\'Foo<string, string[…'",
+      "reason": "Explicit assertion failure showing the actual vs. expected code fix message, indicating the fix is generating a simplified type annotation instead of the full generic type."
+    },
+    {
+      "quote": "at _TestState.verifyCodeFix (src/harness/fourslashImpl.ts:3435:20)",
+      "reason": "Stack trace pinpoints the exact assertion location in the fourslash test verification code."
+    },
+    {
+      "quote": "tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts",
+      "reason": "Test file name explicitly includes 'generics-oversimplification', confirming the test is checking for proper handling of generic type parameters in code fixes."
+    },
+    {
+      "quote": "Error: Process exited with code: 1",
+      "reason": "The test process exited with failure code 1 after encountering the assertion error."
+    }
+  ],
+  "suggested_fix": "Review and either (1) update the test expectations in codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts if the simplified output is correct, or (2) fix the code fix logic in the type annotation handler to generate the full generic type `Foo<string, string[…]>` instead of the oversimplified `Foo<string>`.",
+  "input": {
+    "context_path": "results/holdout/hybrid-grep-4k-rtk-err-cat-v1/tsc-typescript-001.txt",
+    "context_tokens_estimate": 953
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 572
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 22290.248,
+    "cache_key": "01667160090d069c2221996351da366423c57206b79db82e4ea03814dd4d92a1",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}
