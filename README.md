@@ -234,20 +234,29 @@ to let the numbers pick.
   - Tooling: `tools/validate_case_tags.py` accepts `v2/dev`,
     `v2/holdout`, `v2/stress`, `v1.3`, `v2`, `all`; case importer
     already handled nested splits.
-  - Cases collected so far: **9 / 34** new (16 / 16 legacy tagged
-    `origin=legacy_v1_3`; validator clean). Batch 1 (3/3) ✓ and
-    Batch 2 (5/5) ✓ both complete. Batch 3: 1/2 (v2/stress case 1
-    landed). v2/dev 3/3 ✓, v2/holdout 5/4 (slightly over-target),
-    v2/stress 1/3.
-  - First v2/stress case: `cases/v2/stress/numpy-pytest-segfault-argsort-v2-001/`
-    — process-crash (`Fatal Python error: Segmentation fault`)
-    inside `test_datetime_nat_argsort_stability` on numpy's
-    `reverse-sorts` perf branch. Different evidence shape from
-    any v1.3/prior-v2 case (no assertion diff, no FAIL marker,
-    no compile error block — just a crash + Python traceback into
-    a C extension). Fills the v2/stress "unusual evidence format"
-    criterion. `requires_repo_context = true` (the log can pinpoint
-    where but not why).
+  - Cases collected so far: **10 / 34** new ✓ Phase 2 10-case
+    checkpoint hit. (16 / 16 legacy tagged `origin=legacy_v1_3`.)
+    Batch 1 (3/3) ✓, Batch 2 (5/5) ✓, Batch 3 (2/2) ✓.
+    v2/dev 3/3 ✓, v2/holdout 5/4 (slightly over-target),
+    v2/stress 2/3.
+  - v2/stress cases (process-crash + matrix shape):
+    1. `cases/v2/stress/numpy-pytest-segfault-argsort-v2-001/`
+       — `Fatal Python error: Segmentation fault` inside
+       `test_datetime_nat_argsort_stability` on numpy's
+       `reverse-sorts` perf branch. Process-crash format, exit 245.
+       `requires_repo_context = true`.
+    2. `cases/v2/stress/cpython-tcl-windows-matrix-v2-001/`
+       — first v2 `matrix_or_monorepo_failure`. cpython's
+       `update_windows_tcltk` broke Unicode surrogate handling
+       in the bundled tcltk: ALL 7 Windows configs fail with the
+       same `AssertionError: '<💻>' != '<ðŸ’»>'` while
+       ALL Linux/macOS variants pass. `multi_failure = true`.
+  - **NB:** the `cilogbench-v2-partial.lock.json` (8 cases) is
+    intentionally NOT regenerated for the 10-case state — it is
+    the snapshot under which the Phase 3 reports' headline numbers
+    were measured. The 9th and 10th cases ship under v2 corpus
+    growth, not under that lock. A `cilogbench-v2-checkpoint`
+    lock can be minted later for citing 10-case-state results.
   - 🚨 **Phase 3 (partial) finding** — v1.3 methods do NOT generalize
     to v2. Confirmed using BOTH the deterministic `signal-recall`
     proxy AND the calibrated `diagnosis_score_v1_1` metric (with

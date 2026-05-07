@@ -1,0 +1,30 @@
+{
+  "case_id": "cpython-tcl-windows-matrix-v2-001",
+  "split": "v2/stress",
+  "origin": "new_v2",
+  "ecosystem": "python-pytest",
+  "primary_language": "python",
+  "ci_provider": "github_actions",
+  "repo_visibility": "public",
+  "failure_category": "matrix_or_monorepo_failure",
+  "framework": "pytest",
+  "log_size_bucket": "medium",
+  "signal_position": "late",
+  "evidence_formats": [
+    "assertion_diff",
+    "traceback",
+    "ansi_colored_block",
+    "github_annotation",
+    "matrix_summary"
+  ],
+  "noise_profile": [
+    "runner_setup",
+    "verbose_build_noise",
+    "test_progress_noise"
+  ],
+  "multi_failure": true,
+  "flaky_or_transient": false,
+  "requires_repo_context": false,
+  "diagnosis_difficulty": "medium",
+  "notes": "category mismatch justified: this case's failure_category in case.json/ground_truth.json is `test_assertion` because case.schema.json's enum doesn't yet include `matrix_or_monorepo_failure` — that v2 category is only in case_tags.schema.json. Setting tags.failure_category=matrix_or_monorepo_failure surfaces the true v2-flavored shape. The matrix structure IS the salient feature: ALL 7 Windows configs (x64/Win32/arm64 × default/free-threading × switch-case/tail-call) fail uniformly while ALL Linux/macOS variants pass, because the bundled-on-Windows-only tcltk update broke Unicode surrogate handling. Linux/macOS use system tcl/tk and aren't affected. multi_failure=true (2 distinct test_tcl tests fail with the same root cause). First v2 case using `matrix_summary` evidence_format (the `1 test failed: test_tcl` runner summary block) and first v2 case in matrix_or_monorepo_failure category."
+}

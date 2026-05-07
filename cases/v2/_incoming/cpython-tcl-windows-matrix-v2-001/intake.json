@@ -1,0 +1,20 @@
+{
+  "candidate_id": "cpython-tcl-windows-matrix-v2-001",
+  "source": "github_actions",
+  "source_url": "https://github.com/python/cpython/actions/runs/25473514383/job/74742066692",
+  "repo": "python/cpython",
+  "head_branch": "update_windows_tcltk",
+  "head_sha": null,
+  "workflow_name": "Tests",
+  "job_name": "Windows / Build and test (x64, switch-case)",
+  "ecosystem_guess": "python-pytest",
+  "framework_guess": "pytest",
+  "failure_category_guess": "matrix_or_monorepo_failure",
+  "public_source": true,
+  "raw_log_path": "cases/v2/_incoming/cpython-tcl-windows-matrix-v2-001/raw.log",
+  "raw_log_normalization": "pulled via `rtk proxy gh run view --job <id> --log` and stripped the leading <job>\\t<step>\\t prefix per line.",
+  "collected_at": "2026-05-07",
+  "collector": "project_author",
+  "intended_split": "v2/stress",
+  "notes": "Matrix-shaped failure on cpython's update_windows_tcltk branch. All 7 Windows configs failed (x64/Win32/arm64 × default/free-threading × switch-case/tail-call); all Linux/macOS variants passed (35 successes / 8 failures / 2 skipped in the parent run). The failing job is the canonical x64 switch-case Windows leg. test_tcl has 2 distinct failures: test_eval_surrogates_in_result (test_tcl.py:57) and test_evalfile_surrogates_in_result (test_tcl.py:292) — both AssertionError where `tcl.eval(...)` returns UTF-8 mojibake `<ðŸ’»>` instead of the expected surrogate pair `<\\U0001f4bb>`. Root cause is the tcltk update on Windows breaking Unicode surrogate handling — Linux/macOS use system tcl/tk and aren't affected. multi_failure=true (2 distinct test failures sharing one root cause). Selected as Batch 3 case 2 + v2/stress case 2: fills both `matrix_or_monorepo_failure` (was 0/v2) and adds another multi_failure case. case.json uses test_assertion since case.schema.json doesn't yet support matrix_or_monorepo_failure (the v2 extension is only in case_tags.schema.json); tags.json uses matrix_or_monorepo_failure with a 'category mismatch justified' note in tags.notes."
+}

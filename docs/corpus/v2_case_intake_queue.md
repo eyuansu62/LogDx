@@ -39,6 +39,7 @@ rejected            see cases/v2/_rejected/<candidate_id>/rejection_reason.md
 | prettier-jest-snapshot-babel-v2-001 | github_actions | prettier/prettier | javascript-jest | snapshot_or_golden_diff | [run 25139423427 / job 73685543084](https://github.com/prettier/prettier/actions/runs/25139423427/job/73685543084) | accepted | `cases/v2/holdout/`. Privacy audit clean. renovate/babel branch broke 13 jest snapshots across 3 test suites because babel changed `import()` parser-error wording. multi_failure=true, signal_position=**scattered** (first FAIL at L399 ≈17%, summary at L2247 ≈98%; span ≈81%). First v2 case with `snapshot_or_golden_diff` category (fills v1.3 gap, was 0/16) and dominant `snapshot_diff` evidence format. Raw sanity 1.0000 / 1.0000 / 1.0000. Selected as Batch 2 case 4. |
 | pandas-cpp-xsimd-neon64-v2-001 | github_actions | pandas-dev/pandas | c-cpp-cmake | compile_error | [run 25463397447 / job 74710897960](https://github.com/pandas-dev/pandas/actions/runs/25463397447/job/74710897960) | accepted | `cases/v2/holdout/` (5/4 — slightly over-target; v2/stress reserved for truly difficult cases). Privacy audit clean. C++ template-instantiation compile error: `extern template ... operator()<xsimd::neon64>` at moments_simd.hpp:255 doesn't match the primary template's `xsimd::neon` parameter at line 182. clang++ rejects with `error: explicit instantiation of 'operator()' does not refer to a function template`. Two compile units share one root cause; meson+ninja stops, pip metadata-generation fails. macOS-15 / arm64 / Python 3.12 / clang++ -std=c++20. Adds compile_error case (v1.3: 1/16 → 2 in v2), c-cpp-cmake ecosystem (v1.3: 0/16 → 1), primary_language=cpp (first). Raw sanity 1.0000 / 1.0000 / 1.0000. Selected as Batch 2 case 5 (deviation: compile_error rather than originally-targeted timeout/OOM, which is hard to surface via run-list browsing). |
 | numpy-pytest-segfault-argsort-v2-001 | github_actions | numpy/numpy | python-pytest | test_assertion (panic) | [run 25480154290 / job 74762267261](https://github.com/numpy/numpy/actions/runs/25480154290/job/74762267261) | accepted | `cases/v2/stress/` — **first stress case**. Privacy audit clean (complete). Process-crash failure: `Fatal Python error: Segmentation fault` inside `test_datetime_nat_argsort_stability` (test_datetime.py:226 → fromnumeric.py:1231 in argsort) on the `reverse-sorts` perf branch. Pytest faulthandler dumps stack and exits 245. log_size_bucket=large (5553 lines). signal_position=late. requires_repo_context=true (log identifies WHERE the crash is but cannot prove WHY without C source). Different evidence shape from any v1.3 / prior v2 case (no assertion diff, no FAIL marker, no compile error block). Raw sanity 1.0000 / 1.0000 / 1.0000. Selected as Batch 3 case 1 — fills the v2/stress 'unusual evidence format' criterion with process-crash. |
+| cpython-tcl-windows-matrix-v2-001 | github_actions | python/cpython | python-pytest | matrix_or_monorepo_failure | [run 25473514383 / job 74742066692](https://github.com/python/cpython/actions/runs/25473514383/job/74742066692) | accepted | `cases/v2/stress/`. Privacy audit clean (complete). Matrix-shaped: ALL 7 Windows configs fail (x64/Win32/arm64 × default/free-threading × switch-case/tail-call); ALL Linux/macOS variants pass. Branch `update_windows_tcltk` updated bundled tcltk to 9.0.3 → broke Unicode surrogate handling. test_tcl has 2 distinct failures (test_eval_surrogates_in_result test_tcl.py:57 + test_evalfile_surrogates_in_result test_tcl.py:292), both with `AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ’»>'`. multi_failure=true. case.json uses test_assertion (case.schema.json doesn't yet support matrix_or_monorepo_failure); tags.json uses matrix_or_monorepo_failure with 'category mismatch justified' note. log_size_bucket=medium (4349 lines). First v2 case in `matrix_or_monorepo_failure` category (was 0/v2). First v2 use of `matrix_summary` evidence_format. Raw sanity 1.0000 / 1.0000 / 1.0000. Selected as Batch 3 case 2 — completes Phase 2 checkpoint (10/34). |
 
 ## Per-batch progress
 
@@ -88,13 +89,16 @@ Batch 2 (target: +5 cases, 8 total)
   v2/holdout: 5 / 4 (slight over-target by 1; documented in case notes)
 
 Batch 3 (target: +2 cases, 10 total — Phase 2 checkpoint)
-  Fill matrix gaps from cilogbench_v2_case_matrix.md §3 / §4 / §5.
-  Status: 1 / 2 accepted
+  Status: 2 / 2 ✓ Phase 2 checkpoint COMPLETE (10 / 34 total cases)
     accepted (Batch 3 case 1):
       numpy-pytest-segfault-argsort-v2-001 (test_assertion / panic,
         v2/stress) — 100/100/100 — first v2/stress case;
-        process-crash format different from any v1.3 or prior v2
-        case; requires_repo_context=true
+        process-crash format; requires_repo_context=true
+    accepted (Batch 3 case 2):
+      cpython-tcl-windows-matrix-v2-001 (matrix_or_monorepo_failure,
+        v2/stress) — 100/100/100 — first v2 case in this category;
+        first use of `matrix_summary` evidence_format; multi_failure
+        (2 distinct test_tcl tests fail with one root cause).
 ```
 
 ## Rejection counter

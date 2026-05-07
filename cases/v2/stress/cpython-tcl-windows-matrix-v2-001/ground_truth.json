@@ -1,0 +1,105 @@
+{
+  "root_cause": {
+    "summary": "cpython's `update_windows_tcltk` branch updated the Windows-bundled tcltk to 9.0.3 (see L229: `Fetching tcltk-9.0.3.0-unsigned...`). The new tcltk returns UTF-8-encoded mojibake instead of correctly-encoded surrogate pairs when Tcl evaluates a string containing a non-BMP code point. Two test_tcl tests fail with the same shape: `tcl.eval(r'set a \"<\\ud83d\\udcbb>\"')` returns `'<ðŸ’»>'` (UTF-8 bytes interpreted as Latin-1) instead of the expected surrogate pair `'<\\U0001f4bb>'` — `test_eval_surrogates_in_result` (test_tcl.py:57) and `test_evalfile_surrogates_in_result` (test_tcl.py:292). Linux/macOS use system tcl/tk and are unaffected — all non-Windows matrix legs pass. This Windows job exits 2 after a re-run also failed.",
+    "category": "test_assertion"
+  },
+  "required_signals": [
+    {
+      "type": "failed_test",
+      "value": "test_eval_surrogates_in_result (test.test_tcl.TclTest.test_eval_surrogates_in_result)",
+      "file": "Lib/test/test_tcl.py",
+      "line": 57,
+      "importance": "critical",
+      "evidence_lines": [[4022, 4022]]
+    },
+    {
+      "type": "failed_test",
+      "value": "test_evalfile_surrogates_in_result (test.test_tcl.TclTest.test_evalfile_surrogates_in_result)",
+      "file": "Lib/test/test_tcl.py",
+      "line": 292,
+      "importance": "critical",
+      "evidence_lines": [[4034, 4034]]
+    },
+    {
+      "type": "assertion",
+      "value": "AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ’»>'",
+      "aliases": [
+        "tcl.eval(r'set a \"<\\ud83d\\udcbb>\"'), '<\\U0001f4bb>')"
+      ],
+      "importance": "critical",
+      "evidence_lines": [[4028, 4030]]
+    },
+    {
+      "type": "command",
+      "value": "Fetching tcltk-9.0.3.0-unsigned",
+      "importance": "critical",
+      "evidence_lines": [[229, 229]]
+    },
+    {
+      "type": "stack_location",
+      "value": "Lib\\test\\test_tcl.py\", line 57, in test_eval_surrogates_in_result",
+      "file": "Lib/test/test_tcl.py",
+      "line": 57,
+      "importance": "important",
+      "evidence_lines": [[4025, 4025]]
+    },
+    {
+      "type": "exit_code",
+      "value": "exit code 2",
+      "importance": "important",
+      "evidence_lines": [[4324, 4324]]
+    },
+    {
+      "type": "annotation",
+      "value": "##[error]Process completed with exit code 2.",
+      "importance": "important",
+      "evidence_lines": [[4324, 4324]]
+    }
+  ],
+  "relevant_files": [
+    "Lib/test/test_tcl.py"
+  ],
+  "relevant_tests": [
+    "test.test_tcl.TclTest.test_eval_surrogates_in_result",
+    "test.test_tcl.TclTest.test_evalfile_surrogates_in_result"
+  ],
+  "evidence_spans": [
+    {
+      "start_line": 229,
+      "end_line": 229,
+      "reason": "The `Fetching tcltk-9.0.3.0-unsigned...` line confirms this Windows leg downloaded the new tcltk bundle that the branch is updating. Critical context for tying the test failures to the branch's change."
+    },
+    {
+      "start_line": 4021,
+      "end_line": 4031,
+      "reason": "First FAIL block: `FAIL: test_eval_surrogates_in_result`, the file:line in the test source, the failing assertion `tcl.eval(r'set a \"<\\ud83d\\udcbb>\"'), '<\\U0001f4bb>')`, and the literal `AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ’»>'` diff (with `- expected / + received` markers underneath). Self-contained — identifies the test name, file, line, the call, and the encoding mismatch."
+    },
+    {
+      "start_line": 4033,
+      "end_line": 4043,
+      "reason": "Second FAIL block: `test_evalfile_surrogates_in_result` at test_tcl.py:292 with the same `'<\\ud83d\\udcbb>' != '<ðŸ’»>'` shape — establishes the failure is a class of issue (Unicode surrogate handling), not a single-test fluke."
+    },
+    {
+      "start_line": 4314,
+      "end_line": 4324,
+      "reason": "Final test runner summary: `1 re-run test: test_tcl`, `1 test failed: test_tcl`, `Total tests: run=50,658 failures=4`, `Result: FAILURE then FAILURE` (the `then FAILURE` confirms the re-run also failed), and the GHA `##[error]Process completed with exit code 2.`. Confirms the failure is deterministic (re-run did not fix it) and propagated to job exit code."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "test_tcl",
+      "tcltk",
+      "surrogate",
+      "Windows"
+    ],
+    "must_not_claim": [
+      "compile error",
+      "permission denied",
+      "network failure",
+      "out of memory",
+      "the test source code is wrong",
+      "Linux is also affected",
+      "this is a flaky test"
+    ]
+  }
+}
