@@ -1,0 +1,98 @@
+{
+  "root_cause": {
+    "summary": "The numpy `Linux tests / smoke_test (3.12)` job crashed with a segmentation fault inside `test_datetime_nat_argsort_stability` (numpy/_core/tests/test_datetime.py:226). The test calls `argsort()` on a NaT-containing datetime array; numpy's C extension (reached via `_wrapfunc` → `argsort` in `numpy/_core/fromnumeric.py`) segfaulted. pytest's faulthandler caught the crash, dumped a Python traceback into the test frame, and the worker exited with status 245. The job is on the `reverse-sorts` perf branch — strongly consistent with a regression in the new sort code path being exercised by NaT values. The log alone identifies WHERE the crash occurred (test name, file:line, argsort call) but cannot prove WHY without the C source for the modified sort implementation; `requires_repo_context` is therefore `true`.",
+    "category": "test_assertion"
+  },
+  "required_signals": [
+    {
+      "type": "panic",
+      "value": "Fatal Python error: Segmentation fault",
+      "importance": "critical",
+      "evidence_lines": [[5462, 5462]]
+    },
+    {
+      "type": "failed_test",
+      "value": "test_datetime_nat_argsort_stability",
+      "file": "numpy/_core/tests/test_datetime.py",
+      "line": 226,
+      "importance": "critical",
+      "evidence_lines": [[5467, 5467]]
+    },
+    {
+      "type": "stack_location",
+      "value": "test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
+      "file": "numpy/_core/tests/test_datetime.py",
+      "line": 226,
+      "importance": "critical",
+      "evidence_lines": [[5467, 5467]]
+    },
+    {
+      "type": "stack_location",
+      "value": "fromnumeric.py\", line 1231 in argsort",
+      "file": "numpy/_core/fromnumeric.py",
+      "line": 1231,
+      "importance": "important",
+      "evidence_lines": [[5466, 5466]]
+    },
+    {
+      "type": "command",
+      "value": "pytest -m 'not slow' --durations=10 --timeout=600",
+      "importance": "important",
+      "evidence_lines": [[5391, 5391]]
+    },
+    {
+      "type": "exit_code",
+      "value": "exit code 245",
+      "importance": "important",
+      "evidence_lines": [[5502, 5502]]
+    },
+    {
+      "type": "annotation",
+      "value": "##[error]Process completed with exit code 245.",
+      "importance": "important",
+      "evidence_lines": [[5502, 5502]]
+    }
+  ],
+  "relevant_files": [
+    "numpy/_core/tests/test_datetime.py",
+    "numpy/_core/fromnumeric.py"
+  ],
+  "relevant_tests": [
+    "numpy/_core/tests/test_datetime.py::test_datetime_nat_argsort_stability"
+  ],
+  "evidence_spans": [
+    {
+      "start_line": 5391,
+      "end_line": 5391,
+      "reason": "The pytest invocation showing the command, arg flags (-m 'not slow', --timeout=600), and Python interpreter path. Establishes that the test was run normally and not under sanitizers."
+    },
+    {
+      "start_line": 5462,
+      "end_line": 5500,
+      "reason": "The full crash block: `Fatal Python error: Segmentation fault` on the same line as the pytest dot-progress for test_datetime.py, followed by `Current thread <addr> (most recent call first):` and the Python-side traceback into _wrapfunc → argsort → test_datetime_nat_argsort_stability and the pytest plumbing frames. This block alone identifies the failing test name, file, line, and the failing operation (argsort)."
+    },
+    {
+      "start_line": 5502,
+      "end_line": 5502,
+      "reason": "GHA `##[error]Process completed with exit code 245.` annotation that closes the failing job. Exit 245 is pytest's signal-killed exit code; combined with the Fatal-Python-error block above, this confirms the crash propagated to the job exit code."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "test_datetime_nat_argsort_stability",
+      "Segmentation fault",
+      "argsort",
+      "test_datetime.py"
+    ],
+    "must_not_claim": [
+      "the test assertion failed",
+      "Python interpreter is broken",
+      "import error",
+      "type error",
+      "permission denied",
+      "out of memory",
+      "compile error",
+      "the test source code is wrong"
+    ]
+  }
+}

@@ -234,11 +234,20 @@ to let the numbers pick.
   - Tooling: `tools/validate_case_tags.py` accepts `v2/dev`,
     `v2/holdout`, `v2/stress`, `v1.3`, `v2`, `all`; case importer
     already handled nested splits.
-  - Cases collected so far: **8 / 34** new (16 / 16 legacy tagged
+  - Cases collected so far: **9 / 34** new (16 / 16 legacy tagged
     `origin=legacy_v1_3`; validator clean). Batch 1 (3/3) ✓ and
-    Batch 2 (5/5) ✓ both complete. v2/dev 3/3 ✓, v2/holdout 5/4
-    (slightly over-target; v2/stress reserved for "deliberately
-    difficult" cases per plan, currently 0/3).
+    Batch 2 (5/5) ✓ both complete. Batch 3: 1/2 (v2/stress case 1
+    landed). v2/dev 3/3 ✓, v2/holdout 5/4 (slightly over-target),
+    v2/stress 1/3.
+  - First v2/stress case: `cases/v2/stress/numpy-pytest-segfault-argsort-v2-001/`
+    — process-crash (`Fatal Python error: Segmentation fault`)
+    inside `test_datetime_nat_argsort_stability` on numpy's
+    `reverse-sorts` perf branch. Different evidence shape from
+    any v1.3/prior-v2 case (no assertion diff, no FAIL marker,
+    no compile error block — just a crash + Python traceback into
+    a C extension). Fills the v2/stress "unusual evidence format"
+    criterion. `requires_repo_context = true` (the log can pinpoint
+    where but not why).
   - 🚨 **Phase 3 (partial) finding** — v1.3 methods do NOT generalize
     to v2. Confirmed using BOTH the deterministic `signal-recall`
     proxy AND the calibrated `diagnosis_score_v1_1` metric (with

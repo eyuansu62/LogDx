@@ -38,6 +38,7 @@ rejected            see cases/v2/_rejected/<candidate_id>/rejection_reason.md
 | biome-pnpm-not-found-v2-001 | github_actions | biomejs/biome | rust-cargo | github_actions_config | [run 25469302190 / job 74729494217](https://github.com/biomejs/biome/actions/runs/25469302190/job/74729494217) | accepted | `cases/v2/holdout/`. Privacy audit clean. Workflow runs `just gen-all` → `pnpm format` but `pnpm` is not installed in the runner (`sh: 1: pnpm: not found`, exit 127). 5-line failure block (L15763-15767) at the end of a 15802-line log; bulk is cargo-binstall enumerating 200+ Rust crates. Raw sanity 1.0000 / 1.0000 / 1.0000. Adds github_actions_config case (v1.3 had 1/16 → v2 has 2). Selected as Batch 2 case 3 (deviation: github_actions_config rather than snapshot diff or timeout/OOM — those are harder to surface via run-list browsing without targeted searches). |
 | prettier-jest-snapshot-babel-v2-001 | github_actions | prettier/prettier | javascript-jest | snapshot_or_golden_diff | [run 25139423427 / job 73685543084](https://github.com/prettier/prettier/actions/runs/25139423427/job/73685543084) | accepted | `cases/v2/holdout/`. Privacy audit clean. renovate/babel branch broke 13 jest snapshots across 3 test suites because babel changed `import()` parser-error wording. multi_failure=true, signal_position=**scattered** (first FAIL at L399 ≈17%, summary at L2247 ≈98%; span ≈81%). First v2 case with `snapshot_or_golden_diff` category (fills v1.3 gap, was 0/16) and dominant `snapshot_diff` evidence format. Raw sanity 1.0000 / 1.0000 / 1.0000. Selected as Batch 2 case 4. |
 | pandas-cpp-xsimd-neon64-v2-001 | github_actions | pandas-dev/pandas | c-cpp-cmake | compile_error | [run 25463397447 / job 74710897960](https://github.com/pandas-dev/pandas/actions/runs/25463397447/job/74710897960) | accepted | `cases/v2/holdout/` (5/4 — slightly over-target; v2/stress reserved for truly difficult cases). Privacy audit clean. C++ template-instantiation compile error: `extern template ... operator()<xsimd::neon64>` at moments_simd.hpp:255 doesn't match the primary template's `xsimd::neon` parameter at line 182. clang++ rejects with `error: explicit instantiation of 'operator()' does not refer to a function template`. Two compile units share one root cause; meson+ninja stops, pip metadata-generation fails. macOS-15 / arm64 / Python 3.12 / clang++ -std=c++20. Adds compile_error case (v1.3: 1/16 → 2 in v2), c-cpp-cmake ecosystem (v1.3: 0/16 → 1), primary_language=cpp (first). Raw sanity 1.0000 / 1.0000 / 1.0000. Selected as Batch 2 case 5 (deviation: compile_error rather than originally-targeted timeout/OOM, which is hard to surface via run-list browsing). |
+| numpy-pytest-segfault-argsort-v2-001 | github_actions | numpy/numpy | python-pytest | test_assertion (panic) | [run 25480154290 / job 74762267261](https://github.com/numpy/numpy/actions/runs/25480154290/job/74762267261) | accepted | `cases/v2/stress/` — **first stress case**. Privacy audit clean (complete). Process-crash failure: `Fatal Python error: Segmentation fault` inside `test_datetime_nat_argsort_stability` (test_datetime.py:226 → fromnumeric.py:1231 in argsort) on the `reverse-sorts` perf branch. Pytest faulthandler dumps stack and exits 245. log_size_bucket=large (5553 lines). signal_position=late. requires_repo_context=true (log identifies WHERE the crash is but cannot prove WHY without C source). Different evidence shape from any v1.3 / prior v2 case (no assertion diff, no FAIL marker, no compile error block). Raw sanity 1.0000 / 1.0000 / 1.0000. Selected as Batch 3 case 1 — fills the v2/stress 'unusual evidence format' criterion with process-crash. |
 
 ## Per-batch progress
 
@@ -88,19 +89,12 @@ Batch 2 (target: +5 cases, 8 total)
 
 Batch 3 (target: +2 cases, 10 total — Phase 2 checkpoint)
   Fill matrix gaps from cilogbench_v2_case_matrix.md §3 / §4 / §5.
-  Status: 0 / 2 (paused at 8 cases)
-    Hunting attempts that didn't yield clean cases:
-      - timeout/OOM in pytorch/ray/elastic/cypress repos (failed runs
-        were Dependabot/Copilot reviews, not real CI failures)
-      - matrix/monorepo failure (would need targeted search)
-      - containerd Windows TestRegressionIssue4769: log too messy
-        (single FAIL marker buried in 26K lines of debug noise; no
-        explicit error to annotate cleanly)
-    Next attempt would need either:
-      - Targeted search via specific timeout markers (exit 137,
-        OOMKilled, "timed out")
-      - A repo with explicit timeout-minutes settings hitting limits
-      - Or accept Phase 2 partial at 8 cases and pivot to Phase 3+
+  Status: 1 / 2 accepted
+    accepted (Batch 3 case 1):
+      numpy-pytest-segfault-argsort-v2-001 (test_assertion / panic,
+        v2/stress) — 100/100/100 — first v2/stress case;
+        process-crash format different from any v1.3 or prior v2
+        case; requires_repo_context=true
 ```
 
 ## Rejection counter
