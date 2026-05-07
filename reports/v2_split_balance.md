@@ -1,4 +1,4 @@
-# CILogBench v2 — split balance check (12-case checkpoint)
+# CILogBench v2 — split balance check (13-case checkpoint)
 
 > Refreshed 2026-05-07 from `tools/check_split_balance.py
 > --splits dev,holdout,stress,v2/dev,v2/holdout,v2/stress`. The full
@@ -7,12 +7,20 @@
 > richer flag-by-flag dump is at
 > [`reports/split_balance.md`](split_balance.md). This file is the
 > short narrative companion to those raw artifacts, summarizing the
-> 22 flags the tool produced **at the 12-case state**.
+> 21 flags the tool produced **at the 13-case state**.
 >
-> Earlier states for this corpus (8-case 2026-05-07 and 10-case
-> 2026-05-07) raised 22 flags too but with different decomposition;
-> see git history for `reports/v2_split_balance.md` if you need the
-> historical state.
+> The signal_position monoculture flag for v2/stress was raised at
+> the 12-case state (4/4 late) and was specifically the trigger for
+> Codex adversarial-review Finding 2. It has now been **closed**
+> at the 13-case state by adding `airflow-precommit-tsc-middle-v2-001`
+> (signal_position=middle), and the §3d 13-case Phase 3 refresh
+> validated that the prior tail-winner macro lead was indeed
+> sampling-inflated — see
+> [`reports/e10_v2_generalization_partial.md`](e10_v2_generalization_partial.md)
+> §3d.
+>
+> Earlier states (8-case, 10-case, 12-case) — see git history for
+> this file if you need the historical decomposition.
 
 ## At a glance
 
@@ -23,11 +31,11 @@ v1.3/holdout     5    signal_position monoculture (5/5 late)
 v1.3/stress      6    no flags worth raising
 v2/dev           3    pnpm/yarn/npm not represented yet (v2/holdout has it)
 v2/holdout       5    cargo + pnpm + jest distinct frameworks; clean
-v2/stress        4    signal_position monoculture (4/4 late) — see §3
-                      framework_dominance NO LONGER flagged
-                      (was 2/2 pytest at 10-case; now 2 pytest +
-                      1 cargo + 1 generic = 50% pytest, under the
-                      70% threshold)
+v2/stress        5    no monoculture flags at 13-case state
+                      (was 4/4 late at 12-case; now 4 late + 1 middle
+                      via airflow-precommit-tsc); framework_dominance
+                      also clean (2 pytest + 1 cargo + 1 generic +
+                      1 tsc = 40% pytest, under the 70% threshold)
 ```
 
 ## Flag-by-flag interpretation
@@ -63,31 +71,34 @@ tools/test.py runner — first appearance in v2/stress at 12-case),
 etc., existing in only one split are not defects; they reflect the
 natural distribution at small N.
 
-### 3. The two real concerns (2 of 22)
+### 3. The one remaining real concern (1 of 21)
 
 ```text
 signal_position_monoculture:
-  v1.3/holdout: 5 of 5 cases are 'late'.
-  v2/stress:    4 of 4 cases are 'late' ← worsened from 2/2 at 10-case
+  v1.3/holdout: 5 of 5 cases are 'late'.   ← carried over from v1.3 freeze
 ```
 
-These are accurate diagnoses:
+The v2/stress monoculture flag (4/4 late at 12-case) is gone at
+13-case state because `airflow-precommit-tsc-middle-v2-001` was
+added with signal_position=middle. The 5 v2/stress cases are now:
 
-- **v1.3/holdout signal_position monoculture** has been carried
-  over from v1.3 since the protocol freeze; not actionable here.
-- **v2/stress signal_position monoculture is now 4/4 late** (was
-  2/2 at 10-case). All four current v2/stress cases place the
-  failure block at ≥92% of the log:
-  - numpy segfault: L5462/5553 ≈ 99%
-  - cpython tcl matrix: L4022/4349 ≈ 92%
-  - rust compiletest assembly: L30430/31110 ≈ 98% (Batch 4 case 1)
-  - nodejs debugger timeout: L10717/10773 ≈ 99% (Batch 4 case 2)
+  - numpy segfault: L5462/5553 ≈ 99%   late
+  - cpython tcl matrix: L4022/4349 ≈ 92%   late
+  - rust compiletest assembly: L30430/31110 ≈ 98%   late
+  - nodejs debugger timeout: L10717/10773 ≈ 99%   late
+  - airflow pre-commit/tsc: L3391-3479/6496 ≈ 53%   **middle**
 
-  This is a **genuine sampling bias of the current v2/stress
-  bucket**. Future v2/stress collection MUST target middle/
-  scattered/early signal_position to break the monoculture before
-  any "tail wins on stress" claim can be promoted as a method
-  property rather than a corpus artifact. See §4 below.
+Phase 3 13-case refresh against this 4-late + 1-middle bucket
+showed the tail-vs-grep gap shrunk substantially (Sonnet:
++0.087 → +0.023; Haiku: +0.133 → +0.110), validating the §3c
+caveat that the tail-winner macro lead was sampling-inflated. The
+robust 13-case takeaway is that **no single context-provider wins
+across both signal positions** — see
+[`reports/e10_v2_generalization_partial.md`](e10_v2_generalization_partial.md)
+§3d for the full analysis.
+
+The remaining v1.3/holdout signal_position monoculture has been
+carried over from the v1.3 protocol freeze; not actionable in v2.
 
 ## What this means for the headline finding
 
@@ -102,33 +113,34 @@ v2/stress alone — it is driven by `v2/dev` (3 cases) and
 distributions are diverse. The 12-case refresh §3c hybrid drop
 holds even if v2/stress is excluded.
 
-### Tail-winner sub-claim IS exposed to the v2/stress monoculture
+### Tail-winner sub-claim — RESOLVED at 13-case (was confounded at 12-case)
 
-The 12-case refresh produced a **second** headline shift: tail
-unseats grep as the unanimous v2 winner. That sub-claim is
-**partially confounded** by the 4/4-late v2/stress bucket because
-tail's 200-line bottom window is structurally advantaged when
-signals concentrate at the end of the log. Specifically:
+At 12-case the v2/stress 4/4-late state inflated tail's macro lead
+over grep. At 13-case (airflow middle-signal added), the
+hypothesis was tested directly:
 
-- On v2/stress (4/4 late) Sonnet sees: tail 0.71, grep 0.45,
-  rtk-err-cat 0.43, hybrid 0.41 — tail has a **+0.26 lead** over
-  grep. This is the bucket where tail's bounded-late strength
-  matters most.
-- On v2/dev + v2/holdout (8 cases, mixed positions) Sonnet sees:
-  tail 0.67, grep 0.66, rtk-err-cat 0.51 — tail and grep are
-  **statistically tied** with a +0.01 gap.
+- On v2/stress (4 late + 1 middle) Sonnet sees: tail 0.57, grep
+  0.50, rtk-err-cat 0.40, hybrid 0.38. Tail's lead shrank from
+  +0.26 (4/4-late) to +0.07 with one middle-signal case added.
+- On the new airflow case alone (Sonnet): tail 0.017 (near-total
+  collapse — the failure block is at L3391-3479, more than 2900
+  lines from the bottom; tail-200 is structurally blind to it),
+  grep 0.717 (recovers — the airflow log has structured tsc
+  errors with little adjacent error chatter, so grep doesn't
+  trigger the over-match collapse seen on rust+nodejs).
+- v2 macro at 13-case (3 splits, Sonnet): tail 0.6343 #1, grep
+  0.6117 #2 — tail still leads but only by +0.023, well within
+  case-to-case variance (±0.05). On Haiku tail 0.5762 #1, grep
+  0.4664 #2 — still +0.110 lead because Haiku's grep never
+  recovered from rust+nodejs.
 
-In other words: at 12-case state, grep and tail are roughly tied
-on the non-stress portion of v2; tail wins the overall macro only
-because v2/stress is currently a bounded-tail-friendly bucket.
-The "tail unseats grep as v2 winner" claim should therefore carry
-a **caveat-after-decimal** treatment in the canonical narrative —
-it's directionally correct but its magnitude is plausibly
-inflated by sampling bias.
-
-The "hybrid loses ≥0.25 sv1.1 cross-debugger and falls out of
-the top tier" claim is robust; the "tail #1 unanimous on v2"
-claim needs the late-bucket caveat.
+The 13-case takeaway is that **no single context-provider wins
+on both signal positions** — tail beats grep on late, grep
+beats tail on middle, and hybrid (which always routes to grep
+or rtk-err-cat by token-count threshold) doesn't capture the
+position trade-off either way. The "tail #1 / grep #2" macro
+ranking survives at 13-case but the margin is now tight enough
+that future stress additions could flip it.
 
 ## What this report does NOT mean
 
@@ -143,17 +155,18 @@ claim needs the late-bucket caveat.
 
 ## Recommended next stress-collection priority
 
-Per §3 above, next v2/stress slot should be a case with
-`signal_position` of **middle / scattered / early** — even if it
-means the framework or category is repeated. Suggested targets:
+The 13-case middle-signal addition closed the most-leveraged
+sampling gap. Remaining v2/stress collection priorities now (in
+no particular order):
 
-1. A scattered-signal case (e.g., a matrix run where the failing
-   leg's evidence is interleaved with passing-leg output).
-2. A middle-signal case where the failure is followed by 30%+ of
-   post-mortem output (test cleanup, coverage upload, etc.).
-3. An early-signal case where the build fails at compile-time and
-   the rest of the log is just summary chatter.
-
-Adding even one such case would let us re-test the tail-winner
-sub-claim against an axis where tail's structural advantage
-disappears.
+1. **Scattered-signal case** — matrix run where one leg's
+   evidence is interleaved with passing-leg output. None present
+   in v2/stress yet.
+2. **Early-signal case** — build fails at compile-time and the
+   rest of the log is summary chatter. None present in any
+   v2 split yet (corpus-wide gap).
+3. **Huge log_size_bucket (>50k lines)** — none present anywhere
+   in the 28-case corpus. Currently blocked by gh CLI's stream-
+   cancel ceiling (~50k lines per fetch); needs raw-archive
+   download approach.
+4. **`permission_or_secret` failure_category** — still 0/v2.

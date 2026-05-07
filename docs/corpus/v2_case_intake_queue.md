@@ -42,6 +42,7 @@ rejected            see cases/v2/_rejected/<candidate_id>/rejection_reason.md
 | cpython-tcl-windows-matrix-v2-001 | github_actions | python/cpython | python-pytest | matrix_or_monorepo_failure | [run 25473514383 / job 74742066692](https://github.com/python/cpython/actions/runs/25473514383/job/74742066692) | accepted | `cases/v2/stress/`. Privacy audit clean (complete). Matrix-shaped: ALL 7 Windows configs fail (x64/Win32/arm64 × default/free-threading × switch-case/tail-call); ALL Linux/macOS variants pass. Branch `update_windows_tcltk` updated bundled tcltk to 9.0.3 → broke Unicode surrogate handling. test_tcl has 2 distinct failures (test_eval_surrogates_in_result test_tcl.py:57 + test_evalfile_surrogates_in_result test_tcl.py:292), both with `AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ’»>'`. multi_failure=true. case.json uses test_assertion (case.schema.json doesn't yet support matrix_or_monorepo_failure); tags.json uses matrix_or_monorepo_failure with 'category mismatch justified' note. log_size_bucket=medium (4349 lines). First v2 case in `matrix_or_monorepo_failure` category (was 0/v2). First v2 use of `matrix_summary` evidence_format. Raw sanity 1.0000 / 1.0000 / 1.0000. Selected as Batch 3 case 2 — completes Phase 2 checkpoint (10/34). |
 | rust-compiletest-wasm-exceptions-asm-v2-001 | github_actions | rust-lang/rust | rust-cargo | test_assertion | [run 25456140797 / job 74686149799](https://github.com/rust-lang/rust/actions/runs/25456140797/job/74686149799) | accepted | `cases/v2/stress/`. Privacy audit: 49→0 hits (2 ARTIFACTS/CACHES AWS_ACCESS_KEY_ID values redacted via sha256-prefix tokens; 2 GHA-already-masked AWS_*_KEY env lines stripped); re-audit clean. bors-try job for PR #156253 (rollup of 3 PRs, commit `bce7eda69`). compiletest assembly-llvm test `tests/assembly-llvm/wasm_exceptions.rs` failed under target `wasm32-wasip1` because two FileCheck directives (`// CHECK: catch_all` at L38, `// CHECK: catch` at L62) no longer match the actual emitted .s — rustc/LLVM now emits the new exnref-based wasm EH lowering (`try_table (catch_all_ref 0)` + `unreachable` cleanup) where the test still expected legacy `try`/`catch_all` block instructions. multi_failure=true (2 separate CHECK directives, same root cause). requires_repo_context=true (need test source for full CHECK pattern context). log_size_bucket=large (31110 lines / 2.96 MB — largest v2 raw.log so far; previously largest was biome-pnpm-not-found at 15802). signal_position=late (failure block at L30430-30999 of 31110, ~98%). Raw sanity 1.0000 / 1.0000 / 1.0000. Selected as Batch 4 case 1 — fills v2/stress non-pytest framework gap (was 2/2 pytest, breaks check_split_balance.py framework_dominance flag) and adds rust compiler-toolchain ecosystem to v2/stress. New evidence-format gap surfaced: FileCheck `check:N'M ~~~~` annotation pattern has no matching schema enum; closest fits used: `assertion_diff` + `compiler_diagnostic`. Schema-extension target for v3. repo_visibility=redacted. |
 | nodejs-test-debugger-exec-timeout-v2-001 | github_actions | nodejs/node | generic-github-actions | timeout_or_oom | [run 25490868700 / job 74798272222](https://github.com/nodejs/node/actions/runs/25490868700/job/74798272222) | accepted | `cases/v2/stress/`. Privacy audit: 0 hits AFTER splitting 3 overlong gyp libtool linker-command lines (>8000 chars each tripped the audit's per-line cap with fail-closed semantics; content was just verbose linker arg lists, no secrets). nodejs/node Test macOS 77min run, parallel test suite (5175 tests). Single test failure (1 of 5175): `parallel/test-debugger-exec` (test/parallel/test-debugger-exec.js) timed out after 15s in `waitForInitialBreak`. Stack: test/common/debugger.js:116 → 67 → throw at debugger.js:92. Captured debugger output proves connect/attach phase succeeded (`Debugger attached.` + `debug>` prompt visible) — only the `break in` initial-break pattern was missing within the 15s window. flaky_or_transient=true (macOS-arm64 timing flake on debugger break-emission). log_size_bucket=large (10773 lines / 5.1 MB; original 10752 lines, +21 from line-splitting redact). signal_position=late (failure block at L10717-10756 of 10773, ~99%). framework=generic (nodejs's tools/test.py runner — case.schema.json enum lacks a `nodejs-tools-test` value). Raw sanity 1.0000 / 1.0000 / 1.0000. Selected as Batch 4 case 2 — **fills the timeout_or_oom failure_category gap (was 0/v2 → 1)** and first v2 case using the `timeout_marker` evidence_format (`Error: Timeout (15000) while waiting for ...`). primary_language=javascript+framework=generic combo also new for v2 (other v2 JS cases use jest/pnpm). multi_failure=false. requires_repo_context=false. |
+| airflow-precommit-tsc-middle-v2-001 | github_actions | apache/airflow | typescript-tsc | type_error | [run 25493092125 / job 74810291973](https://github.com/apache/airflow/actions/runs/25493092125/job/74810291973) | accepted | `cases/v2/stress/`. Privacy audit: 0 hits AFTER splitting 8 overlong lines (verbose pre-commit file enumerations). apache/airflow CI image checks / Static checks job (~37min). Pre-commit's `ts-compile-lint-ui` hook fails because `pnpm tsc --p <tmp tsconfig>` reports 3 TypeScript errors: TS6196 'ColorMode' unused at UserSettingsButton.tsx:55, TS6133 'ParamsSpec' value never read at ConnectionForm.tsx:33, TS2739 Type 'SetupServer' missing #private+network props at testsSetup.ts:78. Wrapped in scripts/ci/prek/ts_compile_lint_ui.py:62 → subprocess.CalledProcessError. Pre-commit then continues running ~30 OTHER hooks (all Pass) before ##[error] step exit. **First non-late v2/stress case** (signal_position=**middle**: failure block at L2069-3492 ≈32-54%, ##[error] at L3762 ≈58% of 6496-line log; ~42% post-failure pre-commit chatter). multi_failure=true (3 distinct TS errors). flaky_or_transient=false. requires_repo_context=false. log_size_bucket=large. Raw sanity 1.0000 / 1.0000 / 1.0000. Selected as **Batch 4 case 3 — deliberately added to break the v2/stress 4/4-late signal_position monoculture** flagged by tools/check_split_balance.py at 12-case state (per Codex adversarial review Finding 2). Phase 3 13-case refresh §3d validates the §3c tail-winner caveat: tail's macro lead over grep shrank from +0.087 to +0.023 Sonnet (74% shrink) with this single addition; per-case tail 0.017 vs grep 0.717 on this airflow log confirms the position-dependent trade-off. |
 
 ## Per-batch progress
 
@@ -104,35 +105,35 @@ Batch 3 (target: +2 cases, 10 total — Phase 2 checkpoint)
 
 Batch 4 (target: 3-5 cases, 13-15 total)
   Recommended mix (per reports/v2_split_balance.md flags):
-    1 timeout/OOM (still 0/v2)
-    1 non-pytest v2/stress (break 2/2 pytest monoculture)
-    1 huge log_size_bucket (>50k lines, still 0/26)
-    optional: early or scattered signal_position (still rare)
-  Status: 2 / 3-5 in progress (12 / 34 total cases)
+    1 timeout/OOM (still 0/v2)               ✓ Batch 4 case 2
+    1 non-pytest v2/stress                   ✓ Batch 4 case 1
+    1 huge log_size_bucket (>50k lines)      ✗ blocked by gh CLI
+    optional: non-late signal_position       ✓ Batch 4 case 3
+  Status: 3 / 3-5 (13 / 34 total cases)
     accepted (Batch 4 case 1):
       rust-compiletest-wasm-exceptions-asm-v2-001 (test_assertion,
         v2/stress) — 100/100/100 — fills non-pytest v2/stress framework
         gap (rust compiler-toolchain). Largest v2 raw.log so far at
-        31110 lines / 2.96 MB — still in `large` bucket (5k-50k); huge
-        gap remains 0/26. signal_position=late worsens v2/stress
-        late-monoculture (now 3/3 late) — flagged for future stress
-        collection to target middle/scattered/early.
-        New evidence-format gap surfaced: FileCheck `check:N'M ~~~~`
-        assembly-check-diff annotation pattern has no schema enum yet;
-        used `assertion_diff` + `compiler_diagnostic` as closest fits.
+        31110 lines / 2.96 MB.
     accepted (Batch 4 case 2):
       nodejs-test-debugger-exec-timeout-v2-001 (timeout_or_oom,
         v2/stress) — 100/100/100 — **fills timeout_or_oom
-        failure_category gap (was 0/v2 → 1)**. nodejs/node Test
-        macOS, single test (parallel/test-debugger-exec) timed out
-        15s waiting for debugger initial-break message. flaky_or_
-        transient=true (timing-sensitive macOS-arm64 runner).
-        First v2 use of `timeout_marker` evidence_format. First v2
-        primary_language=javascript+framework=generic combo (other
-        JS cases use jest/pnpm). signal_position=late worsens
-        v2/stress late-monoculture (now 4/4 late).
-    Carry-overs: huge log (>50k, still 0/26), early/scattered
-        signal_position (still rare across whole corpus).
+        failure_category gap (was 0/v2 → 1)**. flaky_or_transient
+        =true (timing-sensitive macOS-arm64 runner).
+    accepted (Batch 4 case 3):
+      airflow-precommit-tsc-middle-v2-001 (type_error, v2/stress)
+        — 100/100/100 — **first non-late v2/stress case**
+        (signal_position=middle). Closes the v2/stress 4/4-late
+        monoculture flagged at 12-case state. Phase 3 13-case
+        refresh validated the §3c tail-winner caveat: Sonnet
+        tail-vs-grep gap shrank from +0.087 to +0.023 (74% shrink)
+        with this single addition. Per-case airflow log: tail 0.017
+        (collapsed) vs grep 0.717 (recovered) — confirms no single
+        method wins on both signal positions.
+    Carry-overs to Batch 5+: huge log (>50k, still 0/29 corpus-wide
+        — needs raw-archive download approach), early signal_
+        position (still 0/29), permission_or_secret category in v2
+        (still 0/v2).
 ```
 
 ## Rejection counter

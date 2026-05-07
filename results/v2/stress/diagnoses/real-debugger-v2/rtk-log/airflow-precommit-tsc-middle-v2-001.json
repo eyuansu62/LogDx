@@ -1,0 +1,65 @@
+{
+  "case_id": "airflow-precommit-tsc-middle-v2-001",
+  "context_method": "rtk-log",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed due to TypeScript compiler errors reported by tsc. The log summary indicates 118 errors (97 unique) across multiple source files in the airflow frontend codebase. Warnings were also present but are secondary to the type errors causing the job failure.",
+  "root_cause_category": "type_error",
+  "root_cause": "TypeScript compilation (tsc) produced 118 errors across multiple source files including components, context providers, queries, pages, and utility files, causing the Static checks CI job to fail.",
+  "confidence": 0.72,
+  "relevant_files": [
+    "src/context/openGroups/OpenGroupsProvider.tsx",
+    "src/queries/useBulkDeleteVariables",
+    "src/pages/Dag/Code/FileLocation.tsx",
+    "src/components/Graph/Edge.tsx",
+    "src/components/AssetExpression/types.ts",
+    "src/components/Graph/graphTypes.ts",
+    "src/pages/Variables/ImportVariablesForm.tsx",
+    "src/utils/errorHandling.ts",
+    "public/i18n/locales/it/admin.json",
+    "public/i18n/locales/ca/hitl.json",
+    "public/i18n/locales/pt/hitl.json",
+    "public/i18n/locales/hu/admin.json",
+    "public/i18n/locales/ar/common.json"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "[error] 118 errors (97 unique)",
+      "reason": "Directly reports 118 type/compile errors from tsc, confirming the job failed due to type errors"
+    },
+    {
+      "quote": "src/utils/errorHandling.ts^[[39m 7ms (unchanged)",
+      "reason": "Indicates tsc was processing source files and reporting errors against them"
+    },
+    {
+      "quote": "src/context/openGroups/OpenGroupsProvider.tsx src/queries/useBulkDeleteVariables",
+      "reason": "These source files are listed as part of the error continuation lines, showing tsc errors span across the codebase"
+    },
+    {
+      "quote": "\"framework\": \"tsc\"",
+      "reason": "The metadata explicitly identifies tsc as the framework responsible for the check that failed"
+    },
+    {
+      "quote": "job_name\": \"CI image checks / Static checks\"",
+      "reason": "The failing job is the Static checks job, which runs tsc type checking as part of pre-commit hooks"
+    }
+  ],
+  "suggested_fix": "Run `tsc --noEmit` locally to reproduce the 97 unique errors, then fix the type errors in the affected source files (starting with `src/context/openGroups/OpenGroupsProvider.tsx`, `src/components/Graph/graphTypes.ts`, `src/components/AssetExpression/types.ts`, and `src/utils/errorHandling.ts`) before pushing again.",
+  "input": {
+    "context_path": "results/v2/stress/rtk-log/airflow-precommit-tsc-middle-v2-001.txt",
+    "context_tokens_estimate": 439
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 574
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 19670.18,
+    "cache_key": "7a4c1b3a0438552b8fd431959051d20071818a68094c108dc546a29571b1bcc8",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

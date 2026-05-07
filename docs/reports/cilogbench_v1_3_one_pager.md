@@ -9,13 +9,13 @@
 > §8b and `reports/e9_human_verified_v1_3_review.md` for details.
 
 > 🚨 **v2 generalization caveat (added 2026-05-07, refreshed at the
-> 12-case v2-checkpoint-12 state):**
+> 13-case v2-checkpoint-13 state):**
 > The hybrid-vs-grep "matched on quality at ~⅓ token cost" headline below
-> **does not generalize on the v2 corpus.** Across the 12 v2 cases
-> (`v2/dev` 3 + `v2/holdout` 5 + `v2/stress` 4), hybrid sv1.1 falls:
+> **does not generalize on the v2 corpus.** Across the 13 v2 cases
+> (`v2/dev` 3 + `v2/holdout` 5 + `v2/stress` 5), hybrid sv1.1 falls:
 >
-> - Sonnet 4.6: 0.7713 → 0.4353, Δ **−0.34** (rank #1 → **#4**)
-> - Haiku 4.5: 0.7150 → 0.4302, Δ **−0.28** (rank #1 → **#4**)
+> - Sonnet 4.6: 0.7713 → 0.4266, Δ **−0.34** (rank #1 → **#4**)
+> - Haiku 4.5: 0.7150 → 0.4145, Δ **−0.30** (rank #1 → **#4**)
 >
 > The cost match holds (~95% reduction); the quality match does not.
 > Root cause: the 4k-token threshold inside the hybrid was tuned on the
@@ -33,21 +33,25 @@
 >    correctly avoids grep's blowup but inherits rtk-err-cat's
 >    collapse on the same density-driven blindspots (rtk-err-cat
 >    also produces ~320k tokens on nodejs).
-> 2. **Macro-level (caveated):** at the 12-case macro, tail unseats
->    grep as v2 #1 (Sonnet 0.68 vs 0.59; Haiku 0.63 vs 0.49). But
->    that gap is partly a v2/stress sampling artifact: the bucket
->    is currently **4/4 late** and tail's bounded 200-line window is
->    structurally advantaged by late signals. On the non-stress
->    portion (v2/dev + v2/holdout, 8 cases, mixed signal_position)
->    tail and grep are tied within 0.03. The "tail unseats grep"
->    finding should be re-checked when v2/stress acquires a
->    middle/scattered/early case (see
->    [`reports/v2_split_balance.md`](../../reports/v2_split_balance.md)
->    §3 for the sampling decomposition).
+> 2. **Macro-level (resolved at 13-case):** at the 12-case macro,
+>    tail unseated grep as v2 #1 (Sonnet 0.68 vs 0.59) — but the
+>    gap was inflated by a v2/stress 4/4-late sampling bias.
+>    Adding a middle-signal case at 13-case (airflow pre-commit/tsc)
+>    shrank the Sonnet tail-vs-grep gap from +0.087 to +0.023
+>    (74% shrink) — well within case-to-case variance. Per-case
+>    on the new airflow log: tail 0.017 (collapsed — failure block
+>    >2900 lines from the bottom, outside tail-200's window), grep
+>    0.717 (recovered — structured tsc errors don't trigger the
+>    high-density-error collapse). **The robust 13-case takeaway:
+>    no single context-provider wins on both signal positions** —
+>    tail beats grep on late, grep beats tail on middle, hybrid's
+>    threshold-on-tokens doesn't capture the position trade-off.
 >
 > Earlier 8-case framing read "rank #1 → #6" and 10-case read "rank
-> #1 → #3-4"; the 12-case refresh stabilizes hybrid at **rank #4
-> unanimous**.
+> #1 → #3-4"; the 12-case + 13-case refreshes stabilize hybrid at
+> **rank #4 unanimous**. Direction unchanged across all four
+> refreshes (8 → 10 → 12 → 13 cases): hybrid loses ≥0.30 sv1.1
+> cross-debugger.
 >
 > The robust core finding is unchanged across all three refreshes:
 > hybrid loses ≥0.25 sv1.1 cross-debugger, falls out of the top tier,

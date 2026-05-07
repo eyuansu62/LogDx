@@ -1,0 +1,46 @@
+{
+  "case_id": "airflow-precommit-tsc-middle-v2-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because the TypeScript compiler (`tsc`) returned a non-zero exit status (2) when invoked as part of the 'Compile / format / lint UI' pre-commit hook for the Airflow UI. The hook ran ESLint and Prettier successfully on hundreds of UI files, but the final `pnpm tsc` step failed.",
+  "root_cause_category": "compile_error",
+  "root_cause": "The TypeScript compilation of the Airflow UI (`pnpm tsc --p <tmpfile>.json`) exited with status 2, indicating one or more TypeScript type or syntax errors in the UI source files submitted for checking.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "src/airflow/ui/tsconfig.app.json",
+    "src/airflow/ui/tsconfig.json"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "Compile / format / lint UI................................................................................Failed",
+      "reason": "The pre-commit hook named 'Compile / format / lint UI' is explicitly marked as Failed, identifying the failing check."
+    },
+    {
+      "quote": "subprocess.CalledProcessError: Command '['pnpm', 'tsc', '--p', '/home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json']' returned non-zero exit status 2.",
+      "reason": "This is the direct error message showing the tsc command failed with exit code 2, which indicates TypeScript compilation errors."
+    },
+    {
+      "quote": "{\"extends\": \"./tsconfig.app.json\", \"include\": [\"src/layouts/Nav/BrowseButton.tsx\", \"src/queries/useRefreshOnNewDagRuns.ts\",",
+      "reason": "This shows the dynamically generated tsconfig passed to tsc, confirming which files were being type-checked when the failure occurred."
+    }
+  ],
+  "suggested_fix": "Run `pnpm tsc --p tsconfig.app.json` locally inside `airflow-core/src/airflow/ui` to reproduce the TypeScript errors, then fix the reported type errors in the affected UI source files.",
+  "input": {
+    "context_path": "results/v2/stress/rtk-err-cat/airflow-precommit-tsc-middle-v2-001.txt",
+    "context_tokens_estimate": 69040
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 452
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 23858.363,
+    "cache_key": "a5d65a33bc7b8d6956ee91429afa63cd5c174ce553abb84bb3f08668b98f53d0",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

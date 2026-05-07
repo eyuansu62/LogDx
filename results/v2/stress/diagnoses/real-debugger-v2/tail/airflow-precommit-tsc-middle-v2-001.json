@@ -1,0 +1,43 @@
+{
+  "case_id": "airflow-precommit-tsc-middle-v2-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The static checks CI job appears to have failed because one or more pre-commit hooks modified files that were not committed. After the final hook (`check-contextmanager-class-decorators`) completed, the prek runner issued a `git --no-pager diff --color=always` command — a pattern distinct from the routine `get_diff` calls after each hook — indicating that the working tree was left dirty and the job reported the change.",
+  "root_cause_category": "formatting_failure",
+  "root_cause": "One or more prek hooks (most likely `generate-tasksdk-datamodels` or `generate-airflowctl-datamodels`, which auto-generate model files) modified files in the working tree, causing the pre-commit/prek framework to detect uncommitted changes and fail the static-checks job.",
+  "confidence": 0.42,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "TRACE Executing `/usr/bin/git --no-pager diff --color=always -- /home/runner/work/airflow/airflow`",
+      "reason": "This command differs from every prior `get_diff` trace in the log, which use a plain `git diff` form. The `--no-pager --color=always` variant is the prek/pre-commit 'show what the hook changed' step, fired only when the working tree is dirty after a hook run, indicating a hook left modified files."
+    },
+    {
+      "quote": "hook_id=generate-tasksdk-datamodels ... Executing `cd /home/runner/work/airflow/airflow && /opt/hostedtoolcache/Python/3.10.20/x64/bin/uv run -p 3.12 --no-progress --active --group codegen --project apache-airflow-task-sdk --directory task-sdk -s dev/generate_task_sdk_models.py`",
+      "reason": "This hook auto-generates model files; if the committed source diverges from the generated output, the hook will update files on disk, dirtying the working tree."
+    },
+    {
+      "quote": "hook_id=generate-airflowctl-datamodels ... Executing `cd /home/runner/work/airflow/airflow && /usr/bin/bash -c  uv run -p 3.12 --no-dev --no-progress --active --group codegen --project apache-airflow-ctl --directory airflow-ctl/ datamodel-codegen`",
+      "reason": "A second code-generation hook that writes generated Python files; uncommitted drift between the OpenAPI spec and the generated datamodels would cause this hook to modify files."
+    }
+  ],
+  "suggested_fix": "Run the code-generation hooks locally (`uv run -p 3.12 --no-progress --active --group codegen --project apache-airflow-task-sdk --directory task-sdk -s dev/generate_task_sdk_models.py` and the corresponding `airflow-ctl` datamodel-codegen command), then commit the updated generated files before pushing.",
+  "input": {
+    "context_path": "results/v2/stress/tail/airflow-precommit-tsc-middle-v2-001.txt",
+    "context_tokens_estimate": 10056
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 630
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 56180.915,
+    "cache_key": "2f34800c55b21859d3a561cc22a040b53a0721993356f50dcb7f053bdd9017e8",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "case_id": "airflow-precommit-tsc-middle-v2-001",
+  "split": "v2/stress",
+  "origin": "new_v2",
+  "ecosystem": "typescript-tsc",
+  "primary_language": "typescript",
+  "ci_provider": "github_actions",
+  "repo_visibility": "public",
+  "failure_category": "type_error",
+  "framework": "tsc",
+  "log_size_bucket": "large",
+  "signal_position": "middle",
+  "evidence_formats": [
+    "compiler_diagnostic",
+    "traceback",
+    "ansi_colored_block",
+    "github_annotation",
+    "shell_command_output"
+  ],
+  "noise_profile": [
+    "runner_setup",
+    "verbose_build_noise",
+    "test_progress_noise",
+    "post_failure_chatter"
+  ],
+  "multi_failure": true,
+  "flaky_or_transient": false,
+  "requires_repo_context": false,
+  "diagnosis_difficulty": "hard",
+  "notes": "**Selected to break the v2/stress 4/4-late signal_position monoculture flagged in reports/v2_split_balance.md §3 at the 12-case state.** Prior 4 v2/stress cases (numpy segfault, cpython tcl matrix, rust compiletest, nodejs timeout) all had failure blocks at ≥92% of the log. This case has the failure block at L2069-3492 (≈32-54%) and ##[error] at L3762 (≈58%) of the 6496-line log — clean MIDDLE position with ~42% of post-failure pre-commit chatter following the actual failure.\n\nFails the 'tail unseats grep' macro caveat test deliberately: tail's bounded 200-line bottom window will MISS the failure block entirely (it's >2000 lines from the end). If tail still wins on this case, the macro headline isn't sampling-driven; if grep wins, the v2/stress 4/4-late state was meaningfully confounding the macro. Either outcome is informative.\n\nfailure_category=type_error chosen because the most prominent of the 3 errors (TS2739) is a genuine type-incompatibility error. The other 2 (TS6196, TS6133) are dead-code warnings raised as errors under strict TS — they straddle type_error and lint_error. Closest single category fit: type_error (matches what tsc itself prints under `error TS<code>`).\n\nmulti_failure=true: 3 distinct TS errors in 3 different files, ONE root cause (someone landed a PR with new unused imports + an msw API drift in test setup). They are not flaky/transient (deterministic), don't require repo context (file:line is in the log), and the diagnosis is hard because the failure is wrapped in 2 layers (pre-commit hook → Python prek wrapper → tsc) and surrounded by ~42% of unrelated successful pre-commit hook output.\n\nframework=tsc fits cleanly. ecosystem=typescript-tsc.\n\nlog_size_bucket=large (6496 lines). Noise profile includes a new `post_failure_chatter` tag — pre-commit's behavior of running ALL hooks regardless of one failing creates a tail-defeating evidence shape distinct from the 4 prior late-signal stress cases.\n\nTrue evidence_format note: the tsc error block uses ANSI 256-color sequences for file paths (cyan), line numbers (yellow), error/file (red), and inline ~~~ underscores. closest enum: `compiler_diagnostic` + `ansi_colored_block`. No new schema enum needed."
+}

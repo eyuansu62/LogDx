@@ -1,24 +1,38 @@
 # CILogBench E10 — v2 generalization (partial)
 
-> **Three protocols are described in this report:**
+> **Four protocols are described in this report:**
 >
 > - [`cilogbench-v2-partial`](../protocols/cilogbench-v2-partial.lock.json)
 >   (lock 2026-05-07, 24 cases) — the **8-case** v2 state that the
 >   first Phase 3 run measured against. This is what the §3 8-case
 >   numbers below are anchored to.
 > - [`cilogbench-v2-checkpoint`](../protocols/cilogbench-v2-checkpoint.lock.json)
->   (lock 2026-05-07, 26 cases) — the **10-case** Phase 2 checkpoint
->   state, adding the v2/stress split (numpy segfault + cpython
->   matrix). The §3b 10-case numbers below are anchored to this lock.
+>   (lock 2026-05-07, regenerated against current 13-case state) —
+>   originally the **10-case** Phase 2 checkpoint state, adding the
+>   v2/stress split (numpy segfault + cpython matrix). After the
+>   freeze_protocol fix on 2026-05-07 this lock was regenerated and
+>   now resolves to the same 13-case manifest as
+>   v2-checkpoint-13; the 10-case eval results are recoverable only
+>   via `git checkout 530d5fd`. The §3b 10-case numbers below are
+>   anchored to that historical state, not the current lock.
 > - [`cilogbench-v2-checkpoint-12`](../protocols/cilogbench-v2-checkpoint-12.lock.json)
->   (lock 2026-05-07, 28 cases) — the **12-case** Batch 4 partial
->   state, adding rust compiletest + nodejs timeout into v2/stress.
->   The §3c 12-case numbers below are anchored to this lock.
+>   (lock 2026-05-07, regenerated against current 13-case state) —
+>   originally the **12-case** Batch 4 partial state. Same caveat as
+>   v2-checkpoint above. The §3c 12-case numbers anchor to commit
+>   7036fdb.
+> - [`cilogbench-v2-checkpoint-13`](../protocols/cilogbench-v2-checkpoint-13.lock.json)
+>   (lock 2026-05-07, 29 cases — current canonical) — the **13-case**
+>   state that adds airflow's middle-signal pre-commit/tsc case
+>   into v2/stress to test the §3c tail-winner caveat. The §3d
+>   13-case numbers below are anchored to this lock.
 >
-> All three locks SHA-pin the same v1.3 schemas, prompts, and
+> All four locks SHA-pin the same v1.3 schemas, prompts, and
 > evaluators that were in `cilogbench-v1.3.lock.json`, so v1.3
-> numbers reproduce identically against any of them; only the case
-> set has grown.
+> numbers reproduce identically against any of them. **Per the
+> Codex adversarial review (2026-05-07):** all four also now pin
+> the hybrid baseline's config + route_schema + router file
+> hashes, with `validate_protocol_lock.py` extended to fail-close
+> on hybrid drift (was a latent gap — see commit f370ea2).
 >
 > **Companion docs:**
 > [`e10_phase3_v2_partial_signal_recall.md`](e10_phase3_v2_partial_signal_recall.md)
@@ -50,10 +64,21 @@ debugger and falls out of the top tier:
   on the inflated context. tail's bounded-200-line window
   survives unchanged. **Caveat:** the resulting "tail #1, grep #2"
   ranking on the v2 macro is partly a v2/stress-sampling artifact
-  — v2/stress is currently 4/4 late and tail is structurally
-  advantaged by late signals. On the non-stress portion (v2/dev +
-  v2/holdout, 8 cases, mixed positions) tail and grep are tied
-  within 0.03. See §3c and [`reports/v2_split_balance.md`](v2_split_balance.md).
+  — v2/stress is 4/4 late and tail is structurally advantaged by
+  late signals. See §3c.
+- 13-case (v2-checkpoint-13): hybrid #1 → **#4/8** stable. One
+  middle-signal case added (airflow pre-commit/tsc), validating
+  the §3c caveat: tail's macro lead over grep collapsed from
+  +0.09 to +0.02 on Sonnet (74% shrink) and +0.13 to +0.11 on
+  Haiku (18% shrink). Per-case on the new airflow log: tail 0.017
+  (collapsed — failure block at L3391-3479 is >2900 lines from
+  the bottom, outside tail-200's window), grep 0.717 (recovered
+  — structured tsc errors don't trigger the over-match collapse
+  seen on rust/nodejs). The robust 13-case takeaway: **no single
+  context-provider wins on both signal positions** — tail beats
+  grep on late, grep beats tail on middle, and hybrid's
+  threshold-on-tokens routing doesn't capture the position
+  trade-off. See §3d.
 
 ```text
                                    v1.3 macro      v2 macro       Δ
@@ -96,21 +121,22 @@ see [`docs/reports/cilogbench_v1_3_one_pager.md`](../docs/reports/cilogbench_v1_
 ## 1. What changed in v2
 
 The v2 corpus carries forward all 16 v1.3 cases (now tagged
-`origin: legacy_v1_3` in `tags.json`) plus **12 new cases** collected
+`origin: legacy_v1_3` in `tags.json`) plus **13 new cases** collected
 across Batches 1-4:
 
 | split | new_v2 | filling |
 |---|---:|---|
 | `v2/dev` | 3 | docker_build (was 0/16), test_assertion, network_or_flaky (was 0/16) |
 | `v2/holdout` | 5 | go ecosystem (was 0/16), dependency_install (audit), github_actions_config (2nd), snapshot_or_golden_diff (was 0/16), compile_error+cpp (was 0/16 cpp) |
-| `v2/stress` | 4 | numpy segfault + cpython matrix (Batch 3); rust compiletest + nodejs timeout_or_oom (Batch 4) — see §3c, §4 |
+| `v2/stress` | 5 | numpy segfault + cpython matrix (Batch 3); rust compiletest + nodejs timeout_or_oom (Batch 4 cases 1-2); airflow pre-commit/tsc middle-signal (added at 13-case to test §3c caveat) — see §3c, §3d, §4 |
 
-The 12 new cases were sourced from real public CI runs (pnpm/pnpm,
+The 13 new cases were sourced from real public CI runs (pnpm/pnpm,
 pypa/pip, moby/buildkit, cli/cli, biomejs/biome,
 prettier/prettier, pandas-dev/pandas, numpy/numpy, python/cpython,
-rust-lang/rust, nodejs/node) and imported through the v2 intake
-pipeline (`tools/import_case_skeleton.py` → ground_truth + tags
-annotation → raw-sanity gate at 100% signal preservation per case).
+rust-lang/rust, nodejs/node, apache/airflow) and imported through
+the v2 intake pipeline (`tools/import_case_skeleton.py` →
+ground_truth + tags annotation → raw-sanity gate at 100% signal
+preservation per case).
 
 Five new schema fields used for v2 cases (all additive, v1.3 cases
 remain valid): `origin`, `ecosystem`, `ci_provider`,
@@ -440,6 +466,112 @@ E5 originally identified on v1.3, now reappearing in a different
 shape on v2 (deterministic proxy *overstates* grep's real-
 debugger usefulness when context inflates past reasoning budget).
 
+## 3d. 13-case refresh — testing the tail-winner caveat (v2-checkpoint-13, 2026-05-07)
+
+Per the §3c caveat that the "tail unseats grep" macro lead was
+plausibly inflated by the 4/4-late v2/stress sampling, one
+middle-signal case was added to v2/stress to actually test the
+caveat: `airflow-precommit-tsc-middle-v2-001` (apache/airflow
+pre-commit `ts-compile-lint-ui` hook fails with 3 TypeScript
+errors at L3391-3479 of a 6496-line log; ##[error] step exit at
+L3762 ≈ 58%; ~42% of the log AFTER the failure is non-failure
+pre-commit hook chatter from the ~30 OTHER hooks that pre-commit
+keeps running after one fails). New protocol lock at
+[`protocols/cilogbench-v2-checkpoint-13.lock.json`](../protocols/cilogbench-v2-checkpoint-13.lock.json)
+(29 cases, 6 splits, 14 SHA-pinned + 3 hybrid hashes).
+
+**The caveat was real and material.** Tail's macro lead over grep
+shrank substantially with the single new middle-signal case:
+
+```text
+                                v2 macro (12-case)   v2 macro (13-case)   Δ from 12→13
+                                Sonnet     Haiku     Sonnet     Haiku    Sonnet   Haiku
+tail                            0.6807    0.6251     0.6343    0.5762   -0.0464  -0.0489
+grep                            0.5939    0.4918     0.6117    0.4664   +0.0178  -0.0254
+rtk-err-cat                     0.4870    0.4481     0.4776    0.4363   -0.0094  -0.0118
+hybrid                          0.4353    0.4302     0.4266    0.4145   -0.0087  -0.0157
+raw                             0.3652    0.2901     0.3652    0.2901   +0.0000  +0.0000
+                                                                           (v2/stress only contributes
+                                                                            on 5 cases now; raw and
+                                                                            rtk-read still abstain on all
+                                                                            stress cases so unchanged)
+
+tail-vs-grep gap (Sonnet):     +0.0868              +0.0226                       (gap shrunk by 74%)
+tail-vs-grep gap (Haiku):      +0.1333              +0.1098                       (gap shrunk by 18%)
+```
+
+The Sonnet "tail unseats grep" lead **collapsed from +0.09 to
++0.02 with one middle-signal case added** — well within
+case-to-case variance (±0.05). On Haiku the gap stayed wider
+(+0.11) because Haiku's grep never recovered from the rust +
+nodejs over-match collapses, but even there tail's lead
+shrank by 18%.
+
+Per-case detail on the new airflow case (Sonnet 4.6) confirms the
+mechanism: tail collapses when the failure isn't at the end, grep
+recovers when context is structured rather than density-noisy:
+
+```text
+v2/stress per-case sv1.1 at 13-case (Sonnet 4.6):
+                                   numpy   cpython     rust    nodejs   airflow    macro
+raw                               0.0000    0.0000   0.0000   0.0000   0.0000    0.0000   ← abstain on all
+tail                              0.7500    0.5950   0.7550   0.7500   0.0167    0.5733   ← tail crashed on airflow!
+grep                              1.0000    0.7950   0.0000   0.0000   0.7167    0.5023   ← grep recovers on airflow
+rtk-err-cat                       0.4833    0.3750   0.8475   0.0000   0.2850    0.3982
+rtk-log                           0.0000    0.3750   0.3000   0.5000   0.3467    0.3043
+hybrid-grep-4k-rtk-err-cat-v1     0.4833    0.3750   0.7700   0.0000   0.2767    0.3810
+llm-summary-v1-mock               0.0000    0.1000   0.0500   0.3000   0.0000    0.0900
+```
+
+- **tail on airflow: 0.0167** — tail's bottom 200 lines (L6296-6496)
+  are post-failure pre-commit hook chatter (post-job cleanup, hook
+  trace logs); the actual TS error block is at L3391-3479, more
+  than 2900 lines from the bottom. Tail's bounded window is
+  structurally blind to mid-log failures. This is the cleanest
+  possible counter-example to the §3c "tail unseats grep" macro
+  framing.
+- **grep on airflow: 0.7167** — grep's regex catches the `error TS6196`,
+  `error TS6133`, `error TS2739`, `Found 3 errors in 3 files`, and
+  `subprocess.CalledProcessError` markers; produces ~6k tokens of
+  context (well under any reasoning budget); Sonnet diagnoses
+  cleanly. This is also a counter-example to the §3c "grep
+  collapses on high-error-density logs" framing — the airflow log
+  has *structured* tsc errors with little adjacent error chatter,
+  so grep doesn't over-match.
+- **hybrid on airflow: 0.2767** — hybrid routes to rtk-err-cat
+  (grep would have produced the right answer; rtk-err-cat compresses
+  too aggressively and loses the 3-error structure). Same
+  selection-by-method failure mode as the 8-case Phase 3 analysis.
+
+**Updated headline table at 13-case state:**
+
+| Headline claim | 8-case | 10-case | 12-case | 13-case |
+|---|---|---|---|---|
+| "hybrid sv1.1 drops substantially v1.3 → v2" | ✅ −0.32 / −0.30 | ✅ −0.33 / −0.25 | ✅ −0.34 / −0.28 | ✅ −0.34 / −0.30 |
+| "hybrid stays in the bottom-half across debuggers" | ✅ #6/8 | ✅ #3-4/8 | ✅ #4/8 | ✅ #4/8 |
+| "tail is the unanimous v2 winner" | (#2) | (#2) | ⚠ macro-only, sampling caveat | ⚠ unanimous #1 stable BUT margin ≈ +0.02 Sonnet (within noise) |
+| "grep collapses on high-error-density logs" | (not seen) | (not seen) | ✅ method-level on rust+nodejs | ✅ confirmed; airflow shows the converse case (structured errors → grep recovers) |
+| "tail collapses when signal isn't late" | (untested) | (untested) | (untested) | ✅ **new at 13-case** — airflow 0.017 sv1.1 — bounded window structurally misses mid-log failures |
+| "cost match holds; quality match doesn't" | ✅ | ✅ | ✅ | ✅ |
+
+**The robust 13-case takeaway:** the v1.3 hybrid loses ≥0.30 sv1.1
+cross-debugger and stays at #4 unanimous. Among the locked
+baselines, **no single context-provider wins on both signal
+positions** — tail beats grep on late-signal cases, grep beats
+tail on middle-signal cases, and hybrid (which always routes to
+either grep or rtk-err-cat) doesn't get the position-aware benefit
+either way. The "tail #1 / grep #2" macro ranking at 13-case is
+~0.02 apart on Sonnet and survives only because v2/stress is
+4/5 late.
+
+What this means for v3 / further work: a **position-aware router**
+(grep when signal is mid-log, tail when signal is late, with the
+position estimated cheaply from regex match-density or simple
+heuristics) would likely beat both individually. v1.3's hybrid
+threshold-on-tokens does NOT do this — it only routes on grep's
+output token count, which is orthogonal to where in the log the
+signal lives.
+
 ## 4. Why hybrid drops
 
 Per-case detail on the 8 v2 cases (Sonnet 4.6, sv1.1):
@@ -698,17 +830,19 @@ In priority order:
 ```text
 protocols/cilogbench-v2-partial.lock.json        ← 8-case lock (§3)
 protocols/cilogbench-v2-checkpoint.lock.json     ← 10-case lock (§3b)
-protocols/cilogbench-v2-checkpoint-12.lock.json  ← 12-case lock (§3c, current)
+protocols/cilogbench-v2-checkpoint-12.lock.json  ← 12-case lock (§3c)
+protocols/cilogbench-v2-checkpoint-13.lock.json  ← 13-case lock (§3d, current canonical)
 docs/corpus/cilogbench_v2_case_matrix.md     ← target matrix + counts
 docs/corpus/cilogbench_v2_collection_guidelines.md
 docs/corpus/cilogbench_v2_annotation_guide.md
 docs/corpus/v2_case_intake_queue.md          ← rolling intake worklist
 cases/dev/, cases/holdout/, cases/stress/    ← 16 legacy v1.3 cases
 cases/v2/dev/ (3), cases/v2/holdout/ (5),
-cases/v2/stress/ (4)                          ← 12 new_v2 cases
+cases/v2/stress/ (5)                          ← 13 new_v2 cases
 results/{dev,holdout,stress,v2/dev,v2/holdout,v2/stress}/eval_diagnosis_real-debugger-{v1,v2}.json
                                               ← Haiku + Sonnet sv1.1 numbers
 results/{...}/eval_<method>.json             ← signal-recall numbers
+reports/v2_split_balance.md                  ← split-balance narrative (refreshed at 13-case)
 reports/e10_phase3_v2_partial_signal_recall.md   ← deterministic detail (8-case)
 reports/e10_phase3_v2_partial_diagnosis.md       ← real-debugger detail (8-case)
 reports/e10_codex_adversarial_review_fixes.md    ← privacy-gate fix log

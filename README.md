@@ -234,12 +234,14 @@ to let the numbers pick.
   - Tooling: `tools/validate_case_tags.py` accepts `v2/dev`,
     `v2/holdout`, `v2/stress`, `v1.3`, `v2`, `all`; case importer
     already handled nested splits.
-  - Cases collected so far: **12 / 34** new (16 / 16 legacy tagged
+  - Cases collected so far: **13 / 34** new (16 / 16 legacy tagged
     `origin=legacy_v1_3`). Batch 1 (3/3) ✓, Batch 2 (5/5) ✓,
-    Batch 3 (2/2) ✓ Phase 2 10-case checkpoint, Batch 4 (2 of 3-5)
+    Batch 3 (2/2) ✓ Phase 2 10-case checkpoint, Batch 4 (3 of 3-5)
     in progress. v2/dev 3/3 ✓, v2/holdout 5/4 (slightly over-target),
-    v2/stress 4/3.
-  - v2/stress cases (4 — process-crash + matrix + non-pytest framework + timeout):
+    v2/stress 5/3 (over-target by 2 — Batch 4 case 3 deliberately
+    added to break the 4/4-late signal_position monoculture flagged
+    by tools/check_split_balance.py at 12-case state).
+  - v2/stress cases (5 — process-crash + matrix + non-pytest framework + timeout + middle-signal):
     1. `cases/v2/stress/numpy-pytest-segfault-argsort-v2-001/`
        — `Fatal Python error: Segmentation fault` inside
        `test_datetime_nat_argsort_stability` on numpy's
@@ -267,16 +269,28 @@ to let the numbers pick.
        `timeout_marker` evidence_format. nodejs/node `parallel/
        test-debugger-exec` timed out 15s waiting for the inspector
        break-in pattern.
-  - **Three protocol locks now exist for v2:**
+    5. `cases/v2/stress/airflow-precommit-tsc-middle-v2-001/`
+       — Batch 4 case 3; **first non-late v2/stress case**
+       (signal_position=middle). apache/airflow pre-commit
+       `ts-compile-lint-ui` hook fails with 3 TypeScript errors
+       (TS6196, TS6133, TS2739) at L3391-3479 of a 6496-line log;
+       ##[error] step exit at L3762 (≈58%); ~42% of the log AFTER
+       the failure is non-failure pre-commit hook chatter from
+       the ~30 OTHER hooks pre-commit keeps running. Selected
+       deliberately to test the §3c tail-winner sampling caveat.
+  - **Four protocol locks now exist for v2:**
     [`cilogbench-v2-partial`](protocols/cilogbench-v2-partial.lock.json)
-    (8 v2 cases — the snapshot the original Phase 3 numbers were
-    measured against),
+    (8 v2 cases — original Phase 3 baseline),
     [`cilogbench-v2-checkpoint`](protocols/cilogbench-v2-checkpoint.lock.json)
-    (10 v2 cases — Phase 2 checkpoint with v2/stress 2/3), and
-    [`cilogbench-v2-checkpoint-12`](protocols/cilogbench-v2-checkpoint-12.lock.json)
-    (12 v2 cases — Batch 4 partial state with v2/stress 4/3, current
-    canonical). All three SHA-pin the same 14 schema/prompt/evaluator
-    hashes; only the case set differs.
+    + [`cilogbench-v2-checkpoint-12`](protocols/cilogbench-v2-checkpoint-12.lock.json)
+    (10/12-case checkpoints — both regenerated post-Codex-fix and
+    now resolve to the current 13-case manifest; historical eval
+    states recoverable via git), and
+    [`cilogbench-v2-checkpoint-13`](protocols/cilogbench-v2-checkpoint-13.lock.json)
+    (13 v2 cases — current canonical). All four pin 20 hashes
+    each (10 schemas + 3 prompts + 4 evaluators + 3 hybrid-baseline
+    file hashes — `validate_protocol_lock.py` fail-closes on
+    hybrid drift after the Codex-response fix in commit f370ea2).
   - **12-case refresh surfaced two findings.** Phase 3 was re-run
     with Sonnet + Haiku on the 2 new v2/stress cases (16 calls each
     debugger). Hybrid sv1.1 stayed flat (0.4427 → 0.4353 Sonnet,
@@ -291,18 +305,22 @@ to let the numbers pick.
        collapses on nodejs (~320k tokens). Hybrid's 4k threshold
        avoids grep's blowup but inherits rtk-err-cat's nodejs
        collapse.
-    2. **Macro-level (caveated):** the 12-case v2 macro is now
-       tail #1 (Sonnet 0.68 / Haiku 0.63), grep #2 (0.59 / 0.49)
-       — but that "tail unseats grep" gap is partly a sampling
-       artifact. v2/stress is currently 4/4 late and tail is
-       structurally advantaged by late signals. On the non-stress
-       portion (v2/dev + v2/holdout, 8 cases, mixed positions)
-       tail and grep are tied within 0.03. The macro-level
-       tail-winner finding should be re-checked when v2/stress
-       acquires a middle/scattered/early case. Full 12-case
-       detail with the sampling decomposition in
+    2. **Macro-level (resolved at 13-case):** at 12-case the v2
+       macro showed tail #1 (Sonnet 0.68) over grep (0.59) — but
+       the +0.09 gap was a v2/stress 4/4-late sampling bias.
+       Adding airflow's middle-signal case at 13-case shrank the
+       Sonnet gap to **+0.02** (74% shrink), well within
+       case-to-case variance. Per-case on the new airflow log
+       (Sonnet): tail 0.017 (collapsed — failure block >2900
+       lines from the bottom), grep 0.717 (recovered — structured
+       tsc errors). The robust 13-case takeaway: **no single
+       context-provider wins on both signal positions** — tail
+       beats grep on late, grep beats tail on middle, hybrid's
+       threshold-on-tokens routing doesn't capture the position
+       trade-off. Full 13-case detail with per-case
+       decomposition in
        [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md)
-       §3c, narrative in
+       §3d, narrative in
        [`reports/v2_split_balance.md`](reports/v2_split_balance.md).
   - Phase 2 acceptance-criteria-C deliverables landed:
     [`reports/v2_corpus_summary.md`](reports/v2_corpus_summary.md),
