@@ -1,0 +1,49 @@
+{
+  "case_id": "cpython-tcl-windows-matrix-v2-001",
+  "context_method": "rtk-log",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Windows CPython build on Visual Studio 2022 (switch-case variant) failed with repeated compiler diagnostic formatting errors (51 occurrences) and Unicode encoding assertion errors in tests (4 occurrences).",
+  "root_cause_category": "other",
+  "root_cause": "Compiler diagnostic formatting issue when structured output is enabled on Windows with Visual Studio 2022, combined with character encoding mismatch (UTF-8 interpreted as Latin-1) causing test assertion failures.",
+  "confidence": 0.5,
+  "relevant_files": [
+    "errors.c",
+    "pegen_errors.c",
+    "Modules/_testinternalcapi/test_cases.c",
+    "Python/generated_cases.c.h",
+    "Python/_warnings.c"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "[×51] 2026-05-07T02:59:07.0094292Z          Structured output is enabled. The formatting of compiler di...",
+      "reason": "Most frequent error (51 occurrences) indicates a primary issue with compiler diagnostic formatting when structured output mode is enabled during the build."
+    },
+    {
+      "quote": "[×4] 2026-05-07T03:14:34.6687371Z ^[[1;35mAssertionError^[[0m: ^[[35m'<\\ud83d\\udcbb>' != '<ðŸ'»>'",
+      "reason": "Unicode emoji character (U+1F4BB 💻) corrupted to mojibake string when displayed, indicating UTF-8 bytes being misinterpreted as Latin-1 encoding in test output."
+    },
+    {
+      "quote": "C:\\Program Files\\Microsoft Visual Studio\\18\\Enterprise\\VC\\T...",
+      "reason": "Build is running on Windows with Visual Studio 2022 (version 18) where the structured output diagnostic formatting issue occurs."
+    }
+  ],
+  "suggested_fix": "Verify that the 'switch-case' variant build configuration is compatible with Visual Studio structured output mode; check and adjust system locale/code page settings on the Windows runner to ensure UTF-8 encoding is used consistently throughout the build and test process.",
+  "input": {
+    "context_path": "results/v2/stress/rtk-log/cpython-tcl-windows-matrix-v2-001.txt",
+    "context_tokens_estimate": 410
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 444
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 38769.258,
+    "cache_key": "7e16562653bf72ec80bb3f8c44924d1bad5f6957bf8e3d6ac991421d50a23b8e",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

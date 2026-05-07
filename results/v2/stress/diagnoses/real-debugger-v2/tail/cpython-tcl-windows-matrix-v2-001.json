@@ -1,0 +1,56 @@
+{
+  "case_id": "cpython-tcl-windows-matrix-v2-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed due to two test assertion failures in test_tcl on Windows. The tests expected surrogate pair characters to be recombined into a single Unicode code point (U+1F4BB, 💻), but the Tcl 9.0.3 library returned the raw surrogate pair bytes instead.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "test_eval_surrogates_in_result and test_evalfile_surrogates_in_result both assert that Tcl evaluates a string containing surrogate pairs (\\ud83d\\udcbb) and returns the combined emoji character (U+1F4BB). Instead, Tcl 9.0.3 returns the surrogates as-is (rendered as 'ðŸ'»' in the log), causing an AssertionError.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "D:\\a\\cpython\\cpython\\Lib\\test\\test_tcl.py"
+  ],
+  "relevant_tests": [
+    "test.test_tcl.TclTest.test_eval_surrogates_in_result",
+    "test.test_tcl.TclTest.test_evalfile_surrogates_in_result"
+  ],
+  "evidence": [
+    {
+      "quote": "AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ'»>'",
+      "reason": "This is the direct assertion failure: the test expected the surrogate pair to be decoded into U+1F4BB but got garbled bytes back from Tcl instead."
+    },
+    {
+      "quote": "self.assertEqual(tcl.eval(r'set a \"<\\ud83d\\udcbb>\"'), '<\\U0001f4bb>')",
+      "reason": "The test at line 57 asserts that Tcl returns the composed emoji U+1F4BB when given surrogate halves, which is the failing expectation."
+    },
+    {
+      "quote": "patchlevel = 9.0.3",
+      "reason": "The Tcl version in use is 9.0.3; this version may handle surrogate pairs differently from what the test expects, causing the mismatch."
+    },
+    {
+      "quote": "1 test failed:\n    test_tcl",
+      "reason": "Confirms that test_tcl is the sole failing test module causing the overall job failure."
+    },
+    {
+      "quote": "test_tcl failed (2 failures)",
+      "reason": "Confirms exactly 2 sub-test failures within test_tcl, matching the two surrogate-handling test cases."
+    }
+  ],
+  "suggested_fix": "Investigate compatibility between CPython's surrogate-pair handling assumptions and Tcl 9.0.3's behavior. Either update the tests to match Tcl 9.0.3's actual output for surrogate pairs, or fix the CPython Tcl bridge code to correctly recombine surrogate pairs when decoding results from Tcl 9.0.3.",
+  "input": {
+    "context_path": "results/v2/stress/tail/cpython-tcl-windows-matrix-v2-001.txt",
+    "context_tokens_estimate": 5443
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 537
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 28216.099,
+    "cache_key": "663fe68c491378a6d15075f4de7db2d10f5c50e35e6f47d45d737ce0cef7d57d",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

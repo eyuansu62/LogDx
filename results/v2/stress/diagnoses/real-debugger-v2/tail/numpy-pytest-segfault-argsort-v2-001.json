@@ -1,0 +1,56 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The pytest run crashed with a fatal segmentation fault inside numpy's `argsort` implementation while executing `test_datetime_nat_argsort_stability`. The process was terminated by the OS (exit code 245) rather than recording a normal test failure.",
+  "root_cause_category": "other",
+  "root_cause": "A segmentation fault in numpy's native `argsort` code path (via `_wrapfunc` in `fromnumeric.py`) was triggered by the test `test_datetime_nat_argsort_stability` in `numpy/_core/tests/test_datetime.py`, crashing the entire Python process.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "numpy/_core/tests/test_datetime.py",
+    "numpy/_core/fromnumeric.py"
+  ],
+  "relevant_tests": [
+    "numpy/_core/tests/test_datetime.py::test_datetime_nat_argsort_stability"
+  ],
+  "evidence": [
+    {
+      "quote": "Fatal Python error: Segmentation fault",
+      "reason": "Explicit fatal crash reported by the Python runtime, not a test assertion failure."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
+      "reason": "Identifies the specific test function and line that triggered the crash."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 54 in _wrapfunc",
+      "reason": "Shows the crash originated inside numpy's native argsort dispatch wrapper."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 1231 in argsort",
+      "reason": "Confirms the crash is in numpy's `argsort` function, consistent with the test name referencing argsort stability."
+    },
+    {
+      "quote": "Process completed with exit code 245.",
+      "reason": "Non-zero exit code confirms the process was killed (SIGSEGV = signal 11, exit code 128+11=139 or platform variant 245), not a normal test failure."
+    }
+  ],
+  "suggested_fix": "Investigate the `argsort` implementation for datetime arrays containing NaT values in `numpy/_core/fromnumeric.py` (around line 54, `_wrapfunc`) and `numpy/_core/tests/test_datetime.py` line 226 (`test_datetime_nat_argsort_stability`) to find the memory-safety bug causing the segfault; run the single test in isolation under a memory debugger (e.g., valgrind or AddressSanitizer) to pinpoint the invalid memory access.",
+  "input": {
+    "context_path": "results/v2/stress/tail/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 11078
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 588
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 34588.378,
+    "cache_key": "fbd5661d30f13c76928e88133fba8ceae45d709c8b063c45d19208be5d325abe",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

@@ -1,13 +1,19 @@
-# CILogBench E10 — v2 generalization (partial, 8 cases)
+# CILogBench E10 — v2 generalization (partial)
 
-> **Protocol:** [`cilogbench-v2-partial`](../protocols/cilogbench-v2-partial.lock.json)
-> (lock created 2026-05-07; 5 splits = `dev` + `holdout` + `stress`
-> + `v2/dev` + `v2/holdout`; 24 cases total = 16 v1.3 legacy + 8 new
-> v2). The "partial" in the name is honest about the small new sample:
-> 8 of the planned 34 v2 cases. The lock SHA-pins the same v1.3
-> schemas, prompts, and evaluators that were in
-> `cilogbench-v1.3.lock.json`, so v1.3 numbers reproduce identically
-> against this protocol; only the case set has grown.
+> **Two protocols are described in this report:**
+>
+> - [`cilogbench-v2-partial`](../protocols/cilogbench-v2-partial.lock.json)
+>   (lock 2026-05-07, 24 cases) — the **8-case** v2 state that the
+>   first Phase 3 run measured against. This is what the §3 8-case
+>   numbers below are anchored to.
+> - [`cilogbench-v2-checkpoint`](../protocols/cilogbench-v2-checkpoint.lock.json)
+>   (lock 2026-05-07, 26 cases) — the **10-case** Phase 2 checkpoint
+>   state, adding the v2/stress split (numpy segfault + cpython
+>   matrix). The §4 10-case numbers below are anchored to this lock.
+>
+> Both locks SHA-pin the same v1.3 schemas, prompts, and evaluators
+> that were in `cilogbench-v1.3.lock.json`, so v1.3 numbers reproduce
+> identically against either; only the case set has grown.
 >
 > **Companion docs:**
 > [`e10_phase3_v2_partial_signal_recall.md`](e10_phase3_v2_partial_signal_recall.md)
@@ -22,9 +28,15 @@
 
 ## TL;DR
 
-The v1.3 hybrid does **not** generalize to a fresh 8-case v2 corpus.
-This is the strongest single result of E10 so far and survives every
-check we have run against it.
+The v1.3 hybrid does **not** generalize to a fresh v2 corpus.
+This is the strongest single result of E10 so far. Magnitudes
+shifted between the 8-case (v2-partial) and 10-case (v2-checkpoint)
+refreshes — the **direction** is unchanged in both cases; the
+**ranking magnitude** softened from "rank #1 → #6" (8-case) to
+"rank #1 → #3–4" (10-case), because adding the v2/stress split
+revealed that *every* method except grep/tail collapses on
+stress-bucket cases (raw and rtk-read both hit 0.000 sv1.1 on the
+2 stress cases when Sonnet abstains; relative rank shifts).
 
 ```text
                                    v1.3 macro      v2 macro       Δ
@@ -67,14 +79,14 @@ this round:
 |---|---:|---|
 | `v2/dev` | 3 | docker_build (was 0/16), test_assertion, network_or_flaky (was 0/16) |
 | `v2/holdout` | 5 | go ecosystem (was 0/16), dependency_install (audit), github_actions_config (2nd), snapshot_or_golden_diff (was 0/16), compile_error+cpp (was 0/16 cpp) |
-| `v2/stress` | 0 | reserved for future "deliberately difficult" cases |
+| `v2/stress` | 2 | first stress cases — see §4 below |
 
-The 8 new cases were sourced from real public CI runs (pnpm/pnpm,
+The 10 new cases were sourced from real public CI runs (pnpm/pnpm,
 pypa/pip, moby/buildkit, cli/cli, biomejs/biome,
-prettier/prettier, pandas-dev/pandas) and imported through the v2
-intake pipeline (`tools/import_case_skeleton.py` → ground_truth +
-tags annotation → raw-sanity gate at 100% signal preservation per
-case).
+prettier/prettier, pandas-dev/pandas, numpy/numpy, python/cpython)
+and imported through the v2 intake pipeline
+(`tools/import_case_skeleton.py` → ground_truth + tags annotation
+→ raw-sanity gate at 100% signal preservation per case).
 
 Five new schema fields used for v2 cases (all additive, v1.3 cases
 remain valid): `origin`, `ecosystem`, `ci_provider`,
@@ -149,6 +161,91 @@ The signal-recall and diagnosis-quality stories agree on hybrid
 being the largest drop and grep being the smallest (raw is pinned
 at 1.0 by definition for signal-recall and behaves differently on
 sv1.1 because the raw log is given to the model directly).
+
+## 3b. 10-case refresh (v2-checkpoint, 2026-05-07)
+
+After collecting 2 more v2 cases into the previously-empty `v2/stress`
+split — `numpy-pytest-segfault-argsort-v2-001` (process-crash from
+a numpy `argsort` segfault on the `reverse-sorts` perf branch) and
+`cpython-tcl-windows-matrix-v2-001` (matrix-shaped Windows-only
+tcltk regression) — Phase 3 was re-run on the 10-case state.
+Results:
+
+```text
+                                v1.3 sv1.1   v2 sv1.1 (8)   v2 sv1.1 (10)   Δ from 8→10
+                                (Sonnet)     (Sonnet)       (Sonnet)
+raw                               0.5110       0.5478          0.3652         -0.1826
+tail                              0.6886       0.6647          0.6673         +0.0026
+grep                              0.7700       0.6664          0.7435         +0.0770
+rtk-read                          0.5224       0.5040          0.3360         -0.1680
+rtk-log                           0.3089       0.2434          0.1622         -0.0811
+rtk-err-cat                       0.5343       0.5173          0.4880         -0.0294
+llm-summary-v1-mock               0.5181       0.2981          0.2154         -0.0827
+hybrid-grep-4k-rtk-err-cat-v1     0.7713       0.4495          0.4427         -0.0067
+```
+
+Cross-debugger ranking on the 10-case v2 state:
+
+```text
+                                  Haiku v2-10        Sonnet v2-10
+method                            score   rank       score   rank
+grep                              0.6189    1        0.7435    1   ← unanimous winner (was #1 in v2-8 too)
+tail                              0.4705    2        0.6673    2   ← stable #2
+hybrid-grep-4k-rtk-err-cat-v1     0.4683    3        0.4427    4   ← was #6 in v2-8
+rtk-err-cat                       0.4600    4        0.4880    3
+rtk-read                          0.2969    5        0.3360    6   ← drops sharply on stress
+raw                               0.2901    6        0.3652    5   ← drops sharply on stress
+llm-summary-v1-mock               0.1924    7        0.2154    7
+rtk-log                           0.1692    8        0.1622    8
+```
+
+Two important shifts vs the 8-case state:
+
+1. **Hybrid moves from rank #6 to rank #3–4**, not because hybrid
+   improved (sv1.1 stayed flat: 0.4495 → 0.4427 Sonnet,
+   0.4150 → 0.4683 Haiku), but because **raw** and **rtk-read**
+   collapsed on the v2/stress cases. Sonnet abstains on both
+   stress cases when given raw context (5553-line numpy log +
+   4349-line cpython log are both too noisy for confident
+   diagnosis), and rtk-read passes the log through untouched so
+   it has the same problem. raw drops 0.55 → 0.37 on Sonnet
+   (Δ −0.18); rtk-read drops 0.50 → 0.34. This re-orders the
+   middle of the ranking.
+2. **grep IMPROVES on the 10-case state**: 0.6664 → 0.7435 Sonnet,
+   0.5472 → 0.6189 Haiku. The 2 stress cases both have failure
+   markers that grep's regex catches cleanly (`Fatal Python error`,
+   `FAIL`, `Segmentation fault`, `##[error]`) so grep's tightly-
+   bounded ±3/8 lines isolate the signal where raw drowns in
+   noise. Adding stress raises grep's macro.
+
+The headline updates accordingly:
+
+| Headline claim | 8-case status | 10-case status |
+|---|---|---|
+| "hybrid sv1.1 drops substantially v1.3 → v2" | ✅ −0.32 (Sonnet) / −0.30 (Haiku) | ✅ −0.33 / −0.25 |
+| "hybrid is rank #1 → #6 across both debuggers" | ✅ true at 8 cases | ⚠️ now rank #1 → #3-4 |
+| "grep is the most stable / unanimous v2 winner" | ✅ | ✅ (and improved) |
+| "cost match holds; quality match doesn't" | ✅ | ✅ |
+| "confident-error rate on hybrid spikes 0.00 → 0.17" | (Sonnet only) | Confirmed; 0.0 → ~0.17 stable |
+
+The "rank #1 → #6" specific framing was a small-sample artifact
+from the v2-partial state that lacked stress cases. The robust
+core finding is unchanged: **hybrid loses ≥0.25 sv1.1 across both
+debuggers, falls out of the top tier, and grep is the unanimous
+v2 winner.**
+
+Signal-recall (deterministic) at 10-case:
+
+```text
+                                v1.3 sig    v2 sig (8)    v2 sig (10)    Δ from 8→10
+hybrid                          0.8237      0.4841        0.3942         -0.0899
+grep                            0.8756      0.8286        0.8381         +0.0095
+tail                            0.8549      0.7777        0.8042         +0.0265
+```
+
+Signal-recall agrees: hybrid loses another ~0.09 going from 8 to
+10 cases (now Δ −0.43 from v1.3 to v2-10). Grep is essentially
+unchanged. Tail picks up slightly.
 
 ## 4. Why hybrid drops
 

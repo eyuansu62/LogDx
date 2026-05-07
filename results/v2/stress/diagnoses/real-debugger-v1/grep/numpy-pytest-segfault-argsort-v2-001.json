@@ -1,0 +1,52 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "grep",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Segmentation fault in numpy's argsort function while processing datetime NaT values during test_datetime_nat_argsort_stability test execution.",
+  "root_cause_category": "other",
+  "root_cause": "Runtime segmentation fault in numpy argsort C implementation when handling datetime NaT (Not-a-Time) values, causing a fatal Python error and process exit with code 245.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "numpy/_core/fromnumeric.py",
+    "numpy/_core/tests/test_datetime.py"
+  ],
+  "relevant_tests": [
+    "numpy/_core/tests/test_datetime.py::test_datetime_nat_argsort_stability"
+  ],
+  "evidence": [
+    {
+      "quote": "Fatal Python error: Segmentation fault",
+      "reason": "Explicit fatal segmentation fault reported by Python runtime"
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 1231 in argsort",
+      "reason": "Stack trace shows the failure originates in the argsort function"
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
+      "reason": "Test case name explicitly indicates this is an argsort stability test with datetime NaT values"
+    },
+    {
+      "quote": "##[error]Process completed with exit code 245.",
+      "reason": "Exit code 245 typically indicates a signal-based crash (segmentation fault)"
+    }
+  ],
+  "suggested_fix": "Investigate and fix the segmentation fault in numpy's argsort implementation when handling datetime NaT values. The crash occurs at the C code level during the sorting operation on datetime arrays containing NaT (Not-a-Time) elements. Review recent changes to argsort, sorting algorithms, or datetime handling in the core numpy code.",
+  "input": {
+    "context_path": "results/v2/stress/grep/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 28011
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 436
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 31544.46,
+    "cache_key": "275e427577339105c1378fa08e1695baa0627c866e2fbc98909ac5269ef65b35",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

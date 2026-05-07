@@ -1,0 +1,48 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The pytest smoke test run crashed with a fatal segmentation fault while executing tests in numpy/_core/tests/test_datetime.py. The Python process was killed mid-run, preventing any further test collection or reporting. Earlier meson build probe errors are normal feature-detection noise and did not prevent the build from completing.",
+  "root_cause_category": "other",
+  "root_cause": "A segmentation fault in the CPython interpreter occurred during execution of numpy/_core/tests/test_datetime.py, aborting the entire test process.",
+  "confidence": 0.87,
+  "relevant_files": [
+    "numpy/_core/tests/test_datetime.py",
+    "numpy/_core/tests/test__exceptions.py"
+  ],
+  "relevant_tests": [
+    "numpy/_core/tests/test_datetime.py"
+  ],
+  "evidence": [
+    {
+      "quote": "Fatal Python error: Segmentation fault",
+      "reason": "Explicit fatal crash message emitted by CPython when the process receives SIGSEGV, confirming the test run was aborted by a segfault rather than a normal test assertion failure."
+    },
+    {
+      "quote": "numpy/_core/tests/test_datetime.py ^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0mFatal Python error: Segmentation fault",
+      "reason": "The segfault occurred partway through test_datetime.py (after 13 passing dots), pinpointing the crashing file and confirming tests were running before the crash."
+    },
+    {
+      "quote": "numpy/_core/tests/test__exceptions.py ^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m",
+      "reason": "All tests in test__exceptions.py passed cleanly, confirming the build and import machinery work and the crash is isolated to test_datetime.py execution."
+    }
+  ],
+  "suggested_fix": "Reproduce locally by running `python -m pytest numpy/_core/tests/test_datetime.py -x` under Python 3.12 with a debug build or ASAN enabled to identify which specific test and C-level call site triggers the segfault, then bisect recent changes to datetime-related C code.",
+  "input": {
+    "context_path": "results/v2/stress/rtk-err-cat/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 4696
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 513
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 33402.949,
+    "cache_key": "74b4e758f9f04d0ccdf67964c8e88f53de485b6011667a46491793d48a41f4e8",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

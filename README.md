@@ -251,12 +251,32 @@ to let the numbers pick.
        in the bundled tcltk: ALL 7 Windows configs fail with the
        same `AssertionError: '<💻>' != '<ðŸ’»>'` while
        ALL Linux/macOS variants pass. `multi_failure = true`.
-  - **NB:** the `cilogbench-v2-partial.lock.json` (8 cases) is
-    intentionally NOT regenerated for the 10-case state — it is
-    the snapshot under which the Phase 3 reports' headline numbers
-    were measured. The 9th and 10th cases ship under v2 corpus
-    growth, not under that lock. A `cilogbench-v2-checkpoint`
-    lock can be minted later for citing 10-case-state results.
+  - **Two protocol locks now exist for v2:**
+    [`protocols/cilogbench-v2-partial.lock.json`](protocols/cilogbench-v2-partial.lock.json)
+    (8 v2 cases — the snapshot the original Phase 3 numbers were
+    measured against) and
+    [`protocols/cilogbench-v2-checkpoint.lock.json`](protocols/cilogbench-v2-checkpoint.lock.json)
+    (10 v2 cases — Phase 2 checkpoint with v2/stress added). Both
+    SHA-pin the same 14 schema/prompt/evaluator hashes; only the
+    case set differs.
+  - **10-case refresh hardened the headline but softened the
+    rank claim.** Phase 3 was re-run with Sonnet + Haiku on the
+    2 new v2/stress cases (32 calls). Hybrid sv1.1 stayed roughly
+    flat (0.4495 → 0.4427 Sonnet, 0.4150 → 0.4683 Haiku — both
+    still ≥0.25 below v1.3), but **rank #1 → #3-4, not #1 → #6**.
+    The 8-case sample missed the v2/stress bucket where
+    `raw`/`rtk-read` collapse to ~0.34 sv1.1 and `grep` jumps to
+    0.74 (Sonnet) — adding stress cases re-ordered the middle
+    of the ranking without changing the magnitude of hybrid's
+    drop. The robust core: **grep is the unanimous v2 winner
+    across both debuggers (rank #1, both); hybrid loses ≥0.25
+    sv1.1 and falls out of the top tier.** Full 10-case detail
+    in [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md)
+    §3b.
+  - Phase 2 acceptance-criteria-C deliverables landed:
+    [`reports/v2_corpus_summary.md`](reports/v2_corpus_summary.md),
+    [`reports/v2_split_balance.md`](reports/v2_split_balance.md),
+    [`reports/v2_contamination_check.md`](reports/v2_contamination_check.md).
   - 🚨 **Phase 3 (partial) finding** — v1.3 methods do NOT generalize
     to v2. Confirmed using BOTH the deterministic `signal-recall`
     proxy AND the calibrated `diagnosis_score_v1_1` metric (with

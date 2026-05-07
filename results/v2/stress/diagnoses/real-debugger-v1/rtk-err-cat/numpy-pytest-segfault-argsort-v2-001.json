@@ -1,0 +1,51 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The numpy build completes despite multiple compiler warnings about missing headers and failed CMake configuration checks. Tests begin running but a segmentation fault occurs during test_datetime.py execution.",
+  "root_cause_category": "other",
+  "root_cause": "Segmentation fault in compiled numpy extension during pytest test execution in test_datetime.py",
+  "confidence": 0.78,
+  "relevant_files": [
+    "numpy/_core/tests/test_datetime.py"
+  ],
+  "relevant_tests": [
+    "numpy/_core/tests/test_datetime.py"
+  ],
+  "evidence": [
+    {
+      "quote": "#error \"Header 'Python.h' could not be found\"",
+      "reason": "Indicates configuration checks failed to locate critical Python development headers during build"
+    },
+    {
+      "quote": "Preliminary CMake check failed. Aborting.",
+      "reason": "Multiple CMake preliminary checks failed, suggesting incomplete feature detection and configuration"
+    },
+    {
+      "quote": "collect2: error: ld returned 1 exit status",
+      "reason": "Linker errors occurred during build configuration checks, indicating unresolved symbols or missing libraries"
+    },
+    {
+      "quote": "numpy/_core/tests/test_datetime.py . . . . . . . . . . . . . . Fatal Python error: Segmentation fault",
+      "reason": "Explicit segmentation fault crash during test_datetime.py execution after initial tests passed"
+    }
+  ],
+  "suggested_fix": "Investigate the segmentation fault in test_datetime.py; review build configuration for missing dependencies or incomplete linking that may have produced a broken extension module despite successful build completion",
+  "input": {
+    "context_path": "results/v2/stress/rtk-err-cat/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 4696
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 375
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 30723.363,
+    "cache_key": "3a5c6a982284af0e10c058eb7273f3b48adb957a0820e2d2ca273f99a492548b",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

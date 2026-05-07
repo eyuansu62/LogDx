@@ -1,0 +1,52 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "A segmentation fault occurred during the test_datetime_nat_argsort_stability test in numpy._core.tests.test_datetime when calling the argsort() function on datetime arrays containing NaT values.",
+  "root_cause_category": "other",
+  "root_cause": "Segmentation fault in numpy's argsort C extension when handling datetime NaT (Not-a-Time) values, as triggered by test_datetime_nat_argsort_stability.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "numpy/_core/fromnumeric.py",
+    "numpy/_core/tests/test_datetime.py"
+  ],
+  "relevant_tests": [
+    "test_datetime_nat_argsort_stability"
+  ],
+  "evidence": [
+    {
+      "quote": "Fatal Python error: Segmentation fault",
+      "reason": "Explicit indication of a segmentation fault crash during test execution."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 1231 in argsort",
+      "reason": "Stack trace shows the argsort function is the point of failure."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
+      "reason": "Stack trace identifies the specific failing test that triggered the segfault."
+    },
+    {
+      "quote": "numpy/_core/tests/test_datetime.py ^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[32m.^[[0m^[[0mFatal Python error: Segmentation fault",
+      "reason": "Shows the segfault occurs mid-test execution in test_datetime.py, right after several passing tests."
+    }
+  ],
+  "suggested_fix": "Investigate the argsort implementation for datetime arrays with NaT values; likely a null pointer dereference or buffer overflow in the sorting algorithm when handling NaT sentinel values. Review recent changes to argsort or datetime handling code paths.",
+  "input": {
+    "context_path": "results/v2/stress/tail/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 11078
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 461
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 24739.344,
+    "cache_key": "83263e9e0052533bc4eca4a62baf9028ccb78878ab870b5757a09dfb31d6657f",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}
