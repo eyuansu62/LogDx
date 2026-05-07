@@ -40,6 +40,7 @@ rejected            see cases/v2/_rejected/<candidate_id>/rejection_reason.md
 | pandas-cpp-xsimd-neon64-v2-001 | github_actions | pandas-dev/pandas | c-cpp-cmake | compile_error | [run 25463397447 / job 74710897960](https://github.com/pandas-dev/pandas/actions/runs/25463397447/job/74710897960) | accepted | `cases/v2/holdout/` (5/4 — slightly over-target; v2/stress reserved for truly difficult cases). Privacy audit clean. C++ template-instantiation compile error: `extern template ... operator()<xsimd::neon64>` at moments_simd.hpp:255 doesn't match the primary template's `xsimd::neon` parameter at line 182. clang++ rejects with `error: explicit instantiation of 'operator()' does not refer to a function template`. Two compile units share one root cause; meson+ninja stops, pip metadata-generation fails. macOS-15 / arm64 / Python 3.12 / clang++ -std=c++20. Adds compile_error case (v1.3: 1/16 → 2 in v2), c-cpp-cmake ecosystem (v1.3: 0/16 → 1), primary_language=cpp (first). Raw sanity 1.0000 / 1.0000 / 1.0000. Selected as Batch 2 case 5 (deviation: compile_error rather than originally-targeted timeout/OOM, which is hard to surface via run-list browsing). |
 | numpy-pytest-segfault-argsort-v2-001 | github_actions | numpy/numpy | python-pytest | test_assertion (panic) | [run 25480154290 / job 74762267261](https://github.com/numpy/numpy/actions/runs/25480154290/job/74762267261) | accepted | `cases/v2/stress/` — **first stress case**. Privacy audit clean (complete). Process-crash failure: `Fatal Python error: Segmentation fault` inside `test_datetime_nat_argsort_stability` (test_datetime.py:226 → fromnumeric.py:1231 in argsort) on the `reverse-sorts` perf branch. Pytest faulthandler dumps stack and exits 245. log_size_bucket=large (5553 lines). signal_position=late. requires_repo_context=true (log identifies WHERE the crash is but cannot prove WHY without C source). Different evidence shape from any v1.3 / prior v2 case (no assertion diff, no FAIL marker, no compile error block). Raw sanity 1.0000 / 1.0000 / 1.0000. Selected as Batch 3 case 1 — fills the v2/stress 'unusual evidence format' criterion with process-crash. |
 | cpython-tcl-windows-matrix-v2-001 | github_actions | python/cpython | python-pytest | matrix_or_monorepo_failure | [run 25473514383 / job 74742066692](https://github.com/python/cpython/actions/runs/25473514383/job/74742066692) | accepted | `cases/v2/stress/`. Privacy audit clean (complete). Matrix-shaped: ALL 7 Windows configs fail (x64/Win32/arm64 × default/free-threading × switch-case/tail-call); ALL Linux/macOS variants pass. Branch `update_windows_tcltk` updated bundled tcltk to 9.0.3 → broke Unicode surrogate handling. test_tcl has 2 distinct failures (test_eval_surrogates_in_result test_tcl.py:57 + test_evalfile_surrogates_in_result test_tcl.py:292), both with `AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ’»>'`. multi_failure=true. case.json uses test_assertion (case.schema.json doesn't yet support matrix_or_monorepo_failure); tags.json uses matrix_or_monorepo_failure with 'category mismatch justified' note. log_size_bucket=medium (4349 lines). First v2 case in `matrix_or_monorepo_failure` category (was 0/v2). First v2 use of `matrix_summary` evidence_format. Raw sanity 1.0000 / 1.0000 / 1.0000. Selected as Batch 3 case 2 — completes Phase 2 checkpoint (10/34). |
+| rust-compiletest-wasm-exceptions-asm-v2-001 | github_actions | rust-lang/rust | rust-cargo | test_assertion | [run 25456140797 / job 74686149799](https://github.com/rust-lang/rust/actions/runs/25456140797/job/74686149799) | accepted | `cases/v2/stress/`. Privacy audit: 49→0 hits (2 ARTIFACTS/CACHES AWS_ACCESS_KEY_ID values redacted via sha256-prefix tokens; 2 GHA-already-masked AWS_*_KEY env lines stripped); re-audit clean. bors-try job for PR #156253 (rollup of 3 PRs, commit `bce7eda69`). compiletest assembly-llvm test `tests/assembly-llvm/wasm_exceptions.rs` failed under target `wasm32-wasip1` because two FileCheck directives (`// CHECK: catch_all` at L38, `// CHECK: catch` at L62) no longer match the actual emitted .s — rustc/LLVM now emits the new exnref-based wasm EH lowering (`try_table (catch_all_ref 0)` + `unreachable` cleanup) where the test still expected legacy `try`/`catch_all` block instructions. multi_failure=true (2 separate CHECK directives, same root cause). requires_repo_context=true (need test source for full CHECK pattern context). log_size_bucket=large (31110 lines / 2.96 MB — largest v2 raw.log so far; previously largest was biome-pnpm-not-found at 15802). signal_position=late (failure block at L30430-30999 of 31110, ~98%). Raw sanity 1.0000 / 1.0000 / 1.0000. Selected as Batch 4 case 1 — fills v2/stress non-pytest framework gap (was 2/2 pytest, breaks check_split_balance.py framework_dominance flag) and adds rust compiler-toolchain ecosystem to v2/stress. New evidence-format gap surfaced: FileCheck `check:N'M ~~~~` annotation pattern has no matching schema enum; closest fits used: `assertion_diff` + `compiler_diagnostic`. Schema-extension target for v3. repo_visibility=redacted. |
 
 ## Per-batch progress
 
@@ -99,6 +100,26 @@ Batch 3 (target: +2 cases, 10 total — Phase 2 checkpoint)
         v2/stress) — 100/100/100 — first v2 case in this category;
         first use of `matrix_summary` evidence_format; multi_failure
         (2 distinct test_tcl tests fail with one root cause).
+
+Batch 4 (target: 3-5 cases, 13-15 total)
+  Recommended mix (per reports/v2_split_balance.md flags):
+    1 timeout/OOM (still 0/v2)
+    1 non-pytest v2/stress (break 2/2 pytest monoculture)
+    1 huge log_size_bucket (>50k lines, still 0/26)
+    optional: early or scattered signal_position (still rare)
+  Status: 1 / 3-5 in progress (11 / 34 total cases)
+    accepted (Batch 4 case 1):
+      rust-compiletest-wasm-exceptions-asm-v2-001 (test_assertion,
+        v2/stress) — 100/100/100 — fills non-pytest v2/stress framework
+        gap (rust compiler-toolchain). Largest v2 raw.log so far at
+        31110 lines / 2.96 MB — still in `large` bucket (5k-50k); huge
+        gap remains 0/26. signal_position=late worsens v2/stress
+        late-monoculture (now 3/3 late) — flagged for future stress
+        collection to target middle/scattered/early.
+        New evidence-format gap surfaced: FileCheck `check:N'M ~~~~`
+        assembly-check-diff annotation pattern has no schema enum yet;
+        used `assertion_diff` + `compiler_diagnostic` as closest fits.
+    Carry-overs: timeout/OOM (still 0/v2), huge log (still 0/26).
 ```
 
 ## Rejection counter

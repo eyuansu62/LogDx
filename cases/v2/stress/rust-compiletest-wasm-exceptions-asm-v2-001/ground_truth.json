@@ -1,0 +1,155 @@
+{
+  "root_cause": {
+    "summary": "Compiletest assembly-llvm test `tests/assembly-llvm/wasm_exceptions.rs` failed under target `wasm32-wasip1` because two FileCheck directives no longer match the rustc-emitted .s. The test source asserts `// CHECK: catch_all` (test_tcl source line 38) and `// CHECK: catch` (line 62) immediately after a `call may_panic` instruction. The actual emitted assembly (visible in the `Input was: <<<<<<` dump in the FAIL block) uses the newer wasm exception-handling lowering: a `try_table (catch_all_ref 0)` block with an `exnref` local for `test_cleanup`, and `try_table (catch __cpp_exception 0)` for `test_rtry`. After the call instruction the compiler emits cleanup paths ending in `unreachable` rather than the old `catch`/`catch_all` block instructions the test expected. FileCheck reports `error: CHECK: expected string not found in input` at both check sites and points to `unreachable` as the `possible intended match`. This produces 1 failed / 550 passed / 103 ignored in the assembly compiletest suite, which causes Bootstrap to abort with `Bootstrap failed while executing --stage 2 test ... tests/assembly-llvm` and the GHA step to exit 1 (##[error]Process completed with exit code 1.). The root cause is a code-change-vs-test-expectation drift in the bors-try rollup PR #156253: rustc/LLVM now emits exnref-based wasm EH (`try_table` + `catch_all_ref`) but the wasm_exceptions.rs CHECK directives still reference the legacy `try`/`catch_all` block-instruction shape.",
+    "category": "test_assertion"
+  },
+  "required_signals": [
+    {
+      "type": "failed_test",
+      "value": "test [assembly] tests/assembly-llvm/wasm_exceptions.rs ... FAILED",
+      "file": "tests/assembly-llvm/wasm_exceptions.rs",
+      "importance": "critical",
+      "evidence_lines": [[30430, 30430]]
+    },
+    {
+      "type": "compile_error",
+      "value": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:38:12: error: CHECK: expected string not found in input",
+      "file": "tests/assembly-llvm/wasm_exceptions.rs",
+      "line": 38,
+      "importance": "critical",
+      "evidence_lines": [[30469, 30471]]
+    },
+    {
+      "type": "compile_error",
+      "value": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:62:12: error: CHECK: expected string not found in input",
+      "file": "tests/assembly-llvm/wasm_exceptions.rs",
+      "line": 62,
+      "importance": "critical",
+      "evidence_lines": [[30478, 30480]]
+    },
+    {
+      "type": "diff",
+      "value": "// CHECK: catch_all",
+      "importance": "critical",
+      "evidence_lines": [[30470, 30470]]
+    },
+    {
+      "type": "diff",
+      "value": "// CHECK: catch",
+      "importance": "critical",
+      "evidence_lines": [[30479, 30479]]
+    },
+    {
+      "type": "diff",
+      "value": "try_table (catch_all_ref 0)",
+      "aliases": [
+        "try_table (catch __cpp_exception 0)"
+      ],
+      "importance": "critical",
+      "evidence_lines": [[30525, 30525]]
+    },
+    {
+      "type": "diff",
+      "value": "unreachable",
+      "importance": "important",
+      "evidence_lines": [[30535, 30535], [30597, 30597]]
+    },
+    {
+      "type": "command",
+      "value": "test result: FAILED. 550 passed; 1 failed; 103 ignored; 0 measured; 0 filtered out; finished in 15.38s",
+      "importance": "critical",
+      "evidence_lines": [[30992, 30992]]
+    },
+    {
+      "type": "command",
+      "value": "Bootstrap failed while executing `--stage 2 test --host= --target wasm32-wasip1 tests/run-make tests/run-make-cargo tests/ui tests/mir-opt tests/codegen-units tests/codegen-llvm tests/assembly-llvm library/core`",
+      "importance": "critical",
+      "evidence_lines": [[30995, 30995]]
+    },
+    {
+      "type": "exit_code",
+      "value": "Build completed unsuccessfully in 0:55:45",
+      "importance": "important",
+      "evidence_lines": [[30996, 30996]]
+    },
+    {
+      "type": "annotation",
+      "value": "##[error]Process completed with exit code 1.",
+      "importance": "important",
+      "evidence_lines": [[30999, 30999]]
+    },
+    {
+      "type": "stack_location",
+      "value": "/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s",
+      "importance": "important",
+      "evidence_lines": [[30472, 30472], [30481, 30481], [30488, 30488]]
+    },
+    {
+      "type": "command",
+      "value": "Auto merge of #156253 - JonathanBrouwer:rollup-F1llwAn",
+      "aliases": [
+        "automation/bors/try"
+      ],
+      "importance": "optional",
+      "evidence_lines": [[123, 123]]
+    }
+  ],
+  "relevant_files": [
+    "tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "relevant_tests": [
+    "[assembly] tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence_spans": [
+    {
+      "start_line": 30430,
+      "end_line": 30430,
+      "reason": "Single-line `... FAILED` marker for the wasm_exceptions assembly test — the only failed test in the assembly-llvm suite for this run. Identifies the test name, suite, and target deterministically."
+    },
+    {
+      "start_line": 30463,
+      "end_line": 30490,
+      "reason": "FileCheck stderr block for the failed test: lists both CHECK failures (test source lines 38 and 62), the input/check files, the `possible intended match` lines pointing at the `unreachable` instructions, and the `Input was:` dump header. This is the self-contained primary diagnostic — names the test, the failing CHECK directives, and the expected-vs-found relationship."
+    },
+    {
+      "start_line": 30495,
+      "end_line": 30540,
+      "reason": "The captured `Input was:` assembly dump for `test_cleanup` showing the actual generated wasm: `try_table (catch_all_ref 0)` at line 31, `call may_panic` at 33, `unreachable` at 37. This is the evidence that lets a reader prove the test's CHECK assertion was looking for the legacy `catch_all` block instruction but rustc/LLVM now emits the new `try_table` + `catch_all_ref` form with `unreachable` cleanup. Without this span, the diagnosis would have to guess what changed."
+    },
+    {
+      "start_line": 30580,
+      "end_line": 30620,
+      "reason": "Same shape for the second failing function `test_rtry`: `try_table (catch __cpp_exception 0)` block + `unreachable` cleanup, where the test expected `catch __cpp_exception` block syntax to surface as a `catch` instruction. Establishes the failure is a class of issue (new wasm EH lowering) not a one-off pattern."
+    },
+    {
+      "start_line": 30992,
+      "end_line": 30999,
+      "reason": "Test runner summary (`test result: FAILED. 550 passed; 1 failed; 103 ignored`) + Bootstrap error (`--stage 2 test ... --target wasm32-wasip1 ... tests/assembly-llvm`) + Build duration + GHA `##[error]Process completed with exit code 1`. Confirms the single test failure propagated to bootstrap failure and to job exit code 1."
+    },
+    {
+      "start_line": 121,
+      "end_line": 124,
+      "reason": "PR/commit context: `git fetch ... bce7eda69366c72b3853129adbdd386db434e6b4 -> origin/automation/bors/try`. Identifies this run as a bors-try job for PR #156253 'Rollup of 3 pull requests' (commit message at L121 lookup via gh API confirms). Useful for proving the PR-introduced-the-divergence framing rather than a flaky-test framing."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "wasm_exceptions",
+      "FileCheck",
+      "catch_all",
+      "try_table",
+      "wasm32-wasip1"
+    ],
+    "must_not_claim": [
+      "compilation failed",
+      "the compiler crashed",
+      "out of memory",
+      "permission denied",
+      "network failure",
+      "timeout",
+      "this is a flaky test",
+      "Linux is also broken",
+      "test source code is wrong on the rust side independent of this PR"
+    ]
+  }
+}

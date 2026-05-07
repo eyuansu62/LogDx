@@ -1,0 +1,30 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "split": "v2/stress",
+  "origin": "new_v2",
+  "ecosystem": "rust-cargo",
+  "primary_language": "rust",
+  "ci_provider": "github_actions",
+  "repo_visibility": "redacted",
+  "failure_category": "test_assertion",
+  "framework": "cargo",
+  "log_size_bucket": "large",
+  "signal_position": "late",
+  "evidence_formats": [
+    "assertion_diff",
+    "compiler_diagnostic",
+    "ansi_colored_block",
+    "github_annotation",
+    "shell_command_output"
+  ],
+  "noise_profile": [
+    "runner_setup",
+    "verbose_build_noise",
+    "test_progress_noise"
+  ],
+  "multi_failure": true,
+  "flaky_or_transient": false,
+  "requires_repo_context": true,
+  "diagnosis_difficulty": "hard",
+  "notes": "rust-lang/rust bors-try job (commit bce7eda69, PR #156253 'Rollup of 3 pull requests'). Compiletest assembly-llvm test wasm_exceptions.rs fails because two FileCheck CHECK directives (`// CHECK: catch_all` at test_tcl:38, `// CHECK: catch` at test_tcl:62) no longer match the actual emitted .s file under target wasm32-wasip1: the new wasm exception-handling lowering uses `try_table (catch_all_ref 0)` blocks with exnref locals + `unreachable` cleanup paths instead of the legacy `try`/`catch_all` block instructions. multi_failure=true (2 separate CHECK directives fail with the same root cause). requires_repo_context=true: the log identifies what the FileCheck failed to match but cannot prove WHY without reading the test source `tests/assembly-llvm/wasm_exceptions.rs` to see the full CHECK pattern context. Privacy: 2 ARTIFACTS_AWS_ACCESS_KEY_ID + CACHES_AWS_ACCESS_KEY_ID values redacted in place using sha256-prefix tokens; 2 GHA-already-masked AWS_*_KEY env lines stripped (repo_visibility=redacted).\n\nFills v2 gaps:\n  - non-pytest framework in v2/stress (was 2/2 pytest before this case → breaks the `framework_dominance` flag in tools/check_split_balance.py for v2/stress)\n  - rust-cargo / rust-toolchain ecosystem in v2 stress (v2 had 1 cargo case in v2/holdout `biome-pnpm-not-found` but that one was largely cargo-binstall progress noise; this is the first compiler-toolchain rust failure)\n  - largest v2 raw.log so far: 31110 lines / 2.96 MB (largest v1.3+v2 case; previous largest was 15802 in biome-pnpm-not-found-v2-001). Still falls in `large` bucket (5k-50k); no `huge` (>50k) cases in v2 yet.\n\nDoes NOT fill the timeout_or_oom gap (v2 still has 0 of those). Signal_position=late worsens v2/stress signal_position monoculture (now 3/3 late) — flagged for future stress collection to target middle/scattered/early.\n\nEvidence-format gap: the FileCheck `check:38'0     ~~~~~~~` annotation pattern is genuinely a NEW evidence format (assembly-check_diff) that no existing schema enum captures. Closest fits used here: `assertion_diff` (FileCheck's expected-vs-found is shaped like an assertion diff) and `compiler_diagnostic` (the FileCheck error itself looks like a compiler-style `error: CHECK: expected string not found in input`). Schema-extension target for v3."
+}
