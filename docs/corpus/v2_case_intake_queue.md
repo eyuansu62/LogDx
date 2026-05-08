@@ -47,6 +47,8 @@ rejected            see cases/v2/_rejected/<candidate_id>/rejection_reason.md
 | gradle-projecthealth-batch5-v2-001 | github_actions | gradle/gradle | java-gradle | lint_error | [run 25520527023 / job 74903876543](https://github.com/gradle/gradle/actions/runs/25520527023/job/74903876543) | accepted | `cases/v2/holdout/`. Privacy audit: 0 hits, complete_scan=True. Gradle's own contributor build (`Sanity Check on Linux`, ~13min): `:platform-base:projectHealth` task failed because `platforms/software/platform-base/build.gradle.kts` declares `domainObjectCollections` as `api` instead of `implementation`. The projectHealth lint plugin gives the proposed fix at line resolution. Late signal_position (≈99%). 12867 lines / 1.0 MB. Easy diagnosis. **Batch 5 hold-out case 2** — second java-gradle case (Kotlin DSL build script). |
 | go-redis-pubsub-channel-timeout-batch5-v2-001 | github_actions | go-redis/redis | go | timeout_or_oom | [run 25511454847 / job 74871031554](https://github.com/go-redis/redis/actions/runs/25511454847/job/74871031554) | accepted | `cases/v2/holdout/`. Privacy audit: 0 hits AFTER redacting TestParseURL fixture URLs (placeholder Go test fixtures matched url_credential regex; redacted to `[REDACTED-TEST-FIXTURE-URL]`) and truncating 2 ginkgo bullet-decoration lines (>8000 chars each). Ginkgo test `PubSub [It] should ChannelMessage` at pubsub_test.go:661 timed out 1.001s waiting for a Redis Pub/Sub channel message. flaky_or_transient=true. signal_position=middle (failure at L1102-1172 ≈42%). 2730 lines / 246 KB. Medium difficulty. repo_visibility=redacted. **Batch 5 hold-out case 3** — Go ecosystem timeout_or_oom (calibration set's nodejs case was JS-side; this validates timeout_or_oom generalizes across ecosystems). |
 | argocd-race-conditions-batch5-v2-001 | github_actions | argoproj/argo-cd | go | test_assertion | [run 25534571975 / job 74948102287](https://github.com/argoproj/argo-cd/actions/runs/25534571975/job/74948102287) | accepted | `cases/v2/stress/`. Privacy audit: 0 hits, complete_scan=True (raised tools/audit_context_privacy.py MAX_LINES_PER_FILE 50000→200000 to support huge logs). argo-cd's race-test job (~43min): THREE distinct failures across cmd/argocd/commands (timestamp-flake string-eq), server (TestOIDCRefresh data race), util/db (TestClusterRaceConditionClusterSecrets data race). multi_failure=true. signal_position=**scattered** (failures span L54988→88904 ≈62-99% of log). requires_repo_context=true (race traces need source). **First v2 case in `huge` log_size_bucket (>50000 lines, was 0/29 corpus-wide)** — 89188 lines / 12.3 MB. Hard difficulty. **Batch 5 hold-out case 4** — fills the huge-log corpus gap and adds scattered signal to v2/stress. Hybrid-v2 grep produces 1.86M tokens here so it correctly routes to tail. |
+| dubbo-samples-test-timeout-batch6-v2-001 | github_actions | apache/dubbo | java-maven | timeout_or_oom | [run 25539178788 / job 74961870539](https://github.com/apache/dubbo/actions/runs/25539178788/job/74961870539) | accepted | `cases/v2/holdout/`. Privacy audit: 0 hits, complete_scan=True. Apache Dubbo PR integration tests (~37min): test `dubbo-samples-test-11137` timed out, orchestrator tore down docker-compose containers (nacos, mysql, test container). Late signal_position (failure block at L4885-4906 ≈80% of 6095 lines / 587 KB). flaky_or_transient=true. **Batch 6 hold-out case 1 — fills java-maven ecosystem gap (was 0/v2 → 1).** failure_category=timeout_or_oom (third v2 timeout case). Easy diagnosis. |
+| hibernate-orm-dbversion-test-batch6-v2-001 | github_actions | hibernate/hibernate-orm | java-gradle | test_assertion | [run 25540559564 / job 74965317180](https://github.com/hibernate/hibernate-orm/actions/runs/25540559564/job/74965317180) | accepted | `cases/v2/holdout/`. Privacy audit: 0 hits, complete_scan=True. Hibernate ORM CI on OpenJDK 25 / hsqldb backend (~81min): `DbVersionTest.testCollectionVersion` failed at hibernate-core/.../DbVersionTest.java:60 with `AssertionFailedError: owner version not incremented ==> expected: <false> but was: <true>`. Late signal_position (failure block at L45536-45543 ≈98% of 46198 lines / 4.4 MB). 46198 lines is just under the huge threshold (50000) — sits in `large` bucket. **Batch 6 hold-out case 2 — third v2 java-gradle case** (after spring-boot-checkformat and gradle-projecthealth). Medium difficulty. |
 
 ## Per-batch progress
 
@@ -169,6 +171,32 @@ Batch 5 (target: 4-6 hold-out cases for hybrid-v2 generalization test)
     Carry-overs to Batch 6+: permission_or_secret in v2 (still 0/v2),
         early signal_position (still 0/29 corpus-wide), more huge logs
         for variety.
+
+Batch 6 (target: 3-5 cases as second hybrid-v2 hold-out)
+  Status: 2 / 3-5 (19 / 34 total cases) — scaled down from 5
+    accepted (Batch 6 case 1):
+      dubbo-samples-test-timeout-batch6-v2-001 (timeout_or_oom,
+        v2/holdout) — 100/100/100 — **fills java-maven ecosystem
+        gap (was 0/v2 → 1)**. Apache Dubbo PR integration test
+        timeout under docker-compose. flaky_or_transient=true;
+        late signal.
+    accepted (Batch 6 case 2):
+      hibernate-orm-dbversion-test-batch6-v2-001 (test_assertion,
+        v2/holdout) — 100/100/100 — third v2 java-gradle case.
+        Single test failure (DbVersionTest.testCollectionVersion)
+        in a 46198-line log; late signal at ≈98%.
+    Hold-out result on Batch 6 (no retuning of hybrid-v2):
+      Sonnet hybrid-v2 0.9000 #1 vs grep 0.8875 (+0.012)
+      Haiku hybrid-v2 0.7625 #2 behind grep 0.8000
+      Combined B5+B6 (6 cases): hybrid-v2 stays #1 on Sonnet
+      (0.6838 vs grep 0.6494); on Haiku tied with grep (both 0.6053)
+    §3e CLI-flake reproduces a third time on Batch 6 dubbo
+      (Haiku hybrid-v2 0.60 vs Haiku grep 0.75).
+    Carry-overs to Batch 7+: permission_or_secret (still 0/v2),
+        kubernetes-helm/terraform (still 0/v2), OOM-killed (still
+        0/v2), early signal (still 0/35 corpus-wide). These were
+        the remaining Batch 6 plan targets — punted because
+        run-list browsing did not surface them in budget.
 ```
 
 ## Rejection counter

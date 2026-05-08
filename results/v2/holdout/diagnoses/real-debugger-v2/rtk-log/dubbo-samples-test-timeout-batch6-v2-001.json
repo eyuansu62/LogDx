@@ -1,0 +1,41 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "rtk-log",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because a test container exceeded its allotted execution time. The test runner reported a timeout for container 'dubbo-samples-test-11137', after which Docker could no longer find the container, indicating it was stopped or removed due to the timeout.",
+  "root_cause_category": "timeout_or_oom",
+  "root_cause": "The integration test container 'dubbo-samples-test-11137' timed out during test execution, as reported by the error message 'Run tests timeout'. Subsequent attempts to interact with the container failed because it no longer existed.",
+  "confidence": 0.88,
+  "relevant_files": [],
+  "relevant_tests": [
+    "dubbo-samples-test-11137"
+  ],
+  "evidence": [
+    {
+      "quote": "[dubbo-samples-test-11137] :ErrorMsg: Run tests timeout",
+      "reason": "Explicitly states that the test container hit a timeout while running tests, which is the direct cause of the failure."
+    },
+    {
+      "quote": "Error response from daemon: No such container: dubbo-samples-test-11...",
+      "reason": "Multiple 'No such container' errors appear immediately after the timeout message, indicating the container was stopped/removed as a result of the timeout."
+    }
+  ],
+  "suggested_fix": "Increase the test timeout threshold for the integration test container 'dubbo-samples-test-11137', or investigate why the tests are running slower than expected (e.g., resource contention on the ubuntu-22.04 runner with Java 21).",
+  "input": {
+    "context_path": "results/v2/holdout/rtk-log/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 396
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 347
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 15542.066,
+    "cache_key": "109009f38025855a5c118e4e58318ab27615f7e508829d8f0813de5138090123",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

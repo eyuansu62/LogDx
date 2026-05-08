@@ -1,0 +1,59 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "grep",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Integration test dubbo-samples-test-11137 failed due to timeout waiting for Docker containers to start. The test exceeded the 600-second timeout after 602 seconds, and Docker containers (zookeeper, nacos-mysql, nacos, test container) were not available. A Docker daemon HTTP 500 error occurred during container initialization.",
+  "root_cause_category": "timeout_or_oom",
+  "root_cause": "Test execution exceeded the 600-second timeout threshold while waiting for Docker containers to become ready. Docker container startup failed due to daemon errors, and containers were not available for the test.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs"
+  ],
+  "relevant_tests": [
+    "dubbo-samples-test-11137:1/1"
+  ],
+  "evidence": [
+    {
+      "quote": "wait for container is timeout: 602 s",
+      "reason": "Explicit timeout message showing the wait exceeded timeout limit"
+    },
+    {
+      "quote": "[dubbo-samples-test-11137] :ErrorMsg: Run tests timeout",
+      "reason": "Error message explicitly stating the test failed due to timeout"
+    },
+    {
+      "quote": "timeout: 600",
+      "reason": "Configuration shows the timeout threshold is 600 seconds, and the test waited 602 seconds"
+    },
+    {
+      "quote": "zookeeper Error received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "Docker daemon error occurred during container operations, preventing successful container startup"
+    },
+    {
+      "quote": "Error response from daemon: No such container: dubbo-samples-test-11137--zookeeper-1",
+      "reason": "Docker containers were not found/available when cleanup was attempted, indicating startup failure"
+    },
+    {
+      "quote": "[2/23] [dubbo-samples-test-11137:1/1] TEST FAILURE: Run tests timeout",
+      "reason": "Final test result confirms timeout as the failure reason"
+    }
+  ],
+  "suggested_fix": "Investigate Docker daemon stability and container startup times. Check if increasing the timeout threshold or optimizing container initialization resolves the issue. The HTTP 500 error from Docker daemon suggests infrastructure-level problems that may need investigation.",
+  "input": {
+    "context_path": "results/v2/holdout/grep/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 16973
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 516
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 32012.452,
+    "cache_key": "79aaef2df28842c49ba584d7b01b09d440c42fb97f79a5fca5d25794c113c3f7",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

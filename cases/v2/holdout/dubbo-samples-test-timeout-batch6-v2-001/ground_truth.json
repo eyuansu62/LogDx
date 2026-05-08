@@ -1,0 +1,73 @@
+{
+  "root_cause": {
+    "summary": "apache/dubbo PR integration test `dubbo-samples-test-11137` (test 2 of 23) timed out under the shared integration-test orchestrator on ubuntu-22.04 with Java 21. The orchestrator runs each sample via docker-compose with sidecar containers (nacos config server, nacos-mysql backing store, the dubbo-samples-test-11137 test container). When the per-test timeout hit, the framework aggressively tore down all three containers, then attempted to print logs from each — but the containers no longer existed, so the log shows repeated `Error response from daemon: No such container: dubbo-samples-test-11137--<container>-1` immediately preceding the `TEST FAILURE: Run tests timeout` summary line. The error message at L4891 names the test, the timeout cause, the dubbo/spring/java version under test, and points the developer at /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs for per-container detail. The summary repeats at L6000 (after a few more samples ran), then `##[error]Process completed with exit code 1` at L6010 propagates to GHA exit 1.",
+    "category": "timeout_or_oom"
+  },
+  "required_signals": [
+    {
+      "type": "command",
+      "value": "TEST FAILURE: Run tests timeout, version: -Ddubbo.version=3.3.7-SNAPSHOT -Dspring.version=5.3.24 -Djava.version=21",
+      "importance": "critical",
+      "evidence_lines": [[4891, 4891], [6000, 6000]]
+    },
+    {
+      "type": "command",
+      "value": "[2/23] [dubbo-samples-test-11137:1/1]",
+      "importance": "critical",
+      "evidence_lines": [[4891, 4891]]
+    },
+    {
+      "type": "exception",
+      "value": "Error response from daemon: No such container: dubbo-samples-test-11137--nacos-mysql-1",
+      "aliases": [
+        "Error response from daemon: No such container: dubbo-samples-test-11137--nacos-1",
+        "Error response from daemon: No such container: dubbo-samples-test-11137--dubbo-samples-test-11137-test-1"
+      ],
+      "importance": "important",
+      "evidence_lines": [[4885, 4889]]
+    },
+    {
+      "type": "command",
+      "value": "please check logs: /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
+      "importance": "important",
+      "evidence_lines": [[4891, 4891]]
+    },
+    {
+      "type": "annotation",
+      "value": "##[error]Process completed with exit code 1.",
+      "importance": "important",
+      "evidence_lines": [[6010, 6010]]
+    }
+  ],
+  "relevant_files": [],
+  "relevant_tests": [
+    "dubbo-samples-test-11137"
+  ],
+  "evidence_spans": [
+    {
+      "start_line": 4885,
+      "end_line": 4906,
+      "reason": "Self-contained failure block: the docker-cleanup `Error response from daemon: No such container` lines (test framework already tore down containers) immediately followed by `TEST FAILURE: Run tests timeout, version: ...` (the summary line that names the failing test sample, timeout cause, and version triple). Identifies dubbo-samples-test-11137 as the failing integration test, java 21 / dubbo 3.3.7-SNAPSHOT / spring 5.3.24 as the matrix coordinates, and 'Run tests timeout' as the failure type."
+    },
+    {
+      "start_line": 5995,
+      "end_line": 6010,
+      "reason": "Second TEST FAILURE summary (orchestrator re-prints at the end of all 23 sample runs) + ##[error]Process completed with exit code 1. Confirms the failure propagates to job exit code."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "dubbo-samples-test-11137",
+      "timeout"
+    ],
+    "must_not_claim": [
+      "compile error",
+      "out of memory",
+      "permission denied",
+      "network failure outside the test cluster",
+      "nacos crashed mid-test",
+      "the test source code is wrong",
+      "Java version incompatibility"
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "split": "v2/holdout",
+  "origin": "new_v2",
+  "ecosystem": "java-maven",
+  "primary_language": "java",
+  "ci_provider": "github_actions",
+  "repo_visibility": "public",
+  "failure_category": "timeout_or_oom",
+  "framework": "generic",
+  "log_size_bucket": "large",
+  "signal_position": "late",
+  "evidence_formats": [
+    "shell_command_output",
+    "timeout_marker",
+    "github_annotation"
+  ],
+  "noise_profile": [
+    "runner_setup",
+    "verbose_build_noise",
+    "test_progress_noise",
+    "post_failure_chatter"
+  ],
+  "multi_failure": false,
+  "flaky_or_transient": true,
+  "requires_repo_context": false,
+  "diagnosis_difficulty": "easy",
+  "notes": "**Batch 6 hold-out case 1** — added 2026-05-08 to test hybrid-v2's 120k threshold WITHOUT retuning. **Fills java-maven ecosystem gap (was 0/v2 → 1)**: Apache Dubbo's PR integration tests use Maven (dubbo-maven-plugin), and this run failed under java-maven workflow conventions. The orchestrator wrapper itself is not Maven (it uses docker-compose to spin sidecar containers per sample), but the underlying build is Maven so ecosystem=java-maven fits. flaky_or_transient=true (timeouts under shared docker-compose stacks are timing-sensitive). signal_position=late (failure block at L4885-4906 ≈ 80% of 6095-line log). log_size_bucket=large. failure_category=timeout_or_oom — third v2 timeout case (after nodejs+go-redis); first one in the java ecosystem. evidence_formats: timeout_marker (Run tests timeout) — fourth v2 case using this format."
+}

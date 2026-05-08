@@ -1,0 +1,39 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed with exit code 1. Throughout the job, Docker daemon repeatedly returned 'Error response from daemon: invalid filter 'reference'' when attempting to filter images, indicating the Docker daemon version on the runner does not support the 'reference' filter syntax used by the test scripts. This caused integration test infrastructure setup to fail repeatedly across multiple test batches.",
+  "root_cause_category": "other",
+  "root_cause": "The Docker daemon on the CI runner rejected the 'reference' image filter with 'Error response from daemon: invalid filter 'reference'', which is incompatible with the filter syntax used by the integration test scripts. This prevented Docker image lookups from succeeding during test setup, ultimately causing the job to exit with code 1.",
+  "confidence": 0.72,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "Error response from daemon: invalid filter 'reference'",
+      "reason": "This error appears repeatedly (at least 9 times across different timestamps) and indicates the Docker daemon on the CI runner does not support the 'reference' filter used by the test infrastructure scripts."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "This confirms the job ultimately failed with a non-zero exit code, consistent with repeated Docker filter failures blocking test execution."
+    }
+  ],
+  "suggested_fix": "Update the test scripts or CI workflow to replace the Docker 'reference' filter syntax (e.g., `docker images --filter reference=...`) with a compatible alternative such as piping `docker images` output through `grep`, or upgrade/pin the Docker daemon version on the CI runner to one that supports the 'reference' filter.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-mock/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 1031
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 432
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 16872.505,
+    "cache_key": "18dd3799931cec32c126a76eef71eeb80ef9d90c187b4299e936c2b2436bdec0",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

@@ -3,10 +3,10 @@
   "context_method": "rtk-log",
   "diagnoser": "real-debugger-v1",
   "mode": "root_cause_diagnosis",
-  "summary": "Jest snapshot tests are failing with `toThrowErrorMatchingSnapshot()` errors in error-formatting tests for JavaScript and TypeScript. The actual errors thrown do not match the saved snapshots.",
+  "summary": "Jest snapshot tests are failing because thrown Babel parsing errors do not match stored error message snapshots. Multiple error-format tests failed on toThrowErrorMatchingSnapshot() assertions.",
   "root_cause_category": "test_assertion",
-  "root_cause": "Snapshot mismatch in error-matching tests. The `toThrowErrorMatchingSnapshot()` assertions in `tests/format/typescript/_errors_/modifiers/format.test.js` and `tests/format/js/_errors_/import/format.test.js` are failing because the actual error messages do not match the saved snapshots.",
-  "confidence": 0.75,
+  "root_cause": "Snapshot assertion failures in tests/format/typescript/_errors_/modifiers/format.test.js and tests/format/js/_errors_/import/format.test.js. The expect().rejects.toThrowErrorMatchingSnapshot() matcher detected mismatches between actual Babel parser errors and stored snapshot expectations.",
+  "confidence": 0.85,
   "relevant_files": [
     "tests/format/typescript/_errors_/modifiers/format.test.js",
     "tests/format/js/_errors_/import/format.test.js"
@@ -18,39 +18,39 @@
   "evidence": [
     {
       "quote": "Error: expect(received).rejects.toThrowErrorMatchingSnapshot()",
-      "reason": "Explicit Jest snapshot matcher failure; actual error does not match saved snapshot"
+      "reason": "Direct evidence of snapshot matcher failure; the thrown error does not match the stored snapshot"
     },
     {
       "quote": "at Object.toThrowErrorMatchingSnapshot (/home/runner/work/pr...",
-      "reason": "Confirms the snapshot matching call failed at this exact point"
+      "reason": "Stack trace explicitly identifies the failing assertion type as snapshot matching"
     },
     {
       "quote": "FAIL tests/format/js/_errors_/import/format.test.js",
-      "reason": "Identifies the failing test file; error formatting tests are failing"
-    },
-    {
-      "quote": "at createBabelParseError (file:///home/runner/work/prettier/...",
-      "reason": "Shows Babel parser error is involved; error message generation may have changed"
+      "reason": "Test failure confirmed in error-formatting test suite (_errors_ subdirectory indicates these test error messages)"
     },
     {
       "quote": "SyntaxError: A parameter initializer is only allowed in a functi...",
-      "reason": "Actual error message differs from what snapshots expect"
+      "reason": "Actual Babel error thrown; differs from what the snapshot expects"
+    },
+    {
+      "quote": "at createBabelParseError (file:///home/runner/work/prettier/",
+      "reason": "Babel parser error creation in stack trace shows real error being thrown is not matching stored snapshot"
     }
   ],
-  "suggested_fix": "Update the Jest snapshots using `npm test -- -u` or `jest -u`, or verify that recent Babel version or parser changes have not altered error message formatting in the error formatting tests.",
+  "suggested_fix": "Review the snapshot files for tests/format/typescript/_errors_/modifiers/format.test.js and tests/format/js/_errors_/import/format.test.js to determine if Babel error message formatting has changed, then update snapshots accordingly or revert any changes that altered error output.",
   "input": {
     "context_path": "results/v2/holdout/rtk-log/prettier-jest-snapshot-babel-v2-001.txt",
     "context_tokens_estimate": 362
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 464
+    "output_tokens_estimate": 516
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 25025.647,
-    "cache_key": "101912645d0eb014ca0bda1d51fdbeeff537bbce97fd58e76df15cf7f2313a48",
+    "runtime_ms": 23990.529,
+    "cache_key": "2da58e48c904badbc97abfe2e332ce688f067e89b80ca5ecfdf267508ea00ef9",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
   }

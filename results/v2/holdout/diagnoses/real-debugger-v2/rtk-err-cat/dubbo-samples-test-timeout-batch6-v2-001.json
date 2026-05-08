@@ -1,0 +1,56 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The integration test for dubbo-samples-test-11137 failed due to a timeout. The test containers (zookeeper, nacos, nacos-mysql) were never successfully started, and the test runner reported a timeout after approximately 10 minutes of failed attempts.",
+  "root_cause_category": "timeout_or_oom",
+  "root_cause": "The integration test 'dubbo-samples-test-11137' timed out because the required Docker containers (zookeeper, nacos-mysql, nacos) could not be started. The Docker daemon repeatedly returned 'invalid filter reference' errors during container lookup attempts, and a '500 Internal Server Error' from the Docker daemon prevented the zookeeper container from starting. With no containers running, the test runner eventually hit its timeout limit.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/docker-compose.yml",
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs"
+  ],
+  "relevant_tests": [
+    "[dubbo-samples-test-11137:1/1]"
+  ],
+  "evidence": [
+    {
+      "quote": "TEST FAILURE: Run tests timeout, version: -Ddubbo.version=3.3.7-SNAPSHOT -Dspring.version=5.3.24 -Djava.version=21",
+      "reason": "Explicitly states the test failed due to a timeout, not a test assertion or compile error."
+    },
+    {
+      "quote": "Error response from daemon: invalid filter 'reference'",
+      "reason": "This error appears repeatedly over ~16 minutes, indicating the Docker daemon was unable to list/filter images by reference, preventing container startup from succeeding."
+    },
+    {
+      "quote": "zookeeper Error received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "The Docker daemon returned a 500 error when trying to start the zookeeper container, confirming infrastructure could not be brought up."
+    },
+    {
+      "quote": "Error response from daemon: No such container: dubbo-samples-test-11137--zookeeper-1",
+      "reason": "At cleanup time, the required containers did not exist, confirming they were never successfully started."
+    },
+    {
+      "quote": "Failed tests count: 1\nFailed tests: 1\n[2/23] [dubbo-samples-test-11137:1/1] TEST FAILURE: Run tests timeout",
+      "reason": "Final summary confirms exactly one test failed with a timeout, while 18 others succeeded, making this an infrastructure issue specific to this test's containers rather than a code defect."
+    }
+  ],
+  "suggested_fix": "Investigate the Docker daemon instability on the CI runner — the repeated 'invalid filter reference' errors and '500 Internal Server Error' from the daemon suggest a flaky or misconfigured Docker environment. Re-running the job may resolve it if transient; otherwise check the Docker version on ubuntu-22.04 runners for compatibility with the 'reference' filter syntax used by the test harness.",
+  "input": {
+    "context_path": "results/v2/holdout/rtk-err-cat/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 1834
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 684
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 20755.603,
+    "cache_key": "90d8f218bb116363371c810c631d7dd32cac1339ac34a7e35e87e3e535750e04",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

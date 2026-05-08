@@ -1,0 +1,56 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The integration test for dubbo-samples-test-11137 failed because the test suite exceeded its allowed runtime. The Docker containers for zookeeper, nacos-mysql, and nacos were not found during cleanup, indicating the test environment did not fully initialize or was torn down prematurely. Repeated 'invalid filter reference' errors from the Docker daemon suggest infrastructure instability throughout the run.",
+  "root_cause_category": "timeout_or_oom",
+  "root_cause": "The integration test dubbo-samples-test-11137 timed out before completing. The test runner explicitly reports 'Run tests timeout' and the Docker containers (zookeeper, nacos, nacos-mysql) were missing at cleanup time, consistent with the environment failing to start or being killed due to the timeout.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "99-integration/dubbo-samples-test-11137/target/docker-compose.yml",
+    "99-integration/dubbo-samples-test-11137/target/logs"
+  ],
+  "relevant_tests": [
+    "[2/23] [dubbo-samples-test-11137:1/1]"
+  ],
+  "evidence": [
+    {
+      "quote": "TEST FAILURE: Run tests timeout, version: -Ddubbo.version=3.3.7-SNAPSHOT -Dspring.version=5.3.24 -Djava.version=21, please check logs: /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
+      "reason": "This is the explicit test failure message, directly stating the cause as a timeout."
+    },
+    {
+      "quote": "Error response from daemon: No such container: dubbo-samples-test-11137--zookeeper-1",
+      "reason": "The required zookeeper container was not running at cleanup time, indicating the Docker environment did not successfully start or was destroyed due to the timeout."
+    },
+    {
+      "quote": "Error response from daemon: invalid filter 'reference'",
+      "reason": "Repeated Docker daemon errors throughout the run suggest infrastructure instability that likely contributed to the test timeout."
+    },
+    {
+      "quote": "Failed tests count: 1",
+      "reason": "Confirms exactly one test failed, corresponding to the timeout failure reported for dubbo-samples-test-11137."
+    },
+    {
+      "quote": "Total: 23, Success: 18, Failures: 1, Ignored: 4",
+      "reason": "Shows overall job results with one failure matching the timed-out test."
+    }
+  ],
+  "suggested_fix": "Investigate why the Docker daemon repeatedly returns 'invalid filter reference' errors, as this may be preventing containers from starting properly and causing the test to time out. Check if the Docker version on the runner supports the 'reference' filter, and review the logs at /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs for more detail on what stalled.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-4k-rtk-err-cat-v1/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 1883
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 640
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 21057.667,
+    "cache_key": "ad2dc0f02039350794c53391157cd74d275ea0b77da99a864084f018694ca7c3",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

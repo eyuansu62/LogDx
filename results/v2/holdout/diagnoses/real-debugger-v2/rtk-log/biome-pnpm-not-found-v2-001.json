@@ -3,40 +3,44 @@
   "context_method": "rtk-log",
   "diagnoser": "real-debugger-v2",
   "mode": "root_cause_diagnosis",
-  "summary": "The provided log context does not contain a visible failure message. All shown log lines are either successful Rust compilation steps or passing test results ('... ok'). The actual failure is likely among the 741 additional unique error entries not shown in the context excerpt.",
+  "summary": "The CI job produced 756 logged errors (751 unique), but the context excerpt surfaces only compilation messages and test lines that individually report 'ok', with 741 additional unique error lines not shown. The actual failure cause is not visible in the provided log slice.",
   "root_cause_category": "unknown",
-  "root_cause": "unknown",
-  "confidence": 0.05,
+  "root_cause": "The log summary reports 756 errors but the visible excerpts contain only passing test output lines (e.g., 'test ... ok') and compilation notices; the 741 additional unique errors that drove the job failure are not present in the provided context.",
+  "confidence": 0.1,
   "relevant_files": [],
   "relevant_tests": [],
   "evidence": [
     {
-      "quote": "[×2] 2026-05-07T00:44:36.4506465Z test diagnostics::test::formatter_syntax_error ... ok",
-      "reason": "Lines classified as errors in the summary are actually passing test results, indicating the log summarizer mis-categorized them; no true failure line is visible."
+      "quote": "[error] 756 errors (751 unique)",
+      "reason": "Confirms a large number of error-level log lines were emitted, but the content of most is not shown."
     },
     {
       "quote": "... +741 more unique errors",
-      "reason": "The bulk of the reported errors are truncated and not shown, so the actual failure evidence is absent from the provided context."
+      "reason": "Indicates the vast majority of error lines are truncated and unavailable for diagnosis."
     },
     {
-      "quote": "[error] 756 errors (751 unique)",
-      "reason": "A large error count is reported at the summary level but none of the visible log lines correspond to an actionable failure, making it impossible to identify the root cause from what is shown."
+      "quote": "test diagnostics::test::deserialization_error ... ok",
+      "reason": "Representative of the visible 'error' lines, which are actually passing test results — not actionable failure signals."
+    },
+    {
+      "quote": " WARN The package cargo-cache v0.8.3 (aarch64-unknown-linux-musl) ha...",
+      "reason": "A cargo-cache compatibility warning is present but truncated; cannot confirm whether it contributed to the failure."
     }
   ],
   "suggested_fix": "",
   "input": {
     "context_path": "results/v2/holdout/rtk-log/biome-pnpm-not-found-v2-001.txt",
-    "context_tokens_estimate": 392
+    "context_tokens_estimate": 395
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 291
+    "output_tokens_estimate": 351
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 30838.781,
-    "cache_key": "682aecb3e248ea404af6281bc8487bdafa63808fe3182642be1370fe89066095",
+    "runtime_ms": 36862.395,
+    "cache_key": "0fd82af295f7d76fa998ccbcbdebc386e73c04477539b24d390211699d1b454c",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
   }

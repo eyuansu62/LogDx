@@ -1,0 +1,60 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Integration test 'dubbo-samples-test-11137' timed out on Java 21. The test timeout occurred while Docker containers (Zookeeper, Nacos, MySQL) were being set up, with persistent Docker daemon errors indicating 'invalid filter' issues and 500 Internal Server errors.",
+  "root_cause_category": "timeout_or_oom",
+  "root_cause": "Test execution exceeded its time limit. The timeout was triggered while Docker containers and networks required for the integration test were being provisioned. Docker daemon reported multiple errors ('invalid filter reference', '500 Internal Server Error', missing containers and networks), which likely prevented proper test setup and caused the test to exceed its timeout threshold.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/docker-compose.yml"
+  ],
+  "relevant_tests": [
+    "dubbo-samples-test-11137"
+  ],
+  "evidence": [
+    {
+      "quote": "TEST FAILURE: Run tests timeout, version: -Ddubbo.version=3.3.7-SNAPSHOT -Dspring.version=5.3.24 -Djava.version=21",
+      "reason": "Explicit timeout failure message indicating test did not complete within allocated time"
+    },
+    {
+      "quote": "Error response from daemon: invalid filter 'reference'",
+      "reason": "Docker daemon error repeated multiple times over 10+ minutes, indicating Docker API issues that would block container operations"
+    },
+    {
+      "quote": "Error response from daemon: received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "Docker daemon returning internal server errors, preventing reliable container management"
+    },
+    {
+      "quote": "Error response from daemon: No such container: dubbo-samples-test-11137--zookeeper-1",
+      "reason": "Required test containers (Zookeeper) failed to exist or were not created, preventing test prerequisites"
+    },
+    {
+      "quote": "Error response from daemon: network dubbo-samples-test-11137-21 not found",
+      "reason": "Docker network infrastructure required for test was unavailable, blocking inter-container communication"
+    },
+    {
+      "quote": "Failed tests count: 1",
+      "reason": "Only one test failure reported, corresponding to the timeout"
+    }
+  ],
+  "suggested_fix": "Investigate Docker daemon stability in the CI environment. Check if docker daemon logs show errors related to filter validation and HTTP 500 responses. Verify that Docker can properly create and manage networks and containers. Consider increasing the test timeout or adding retry logic if Docker flakiness is confirmed.",
+  "input": {
+    "context_path": "results/v2/holdout/rtk-err-cat/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 1834
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 631
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 29303.167,
+    "cache_key": "28d4ef33a5c64703350ce2491982a891f03e8d23063656753699c1d4ab398787",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

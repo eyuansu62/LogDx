@@ -1,0 +1,47 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The integration test job failed with repeated Docker daemon errors: 'invalid filter reference'. The error occurs multiple times throughout the log, suggesting a Docker command used an unsupported or malformed filter syntax during test execution or container management.",
+  "root_cause_category": "other",
+  "root_cause": "Docker daemon error: 'invalid filter reference' — a Docker command (likely docker ps, docker images, or similar) was invoked with an unsupported or malformed filter syntax. The filter 'reference' is not a valid Docker filter in the version or configuration being used.",
+  "confidence": 0.72,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "2026-05-08T05:53:13.1494460Z Error response from daemon: invalid filter 'reference'",
+      "reason": "Explicit Docker daemon error indicating an invalid filter was used in a Docker command."
+    },
+    {
+      "quote": "2026-05-08T05:53:45.4234821Z Error response from daemon: invalid filter 'reference'",
+      "reason": "Repeated occurrence of the same error, indicating a systematic issue, not a transient failure."
+    },
+    {
+      "quote": "2026-05-08T05:55:05.3353492Z Error response from daemon: invalid filter 'reference'",
+      "reason": "Further repetition at different timestamps showing the error occurs consistently during test execution."
+    },
+    {
+      "quote": "2026-05-08T06:09:53.5996774Z ##[error]Process completed with exit code 1.",
+      "reason": "Job terminated with exit code 1, confirming failure."
+    }
+  ],
+  "suggested_fix": "Locate Docker commands in the integration test code or test setup that use --filter 'reference=...' and correct the filter syntax. Verify that the filter name and format match the Docker version in use (refer to `docker ps --help` or `docker images --help` for valid filter options).",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-mock/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 1031
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 440
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 22182.391,
+    "cache_key": "ecd2d2793f47a6235b89c85e1f1777d9c3d1dfa56b1a2a3bd856de8b61ef7fba",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

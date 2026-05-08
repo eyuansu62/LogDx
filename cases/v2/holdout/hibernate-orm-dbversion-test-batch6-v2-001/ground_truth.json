@@ -1,0 +1,86 @@
+{
+  "root_cause": {
+    "summary": "Hibernate ORM's CI run on OpenJDK 25 with hsqldb backend had a single test failure: `DbVersionTest.testCollectionVersion` at hibernate-core/src/test/java/.../version/db/DbVersionTest.java:60. The test asserts (`assertFalse`) that the owner entity's @Version field SHOULD NOT be incremented when its child collection is mutated (because the test verifies a behavior where updating a collection's contents alone shouldn't bump the parent version) — but on hsqldb the actual behavior bumped it: `owner version not incremented ==> expected: <false> but was: <true>`. The error trace shows the standard JUnit Jupiter assertion-failure stack (AssertionFailureBuilder.build → AssertFalse.failNotFalse → DbVersionTest.testCollectionVersion). One test failed out of thousands; Gradle test runner reports `> Task :hibernate-core:test FAILED` (L45955) → `FAILURE: Build failed with an exception.` (L45958) → `BUILD FAILED in 17m 39s` (L46120) → `##[error]Process completed with exit code 1` (L46121). Other backend variants (mysql, mariadb, etc.) ran in parallel matrix legs and have their own failures, but this case is scoped to the OpenJDK 25 hsqldb leg only.",
+    "category": "test_assertion"
+  },
+  "required_signals": [
+    {
+      "type": "failed_test",
+      "value": "Gradle Test Executor 25 > DbVersionTest > testCollectionVersion(SessionFactoryScope) FAILED",
+      "importance": "critical",
+      "evidence_lines": [[45536, 45536]]
+    },
+    {
+      "type": "exception",
+      "value": "org.opentest4j.AssertionFailedError: owner version not incremented ==> expected: <false> but was: <true>",
+      "importance": "critical",
+      "evidence_lines": [[45537, 45537]]
+    },
+    {
+      "type": "stack_location",
+      "value": "at app//org.hibernate.orm.test.version.db.DbVersionTest.testCollectionVersion(DbVersionTest.java:60)",
+      "file": "hibernate-core/src/test/java/org/hibernate/orm/test/version/db/DbVersionTest.java",
+      "line": 60,
+      "importance": "critical",
+      "evidence_lines": [[45543, 45543]]
+    },
+    {
+      "type": "command",
+      "value": "> Task :hibernate-core:test FAILED",
+      "importance": "critical",
+      "evidence_lines": [[45955, 45955]]
+    },
+    {
+      "type": "command",
+      "value": "FAILURE: Build failed with an exception.",
+      "importance": "important",
+      "evidence_lines": [[45958, 45958]]
+    },
+    {
+      "type": "command",
+      "value": "BUILD FAILED in 17m 39s",
+      "importance": "important",
+      "evidence_lines": [[46120, 46120]]
+    },
+    {
+      "type": "annotation",
+      "value": "##[error]Process completed with exit code 1.",
+      "importance": "important",
+      "evidence_lines": [[46121, 46121]]
+    }
+  ],
+  "relevant_files": [
+    "hibernate-core/src/test/java/org/hibernate/orm/test/version/db/DbVersionTest.java"
+  ],
+  "relevant_tests": [
+    "org.hibernate.orm.test.version.db.DbVersionTest.testCollectionVersion"
+  ],
+  "evidence_spans": [
+    {
+      "start_line": 45536,
+      "end_line": 45543,
+      "reason": "Self-contained failure block: `Gradle Test Executor 25 > DbVersionTest > testCollectionVersion(SessionFactoryScope) FAILED` + `AssertionFailedError: owner version not incremented ==> expected: <false> but was: <true>` + JUnit Jupiter assertion-stack ending at `DbVersionTest.testCollectionVersion(DbVersionTest.java:60)`. Names the test, the assertion shape, and the failing source line."
+    },
+    {
+      "start_line": 45955,
+      "end_line": 46121,
+      "reason": "Gradle build summary: `> Task :hibernate-core:test FAILED` + `FAILURE: Build failed with an exception. * What went wrong: Execution failed for task ':hibernate-core:test'.` + GHA exit 1. Confirms the single test failure propagated through Gradle to the job exit code."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "DbVersionTest",
+      "testCollectionVersion",
+      "version"
+    ],
+    "must_not_claim": [
+      "compile error",
+      "out of memory",
+      "permission denied",
+      "network failure",
+      "timeout",
+      "all test backends fail",
+      "the test source code is wrong"
+    ]
+  }
+}

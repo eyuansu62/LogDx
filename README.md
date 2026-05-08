@@ -234,14 +234,13 @@ to let the numbers pick.
   - Tooling: `tools/validate_case_tags.py` accepts `v2/dev`,
     `v2/holdout`, `v2/stress`, `v1.3`, `v2`, `all`; case importer
     already handled nested splits.
-  - Cases collected so far: **17 / 34** new (16 / 16 legacy tagged
+  - Cases collected so far: **19 / 34** new (16 / 16 legacy tagged
     `origin=legacy_v1_3`). Batch 1 (3/3) ✓, Batch 2 (5/5) ✓,
     Batch 3 (2/2) ✓ Phase 2 10-case checkpoint, Batch 4 (3/3) ✓,
-    Batch 5 (4/4-6) ✓ — collected as a **hybrid-v2 hold-out**
-    not used for threshold tuning. v2/dev 3/3 ✓, v2/holdout 8/4
-    (over-target by 4), v2/stress 6/3 (over-target by 3 — both
-    over-targets are deliberate, motivated by signal-position
-    diversity, ecosystem coverage, and hold-out-set construction).
+    Batch 5 (4/4-6) ✓ — first hybrid-v2 hold-out, Batch 6 (2/3-5)
+    ✓ — second hybrid-v2 hold-out (java-maven dubbo + java-gradle
+    hibernate). v2/dev 3/3 ✓, v2/holdout 10/4 (over-target by 6),
+    v2/stress 6/3 (over-target by 3).
   - v2/stress cases (5 — process-crash + matrix + non-pytest framework + timeout + middle-signal):
     1. `cases/v2/stress/numpy-pytest-segfault-argsort-v2-001/`
        — `Fatal Python error: Segmentation fault` inside
@@ -279,7 +278,7 @@ to let the numbers pick.
        the failure is non-failure pre-commit hook chatter from
        the ~30 OTHER hooks pre-commit keeps running. Selected
        deliberately to test the §3c tail-winner sampling caveat.
-  - **Five protocol locks exist for v2; two validate today.** The
+  - **Six protocol locks exist for v2; two validate today.** The
     full reference is in
     [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md)
     header. Quick summary:
@@ -296,9 +295,12 @@ to let the numbers pick.
     (13 v2 cases / v2/stress=5 — also historical now; fails
     validation because Batch 5 grew v2/holdout 5→8 and
     v2/stress 5→6),
-    and [`cilogbench-v2-checkpoint-17`](protocols/cilogbench-v2-checkpoint-17.lock.json)
-    (17 v2 cases / v2/holdout=8 / v2/stress=6 — **current canonical,
-    33 cases total**). The 17-case lock includes BOTH hybrid
+    [`cilogbench-v2-checkpoint-17`](protocols/cilogbench-v2-checkpoint-17.lock.json)
+    (17 v2 cases — also historical now; fails validation because
+    Batch 6 grew v2/holdout 8→10),
+    and [`cilogbench-v2-checkpoint-19`](protocols/cilogbench-v2-checkpoint-19.lock.json)
+    (19 v2 cases / v2/holdout=10 / v2/stress=6 — **current canonical,
+    35 cases total**). The 19-case lock includes BOTH hybrid
     baselines (v1 `hybrid-grep-4k-rtk-err-cat-v1` + the
     evaluation-tuned v2 `hybrid-grep-120k-tail-v2`).
     `validate_protocol_lock.py` fail-closes on hybrid drift across

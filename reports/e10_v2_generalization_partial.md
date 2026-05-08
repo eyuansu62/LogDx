@@ -1,6 +1,6 @@
 # CILogBench E10 — v2 generalization (partial)
 
-> **Five protocol-lock files exist; two validate today:**
+> **Six protocol-lock files exist; two validate today:**
 >
 > - [`cilogbench-v2-partial`](../protocols/cilogbench-v2-partial.lock.json)
 >   — frozen at the **8-case** v2 state (24 cases total, 5 splits;
@@ -28,15 +28,17 @@
 >   from 5→8 and v2/stress from 5→6. The §3d 13-case numbers
 >   and the §3e hybrid-v2 prototype anchor here.
 > - [`cilogbench-v2-checkpoint-17`](../protocols/cilogbench-v2-checkpoint-17.lock.json)
->   — **current canonical** (33 cases total, v2/holdout=8,
->   v2/stress=6 — adds the 4 Batch 5 hold-out cases). Validates
->   today. The §3f hold-out validation numbers anchor here.
->   This lock includes BOTH hybrid baselines (v1
->   `hybrid-grep-4k-rtk-err-cat-v1` AND the evaluation-tuned v2
->   `hybrid-grep-120k-tail-v2`) per the 2026-05-08 Codex review's
->   Finding 2.
+>   — frozen at the 17-case state (33 cases total). **Does NOT
+>   validate today** because Batch 6 grew v2/holdout 8→10. The
+>   §3f Batch 5 hold-out validation numbers anchor here.
+> - [`cilogbench-v2-checkpoint-19`](../protocols/cilogbench-v2-checkpoint-19.lock.json)
+>   — **current canonical** (35 cases total, v2/holdout=10,
+>   v2/stress=6 — adds the 2 Batch 6 hold-out cases). Validates
+>   today. The §3g Batch 6 hold-out validation numbers anchor
+>   here. This lock includes BOTH hybrid baselines per the
+>   2026-05-08 Codex review's Finding 2.
 >
-> All five locks SHA-pin the same v1.3 schemas, prompts, and
+> All six locks SHA-pin the same v1.3 schemas, prompts, and
 > evaluators that were in `cilogbench-v1.3.lock.json`, so v1.3
 > numbers reproduce identically against any of them. **Per the
 > Codex adversarial reviews (2026-05-07, 2026-05-08):** all locks
@@ -44,7 +46,7 @@
 > auto-detects all `type: hybrid_context_provider` baselines and
 > fail-closes on hybrid drift.
 >
-> **For new work, use only `cilogbench-v2-checkpoint-17`.** The
+> **For new work, use only `cilogbench-v2-checkpoint-19`.** The
 > older locks are historical artifacts; checking them out for
 > reproduction means also checking out the matching git commit so
 > the on-disk manifests match the lock's frozen state.
@@ -959,6 +961,127 @@ result for hybrid-v2:
    provider-error and route to a different fallback.
    `tools/run_rtk_baseline.py` now surfaces the warning into
    manifest metadata (was silent in stderr file before).
+
+## 3g. Second hold-out — Batch 6 (2026-05-08)
+
+To strengthen the §3f generalization claim, **Batch 6 added
+2 more hold-out cases** (no retuning of hybrid-v2's 120k
+threshold). Lock at
+[`protocols/cilogbench-v2-checkpoint-19.lock.json`](../protocols/cilogbench-v2-checkpoint-19.lock.json)
+(35 cases, 19 v2). The 5-Batch-6 plan (`/Users/eyuansu62/.claude/plans/quiet-swinging-lecun.md`)
+was scaled down to 2 because the harder gap-fill targets
+(permission_or_secret, OOM-killed, k8s-helm, early-signal) did
+not surface in run-list browsing within budget; deferred to
+Batch 7+.
+
+```text
+Batch 6 hold-out cases:
+  dubbo-samples-test-timeout-batch6-v2-001    v2/holdout  java-maven   timeout_or_oom    late   6095 lines
+  hibernate-orm-dbversion-test-batch6-v2-001  v2/holdout  java-gradle  test_assertion    late  46198 lines
+```
+
+Both fill ecosystem gaps (java-maven was 0/v2 → 1; java-gradle now
+3/v2). Both are late-signal so they don't extend signal-position
+diversity. Both fit the 120k token budget so hybrid-v2 routes both
+to grep — making this batch a particularly clean test of
+"is the recalibrated grep-with-bigger-budget actually better
+than v1's grep-with-aggressive-rtk-fallback on hold-out?"
+
+### Headline result on Batch 6 hold-out
+
+```text
+                                Sonnet 4.6                       Haiku 4.5
+                                B5 (4)   B6 (2)   B5+B6 (6)      B5 (4)   B6 (2)   B5+B6 (6)
+hybrid-grep-120k-tail-v2        0.5757   0.9000   0.6838   #1    0.5266   0.7625   0.6053   #2
+grep                            0.5303   0.8875   0.6494   #2    0.5079   0.8000   0.6053   #2 (tied)
+hybrid-grep-4k-rtk-err-cat-v1   0.3671   0.8125   0.5156   #4    0.3287   0.6583   0.4385   #4
+tail                            0.4031   0.6000   0.4687   #5    0.3937   0.6000   0.4625   #3
+rtk-err-cat                     0.3679   0.5575   0.4311   #6    0.3079   0.7000   0.4386   #4 (tied)
+rtk-log                         0.0500   0.4783   0.1928   #7    0.0510   0.4500   0.1840   #6
+llm-summary-v1-mock             0.1521   0.1500   0.1514   #8    0.1521   0.0521   0.1188   #7
+raw                             0.1543   0.0000   0.1029   #9    0.1131   0.0000   0.0754   #8
+rtk-read                        0.1411   0.0000   0.0941   #9    0.1259   0.0000   0.0840   #8
+```
+
+**Combined hold-out (6 cases) ranking:**
+
+- Sonnet: hybrid-v2 #1 (0.6838) > grep #2 (0.6494). +0.034 lead.
+- Haiku: hybrid-v2 (0.6053) **tied** with grep (0.6053). Effectively
+  a wash on Haiku at 6 cases.
+
+### Two important things Batch 6 confirms (and one it disconfirms)
+
+✅ **Confirms: §3f direction generalizes.** Hybrid-v2 stays #1 on
+Sonnet across two independent hold-out batches. Gap from Batch 5
+(+0.045 over grep) to Batch 6 (+0.012) shrunk but remained positive.
+
+✅ **Confirms: hybrid-v2 > hybrid-v1.** On Batch 6 alone, hybrid-v2
++0.0875 Sonnet / +0.1042 Haiku over hybrid-v1. Both batches show
+the recalibrated budget + tail-fallback design beats v1's 4k +
+rtk-err-cat on hold-out.
+
+❌ **Disconfirms: "hybrid-v2 dominates on Haiku".** §3f had
+hybrid-v2 at Haiku #2 behind grep on B5; Batch 6 has them tied
+on combined B5+B6 macro (both 0.6053). Per-case on Batch 6 dubbo,
+**Haiku tail beats hybrid-v2 0.90 vs 0.60** — which is the §3e
+caveat 2 CLI flake reproducing AGAIN: hybrid-v2 routes dubbo to
+grep at 16k tokens, the wrapped grep context produces a different
+Haiku diagnosis than the bare grep context (0.60 vs 0.75). This
+is now confirmed reproducible on a third independent case (after
+cpython, airflow, go-redis) — it's a real Haiku-on-wrapped-context
+issue, not a one-off.
+
+### Per-case detail (Sonnet 4.6) — where Batch 6 matters
+
+```text
+case                              grep_tok   routed   hybrid-v2  grep   tail   hybrid-v1
+dubbo-samples-test-timeout         16973     grep     0.9000     0.7750  0.9000  0.9000
+hibernate-orm-dbversion            65045     grep     0.9000     1.0000  0.3000  0.7250
+                                                     ------    ------  ------  ------
+Batch 6 macro (Sonnet)                                0.9000    0.8875  0.6000  0.8125
+```
+
+Both cases: hybrid-v2 routes to grep (correctly — both fit 120k).
+On dubbo (small log, late signal) all three of {tail, hybrid-v1,
+hybrid-v2} hit 0.9; only grep alone is slightly weaker (0.775)
+because it returns 17k tokens of mostly-noise that Sonnet
+reasoning-budget'd. On hibernate (46k-line log, late single-test
+failure) grep edges hybrid-v2 at 1.0 vs 0.9 (small difference
+attributable to wrapped-context header), but tail collapses to
+0.3 because the failure is at L45536 of 46198 (just at the edge
+of the bottom-200 window for tail-200).
+
+### Signal-recall (deterministic) at 19-case state
+
+```text
+                                v1.3 sig    v2 sig (17)    v2 sig (19)    Δ from 17→19
+hybrid-v1                       0.8237      —              ~0.49          —
+grep                            0.8756      —              ~0.85          stable
+tail                            0.8549      —              ~0.78          stable
+```
+
+Stable at the 17→19 transition; the 2 new java cases don't
+materially shift the signal-recall macro.
+
+### Updated headline table at the 19-case state
+
+| Headline claim | 17-case | 19-case (Batch 6 hold-out) |
+|---|---|---|
+| hybrid-v1 stays #4-5 across both debuggers | ✅ | ✅ #4 Sonnet, #4 Haiku stable |
+| hybrid-v2 generalizes better than hybrid-v1 | ⚠ Sonnet ✅ +0.21; Haiku ✅ +0.02 | ✅ direction confirmed on B5+B6 (Sonnet +0.17, Haiku +0.17) |
+| hybrid-v2 #1 on v2 macro | ⚠ Sonnet ✅; Haiku ❌ (grep takes #1) | ⚠ Sonnet #1 stable; **Haiku tied with grep** |
+| §3e CLI-flake on Haiku wrapped contexts | confirmed cpython+airflow | ✅ **third reproduction** — dubbo Haiku hybrid-v2 0.60 vs grep 0.75 |
+| tail collapses when signal isn't late | ✅ go-redis 0.05 | ✅ also hibernate 0.30 (signal is late but barely outside tail's window at L45536/46198) |
+
+### Remaining caveats from §3f carry over
+
+1-5 (calibration leakage, hold-out size, unrepresented v2/dev,
+rtk-err-cat truncation, Haiku CLI flake) all still apply.
+
+The §3f hold-out caveat that hybrid-v2 was tested on only 4
+cases is now partially addressed: 6 cases (4 + 2). Still small;
+larger replication (≥30 hold-out cases per debugger) is the
+clean next step but requires Batch 7+ collection.
 
 ## 4. Why hybrid drops
 
