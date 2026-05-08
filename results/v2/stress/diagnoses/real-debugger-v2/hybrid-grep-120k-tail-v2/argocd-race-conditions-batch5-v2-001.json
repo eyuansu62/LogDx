@@ -1,0 +1,39 @@
+{
+  "case_id": "argocd-race-conditions-batch5-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The provided log context contains only the StepSecurity harden-runner network/security monitoring output (the tail of a very large log), not the actual Go test runner output. No Go race-detector errors, test failures, compilation errors, or explicit job failure messages appear anywhere in the visible context. The log ends with 'Cleaning up orphan processes' but no preceding failure reason is visible.",
+  "root_cause_category": "unknown",
+  "root_cause": "The actual Go test output (including any -race detector findings or assertion failures) is not present in the provided log slice. The context was captured via the 'tail' fallback method because the primary log was too large, so the relevant failure output was truncated before the visible window.",
+  "confidence": 0.1,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "selected_method: tail\nselected_reason: primary_too_large_used_fallback",
+      "reason": "Confirms that only the trailing portion of the log is present; the test failure output that would precede it is not captured in this context."
+    },
+    {
+      "quote": "Cleaning up orphan processes",
+      "reason": "The log ends here with no preceding Go test failure, race-detector report, or exit-code message visible, making it impossible to identify the upstream cause."
+    }
+  ],
+  "suggested_fix": "",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-120k-tail-v2/argocd-race-conditions-batch5-v2-001.txt",
+    "context_tokens_estimate": 7621
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 330
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 39046.884,
+    "cache_key": "deef554e9148567a90dc3c71adfa0e2ee35beb75590899ba6ed8947acb195444",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

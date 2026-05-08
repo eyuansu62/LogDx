@@ -1,0 +1,55 @@
+{
+  "case_id": "argocd-race-conditions-batch5-v2-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The Go unit test suite run with the race detector (`-race`) produced 3 failures out of 7346 tests: two data races detected by the runtime and one test assertion mismatch in `app_test.go`. The `make test-race-local` target exited with error code 1 as a result.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Two concurrent data races were detected by the Go race detector during execution of tests (one in a server/TLS test around 03:27:12 and one around 03:29:38), and a third failure is a test assertion mismatch ('Not equal') at cmd/argocd/commands/app_test.go:1936. The make target test-race-local failed because of these three test failures.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "/home/runner/work/argo-cd/argo-cd/cmd/argocd/commands/app_test.go"
+  ],
+  "relevant_tests": [
+    "app_test.go:1936"
+  ],
+  "evidence": [
+    {
+      "quote": "DONE 7346 tests, 5 skipped, 3 failures in 468.930s",
+      "reason": "Confirms exactly 3 test failures in the race-enabled test run."
+    },
+    {
+      "quote": "make: *** [Makefile:473: test-race-local] Error 1",
+      "reason": "The make target for race-enabled unit tests exited non-zero, confirming the CI job failure."
+    },
+    {
+      "quote": "WARNING: DATA RACE\n    testing.go:1712: race detected during execution of test",
+      "reason": "Go race detector identified a data race during test execution; appears twice in the log, accounting for two of the three failures."
+    },
+    {
+      "quote": "=== Failed\n    app_test.go:1936: \n        \tError Trace:\t/home/runner/work/argo-cd/argo-cd/cmd/argocd/commands/app_test.go:1936\n        \tError:      \tNot equal:",
+      "reason": "Explicit test assertion failure at app_test.go line 1936 — the third failure."
+    },
+    {
+      "quote": "Error Trace:\t/home/runner/work/argo-cd/argo-cd/cmd/argocd/commands/app_test.go:1936",
+      "reason": "Pinpoints the exact file and line of the assertion failure."
+    }
+  ],
+  "suggested_fix": "Investigate the data race reported around the server/TLS test at 03:27:12 (likely in a server package test that spawns goroutines without proper synchronisation) and the race at 03:29:38 (in a helm/util test), and fix the assertion mismatch at cmd/argocd/commands/app_test.go:1936 by reviewing recent changes to that test or its subject code.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-4k-rtk-err-cat-v1/argocd-race-conditions-batch5-v2-001.txt",
+    "context_tokens_estimate": 93677
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 548
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 56321.823,
+    "cache_key": "69e6c0a4e39d5f3b1ebb45af738b8788887e125548d23fa1a81f6f1a6b3c4d34",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

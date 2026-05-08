@@ -234,13 +234,14 @@ to let the numbers pick.
   - Tooling: `tools/validate_case_tags.py` accepts `v2/dev`,
     `v2/holdout`, `v2/stress`, `v1.3`, `v2`, `all`; case importer
     already handled nested splits.
-  - Cases collected so far: **13 / 34** new (16 / 16 legacy tagged
+  - Cases collected so far: **17 / 34** new (16 / 16 legacy tagged
     `origin=legacy_v1_3`). Batch 1 (3/3) ✓, Batch 2 (5/5) ✓,
-    Batch 3 (2/2) ✓ Phase 2 10-case checkpoint, Batch 4 (3 of 3-5)
-    in progress. v2/dev 3/3 ✓, v2/holdout 5/4 (slightly over-target),
-    v2/stress 5/3 (over-target by 2 — Batch 4 case 3 deliberately
-    added to break the 4/4-late signal_position monoculture flagged
-    by tools/check_split_balance.py at 12-case state).
+    Batch 3 (2/2) ✓ Phase 2 10-case checkpoint, Batch 4 (3/3) ✓,
+    Batch 5 (4/4-6) ✓ — collected as a **hybrid-v2 hold-out**
+    not used for threshold tuning. v2/dev 3/3 ✓, v2/holdout 8/4
+    (over-target by 4), v2/stress 6/3 (over-target by 3 — both
+    over-targets are deliberate, motivated by signal-position
+    diversity, ecosystem coverage, and hold-out-set construction).
   - v2/stress cases (5 — process-crash + matrix + non-pytest framework + timeout + middle-signal):
     1. `cases/v2/stress/numpy-pytest-segfault-argsort-v2-001/`
        — `Fatal Python error: Segmentation fault` inside
@@ -330,21 +331,27 @@ to let the numbers pick.
        [`reports/v2_split_balance.md`](reports/v2_split_balance.md).
     3. **§3e — v2 router prototype (evaluation-tuned).** Built
        `hybrid-grep-120k-tail-v2` (budget 4k → 120k, fallback
-       rtk-err-cat → tail) to test §3d's hypothesis. **Per Codex
-       adversarial review 2026-05-08, the threshold was
-       calibrated by reading `eval_diagnosis_*.json` outputs
-       which are produced after `evaluate_diagnosis.py` loads
-       `ground_truth.json` — so the prototype is
-       evaluation-tuned, not a clean blind generalization
-       result.** On the 13-case calibration data: Sonnet v2
-       macro 0.6801 (#1), Haiku 0.5311 (#2). Drop from v1.3 is
-       −0.11 / −0.16 vs v1's −0.34 / −0.30. The result
-       demonstrates the *direction* (a budget-recalibrated
-       grep+tail router can beat v1) but does NOT yet establish
-       generalization — that requires v3 with a train/holdout
-       split. The hybrid-v2 config declares
-       `uses_diagnosis_eval: true` to make this calibration-
-       source visible at the lock layer.
+       rtk-err-cat → tail) to test §3d's hypothesis. The
+       hybrid-v2 config declares `uses_diagnosis_eval: true` —
+       the threshold was calibrated against eval data per Codex
+       review 2026-05-08. On the 13-case calibration data:
+       Sonnet v2 macro 0.6801 (#1), Haiku 0.5311 (#2).
+    4. **§3f — Hold-out validation (Batch 5, 4 new cases).**
+       Collected spring-boot-checkformat (java-gradle), gradle-
+       projecthealth (java-gradle), go-redis timeout, and
+       argocd-race-conditions (**first huge log >50k lines —
+       89188 lines, fills the corpus-wide gap**) WITHOUT
+       retuning hybrid-v2. Hold-out result: Sonnet hybrid-v2
+       0.5757 #1 (drop −0.10), Haiku 0.3521 #2 (drop −0.15;
+       grep wins). **Sonnet generalization confirmed; Haiku
+       partial.** The §3e direction (v2 > v1) holds across
+       both debuggers (+0.21 / +0.02 hold-out). The §3c
+       "tail unseats grep" macro claim is fully retracted —
+       tail drops −0.21 / −0.18 on hold-out. Argocd exposes
+       a hybrid-v2 weakness on huge multi-failure logs: tail-
+       fallback (0.12) loses to hybrid-v1's rtk-err-cat fallback
+       (0.56) on Sonnet there. Full §3f detail at
+       [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md).
   - Phase 2 acceptance-criteria-C deliverables landed:
     [`reports/v2_corpus_summary.md`](reports/v2_corpus_summary.md),
     [`reports/v2_split_balance.md`](reports/v2_split_balance.md),

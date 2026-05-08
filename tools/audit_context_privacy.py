@@ -97,7 +97,13 @@ SECRET_PATTERNS: list[tuple[str, re.Pattern[str], str]] = [
 ]
 
 MAX_LINE_LEN_FOR_SCAN = 8000   # skip extreme lines (base64 blobs, progress bars)
-MAX_LINES_PER_FILE = 50000     # generous cap
+# Raised from 50000 → 200000 on 2026-05-08 to support the first huge log
+# (argocd-race-conditions-batch5-v2-001 at 89k lines, fills the corpus-wide
+# huge_log gap that was 0/29 through the 13-case state). Re-running the v1.3
+# / v2-partial / v2-checkpoint-13 audit batch confirms no new hits surface
+# with the higher cap; this is purely a per-file scan-budget bump, not a
+# semantics change.
+MAX_LINES_PER_FILE = 200000
 MAX_SNIPPET_LEN = 160
 
 
@@ -403,7 +409,7 @@ def audit(split: str, context_method: str, results_dir: Path,
         # context file is exactly the gap that lets an unscanned secret
         # slip through to an external-model run.
         print(f"  ⚠ {total_incomplete_scans} context file(s) had incomplete "
-              f"scans (long-line skip or >50k-line truncate). Cannot prove "
+              f"scans (long-line skip or >200k-line truncate). Cannot prove "
               f"clean. Failing closed.", file=sys.stderr)
         return 3  # incomplete — fail closed
     if methods_missing_dir > 0 or methods_with_no_files > 0:

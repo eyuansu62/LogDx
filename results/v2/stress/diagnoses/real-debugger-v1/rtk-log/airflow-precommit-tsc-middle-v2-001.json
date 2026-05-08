@@ -3,51 +3,53 @@
   "context_method": "rtk-log",
   "diagnoser": "real-debugger-v1",
   "mode": "root_cause_diagnosis",
-  "summary": "TypeScript compilation (tsc) reported 118 errors with no visible error details in the filtered log context. The job also shows GitHub Actions artifact handling errors with 'if-no-files-found: error' indicating missing expected output files.",
+  "summary": "TypeScript compiler (tsc) reported 118 type errors during static checks in the CI job, preventing successful compilation.",
   "root_cause_category": "type_error",
-  "root_cause": "TypeScript compiler (tsc) is reporting 118 type errors (97 unique) across multiple source files, preventing successful compilation.",
-  "confidence": 0.5,
+  "root_cause": "TypeScript static analysis failed with 118 type errors (97 unique) across multiple .ts and .tsx source files and JSON locale files.",
+  "confidence": 0.8,
   "relevant_files": [
-    "src/context/openGroups/OpenGroupsProvider.tsx",
-    "src/pages/Dag/Code/FileLocation.tsx",
     "src/components/Graph/Edge.tsx",
-    "src/utils/errorHandling.ts",
     "src/components/AssetExpression/types.ts",
+    "src/pages/Dag/Code/FileLocation.tsx",
+    "src/utils/errorHandling.ts",
+    "src/context/openGroups/OpenGroupsProvider.tsx",
+    "src/pages/Dashboard/Stats/DAGImportErrors.tsx",
+    "src/components/Graph/graphTypes.ts",
     "src/pages/Variables/ImportVariablesForm.tsx"
   ],
   "relevant_tests": [],
   "evidence": [
     {
+      "quote": "framework: \"tsc\"",
+      "reason": "Explicitly identifies TypeScript compiler as the framework being tested"
+    },
+    {
       "quote": "[error] 118 errors (97 unique)",
-      "reason": "Explicit count of errors being reported by the job"
+      "reason": "Directly states the number of type errors reported by tsc"
     },
     {
-      "quote": "framework: tsc",
-      "reason": "Indicates the job uses TypeScript compiler for static type checking"
+      "quote": "job_name\": \"CI image checks / Static checks\"",
+      "reason": "Confirms this is a static type-checking job, not a runtime test"
     },
     {
-      "quote": "src/context/openGroups/OpenGroupsProvider.tsx src/queries/useBulkDeleteVariables... src/pages/Dag/Code/FileLocation.tsx src/components/Graph/Edge.tsx src/components/ui...",
-      "reason": "Multiple TypeScript/TSX source files are listed in error output, confirming type checking is the focus"
-    },
-    {
-      "quote": "if-no-files-found: error",
-      "reason": "GitHub Actions artifact step failed, likely because tsc did not produce expected output due to compilation failure"
+      "quote": "src/components/Graph/Edge.tsx src/components/AssetExpression/types.ts",
+      "reason": "Shows .ts and .tsx files in error output, indicating TypeScript compilation issues"
     }
   ],
-  "suggested_fix": "Run `tsc --noEmit` locally in the repository root to identify and display the actual type errors, fix them in the affected source files, and commit the corrections",
+  "suggested_fix": "Run `tsc` locally or review the full TypeScript compiler output to identify and fix the 118 type errors reported during static analysis.",
   "input": {
     "context_path": "results/v2/stress/rtk-log/airflow-precommit-tsc-middle-v2-001.txt",
-    "context_tokens_estimate": 439
+    "context_tokens_estimate": 450
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 407
+    "output_tokens_estimate": 359
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 47287.362,
-    "cache_key": "f2e63239c2ff24817a85e65a2a2a9d5ebab5eba78f1d7ba94d94eefd36c195fa",
+    "runtime_ms": 30478.972,
+    "cache_key": "4db13012c916c3b9311ab92905bfbd1732ac2279681b586081aced852b16715d",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
   }

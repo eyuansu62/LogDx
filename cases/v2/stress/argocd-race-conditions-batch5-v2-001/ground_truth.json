@@ -1,0 +1,124 @@
+{
+  "root_cause": {
+    "summary": "argo-cd's `Run unit tests with -race for Go packages` job had three distinct test failures across three packages, surfacing two related root-cause categories. (1) cmd/argocd/commands.TestWaitOnApplicationStatus_JSON_YAML_WideOutput at app_test.go:1936 — a formatted-output assertion failed because the test's expected output captured timestamps at one second BEFORE the actual rendering happened, so `2026-05-08T03:25:36` (expected) vs `2026-05-08T03:25:35` (actual) caused a string-equality mismatch on the wide-output formatter. This is a timing-flake / clock-snapshot bug in the test fixture, not a logic bug in the wait-on-status command itself. (2) server.TestOIDCRefresh — `testing.go:1712: race detected during execution of test` (Go race detector under `go test -race`); the test triggers an OIDC token-refresh path that accesses shared state without locking. (3) util/db.TestClusterRaceConditionClusterSecrets — second `testing.go:1712: race detected`; concurrent-access on cluster secrets storage. The package-level FAIL coverage lines (L61296 cmd/argocd/commands 48.495s, L67598 server 30.793s, L80596 util/db 38.827s) confirm three packages failed. Final `=== Failed` summary at L87473-88904 enumerates all three with file paths and the diff/race traces; ##[error]Process completed with exit code 2 at L88904.",
+    "category": "test_assertion"
+  },
+  "required_signals": [
+    {
+      "type": "failed_test",
+      "value": "FAIL cmd/argocd/commands.TestWaitOnApplicationStatus_JSON_YAML_WideOutput (0.03s)",
+      "file": "cmd/argocd/commands/app_test.go",
+      "line": 1936,
+      "importance": "critical",
+      "evidence_lines": [[54988, 54988]]
+    },
+    {
+      "type": "failed_test",
+      "value": "FAIL server.TestOIDCRefresh (2.59s)",
+      "importance": "critical",
+      "evidence_lines": [[66058, 66058]]
+    },
+    {
+      "type": "failed_test",
+      "value": "FAIL util/db.TestClusterRaceConditionClusterSecrets (22.37s)",
+      "importance": "critical",
+      "evidence_lines": [[75102, 75102]]
+    },
+    {
+      "type": "exception",
+      "value": "testing.go:1712: race detected during execution of test",
+      "importance": "critical",
+      "evidence_lines": [[66174, 66174], [76387, 76387], [87610, 87610], [88897, 88897]]
+    },
+    {
+      "type": "diff",
+      "value": "Not equal:",
+      "importance": "important",
+      "evidence_lines": [[87477, 87492]]
+    },
+    {
+      "type": "command",
+      "value": "FAIL Package cmd/argocd/commands (48.495s) (coverage: 76.0% of statements)",
+      "aliases": [
+        "FAIL Package server (30.793s) (coverage: 68.6% of statements)",
+        "FAIL Package util/db (38.827s) (coverage: 71.0% of statements)"
+      ],
+      "importance": "important",
+      "evidence_lines": [[61296, 61296], [67598, 67598], [80596, 80596]]
+    },
+    {
+      "type": "command",
+      "value": "=== Failed",
+      "importance": "critical",
+      "evidence_lines": [[87473, 87473]]
+    },
+    {
+      "type": "stack_location",
+      "value": "/home/runner/work/argo-cd/argo-cd/cmd/argocd/commands/app_test.go:1936",
+      "file": "cmd/argocd/commands/app_test.go",
+      "line": 1936,
+      "importance": "important",
+      "evidence_lines": [[87476, 87476]]
+    },
+    {
+      "type": "annotation",
+      "value": "##[error]Process completed with exit code 2.",
+      "importance": "important",
+      "evidence_lines": [[88904, 88904]]
+    },
+    {
+      "type": "exception",
+      "value": "WARNING: DATA RACE",
+      "importance": "important",
+      "evidence_lines": [[75439, 75439], [87541, 87541], [87949, 87949]]
+    }
+  ],
+  "relevant_files": [
+    "cmd/argocd/commands/app_test.go",
+    "server/oidc/oidc_refresh_test.go",
+    "util/db/cluster_test.go"
+  ],
+  "relevant_tests": [
+    "cmd/argocd/commands.TestWaitOnApplicationStatus_JSON_YAML_WideOutput",
+    "server.TestOIDCRefresh",
+    "util/db.TestClusterRaceConditionClusterSecrets"
+  ],
+  "evidence_spans": [
+    {
+      "start_line": 54988,
+      "end_line": 54988,
+      "reason": "First ##[group]FAIL marker at ~62% of the log: identifies the cmd/argocd/commands.TestWaitOnApplicationStatus_JSON_YAML_WideOutput failure. This is the EARLIEST failure marker in the log — a tail-200 window starting from the bottom would miss this entirely (it's >34000 lines from the bottom)."
+    },
+    {
+      "start_line": 66058,
+      "end_line": 66174,
+      "reason": "Second failure block: ##[group]FAIL server.TestOIDCRefresh + the race-detector trace ~13000 lines later (~74% of log). Multiple-failure-locality marker."
+    },
+    {
+      "start_line": 75102,
+      "end_line": 76387,
+      "reason": "Third failure block: ##[group]FAIL util/db.TestClusterRaceConditionClusterSecrets + race trace at ~85% of log. Spans 1285 lines internally."
+    },
+    {
+      "start_line": 87473,
+      "end_line": 88904,
+      "reason": "Consolidated `=== Failed` summary at the end of the log (~98%) listing all three failures: TestWaitOnApplicationStatus_JSON_YAML_WideOutput with the expected/actual diff at app_test.go:1936, TestOIDCRefresh with race trace, TestClusterRaceConditionClusterSecrets with race trace. ##[error]Process completed with exit code 2 at L88904. This block is the densest single span — a tail-1500 window would catch all three failure summaries in one chunk."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "race",
+      "OIDCRefresh",
+      "ClusterRaceCondition"
+    ],
+    "must_not_claim": [
+      "out of memory",
+      "permission denied",
+      "network failure",
+      "compile error",
+      "the build itself failed",
+      "single test failure",
+      "Linux kernel issue"
+    ]
+  }
+}

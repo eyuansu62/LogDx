@@ -1,0 +1,30 @@
+{
+  "case_id": "go-redis-pubsub-channel-timeout-batch5-v2-001",
+  "split": "v2/holdout",
+  "origin": "new_v2",
+  "ecosystem": "go",
+  "primary_language": "go",
+  "ci_provider": "github_actions",
+  "repo_visibility": "redacted",
+  "failure_category": "timeout_or_oom",
+  "framework": "generic",
+  "log_size_bucket": "medium",
+  "signal_position": "middle",
+  "evidence_formats": [
+    "traceback",
+    "timeout_marker",
+    "ansi_colored_block",
+    "github_annotation",
+    "shell_command_output"
+  ],
+  "noise_profile": [
+    "verbose_build_noise",
+    "test_progress_noise",
+    "post_failure_chatter"
+  ],
+  "multi_failure": false,
+  "flaky_or_transient": true,
+  "requires_repo_context": false,
+  "diagnosis_difficulty": "medium",
+  "notes": "**Batch 5 hold-out case** — added 2026-05-08 to validate hybrid-v2's 120k threshold WITHOUT retuning. Adds a Go ecosystem timeout_or_oom case (calibration set's nodejs-test-debugger-exec-timeout was JS — this validates the timeout pattern generalizes). repo_visibility=redacted because TestParseURL fixture URLs were redacted (false-positive matches against the audit's url_credential regex; the URLs are public Go test fixtures with placeholder credentials like `redis://:bar@localhost:123` but the audit's fail-closed default forced redaction). flaky_or_transient=true (1.001s timeout on a redis-server publish is timing-sensitive under CI load). signal_position=middle: the ginkgo failure block lives at L1102-1172 of 2730 (~42%) and the package-level FAIL at L1331-1333 (~49%); about half the log is post-failure non-failure-test chatter from other test packages running afterward. log_size_bucket=medium (2730 lines)."
+}

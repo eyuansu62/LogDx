@@ -1,0 +1,47 @@
+{
+  "case_id": "go-redis-pubsub-channel-timeout-batch5-v2-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "One test timed out after 1.001 seconds, causing the overall test suite to report 1 failure out of 1224 tests. The failure is a timeout in a test tracked by the Ginkgo framework, not a logic assertion error.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "A single test timed out after exceeding its 1-second deadline, as reported by the Ginkgo test runner with '[FAILED] Timed out after 1.001s.'",
+  "confidence": 0.72,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "[FAILED] Timed out after 1.001s.",
+      "reason": "This is the explicit failure message from the Ginkgo test runner indicating a test exceeded its timeout of 1 second."
+    },
+    {
+      "quote": "• [FAILED] [1.014 seconds]",
+      "reason": "Confirms that the failing test node ran for approximately 1.014 seconds, consistent with a 1-second timeout being exceeded."
+    },
+    {
+      "quote": "FAIL! -- 1223 Passed | 1 Failed | 0 Pending | 50 Skipped",
+      "reason": "Shows exactly one test failed in the entire suite, and the failure is the timed-out test."
+    },
+    {
+      "quote": "make: *** [Makefile:46: test.ci] Error 1",
+      "reason": "The make target test.ci exited with error code 1, confirming the CI job failed due to the test failure."
+    }
+  ],
+  "suggested_fix": "Identify which Ginkgo test node ran for ~1.014 seconds and timed out (the context does not name it directly); increase its timeout budget or investigate why it is slower than 1 second in CI — for example, check whether it relies on a channel receive or async event that is not completing in time under CI load.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-4k-rtk-err-cat-v1/go-redis-pubsub-channel-timeout-batch5-v2-001.txt",
+    "context_tokens_estimate": 9625
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 383
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 19865.412,
+    "cache_key": "03110190582a25f6a2872aad8605bfa4daa3a031283775406c82abe9d891a33f",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

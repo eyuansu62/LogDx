@@ -1,0 +1,13 @@
+{
+  "case_id": "go-redis-pubsub-channel-timeout-batch5-v2-001",
+  "repo": "go-redis/redis",
+  "source": "github_actions",
+  "framework": "generic",
+  "failure_category": "timeout_or_oom",
+  "raw_log_path": "raw.log",
+  "line_count": 2730,
+  "byte_size": 246115,
+  "workflow_name": "Go",
+  "job_name": "test-redis-ce (8.4.x, oldstable)",
+  "notes": "go-redis Go test against redis-ce 8.4.x oldstable (~8min). Ginkgo test `PubSub [It] should ChannelMessage` (pubsub_test.go:645) failed: `[FAILED] Timed out after 1.001s. Expected <<-chan *redis.Message | len:0, cap:10>: 0xc0012d96c0 to receive something.` (L1106-1109). Pattern is a per-test timeout: the test waits for a redis-ce server to publish a Pub/Sub message and the channel never received one in 1.001s. Macroscopically: 1223 Passed | 1 Failed | 0 Pending | 50 Skipped (L1171). Late signal_position (failure block at L1102-1172 of 2730, ~42% — but wait, this is the FIRST failure in the log; everything after L1172 is more passing tests then the FAIL summary at L1331-1333. So actually middle/scattered? The TestGinkgoSuite block failure surfaces TWICE — first detail at L1102 then summary at L1166-1172, then the package-level FAIL marker much later at L1331. Calling this signal_position=middle since the actual diagnostic content is centered around 40% of the log). Selected as Batch 5 case 3 — hold-out, NOT in calibration set. Privacy audit: 0 hits after redacting test fixture URLs (TestParseURL subtests with placeholder credentials) and truncating 2 ginkgo bullet-decoration lines. failure_category=timeout_or_oom (per-test timeout, same shape as the nodejs case in calibration set — but on a different ecosystem and from a different source, so it's a hold-out generalization test of the timeout_or_oom category). framework=generic (Go's testing framework + ginkgo, not pytest/jest)."
+}

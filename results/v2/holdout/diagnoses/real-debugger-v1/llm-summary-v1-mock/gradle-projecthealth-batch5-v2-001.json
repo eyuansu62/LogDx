@@ -1,0 +1,50 @@
+{
+  "case_id": "gradle-projecthealth-batch5-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Gradle Sanity Check job failed with a digest-mismatch error during dependency processing. The error occurred early in the build (20:38:43), and the job exited with code 1, though many subsequent Kotlin Gradle Plugin configuration checks were skipped rather than failed.",
+  "root_cause_category": "dependency_install",
+  "root_cause": "Digest mismatch error occurred during dependency graph generation or caching, as evidenced by the explicit 'digest-mismatch: error' message in the build log. The error appears related to dependency artifact verification, possibly involving com.google.errorprone or related packages shown in the cache listings.",
+  "confidence": 0.68,
+  "relevant_files": [
+    "./caches/modules-2/files-2.1/com.google.errorprone",
+    "./caches/modules-2/files-2.1/io.github.eisop/dataflow-errorprone"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "digest-mismatch: error",
+      "reason": "Explicit error message indicating a checksum or digest verification failure during dependency resolution or caching"
+    },
+    {
+      "quote": "dependency-graph-continue-on-failure: true",
+      "reason": "Configuration setting appears immediately after the digest-mismatch error, suggesting the failure occurred during dependency graph analysis"
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Job terminated with failure exit code, confirming the digest-mismatch error was fatal"
+    },
+    {
+      "quote": "checkKotlinGradlePluginConfigurationErrors SKIPPED",
+      "reason": "Multiple subsequent tasks were skipped rather than executed/failed, suggesting the build halted early due to the digest-mismatch error"
+    }
+  ],
+  "suggested_fix": "Investigate the digest mismatch by clearing the Gradle dependency cache (rm -rf .gradle/caches/modules-2) and re-running the build, or verify that dependency artifact checksums are correct in the build configuration. If this is a transient network issue, retrying the job may resolve it.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-mock/gradle-projecthealth-batch5-v2-001.txt",
+    "context_tokens_estimate": 1471
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 478
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 27106.785,
+    "cache_key": "fd41679f5dd89b56777c8602b737d94aefd4299d32066621de3fca2066d858e2",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

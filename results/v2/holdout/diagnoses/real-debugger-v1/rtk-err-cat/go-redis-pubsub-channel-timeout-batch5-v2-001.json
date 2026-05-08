@@ -1,0 +1,47 @@
+{
+  "case_id": "go-redis-pubsub-channel-timeout-batch5-v2-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "One test exceeded its timeout threshold, completing in 1.014 seconds when the limit was 1.001 seconds. The test suite otherwise passed 1223 tests successfully.",
+  "root_cause_category": "timeout_or_oom",
+  "root_cause": "A test exceeded the 1.001 second timeout threshold by 13 milliseconds (actual runtime: 1.014 seconds). The case_id suggests this is related to pubsub channel timeout behavior.",
+  "confidence": 0.92,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "^[[38;5;9m• [FAILED] [1.014 seconds]^[[0m",
+      "reason": "Indicates the failing test completed in 1.014 seconds"
+    },
+    {
+      "quote": "^[[38;5;9m^[[1m[FAILED] Timed out after 1.001s.",
+      "reason": "Explicitly states the test timed out after 1.001 seconds, establishing the timeout threshold"
+    },
+    {
+      "quote": "^[[38;5;9m^[[1mFAIL!^[[0m -- ^[[38;5;10m^[[1m1223 Passed^[[0m | ^[[38;5;9m^[[1m1 Failed^[[0m",
+      "reason": "Shows exactly 1 test failed out of 1224 total tests run, with no other failures reported"
+    },
+    {
+      "quote": "make: *** [Makefile:46: test.ci] Error 1",
+      "reason": "Confirms the test.ci target failed with exit code 1 due to the timeout"
+    }
+  ],
+  "suggested_fix": "Increase the timeout threshold for this test, or investigate performance regressions in the pubsub channel timeout code path that is causing it to exceed the previous timeout margin",
+  "input": {
+    "context_path": "results/v2/holdout/rtk-err-cat/go-redis-pubsub-channel-timeout-batch5-v2-001.txt",
+    "context_tokens_estimate": 9576
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 332
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 26239.209,
+    "cache_key": "4fad5261c5dd1b47b3321344d675b517e5505d8ad54d1c1c8c5fa1edb5f35eee",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

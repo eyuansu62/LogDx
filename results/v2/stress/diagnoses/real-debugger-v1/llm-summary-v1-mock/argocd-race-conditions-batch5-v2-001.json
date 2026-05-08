@@ -1,0 +1,48 @@
+{
+  "case_id": "argocd-race-conditions-batch5-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Go module cache extraction is failing with repeated 'tar: Cannot open: File exists' errors across multiple modules, indicating concurrent file system conflicts during parallel test execution.",
+  "root_cause_category": "other",
+  "root_cause": "Race condition in Go module cache extraction: multiple concurrent processes spawned by -race test execution are attempting to extract the same Go modules simultaneously, causing tar to fail when destination files already exist from parallel extraction attempts.",
+  "confidence": 0.78,
+  "relevant_files": [
+    "../../../go/pkg/mod/google.golang.org/grpc@v1.81.0/Documentation/rpc-errors.md",
+    "../../../go/pkg/mod/code.gitea.io/sdk/gitea@v0.23.2/hook_validate_test.go",
+    "../../../go/pkg/mod/google.golang.org/api@v0.227.0/clouderrorreporting/v1beta1/clouderrorreporting-api.json",
+    "../../../go/pkg/mod/go.opentelemetry.io/otel@v1.43.0/internal/shared/otlp/otlpmetric/transform/error_test.go.tmpl"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "/usr/bin/tar: ../../../go/pkg/mod/google.golang.org/grpc@v1.81.0/Documentation/rpc-errors.md: Cannot open: File exists",
+      "reason": "Explicit tar error indicating destination file already exists when tar attempts extraction, characteristic of concurrent extraction race condition"
+    },
+    {
+      "quote": "/usr/bin/tar: ../../../go/pkg/mod/code.gitea.io/sdk/gitea@v0.23.2/hook_validate_test.go: Cannot open: File exists",
+      "reason": "Same error pattern repeated across multiple different module paths and timestamps (03:20:19-03:20:21), indicating systematic concurrent access to Go module cache during extraction"
+    },
+    {
+      "quote": "job_name\": \"Run unit tests with -race for Go packages\"",
+      "reason": "The -race flag causes Go tests to run with concurrency instrumentation, which spawns multiple parallel processes that can trigger simultaneous module extraction"
+    }
+  ],
+  "suggested_fix": "Serialize Go module extraction or limit test parallelism using -p 1 flag, or investigate whether the Go module cache requires exclusive locking during concurrent test execution with -race.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-mock/argocd-race-conditions-batch5-v2-001.txt",
+    "context_tokens_estimate": 4166
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 513
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 30177.778,
+    "cache_key": "542a5dac73fa99bc4b58db26febfa0ee17df4f35cd687546226668df6ee7fc92",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

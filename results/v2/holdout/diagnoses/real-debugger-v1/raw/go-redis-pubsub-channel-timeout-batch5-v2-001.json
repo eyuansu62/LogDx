@@ -1,0 +1,47 @@
+{
+  "case_id": "go-redis-pubsub-channel-timeout-batch5-v2-001",
+  "context_method": "raw",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "A single PubSub test (should ChannelMessage) timed out after 1.001 seconds while waiting for a message to arrive on a Go channel. The test framework expected to receive data but none arrived within the timeout window.",
+  "root_cause_category": "other",
+  "root_cause": "Test timeout: PubSub ChannelMessage test failed because the expected message was not received within 1.001 seconds. Either the message delivery is delayed beyond the test timeout (environment timing issue), or there is a race condition in the pubsub channel delivery mechanism.",
+  "confidence": 0.7,
+  "relevant_files": [
+    "pubsub_test.go"
+  ],
+  "relevant_tests": [
+    "TestGinkgoSuite/PubSub/[It] should ChannelMessage"
+  ],
+  "evidence": [
+    {
+      "quote": "[FAILED] Timed out after 1.001s. Expected <<-chan *redis.Message | len:0, cap:10>: 0xc0012d96c0 to receive something.",
+      "reason": "Explicit test timeout failure indicating the channel never received the expected message within 1 second"
+    },
+    {
+      "quote": "Ran 1224 of 1274 Specs in 179.248 seconds. FAIL! -- 1223 Passed | 1 Failed",
+      "reason": "Only 1 test failed out of 1274, suggesting this may be a flaky/timing-sensitive test rather than a systematic failure"
+    },
+    {
+      "quote": "/home/runner/work/go-redis/go-redis/pubsub_test.go:661",
+      "reason": "Identifies the exact test file and line where the timeout occurred"
+    }
+  ],
+  "suggested_fix": "Investigate whether the PubSub message delivery is slower than expected in the test environment, or whether there is a race condition in channel message delivery. Consider increasing the test timeout, reviewing message delivery ordering in the implementation, or adding synchronization to ensure messages are delivered before the timeout expires.",
+  "input": {
+    "context_path": "results/v2/holdout/raw/go-redis-pubsub-channel-timeout-batch5-v2-001.txt",
+    "context_tokens_estimate": 61446
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 423
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 31291.885,
+    "cache_key": "726705fd6b68041bf243f633c519dc8094b6522716ea9dd7615d5ad725e3626b",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

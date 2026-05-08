@@ -1,0 +1,86 @@
+{
+  "root_cause": {
+    "summary": "Gradle's Contributor CI build's `:platform-base:projectHealth` task failed because the build script `platforms/software/platform-base/build.gradle.kts` declares an `api` dependency on `projects.domainObjectCollections` that should be `implementation`. The projectHealth plugin (Gradle's internal best-practice lint) detected the unnecessary api-scope leak and reported it as `Existing dependencies which should be modified to be as indicated: implementation(projects.domainObjectCollections) (was api)` (L12776-12778). One task fails out of 6342 actionable tasks. Failure propagates: BUILD FAILED in 7m 41s (L12785) → ##[error]Process completed with exit code 1 (L12792).",
+    "category": "lint_error"
+  },
+  "required_signals": [
+    {
+      "type": "failed_test",
+      "value": "> Task :platform-base:projectHealth FAILED",
+      "importance": "critical",
+      "evidence_lines": [[12757, 12757]]
+    },
+    {
+      "type": "command",
+      "value": "Execution failed for task ':platform-base:projectHealth'.",
+      "importance": "critical",
+      "evidence_lines": [[12775, 12775]]
+    },
+    {
+      "type": "command",
+      "value": "/home/runner/work/gradle/gradle/platforms/software/platform-base/build.gradle.kts",
+      "file": "platforms/software/platform-base/build.gradle.kts",
+      "importance": "critical",
+      "evidence_lines": [[12776, 12776]]
+    },
+    {
+      "type": "command",
+      "value": "Existing dependencies which should be modified to be as indicated:",
+      "importance": "important",
+      "evidence_lines": [[12777, 12777]]
+    },
+    {
+      "type": "command",
+      "value": "implementation(projects.domainObjectCollections) (was api)",
+      "importance": "critical",
+      "evidence_lines": [[12778, 12778]]
+    },
+    {
+      "type": "command",
+      "value": "BUILD FAILED in 7m 41s",
+      "importance": "important",
+      "evidence_lines": [[12785, 12785]]
+    },
+    {
+      "type": "annotation",
+      "value": "##[error]Process completed with exit code 1.",
+      "importance": "important",
+      "evidence_lines": [[12792, 12792]]
+    }
+  ],
+  "relevant_files": [
+    "platforms/software/platform-base/build.gradle.kts"
+  ],
+  "relevant_tests": [
+    ":platform-base:projectHealth"
+  ],
+  "evidence_spans": [
+    {
+      "start_line": 12757,
+      "end_line": 12757,
+      "reason": "First FAILED marker for :platform-base:projectHealth. Identifies the failing Gradle task."
+    },
+    {
+      "start_line": 12772,
+      "end_line": 12792,
+      "reason": "Self-contained What-went-wrong block: `FAILURE: Build failed with an exception. * What went wrong: Execution failed for task ':platform-base:projectHealth'. > <build.gradle.kts file path>   Existing dependencies which should be modified to be as indicated:     implementation(projects.domainObjectCollections) (was api)` + BUILD FAILED + GHA exit 1. Names the file, the offending dependency, and the proposed fix."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "projectHealth",
+      "domainObjectCollections",
+      "implementation",
+      "api"
+    ],
+    "must_not_claim": [
+      "compile error",
+      "test failure",
+      "out of memory",
+      "permission denied",
+      "network failure",
+      "timeout",
+      "the build script is syntactically invalid"
+    ]
+  }
+}

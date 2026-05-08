@@ -1,0 +1,60 @@
+{
+  "case_id": "go-redis-pubsub-channel-timeout-batch5-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The Ginkgo test suite (TestGinkgoSuite) failed after 179 seconds. Multiple goroutines in conn_state_test.go hit invalid state-machine transitions ('cannot transition from INITIALIZING to INITIALIZING'), and double_freeturn_test.go reported 93 sub-failures, collectively causing the suite to exit with code 2.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Multiple goroutines concurrently attempt to enter the INITIALIZING connection state while already in INITIALIZING, violating the state machine constraint that this transition is only valid from IDLE. This produces repeated assertion failures across at least 9 goroutines in conn_state_test.go, and 93 failures in double_freeturn_test.go, causing TestGinkgoSuite to fail.",
+  "confidence": 0.72,
+  "relevant_files": [
+    "conn_state_test.go",
+    "double_freeturn_test.go",
+    "peek_push_notification_test.go",
+    "pool_hook_test.go",
+    "push_test.go",
+    "digest_test.go"
+  ],
+  "relevant_tests": [
+    "TestGinkgoSuite"
+  ],
+  "evidence": [
+    {
+      "quote": "--- FAIL: TestGinkgoSuite (179.28s)",
+      "reason": "This is the top-level test that failed, confirming the Ginkgo suite as the failing test entry point."
+    },
+    {
+      "quote": "conn_state_test.go:314: Goroutine 3: failed to enter INITIALIZING - invalid state transition: cannot transition from INITIALIZING to INITIALIZING (valid from: [IDLE])",
+      "reason": "Shows that goroutines are trying to re-enter INITIALIZING state while already in INITIALIZING, violating the allowed transition rule and producing test assertion failures."
+    },
+    {
+      "quote": "conn_state_test.go:314: Goroutine 8: failed to enter INITIALIZING - invalid state transition: cannot transition from INITIALIZING to INITIALIZING (valid from: [IDLE])",
+      "reason": "Repeated across goroutine 8, confirming a concurrent/race scenario where multiple goroutines hit the same invalid transition."
+    },
+    {
+      "quote": "double_freeturn_test.go:217: Failures: 93",
+      "reason": "93 sub-failures in this test file compound the overall suite failure count."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 2.",
+      "reason": "Exit code 2 is Go test's signal that one or more tests failed, confirming the suite did not pass."
+    }
+  ],
+  "suggested_fix": "Investigate the connection state machine logic to ensure a connection cannot attempt to transition to INITIALIZING when it is already in INITIALIZING state — likely a concurrency guard (mutex or atomic check) is missing or incorrectly placed before the state transition in the code exercised by conn_state_test.go.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-mock/go-redis-pubsub-channel-timeout-batch5-v2-001.txt",
+    "context_tokens_estimate": 2399
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 621
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 28313.101,
+    "cache_key": "2e79a68479015fbf33901c0beb90cf6f3c80cb71636057af2d4400247a016a2b",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

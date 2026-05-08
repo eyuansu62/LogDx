@@ -1,0 +1,136 @@
+{
+  "root_cause": {
+    "summary": "go-redis ginkgo test `PubSub [It] should ChannelMessage` failed in pubsub_test.go: the test subscribed to a Redis Pub/Sub channel and waited for a message via the read end of a buffered Go channel (`<-chan *redis.Message | len:0, cap:10`), but no message arrived within 1.001s and the test's gomega `Eventually(...).Should(Receive())` matcher timed out at pubsub_test.go:661. Ginkgo's failure block (L1102-1110) names the test, the test source line where the timeout fires (L661), and the failed channel state. Test runner summary at L1166-1172: `Summarizing 1 Failure: [FAIL] PubSub [It] should ChannelMessage pubsub_test.go:661 Ran 1224 of 1274 Specs in 179.248 seconds FAIL! -- 1223 Passed | 1 Failed | 0 Pending | 50 Skipped`. Likely cause: the redis-ce 8.4.x oldstable test server didn't deliver the published message within the 1s timeout — could be slow network setup or a transient redis-server flake under CI load. Package-level FAIL marker at L1331-1333 propagates to GHA exit code 2.",
+    "category": "timeout_or_oom"
+  },
+  "required_signals": [
+    {
+      "type": "failed_test",
+      "value": "[FAILED] [1.014 seconds]",
+      "importance": "critical",
+      "evidence_lines": [[1102, 1102]]
+    },
+    {
+      "type": "failed_test",
+      "value": "PubSub [It] should ChannelMessage",
+      "importance": "critical",
+      "evidence_lines": [[1103, 1103]]
+    },
+    {
+      "type": "stack_location",
+      "value": "/home/runner/work/go-redis/go-redis/pubsub_test.go:645",
+      "file": "pubsub_test.go",
+      "line": 645,
+      "importance": "important",
+      "evidence_lines": [[1104, 1104]]
+    },
+    {
+      "type": "exception",
+      "value": "[FAILED] Timed out after 1.001s.",
+      "importance": "critical",
+      "evidence_lines": [[1106, 1106]]
+    },
+    {
+      "type": "diff",
+      "value": "<<-chan *redis.Message | len:0, cap:10>: 0xc0012d96c0",
+      "importance": "important",
+      "evidence_lines": [[1107, 1108]]
+    },
+    {
+      "type": "diff",
+      "value": "to receive something.",
+      "importance": "important",
+      "evidence_lines": [[1109, 1109]]
+    },
+    {
+      "type": "stack_location",
+      "value": "In [It] at: /home/runner/work/go-redis/go-redis/pubsub_test.go:661",
+      "file": "pubsub_test.go",
+      "line": 661,
+      "importance": "critical",
+      "evidence_lines": [[1110, 1110]]
+    },
+    {
+      "type": "command",
+      "value": "Summarizing 1 Failure:",
+      "importance": "important",
+      "evidence_lines": [[1166, 1166]]
+    },
+    {
+      "type": "command",
+      "value": "[FAIL] PubSub [It] should ChannelMessage",
+      "importance": "critical",
+      "evidence_lines": [[1167, 1167]]
+    },
+    {
+      "type": "command",
+      "value": "Ran 1224 of 1274 Specs in 179.248 seconds",
+      "importance": "important",
+      "evidence_lines": [[1170, 1170]]
+    },
+    {
+      "type": "command",
+      "value": "FAIL! -- 1223 Passed | 1 Failed | 0 Pending | 50 Skipped",
+      "importance": "critical",
+      "evidence_lines": [[1171, 1171]]
+    },
+    {
+      "type": "command",
+      "value": "--- FAIL: TestGinkgoSuite (179.28s)",
+      "importance": "critical",
+      "evidence_lines": [[1172, 1172]]
+    },
+    {
+      "type": "command",
+      "value": "FAIL\tgithub.com/redis/go-redis/v9\t185.245s",
+      "importance": "important",
+      "evidence_lines": [[1333, 1333]]
+    },
+    {
+      "type": "annotation",
+      "value": "##[error]Process completed with exit code 2.",
+      "importance": "important",
+      "evidence_lines": [[2681, 2681]]
+    }
+  ],
+  "relevant_files": [
+    "pubsub_test.go"
+  ],
+  "relevant_tests": [
+    "PubSub [It] should ChannelMessage",
+    "TestGinkgoSuite"
+  ],
+  "evidence_spans": [
+    {
+      "start_line": 1102,
+      "end_line": 1110,
+      "reason": "Self-contained failure block: `[FAILED] [1.014 seconds] PubSub [It] should ChannelMessage pubsub_test.go:645 [FAILED] Timed out after 1.001s. Expected <<-chan *redis.Message | len:0, cap:10>: 0xc0012d96c0 to receive something. In [It] at: pubsub_test.go:661`. Names the test, the test source line, the timeout duration, and the failed channel-receive state."
+    },
+    {
+      "start_line": 1166,
+      "end_line": 1172,
+      "reason": "Test runner summary: `Summarizing 1 Failure: [FAIL] PubSub [It] should ChannelMessage pubsub_test.go:661`, `Ran 1224 of 1274 Specs in 179.248 seconds`, `FAIL! -- 1223 Passed | 1 Failed | 0 Pending | 50 Skipped`, `--- FAIL: TestGinkgoSuite (179.28s)`. Confirms scope (1 of 1274 specs failed)."
+    },
+    {
+      "start_line": 1331,
+      "end_line": 1333,
+      "reason": "Go package-level FAIL marker (`FAIL  github.com/redis/go-redis/v9  185.245s`) — confirms the package-level test exit code reflects the ginkgo suite failure."
+    }
+  ],
+  "expected_diagnosis": {
+    "must_mention": [
+      "PubSub",
+      "ChannelMessage",
+      "Timed out",
+      "pubsub_test"
+    ],
+    "must_not_claim": [
+      "compile error",
+      "out of memory",
+      "permission denied",
+      "test source code is wrong",
+      "panic",
+      "nil pointer"
+    ]
+  }
+}

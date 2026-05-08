@@ -1,0 +1,13 @@
+{
+  "case_id": "argocd-race-conditions-batch5-v2-001",
+  "repo": "argoproj/argo-cd",
+  "source": "github_actions",
+  "framework": "generic",
+  "failure_category": "test_assertion",
+  "raw_log_path": "raw.log",
+  "line_count": 89188,
+  "byte_size": 12839913,
+  "workflow_name": "Integration tests",
+  "job_name": "Run unit tests with -race for Go packages",
+  "notes": "argo-cd Integration tests workflow, 'Run unit tests with -race for Go packages' job (~43min). THREE distinct test failures: (1) cmd/argocd/commands `TestWaitOnApplicationStatus_JSON_YAML_WideOutput` (app_test.go:1936) — formatted-output assertion fails because expected timestamps are 2026-05-08T03:25:36 but actual produced 2026-05-08T03:25:35 (1-second timing flake during table rendering). (2) server `TestOIDCRefresh` (testing.go:1712) — Go data race detected during execution. (3) util/db `TestClusterRaceConditionClusterSecrets` (testing.go:1712) — second Go data race in cluster-secrets concurrent-access test. Failures span L54988→88904 (61% → 99% of the 89188-line log) — failure block is scattered across that 38% range, with individual ##[group]FAIL annotations earlier (L54988, L66058, L75102) and a consolidated `=== Failed` summary at L87473-88904. multi_failure=true. requires_repo_context=true (race-condition diagnoses need access to the underlying Go source files; the log shows WHERE races fire but not the racing code paths). **First v2 case to fill the huge log_size_bucket gap (>50k lines, was 0/29 corpus-wide through 13-case state)** and first v2 case with `signal_position=scattered` outside v2/holdout (prettier was the only prior scattered case). Selected as Batch 5 case 4. Source: https://github.com/argoproj/argo-cd/actions/runs/25534571975/job/74948102287. Privacy audit: 0 hits, complete_scan=True (after raising MAX_LINES_PER_FILE 50k → 200k in tools/audit_context_privacy.py to support huge logs). Note also: this case is in v2/stress (the prior 4 are also stress; this brings v2/stress to 6/3 — over-target but stress-bucket is supposed to be 'deliberately difficult' and a huge race-condition multi-failure case fits)."
+}

@@ -1,6 +1,6 @@
 # CILogBench E10 — v2 generalization (partial)
 
-> **Four protocol-lock files exist; only one validates today:**
+> **Five protocol-lock files exist; two validate today:**
 >
 > - [`cilogbench-v2-partial`](../protocols/cilogbench-v2-partial.lock.json)
 >   — frozen at the **8-case** v2 state (24 cases total, 5 splits;
@@ -23,14 +23,20 @@
 >   same v2/stress=4-vs-5 reason. The §3c 12-case eval results
 >   live at commit 7036fdb.
 > - [`cilogbench-v2-checkpoint-13`](../protocols/cilogbench-v2-checkpoint-13.lock.json)
->   — **current canonical** (29 cases total, v2/stress=5).
->   Validates today. The §3d 13-case numbers and the §3e
->   hybrid-v2 prototype both anchor here. This lock includes
->   BOTH hybrid baselines (v1 `hybrid-grep-4k-rtk-err-cat-v1`
->   AND the new evaluation-tuned v2 `hybrid-grep-120k-tail-v2`)
->   per the 2026-05-08 Codex review's Finding 2.
+>   — frozen at the 13-case state (29 cases total, v2/stress=5).
+>   **Does NOT validate today** because Batch 5 grew v2/holdout
+>   from 5→8 and v2/stress from 5→6. The §3d 13-case numbers
+>   and the §3e hybrid-v2 prototype anchor here.
+> - [`cilogbench-v2-checkpoint-17`](../protocols/cilogbench-v2-checkpoint-17.lock.json)
+>   — **current canonical** (33 cases total, v2/holdout=8,
+>   v2/stress=6 — adds the 4 Batch 5 hold-out cases). Validates
+>   today. The §3f hold-out validation numbers anchor here.
+>   This lock includes BOTH hybrid baselines (v1
+>   `hybrid-grep-4k-rtk-err-cat-v1` AND the evaluation-tuned v2
+>   `hybrid-grep-120k-tail-v2`) per the 2026-05-08 Codex review's
+>   Finding 2.
 >
-> All four locks SHA-pin the same v1.3 schemas, prompts, and
+> All five locks SHA-pin the same v1.3 schemas, prompts, and
 > evaluators that were in `cilogbench-v1.3.lock.json`, so v1.3
 > numbers reproduce identically against any of them. **Per the
 > Codex adversarial reviews (2026-05-07, 2026-05-08):** all locks
@@ -38,10 +44,10 @@
 > auto-detects all `type: hybrid_context_provider` baselines and
 > fail-closes on hybrid drift.
 >
-> **For new work, use only `cilogbench-v2-checkpoint-13`.** The
+> **For new work, use only `cilogbench-v2-checkpoint-17`.** The
 > older locks are historical artifacts; checking them out for
 > reproduction means also checking out the matching git commit so
-> the on-disk v2/stress manifest matches the lock's frozen state.
+> the on-disk manifests match the lock's frozen state.
 >
 > **Companion docs:**
 > [`e10_phase3_v2_partial_signal_recall.md`](e10_phase3_v2_partial_signal_recall.md)
@@ -89,15 +95,28 @@ debugger and falls out of the top tier:
   test §3d's hypothesis. Two changes vs v1: budget 4k → 120k
   (calibrated against `eval_diagnosis_*.json` outputs to find the
   empirical Sonnet/Haiku abstain cliff), and fallback rtk-err-cat
-  → tail. **Per Codex adversarial review 2026-05-08, this is now
+  → tail. **Per Codex adversarial review 2026-05-08, this is
   acknowledged as evaluation-tuned (`uses_diagnosis_eval: true`)
   — the threshold was calibrated on the same 13 cases it is
   evaluated on**. Result on the 13-case CALIBRATION data: Sonnet
   v2 macro 0.6801 (#1), Haiku v2 macro 0.5311 (#2). Drop from
-  v1.3 to v2 is −0.11 / −0.16 vs v1's −0.34 / −0.30. The result
-  *demonstrates the hypothesis* (a budget-recalibrated grep+tail
-  router can beat hybrid-v1 on v2) but does NOT establish
-  generalization until re-tested on a hold-out corpus. See §3e.
+  v1.3 to v2 is −0.11 / −0.16 vs v1's −0.34 / −0.30.
+- **§3f — Hold-out validation on Batch 5 (4 new cases not used
+  for tuning):** spring-boot-checkformat (java-gradle), gradle-
+  projecthealth (java-gradle), go-redis-pubsub-channel-timeout
+  (go), argocd-race-conditions (go, **first huge log >50k lines**
+  in the corpus). Hybrid-v2 hold-out result: Sonnet 0.5757 #1
+  (drop −0.10 from calibration), Haiku 0.3521 #2 (drop −0.15).
+  The §3e direction (v2 > v1) holds: hybrid-v2 beats hybrid-v1 by
+  +0.21 Sonnet / +0.02 Haiku on hold-out. **Sonnet #1 ranking
+  generalizes; Haiku #1 does NOT** (grep takes #1 on Haiku
+  hold-out, partly because §3e caveat 2's CLI flake reproduces
+  on go-redis). **The 13-case "tail unseats grep" macro claim is
+  fully retracted on hold-out** — tail drops −0.21 Sonnet / −0.18
+  Haiku, the largest hold-out drop of any non-raw method.
+  Argocd's huge log exposes a hybrid-v2 weakness: tail-fallback
+  catches only post-test cleanup chatter while rtk-err-cat
+  captures the failure structure better. See §3f.
 
 ```text
                                    v1.3 macro      v2 macro       Δ
@@ -756,6 +775,158 @@ help on cases that don't fit the budget proxy cleanly, but the
    v2's design assumes tail's bounded-window is the safer fallback.
    A future hybrid that picks among {grep, tail, rtk-err-cat,
    summary} via budget bands could plausibly beat both v1 and v2.
+
+## 3f. Hold-out validation — Batch 5 (2026-05-08)
+
+The §3e caveat (calibration leakage) was addressed by collecting
+**4 new cases that the hybrid-v2 threshold was NOT tuned on**:
+
+```text
+Batch 5 hold-out cases:
+  spring-boot-checkformat-batch5-v2-001   v2/holdout  java-gradle  lint_error  late      6275 lines
+  gradle-projecthealth-batch5-v2-001      v2/holdout  java-gradle  lint_error  late     12867 lines
+  go-redis-pubsub-channel-timeout-batch5  v2/holdout  go           timeout    middle    2730 lines
+  argocd-race-conditions-batch5-v2-001    v2/stress   go           test_assn  scattered 89188 lines  ← huge!
+```
+
+These fill three corpus gaps (java-gradle ecosystem, go ecosystem,
+huge log_size_bucket — the last was 0/29 corpus-wide through the
+13-case state). Hybrid-v2's 120k-token threshold was not adjusted
+between Batch 5's collection and evaluation. Locked at
+[`protocols/cilogbench-v2-checkpoint-17.lock.json`](../protocols/cilogbench-v2-checkpoint-17.lock.json)
+(33 cases, 6 splits, 23 hashes).
+
+### Headline: hybrid-v2 generalizes on Sonnet, partially on Haiku
+
+```text
+                                Sonnet 4.6                       Haiku 4.5
+                                calib    holdout    Δ           calib    holdout    Δ
+hybrid-grep-120k-tail-v2        0.6707   0.5757   -0.095   ★    0.5055   0.3521   -0.153
+grep                            0.5914   0.5303   -0.061        0.4392   0.5079   +0.069   ←improves!
+tail                            0.6110   0.4031   -0.208        0.5700   0.3937   -0.176
+rtk-err-cat                     0.4612   0.2804   -0.181        0.4192   0.3079   -0.111
+hybrid-grep-4k-rtk-err-cat-v1   0.4171   0.3671   -0.050        0.4031   0.3287   -0.074
+raw                             0.3445   0.1543   -0.190        0.2903   0.1131   -0.177
+rtk-read                        0.3097   0.1411   -0.169        0.2971   0.1259   -0.171
+rtk-log                         0.2375   0.0667   -0.171        0.2242   0.0813   -0.143
+llm-summary-v1-mock             0.2312   0.1521   -0.079        0.2587   0.1521   -0.107
+
+Hold-out ranking:
+  Sonnet:  hybrid-v2 #1 (0.5757) > grep (0.5303) > tail (0.4031) > hybrid-v1 (0.3671)
+  Haiku:   grep #1 (0.5079) > tail (0.3937) > hybrid-v2 (0.3521) > hybrid-v1 (0.3287)
+```
+
+**The §3e direction claim is upheld on Sonnet:** hybrid-v2 stays
+#1 on hold-out, beating grep (+0.05) and hybrid-v1 (+0.21). Drop
+of −0.10 from calibration is mid-pack — methods like tail
+(−0.21), rtk-err-cat (−0.18), and raw (−0.19) all dropped more.
+
+**On Haiku, hybrid-v2 falls to #2** behind grep. Two contributing
+factors:
+1. **Haiku-on-grep IMPROVES** on hold-out (+0.07) — the only
+   method that does. Grep was suppressed on the calibration set
+   by the rust+nodejs density blowups (§3c finding); the
+   hold-out cases all have grep tokens that fit the budget for
+   Haiku's reasoning, so grep recovers.
+2. **§3e caveat 2 reproduces on go-redis.** The Haiku CLI
+   provider-error pattern previously seen on cpython+airflow
+   recurs: hybrid-v2 routes go-redis to grep (22k tokens), the
+   wrapped context has the 8-line CILogBench hybrid header,
+   and Haiku CLI exits 1 with empty output → score 0.0. Pure
+   grep on the same go-redis content scores 0.46. Net Haiku
+   hybrid-v2 macro is ≈0.05-0.10 below what a clean run would
+   produce.
+
+### Per-case detail (Sonnet 4.6) — where hybrid-v2 routes
+
+```text
+case               grep_tok    routed_to    hybrid-v2  grep   tail   rtk-err-cat  hybrid-v1
+spring (lint)         4860     grep         0.7875    0.7875  0.7875  0.5583     0.5583
+gradle (lint)         8928     grep         0.7833    0.7875  0.6583  0.0000     0.3500
+go-redis (timeout)   22418     grep         0.6155    0.5464  0.0500  0.0000     0.0000
+argocd (huge race) 1865128     tail         0.1167    0.0000  0.1167  0.5633     0.5600  ← v2 LOSES here
+                                            ------    ------  ------  ------     ------
+holdout macro (Sonnet)                      0.5757    0.5303  0.4031  0.2804     0.3671
+```
+
+**Hybrid-v2 wins the first 3 cases by routing to grep** (correctly:
+all 3 fit the 120k budget; grep is competitive or strictly better
+than tail on each). **Hybrid-v2 LOSES on argocd** because grep is
+1.86M tokens (way past the 120k cliff), tail's bounded 200-line
+window catches only post-test cleanup chatter (not the failure
+summary at L87473-88904), and the v1 hybrid's rtk-err-cat
+fallback compresses the 89k-line log into a useful summary that
+both Sonnet and Haiku can reason over.
+
+This is the cleanest counter-example to v2's "tail is the safer
+fallback" choice yet observed: on truly huge multi-failure logs,
+**`rtk-err-cat` is the better fallback** because it preserves the
+error structure across the full log, while tail-200 only sees
+the bottom slice. v2's calibration data didn't have a case where
+this mattered (rust+nodejs at 161k/359k tokens both had
+late-signal failures so tail won there); the argocd hold-out
+exposes the gap.
+
+### What this means for v3
+
+The Batch 5 hold-out validation gives a partial generalization
+result for hybrid-v2:
+
+- ✅ **Direction (hybrid-v2 > hybrid-v1) is real**: +0.21 Sonnet,
+  +0.02 Haiku on hold-out. Recalibrating the budget threshold
+  was not pure overfitting.
+- ✅ **Sonnet #1 ranking holds out-of-sample.** On 4 brand-new
+  cases hybrid-v2 still leads by +0.05 over the next-best method.
+- ⚠ **Haiku #1 ranking does NOT hold out-of-sample.** Grep takes
+  #1 on Haiku hold-out, in part due to hybrid-v2 inheriting
+  §3e's CLI-flake on wrapped contexts, in part because Haiku-grep
+  was artifically depressed by the rust+nodejs density blowups
+  in calibration.
+- ❌ **The 13-case "tail unseats grep" macro claim is fully
+  retracted.** Tail's calibration lead was sampling-driven.
+  On hold-out tail drops −0.21 Sonnet / −0.18 Haiku — the
+  largest hold-out drop of any method except raw/rtk-read.
+  Tail's bounded window is structurally weak on middle-signal
+  (go-redis) and scattered-signal (argocd) cases.
+- ❌ **Tail-fallback choice in hybrid-v2 has a real failure mode**
+  on huge multi-failure scattered-signal logs. argocd shows
+  rtk-err-cat would have been the better fallback there. A v3
+  "hybrid-v3" with budget-band routing (grep → rtk-err-cat →
+  tail or summary based on token count + failure-locality
+  heuristic) is now well-motivated.
+
+### Updated headline table
+
+| Headline claim | 8-case | 10-case | 12-case | 13-case | 17-case (with hold-out) |
+|---|---|---|---|---|---|
+| "hybrid-v1 sv1.1 drops substantially v1.3 → v2" | ✅ −0.32 / −0.30 | ✅ −0.33 / −0.25 | ✅ −0.34 / −0.28 | ✅ −0.34 / −0.30 | ✅ −0.34 / −0.30 |
+| "hybrid-v1 stays in the bottom-half" | ✅ #6/8 | ✅ #3-4/8 | ✅ #4/8 | ✅ #4/8 | ✅ holdout #4/9 Sonnet, #4/9 Haiku |
+| "tail is the unanimous v2 winner" | (#2) | (#2) | ⚠ macro-only | ⚠ caveat | ❌ **fully retracted on hold-out** |
+| "grep collapses on high-error-density logs" | (not seen) | (not seen) | ✅ rust+nodejs | ✅ confirmed | ✅ argocd at 1.86M tok confirms |
+| "tail collapses when signal isn't late" | (untested) | (untested) | (untested) | ✅ airflow 0.017 | ✅ confirmed go-redis 0.05, argocd 0.12 |
+| "hybrid-v2 generalizes better than hybrid-v1" | n/a | n/a | n/a | (calibration only) | ⚠ Sonnet ✅ +0.21 hold-out; Haiku ✅ +0.02 |
+| "hybrid-v2 #1 on v2 macro" | n/a | n/a | n/a | (calibration only) | ⚠ Sonnet ✅; Haiku ❌ (grep takes #1) |
+| "rtk-err-cat is sometimes the right fallback" | implicit | implicit | implicit | implicit | ✅ **new** — argocd gives rtk-err-cat 0.56 vs hybrid-v2's tail 0.12 |
+
+### Caveats (carry-over from §3e + new)
+
+1. **Calibration leakage now resolved on Sonnet but not Haiku.**
+   Sonnet's hold-out validation supports the calibration → hold-out
+   direction. Haiku's does not (grep wins instead), so the Haiku
+   calibration result remains plausibly partly overfit.
+2. **§3e caveat 2 (Haiku CLI flake on wrapped contexts at
+   70-100k tokens) reproduces on go-redis** in this hold-out.
+   Net effect on Haiku hybrid-v2 macro is approximately
+   −0.05 to −0.10 vs a clean run. Worth fixing before any
+   v3 lock.
+3. **Hold-out is 4 cases.** Per-case variance is high; the
+   argocd case alone moves the macro by ~0.03-0.04. The
+   direction is robust (3 of 4 cases favor hybrid-v2 on Sonnet,
+   2 of 4 on Haiku) but the magnitude could shift ±0.05 at 30+
+   hold-out cases.
+4. **All 4 hold-out cases are in v2/holdout + v2/stress.**
+   v2/dev was not extended in Batch 5. The hold-out doesn't
+   cover the v2/dev distribution.
 
 ## 4. Why hybrid drops
 
