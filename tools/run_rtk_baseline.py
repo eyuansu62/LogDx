@@ -173,9 +173,29 @@ def run_one(
 
     ctx_path.write_bytes(res.stdout)
     stderr_path_out: str | None = None
+    stderr_text = ""
     if res.stderr:
         stderr_path.write_bytes(res.stderr)
         stderr_path_out = str(stderr_path.relative_to(ROOT))
+        stderr_text = res.stderr.decode("utf-8", errors="replace")
+
+    # Surface rtk truncation warnings into the manifest so consumers can
+    # audit them. Per Codex adversarial review 2026-05-08-#2 [high]:
+    # rtk silently truncates input at 10 MiB and emits a warning ONLY in
+    # stderr; previously the manifest carried only stderr_path so callers
+    # had to read the file to discover the warning. The argocd 12.8 MB log
+    # tripped this on Batch 5 and the §3f finding was at risk of resting
+    # on a silently-truncated artifact (it didn't, by chance, but the
+    # gap was real). Now the manifest declares truncation in metadata.
+    truncation_warning = None
+    truncated = False
+    if "stdout exceeds" in stderr_text and "filter input truncated" in stderr_text:
+        truncated = True
+        # Capture the first matching line for the manifest record.
+        for line in stderr_text.splitlines():
+            if "filter input truncated" in line:
+                truncation_warning = line.strip()
+                break
 
     # Count output lines from the captured stdout bytes (after utf-8 decode).
     context_text = res.stdout.decode("utf-8", errors="replace")
@@ -189,6 +209,19 @@ def run_one(
         else round(1 - output_byte_size / input_byte_size, 6)
     )
     reduction_ratio = max(0.0, min(1.0, reduction_ratio))
+
+    metadata: dict = {}
+    if truncated:
+        metadata["rtk_input_truncated"] = True
+        metadata["rtk_truncation_warning"] = truncation_warning
+        metadata["rtk_truncation_caveat"] = (
+            "rtk's filter input was truncated upstream at 10 MiB. The "
+            "context file may not reflect the entire raw log; consumers "
+            "should treat downstream sv1.1 / signal-recall scores as "
+            "lower-bound estimates and not promote findings without "
+            "verifying the relevant failure markers are present in the "
+            "context file."
+        )
 
     row = {
         "case_id": case_id,
@@ -212,7 +245,7 @@ def run_one(
             "runtime_ms": round(runtime_ms, 3),
             "stderr_path": stderr_path_out,
         },
-        "metadata": {},
+        "metadata": metadata,
     }
     validate_row(row)
     return row

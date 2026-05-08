@@ -855,17 +855,38 @@ than tail on each). **Hybrid-v2 LOSES on argocd** because grep is
 1.86M tokens (way past the 120k cliff), tail's bounded 200-line
 window catches only post-test cleanup chatter (not the failure
 summary at L87473-88904), and the v1 hybrid's rtk-err-cat
-fallback compresses the 89k-line log into a useful summary that
-both Sonnet and Haiku can reason over.
+fallback compresses the 89k-line log into a 2156-line, 374KB
+summary that both Sonnet and Haiku can reason over.
+
+> ⚠ **Per Codex adversarial review 2026-05-08-#2 [high]:** rtk's
+> filter input was truncated at the upstream 10 MiB cap on
+> argocd's 12.8 MB raw log. `tools/run_rtk_baseline.py` now
+> surfaces this warning into `metadata.rtk_input_truncated:
+> true` so consumers can audit (was previously silent in
+> `<case>.stderr.txt`). The argocd rtk-err-cat output **did
+> empirically capture all three failures** (app_test.go:1936
+> at output L297-299, two `WARNING: DATA RACE` blocks at L939
+> and L1454, with `testing.go:1712: race detected` at L947 and
+> L1455 + the consolidated summary at L2105-2124) because they
+> all sit before the 10 MiB cut-off (~78% of the 12.8 MB file)
+> and rtk-err-cat's selection is content-based, not position-
+> based. **The §3f rtk-err-cat fallback finding stands for this
+> specific case but is fragile**: a future huge log with
+> failures only in the last 22% would be silently missed by
+> rtk-err-cat under the current 10 MiB cap. A v3 hybrid with
+> rtk-err-cat as fallback should either gate on `metadata
+> .rtk_input_truncated` (treat truncated outputs as
+> provider-error, route to a different fallback) or use a
+> truncation-aware variant.
 
 This is the cleanest counter-example to v2's "tail is the safer
 fallback" choice yet observed: on truly huge multi-failure logs,
-**`rtk-err-cat` is the better fallback** because it preserves the
-error structure across the full log, while tail-200 only sees
-the bottom slice. v2's calibration data didn't have a case where
-this mattered (rust+nodejs at 161k/359k tokens both had
-late-signal failures so tail won there); the argocd hold-out
-exposes the gap.
+**`rtk-err-cat` is the better fallback IF the failures sit in
+the first 78% of the file**. v2's calibration data didn't have a
+case where this mattered (rust+nodejs at 161k/359k tokens both
+had late-signal failures so tail won there); the argocd hold-out
+exposes the gap. A robust v3 router would need to either
+extend rtk's input cap or detect truncation and route around it.
 
 ### What this means for v3
 
@@ -906,7 +927,7 @@ result for hybrid-v2:
 | "tail collapses when signal isn't late" | (untested) | (untested) | (untested) | ✅ airflow 0.017 | ✅ confirmed go-redis 0.05, argocd 0.12 |
 | "hybrid-v2 generalizes better than hybrid-v1" | n/a | n/a | n/a | (calibration only) | ⚠ Sonnet ✅ +0.21 hold-out; Haiku ✅ +0.02 |
 | "hybrid-v2 #1 on v2 macro" | n/a | n/a | n/a | (calibration only) | ⚠ Sonnet ✅; Haiku ❌ (grep takes #1) |
-| "rtk-err-cat is sometimes the right fallback" | implicit | implicit | implicit | implicit | ✅ **new** — argocd gives rtk-err-cat 0.56 vs hybrid-v2's tail 0.12 |
+| "rtk-err-cat is sometimes the right fallback" | implicit | implicit | implicit | implicit | ⚠ argocd gives rtk-err-cat 0.56 vs hybrid-v2's tail 0.12 BUT rtk truncated input at 10 MiB; finding fragile to failure-position |
 
 ### Caveats (carry-over from §3e + new)
 
@@ -927,6 +948,17 @@ result for hybrid-v2:
 4. **All 4 hold-out cases are in v2/holdout + v2/stress.**
    v2/dev was not extended in Batch 5. The hold-out doesn't
    cover the v2/dev distribution.
+5. **rtk-err-cat truncation on argocd (Codex 2026-05-08-#2 [high]).**
+   rtk's filter input was truncated at 10 MiB on the 12.8 MB
+   argocd raw log. The §3f finding "rtk-err-cat is the better
+   fallback for huge logs" stands for this specific case
+   (failures sit in the first 78% of the file by accident) but
+   is fragile under shift to logs where failures sit in the
+   trailing 22%. A v3 router with rtk-err-cat as fallback
+   should treat `metadata.rtk_input_truncated: true` as
+   provider-error and route to a different fallback.
+   `tools/run_rtk_baseline.py` now surfaces the warning into
+   manifest metadata (was silent in stderr file before).
 
 ## 4. Why hybrid drops
 

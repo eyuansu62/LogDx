@@ -279,25 +279,30 @@ to let the numbers pick.
        the failure is non-failure pre-commit hook chatter from
        the ~30 OTHER hooks pre-commit keeps running. Selected
        deliberately to test the §3c tail-winner sampling caveat.
-  - **Four protocol locks exist for v2; only `cilogbench-v2-checkpoint-13`
-    validates today.** The full reference is in
+  - **Five protocol locks exist for v2; two validate today.** The
+    full reference is in
     [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md)
     header. Quick summary:
     [`cilogbench-v2-partial`](protocols/cilogbench-v2-partial.lock.json)
     (8 v2 cases — frozen pre-v2/stress; validates today since v2/stress
-    is absent),
+    is absent from its splits dict),
     [`cilogbench-v2-checkpoint`](protocols/cilogbench-v2-checkpoint.lock.json)
     + [`cilogbench-v2-checkpoint-12`](protocols/cilogbench-v2-checkpoint-12.lock.json)
-    (both frozen at the post-Codex-fix 12-case state with v2/stress=4
-    — fail validation now because the on-disk v2/stress manifest
-    moved to 5 cases at commit 64c7340; treat as historical snapshots),
-    and [`cilogbench-v2-checkpoint-13`](protocols/cilogbench-v2-checkpoint-13.lock.json)
-    (13 v2 cases / v2/stress=5 — **current canonical**). The
-    13-case lock includes BOTH hybrid baselines (v1
-    `hybrid-grep-4k-rtk-err-cat-v1` + the evaluation-tuned v2
-    `hybrid-grep-120k-tail-v2` added 2026-05-08 per Codex review
-    Finding 2). `validate_protocol_lock.py` fail-closes on hybrid
-    drift across all `type: hybrid_context_provider` baselines.
+    (both historical 12-case snapshots with v2/stress=4 — fail
+    validation now because the on-disk v2/stress manifest moved
+    past them at commit 64c7340; check out 530d5fd / 7036fdb to
+    reproduce historical eval),
+    [`cilogbench-v2-checkpoint-13`](protocols/cilogbench-v2-checkpoint-13.lock.json)
+    (13 v2 cases / v2/stress=5 — also historical now; fails
+    validation because Batch 5 grew v2/holdout 5→8 and
+    v2/stress 5→6),
+    and [`cilogbench-v2-checkpoint-17`](protocols/cilogbench-v2-checkpoint-17.lock.json)
+    (17 v2 cases / v2/holdout=8 / v2/stress=6 — **current canonical,
+    33 cases total**). The 17-case lock includes BOTH hybrid
+    baselines (v1 `hybrid-grep-4k-rtk-err-cat-v1` + the
+    evaluation-tuned v2 `hybrid-grep-120k-tail-v2`).
+    `validate_protocol_lock.py` fail-closes on hybrid drift across
+    all `type: hybrid_context_provider` baselines.
   - **12-case refresh surfaced two findings.** Phase 3 was re-run
     with Sonnet + Haiku on the 2 new v2/stress cases (16 calls each
     debugger). Hybrid sv1.1 stayed flat (0.4427 → 0.4353 Sonnet,
