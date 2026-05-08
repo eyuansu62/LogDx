@@ -1,0 +1,56 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Assembly test for WebAssembly exceptions failed because generated assembly code does not match expected CHECK patterns. The test expects specific assembly sequences that are not found in the generated output.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "FileCheck verification failed: Assembly CHECK directives at lines 38 and 62 of tests/assembly-llvm/wasm_exceptions.rs did not find their expected patterns in the generated assembly file. The test expects specific instruction sequences that are not present in the actual output.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "tests/assembly-llvm/wasm_exceptions.rs",
+    "/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s"
+  ],
+  "relevant_tests": [
+    "[assembly] tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "test [assembly] tests/assembly-llvm/wasm_exceptions.rs ... FAILED",
+      "reason": "Directly indicates the assembly test failed"
+    },
+    {
+      "quote": "error: CHECK: expected string not found in input",
+      "reason": "FileCheck verification failed, meaning the expected assembly patterns were not found"
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:38:12: error: CHECK: expected string not found in input",
+      "reason": "Specific CHECK directive at line 38 failed to match"
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:62:12: error: CHECK: expected string not found in input",
+      "reason": "Specific CHECK directive at line 62 also failed to match"
+    },
+    {
+      "quote": "error: verification with 'FileCheck' failed",
+      "reason": "Confirms the failure is FileCheck assertion-based verification of assembly output"
+    }
+  ],
+  "suggested_fix": "Examine the generated assembly at /checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s and compare it with the CHECK patterns at lines 38 and 62 of tests/assembly-llvm/wasm_exceptions.rs. Update either the test expectations or the code generating the assembly to match the actual output.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-120k-rtk-tail-v3/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 18151
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 502
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 26118.291,
+    "cache_key": "49416862b8a30f11fb8f75db99c423012c5fbb794551ad659dc5d7ae9f01a922",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

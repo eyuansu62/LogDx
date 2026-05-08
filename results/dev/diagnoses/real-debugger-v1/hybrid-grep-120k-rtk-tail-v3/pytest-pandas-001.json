@@ -1,0 +1,69 @@
+{
+  "case_id": "pytest-pandas-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "NumPy nightly deprecated creating datetime64/timedelta64 without explicit time units. Code and tests use `np.datetime64(\"NaT\")` without specifying a unit (e.g., `\"ns\"`), which now raises DeprecationWarning that becomes an error when running with `--werror`.",
+  "root_cause_category": "other",
+  "root_cause": "NumPy nightly removed support for creating datetime64 without explicit time unit. Pandas code calls `np.datetime64(\"NaT\")` without a unit parameter, triggering DeprecationWarning: 'The generic unit for NumPy timedelta is deprecated, and will raise an error in the future.' With pytest `--werror`, warnings become errors, causing test collection errors (ERROR) and test failures (FAILED).",
+  "confidence": 0.92,
+  "relevant_files": [
+    "pandas/tests/arrays/masked/test_indexing.py",
+    "pandas/tests/arrays/test_timedeltas.py",
+    "pandas/tests/dtypes/test_inference.py",
+    "pandas/tests/dtypes/test_missing.py",
+    "pandas/tests/frame/indexing/test_indexing.py",
+    "pandas/tests/frame/test_constructors.py",
+    "pandas/tests/indexes/datetimes/methods/test_insert.py",
+    "pandas/tests/indexes/test_index_new.py",
+    "pandas/tests/indexes/timedeltas/test_indexing.py",
+    "pandas/tests/io/json/test_ujson.py",
+    "pandas/tests/scalar/timestamp/test_constructors.py",
+    "pandas/tests/series/indexing/test_indexing.py",
+    "pandas/core/internals/concat.py:412"
+  ],
+  "relevant_tests": [
+    "pandas/tests/arithmetic/test_datetime64.py::TestDatetimeIndexComparisons::test_dti_cmp_nat_behaves_like_float_cmp_nan",
+    "pandas/tests/reshape/concat/test_append.py::TestAppend::test_append_dtype_coerce",
+    "pandas/tests/arrays/masked/test_indexing.py (collection errors)"
+  ],
+  "evidence": [
+    {
+      "quote": "DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific unit instead.",
+      "reason": "This deprecation warning appears repeatedly across 52 errors and 45 failed tests, indicating NumPy nightly has deprecated the generic unit"
+    },
+    {
+      "quote": "np.datetime64(\"NaT\")",
+      "reason": "This pattern appears throughout error messages without specifying a unit (e.g., \"ns\"), which NumPy nightly now requires"
+    },
+    {
+      "quote": "-Csetup-args=\"--werror\"",
+      "reason": "The build is configured with --werror, which converts all warnings (including deprecation warnings) into errors"
+    },
+    {
+      "quote": "ERROR pandas/tests/arrays/masked/test_indexing.py - DeprecationWarning",
+      "reason": "ERROR level indicates test collection failed due to module-level code (e.g., np.datetime64 calls in class definitions) raising DeprecationWarning"
+    },
+    {
+      "quote": "elif dtype.kind in \"mM\":\n           return dtype.type(\"NaT\")",
+      "reason": "Code in pandas/core/internals/concat.py:412 is calling dtype.type(\"NaT\") without unit, triggering the deprecation"
+    }
+  ],
+  "suggested_fix": "Replace all calls to `np.datetime64(\"NaT\")` with `np.datetime64(\"NaT\", \"ns\")` (or appropriate unit) and `dtype.type(\"NaT\")` calls with unit-aware equivalents to match NumPy nightly's API requirements.",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-120k-rtk-tail-v3/pytest-pandas-001.txt",
+    "context_tokens_estimate": 81148
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 763
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 33159.777,
+    "cache_key": "6e8f5111a362fd2b36ddff51b2a7005fcd1a63bcac292a165bda677266f97b1a",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

@@ -110,6 +110,20 @@ HYBRID_BASELINES: list[dict] = [
             "uses_review_labels":  False,
         },
     },
+    {
+        "key":                "hybrid-grep-120k-rtk-tail-v3",
+        "config_path":        "configs/hybrids/hybrid-grep-120k-rtk-tail-v3.json",
+        "primary_method":     "grep",
+        "intermediate_method": "rtk-err-cat",
+        "fallback_method":    "tail",
+        "budget_tokens":      120000,
+        "anti_leakage": {
+            "uses_ground_truth":   False,
+            "uses_signal_eval":    False,
+            "uses_diagnosis_eval": True,
+            "uses_review_labels":  False,
+        },
+    },
 ]
 
 
@@ -162,7 +176,7 @@ def build_hybrid_baseline_block(spec: dict) -> dict:
     for p in (config_path, schema_path, router_path):
         if not p.exists():
             raise FileNotFoundError(f"hybrid baseline file missing: {p.relative_to(ROOT)}")
-    return {
+    block = {
         "enabled": True,
         "type": "hybrid_context_provider",
         "config_path":         spec["config_path"],
@@ -176,6 +190,9 @@ def build_hybrid_baseline_block(spec: dict) -> dict:
         "budget_tokens":   spec["budget_tokens"],
         "anti_leakage":    dict(spec["anti_leakage"]),
     }
+    if "intermediate_method" in spec:
+        block["intermediate_method"] = spec["intermediate_method"]
+    return block
 
 
 def build_lock(protocol_id: str, regenerated: bool, splits: list[str]) -> dict:

@@ -110,12 +110,19 @@ def route_and_emit(
     out_routes_lines: list[str],
     cases_dir: Path,
     results_dir: Path,
+    intermediate_row: dict | None = None,
 ) -> None:
     hybrid_method = config["method"]
     budget = int((config.get("routing_rule") or {}).get("budget_tokens") or 0)
 
     primary_name = config["primary_method"]
     fallback_name = config["fallback_method"]
+    # v3+ optional 3-way routing: when grep doesn't fit the budget, try the
+    # intermediate method (e.g. rtk-err-cat) BEFORE falling back to tail.
+    # The intermediate is used iff its manifest row has
+    # metadata.rtk_input_truncated == False (per Codex 2026-05-08-#2 [high]
+    # finding that rtk silently truncates input at 10 MiB).
+    intermediate_name = config.get("intermediate_method")
 
     def candidate(name: str, row: dict | None) -> dict:
         if not row:
@@ -124,6 +131,7 @@ def route_and_emit(
                 "context_tokens": None,
                 "context_path": None,
                 "provider_error": None,
+                "rtk_input_truncated": False,
             }
         # `provider_error` may live in metadata or top-level depending on the row source.
         meta = row.get("metadata") or {}
@@ -134,10 +142,12 @@ def route_and_emit(
             "context_tokens": ctx_tok,
             "context_path": row.get("context_path"),
             "provider_error": pe,
+            "rtk_input_truncated": bool(meta.get("rtk_input_truncated", False)),
         }
 
     cand_primary = candidate(primary_name, primary_row)
     cand_fallback = candidate(fallback_name, fallback_row)
+    cand_intermediate = candidate(intermediate_name, intermediate_row) if intermediate_name else None
 
     # Routing decision (anti-leakage: only context metadata)
     selected_reason: str | None = None
@@ -146,7 +156,33 @@ def route_and_emit(
         if cand_primary["context_tokens"] <= budget:
             selected_method = primary_name
             selected_reason = "primary_fits_budget"
+        elif cand_intermediate is not None:
+            # 3-way routing: try intermediate before falling back to tail.
+            if cand_intermediate["available"] and not cand_intermediate["rtk_input_truncated"]:
+                selected_method = intermediate_name
+                selected_reason = "primary_too_large_used_intermediate"
+            elif cand_intermediate["rtk_input_truncated"]:
+                # Intermediate's input was truncated — fall through to fallback.
+                if cand_fallback["available"]:
+                    selected_method = fallback_name
+                    selected_reason = "intermediate_truncated_used_fallback"
+                else:
+                    selected_reason = "fallback_missing_provider_error"
+            elif cand_intermediate["provider_error"]:
+                if cand_fallback["available"]:
+                    selected_method = fallback_name
+                    selected_reason = "intermediate_provider_error_used_fallback"
+                else:
+                    selected_reason = "fallback_provider_error"
+            else:
+                # Intermediate manifest row missing.
+                if cand_fallback["available"]:
+                    selected_method = fallback_name
+                    selected_reason = "intermediate_missing_used_fallback"
+                else:
+                    selected_reason = "fallback_missing_provider_error"
         else:
+            # 2-way routing (v1, v2)
             if cand_fallback["available"]:
                 selected_method = fallback_name
                 selected_reason = "primary_too_large_used_fallback"
@@ -175,7 +211,12 @@ def route_and_emit(
     selected_ctx_path: str | None = None
 
     if selected_method:
-        chosen_row = primary_row if selected_method == primary_name else fallback_row
+        if selected_method == primary_name:
+            chosen_row = primary_row
+        elif intermediate_name and selected_method == intermediate_name:
+            chosen_row = intermediate_row
+        else:
+            chosen_row = fallback_row
         chosen_path = ROOT / (chosen_row or {}).get("context_path", "")
         if not chosen_path.exists():
             # Treat as a fallback failure
@@ -261,6 +302,12 @@ def route_and_emit(
 
     out_jsonl_lines.append(json.dumps(method_row, ensure_ascii=False))
 
+    candidates_block = {
+        primary_name: cand_primary,
+        fallback_name: cand_fallback,
+    }
+    if intermediate_name and cand_intermediate is not None:
+        candidates_block[intermediate_name] = cand_intermediate
     route_row = {
         "case_id": case_id,
         "split": split,
@@ -268,10 +315,7 @@ def route_and_emit(
         "selected_method": selected_method,
         "selected_reason": selected_reason,
         "budget_tokens": budget,
-        "candidates": {
-            primary_name: cand_primary,
-            fallback_name: cand_fallback,
-        },
+        "candidates": candidates_block,
         "selected_context_path": selected_ctx_path,
         "output_context_path": str(out_ctx_path.relative_to(ROOT)),
         "line_mapping_available": line_mapping_available,
@@ -293,9 +337,14 @@ def main(argv: list[str] | None = None) -> int:
     hybrid_method = config["method"]
     primary_name = config["primary_method"]
     fallback_name = config["fallback_method"]
+    intermediate_name = config.get("intermediate_method")
 
     primary_idx = manifest_index(args.split, primary_name, args.results_dir)
     fallback_idx = manifest_index(args.split, fallback_name, args.results_dir)
+    intermediate_idx = (
+        manifest_index(args.split, intermediate_name, args.results_dir)
+        if intermediate_name else {}
+    )
 
     case_dirs = sorted(p for p in (args.cases_dir / args.split).iterdir()
                         if p.is_dir())
@@ -317,6 +366,7 @@ def main(argv: list[str] | None = None) -> int:
             config=config,
             primary_row=primary_idx.get(case_id),
             fallback_row=fallback_idx.get(case_id),
+            intermediate_row=intermediate_idx.get(case_id) if intermediate_name else None,
             raw_log_path=raw_p,
             out_method_dir=out_method_dir,
             out_jsonl_lines=rows,

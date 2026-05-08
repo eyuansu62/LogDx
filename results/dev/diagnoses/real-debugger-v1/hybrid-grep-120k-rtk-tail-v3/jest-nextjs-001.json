@@ -1,0 +1,71 @@
+{
+  "case_id": "jest-nextjs-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Multiple test examples failed after encountering a git repository ownership validation error. The test runner reported 0 matches for expected output patterns and could not locate the expected .results.json files, indicating tests did not execute properly.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "fatal: detected dubious ownership in repository at '/work'. Git detected the repository is owned by a different user and refused to operate until this is configured as a safe directory. Although a safe directory configuration was attempted, the configuration was for a different path (/home/runner/work/next.js/next.js) than the working directory (/work) where the error occurred, leaving the permission issue unresolved during test execution.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest-babel/__tests__/index.test.tsx",
+    "examples/with-mocha/test/index.test.js",
+    "examples/with-vitest/__tests__/Home.test.tsx",
+    "examples/with-typescript-graphql/test/index.test.tsx"
+  ],
+  "relevant_tests": [
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest/app/blog/[slug]/page.test.tsx",
+    "examples/with-jest/app/counter.test.tsx",
+    "examples/with-jest/app/utils/add.test.ts",
+    "examples/with-jest/app/page.test.tsx",
+    "examples/with-mocha/test/index.test.js",
+    "examples/with-typescript-graphql/test/index.test.tsx",
+    "examples/with-vitest/__tests__/Home.test.tsx",
+    "examples/with-vitest/app/blog/[slug]/page.test.tsx",
+    "examples/with-vitest/app/counter.test.tsx",
+    "examples/with-vitest/app/page.test.tsx",
+    "examples/with-zones/home/test/next-config.test.ts",
+    "examples/with-vitest/app/utils/add.test.ts"
+  ],
+  "evidence": [
+    {
+      "quote": "fatal: detected dubious ownership in repository at '/work'",
+      "reason": "Git explicitly rejected operations due to repository ownership mismatch, a known git security validation that prevents file operations"
+    },
+    {
+      "quote": "WARNING  failed to get git status for dirty hash: Git error: fatal: detected dubious ownership in repository at '/work'",
+      "reason": "The error persisted during test setup, indicating the safe directory configuration was not effective for the /work path"
+    },
+    {
+      "quote": "Pattern: examples/with-jest/__tests__/index.test.tsx - 0 matches",
+      "reason": "Tests produced no matching output, indicating execution failed silently, consistent with permission issues preventing test runners from generating output"
+    },
+    {
+      "quote": "Failed to load test output Error: ENOENT: no such file or directory, open 'examples/with-jest/__tests__/index.test.tsx.results.json'",
+      "reason": "Test infrastructure could not locate expected output files, suggesting tests never ran to completion due to upstream permission issues"
+    },
+    {
+      "quote": "git config --global --add safe.directory /home/runner/work/next.js/next.js",
+      "reason": "Safe directory was configured for the wrong path after failures occurred; the error referenced '/work' but remediation targeted '/home/runner/work/next.js/next.js'"
+    }
+  ],
+  "suggested_fix": "Configure git to trust the repository directory at its actual location before running tests. The safe.directory configuration should be applied to '/work' (where the error originated) with: `git config --global --add safe.directory /work` in the job setup step before tests run, not in post-job cleanup.",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-120k-rtk-tail-v3/jest-nextjs-001.txt",
+    "context_tokens_estimate": 60314
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 833
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 30264.248,
+    "cache_key": "da30a003f39e4309a4204ac6adca7dc5ed80c309f15cc0b951add442aaae632c",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

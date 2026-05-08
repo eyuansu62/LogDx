@@ -1,0 +1,62 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest snapshot tests failed because error messages from the Babel parser no longer match stored snapshots. Error position reporting and message formatting have changed in Babel, affecting tests for invalid `import()` syntax and TypeScript constructor overloads.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Jest snapshot mismatch: error messages from the Babel parser have changed. Expected snapshots show old error formats (e.g., `Unexpected token (1:8)`, `import(...)`), but received values show new error formats (e.g., `` `import()` requires exactly one or two arguments. (1:1)``, `import()`) with different line/column positions. This indicates a Babel version update with different error reporting behavior.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js"
+  ],
+  "relevant_tests": [
+    "snippet: #0 > format[babel]",
+    "snippet: #1 > format[babel]",
+    "snippet: #2 > format[babel]",
+    "snippet: #3 > format[babel]",
+    "constructorOverloadsWithDefaultValues.ts > format[babel-ts]",
+    "snippet: #0 > format[babel-ts]"
+  ],
+  "evidence": [
+    {
+      "quote": "Error: expect(received).rejects.toThrowErrorMatchingSnapshot()",
+      "reason": "Multiple test failures are all snapshot mismatches, not logic errors"
+    },
+    {
+      "quote": "- Snapshot  - 3\\n     + Received  + 3\\n     \\n     - Unexpected token (1:8)\\n     + `import()` requires exactly one or two arguments. (1:1)",
+      "reason": "Shows the Babel parser error message format changed—old message text replaced with new, and column position changed from 1:8 to 1:1"
+    },
+    {
+      "quote": "- Cannot use new with import(...). (1:5)\\n     + Cannot use new with import(). (1:5)",
+      "reason": "Demonstrates error message text changed from `import(...)` to `import()` without the dots"
+    },
+    {
+      "quote": "Snapshots:   13 failed, 12086 passed, 12099 total",
+      "reason": "13 snapshots failed while 12086 passed, confirming these are stored snapshot assertions"
+    },
+    {
+      "quote": "- Cause: An implementation cannot be declared in ambient contexts. (1:0)\\n     + Cause: An implementation cannot be declared in ambient contexts. (1:23)",
+      "reason": "Column position in error reporting changed from (1:0) to (1:23), showing Babel's error location reporting behavior changed"
+    }
+  ],
+  "suggested_fix": "Update Jest snapshots by running tests with the `-u` flag (e.g., `jest -u` or `yarn test -u`) to accept the new error message formats from the updated Babel parser, or identify and revert the Babel version change if unintended.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-rtk-tail-v3/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 20981
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 664
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 27927.377,
+    "cache_key": "3560cbdea8a776baadbdcba78980d3369e41fd8d402c7bec688c6b0e788ca421",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

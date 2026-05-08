@@ -1,0 +1,64 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "A FileCheck assembly test for WebAssembly exception handling failed because the generated assembly did not contain the expected patterns at lines 38 and 62 of the test file. The CHECK directives expected certain instructions that were not present at the expected positions in the compiled wasm_exceptions.s output.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The assembly test tests/assembly-llvm/wasm_exceptions.rs failed FileCheck verification: the CHECK patterns at lines 38 and 62 of the test file were not found in the generated assembly output wasm_exceptions.s. The assembly contains `call may_panic` at lines 33 and 68 but the expected CHECK strings (presumably for specific wasm exception-handling instructions like `try_table` or catch blocks surrounding those calls) were not present at the expected locations.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "tests/assembly-llvm/wasm_exceptions.rs",
+    "/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s"
+  ],
+  "relevant_tests": [
+    "[assembly] tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "test [assembly] tests/assembly-llvm/wasm_exceptions.rs ... FAILED",
+      "reason": "Directly identifies the failing test."
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:38:12: error: CHECK: expected string not found in input",
+      "reason": "FileCheck reports the CHECK directive at line 38 of the test file did not match anything in the generated assembly."
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:62:12: error: CHECK: expected string not found in input",
+      "reason": "FileCheck reports the CHECK directive at line 62 of the test file also did not match, confirming two distinct mismatches."
+    },
+    {
+      "quote": "check:38'0                    X error: no match found",
+      "reason": "FileCheck annotated output confirms no match for the first CHECK pattern."
+    },
+    {
+      "quote": "check:62'0                    X error: no match found",
+      "reason": "FileCheck annotated output confirms no match for the second CHECK pattern."
+    },
+    {
+      "quote": "test result: FAILED. 550 passed; 1 failed; 103 ignored; 0 measured; 0 filtered out; finished in 15.38s",
+      "reason": "Summary confirms exactly one test failed in the assembly-llvm suite."
+    },
+    {
+      "quote": "Bootstrap failed while executing `--stage 2 test --host= --target wasm32-wasip1 tests/run-make tests/run-make-cargo tests/ui tests/mir-opt tests/codegen-units tests/codegen-llvm tests/assembly-llvm library/core`",
+      "reason": "The overall CI job failed due to this test failure in the assembly-llvm suite targeting wasm32-wasip1."
+    }
+  ],
+  "suggested_fix": "Investigate what changed in the wasm exception-handling codegen that caused the assembly output around `call may_panic` (lines 33 and 68 of wasm_exceptions.s) to no longer match the CHECK patterns at lines 38 and 62 of tests/assembly-llvm/wasm_exceptions.rs, and either fix the codegen regression or update the CHECK patterns to match the new (correct) assembly output.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-120k-rtk-tail-v3/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 18151
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 749
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 21133.206,
+    "cache_key": "ebd6a2cf191b75b995f9d98426102ad41ddb3934fcbbda7badd7a0ca2cf75f91",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

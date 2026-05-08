@@ -1,0 +1,56 @@
+{
+  "case_id": "cpython-tcl-windows-matrix-v2-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job built CPython successfully (0 errors) but two tests in test_tcl failed. Both failures show that when Tcl 9.0.3 evaluates a string containing surrogate pairs (\\ud83d\\udcbb), the _tkinter module returns the raw surrogate pair instead of recombining it into the proper Unicode scalar U+1F4BB (💻), causing assertEqual mismatches.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "test_eval_surrogates_in_result and test_evalfile_surrogates_in_result both fail because tcl.eval() returns '<\\ud83d\\udcbb>' (surrogate pair preserved) instead of the expected '<\\U0001f4bb>' (recombined emoji). This indicates the _tkinter string-conversion code does not recombine UTF-16 surrogate pairs when decoding results from Tcl 9.0.3, whose internal Unicode model differs from earlier Tcl 8.x.",
+  "confidence": 0.93,
+  "relevant_files": [
+    "D:\\a\\cpython\\cpython\\Lib\\test\\test_tcl.py"
+  ],
+  "relevant_tests": [
+    "test_eval_surrogates_in_result (test.test_tcl.TclTest.test_eval_surrogates_in_result)",
+    "test_evalfile_surrogates_in_result (test.test_tcl.TclTest.test_evalfile_surrogates_in_result)"
+  ],
+  "evidence": [
+    {
+      "quote": "test_tcl failed (2 failures)",
+      "reason": "Confirms the only failing test module is test_tcl, with exactly 2 failures."
+    },
+    {
+      "quote": "patchlevel = 9.0.3",
+      "reason": "Shows that Tcl 9.0.3 is the runtime, which changed its Unicode model relative to Tcl 8.x and may return characters differently from surrogate-encoded inputs."
+    },
+    {
+      "quote": "self.assertEqual(tcl.eval(r'set a \"<\\ud83d\\udcbb>\"'), '<\\U0001f4bb>')",
+      "reason": "The test asserts that a surrogate pair input is returned as a recombined Unicode scalar; this expectation is the one that fails."
+    },
+    {
+      "quote": "AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ'»>'",
+      "reason": "The actual return value from tcl.eval still contains the raw surrogate pair instead of the recombined character U+1F4BB, directly showing the mismatch."
+    },
+    {
+      "quote": "1 test failed:\n    test_tcl",
+      "reason": "Final summary confirms test_tcl is the sole failing test and the cause of the FAILURE exit code."
+    }
+  ],
+  "suggested_fix": "Investigate the _tkinter C extension's string decoding path (Modules/_tkinter.c) for how Tcl string objects are converted to Python str when Tcl 9.0 is in use; add logic to recombine UTF-16 surrogate pairs (\\ud800-\\udfff sequences) into their corresponding Unicode scalar values before returning the Python string, or update the test expectations to reflect Tcl 9.0's actual surrogate handling.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-120k-rtk-tail-v3/cpython-tcl-windows-matrix-v2-001.txt",
+    "context_tokens_estimate": 73560
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 622
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 46078.444,
+    "cache_key": "f0d2b3c8b7d8c7d93a7220ee763287b9cce4e38ee2b003169bd6c78ec135a9c6",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

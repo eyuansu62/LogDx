@@ -1083,6 +1083,145 @@ cases is now partially addressed: 6 cases (4 + 2). Still small;
 larger replication (≥30 hold-out cases per debugger) is the
 clean next step but requires Batch 7+ collection.
 
+## 3h. Hybrid-v3 prototype — testing the §3f hypothesis (2026-05-08)
+
+§3f's argocd finding suggested that **rtk-err-cat could be the
+better fallback than tail** for huge logs. Codex 2026-05-08-#2
+[high] later showed that rtk truncates input at 10 MiB silently,
+so any v3 design needs to gate on `metadata.rtk_input_truncated`.
+Per the approved plan
+(`/Users/eyuansu62/.claude/plans/quiet-swinging-lecun.md`),
+hybrid-v3 was implemented as a 3-way router:
+
+```
+hybrid-grep-120k-rtk-tail-v3 routing:
+  IF grep_tokens ≤ 120000:
+      use grep                               # matches v2 fast path
+  ELIF rtk-err-cat manifest's metadata.rtk_input_truncated == False:
+      use rtk-err-cat                        # NEW intermediate
+  ELSE:
+      use tail-200                           # matches v2 fallback
+```
+
+Implemented in `tools/run_hybrid_baseline.py` (extended to optional
+`intermediate_method` config field). Locked in
+`cilogbench-v2-checkpoint-19.lock.json` alongside v1 and v2 (3
+hybrid baselines now).
+
+Routing on v2/stress (the only split where v3 differs from v2):
+
+```text
+case               grep_tok   rtk_trunc   v2 routes    v3 routes
+numpy                28010    False       grep         grep            (same)
+cpython              73525    False       grep         grep            (same)
+airflow             100864    False       grep         grep            (same)
+rust                161086    False       tail         rtk-err-cat     (v3 NEW)
+nodejs              359460    False       tail         rtk-err-cat     (v3 NEW)
+argocd             1865128    True        tail         tail            (v3 truncation-gate works)
+```
+
+### Result: hybrid-v3 LOSES on Sonnet, TIES on Haiku, with one informative sub-finding
+
+```text
+                                full v2 macro             Batch 6 hold-out (2 cases)
+                                Sonnet     Haiku          Sonnet     Haiku
+hybrid-grep-120k-tail-v2        0.6748     0.5370   #1    0.9000     0.7625
+hybrid-grep-120k-rtk-tail-v3    0.6195     0.5013   ↓     0.8875     0.9125   #1 Haiku ↑
+                                Δ −0.055   Δ −0.036       Δ −0.013   Δ +0.150
+```
+
+**The §3f hypothesis is partially refuted.** Tested across the
+three v2/stress cases where v3 actually changes routing:
+
+```text
+case               v2 score    v3 score    Δ
+rust               0.7950      0.8475      +0.0525   ✅ rtk-err-cat wins (§3f confirmed)
+nodejs             0.7500      0.0000      −0.7500   ❌ rtk-err-cat catastrophic loss
+argocd             0.1167      0.0000      −0.1167   ⚠ wrapper variance (both → tail)
+```
+
+**The nodejs failure is the killer.** rtk-err-cat on nodejs's
+10773-line log produces ~320k tokens of context — large enough
+that Sonnet abstains, exactly the same failure mode that drove
+the original §3c grep collapse. v3's truncation-gate (per Codex
+fix) correctly avoids the argocd 10 MiB-truncated case, but does
+NOT detect "rtk-err-cat output is too-big-but-not-truncated".
+
+The cleaner v3+ rule would need a SECOND budget on the rtk-err-cat
+output (e.g., route to tail if rtk-err-cat tokens > some larger
+budget like 200k). Out of scope for this prototype.
+
+### Sub-finding: Haiku CLI-flake is wrapper-specific
+
+On Batch 6 (the cleanest hold-out) hybrid-v3 strictly beats
+hybrid-v2 on Haiku (+0.15). The §3e and §3g findings established
+that Haiku's claude CLI sometimes returns provider_error or
+degraded scores on hybrid-v2's wrapped contexts at 70-100k tokens
+(reproduced on cpython, airflow, go-redis, dubbo). v3's wrapper
+content differs (additional metadata fields about
+`intermediate_method`, `selected_reason: primary_fits_budget`
+identical but other route_record fields differ in the candidates
+block) — and the Haiku flake disappears.
+
+This is empirically:
+- Per-case Haiku scores on Batch 6 (hybrid-v3 vs hybrid-v2):
+  - dubbo: v3 0.9000 vs v2 0.6000 (Δ +0.30) — v3 doesn't trip the flake
+  - hibernate: v3 0.9250 vs v2 0.9250 (tied, both score well)
+
+The "Haiku flake on hybrid-v2 wrapped contexts" issue is therefore
+**reproducibly caused by the specific wrapper content emitted by
+hybrid-v2 at certain context sizes**, not a general property of
+"wrapped grep contexts." This is a useful artifact for future
+debugging but unsatisfying as a method-design comparison — v3
+"wins" on Haiku partly by accident.
+
+### Updated headline table at v3 prototype state
+
+| Headline claim | v3 status |
+|---|---|
+| §3f rtk-err-cat-as-better-fallback hypothesis | ⚠ Partially refuted: wins on rust, catastrophically loses on nodejs (rtk output 320k tokens, too big despite no truncation) |
+| hybrid-v3 generalizes better than hybrid-v2 | ❌ Sonnet hybrid-v2 0.6748 vs hybrid-v3 0.6195 (v2 wins) |
+| hybrid-v3 ties hybrid-v2 on Haiku | ⚠ tied on full v2 (0.5370 vs 0.5013), but v3 BEATS v2 on Batch 6 hold-out (0.9125 vs 0.7625) due to wrapper-flake |
+| hybrid-v3 truncation-gate works | ✅ argocd correctly routed to tail when rtk truncated |
+| rtk-err-cat is the right fallback for huge logs | ❌ Only when its output isn't itself too large; nodejs disproves the general claim |
+
+### What §3h means for hybrid evolution
+
+1. **Hybrid-v2 stays the canonical v2 router.** No v3 promotion.
+   Per §3e/§3f/§3g, hybrid-v2 generalizes on Sonnet and ties on
+   Haiku across two hold-out batches; hybrid-v3 is informative
+   but not a winner.
+2. **The §3f rtk-err-cat hypothesis was incomplete.** It assumed
+   rtk-err-cat compresses huge logs cleanly; the nodejs case
+   shows rtk-err-cat can produce too-large output without being
+   truncated. A "fallback hierarchy" with multiple budget bands
+   (grep@120k → rtk-err-cat@200k → tail@∞) might work but adds
+   tuning surface.
+3. **The Haiku wrapper-flake is empirically wrapper-content-
+   specific.** A future v3.1 could exploit this by varying the
+   wrapper template until the flake stops triggering. But that's
+   probably an artifact-fix, not a method improvement.
+4. **No retuning was done on Batch 6 in light of §3h.** v3's 120k
+   threshold and 10-MiB truncation-gate were locked before
+   Batch 6 ran. The result is a clean negative finding, not an
+   evaluation-overfit one.
+
+### Caveats
+
+1. **v3 prototype evaluation is calibration-tuned at the v2 layer.**
+   v3 inherits hybrid-v2's 120k threshold (selected from
+   eval_diagnosis_*.json on the 13-case state). v3's only NEW
+   tuning surface is "use rtk-err-cat if not truncated" — a
+   one-bit decision derived from Codex F1 (truncation surfacing).
+   So v3's incremental leakage over v2 is zero, but its inherited
+   leakage matches v2.
+2. **Single hybrid-v3 prototype tested.** Other rtk-fallback
+   variants (rtk-log, rtk-read) were not tried; would have
+   different cost/quality profiles.
+3. **The Haiku Batch 6 result is wrapper-artifact-driven**, not
+   method-driven. Should not be cited as evidence v3 generalizes
+   on Haiku without also disclosing the §3e wrapper-flake mechanism.
+
 ## 4. Why hybrid drops
 
 Per-case detail on the 8 v2 cases (Sonnet 4.6, sv1.1):

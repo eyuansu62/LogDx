@@ -300,11 +300,13 @@ to let the numbers pick.
     Batch 6 grew v2/holdout 8→10),
     and [`cilogbench-v2-checkpoint-19`](protocols/cilogbench-v2-checkpoint-19.lock.json)
     (19 v2 cases / v2/holdout=10 / v2/stress=6 — **current canonical,
-    35 cases total**). The 19-case lock includes BOTH hybrid
-    baselines (v1 `hybrid-grep-4k-rtk-err-cat-v1` + the
-    evaluation-tuned v2 `hybrid-grep-120k-tail-v2`).
+    35 cases total**). The 19-case lock includes THREE hybrid
+    baselines (v1 `hybrid-grep-4k-rtk-err-cat-v1`, the
+    evaluation-tuned v2 `hybrid-grep-120k-tail-v2`, and the
+    §3h-tested v3 prototype `hybrid-grep-120k-rtk-tail-v3`).
     `validate_protocol_lock.py` fail-closes on hybrid drift across
-    all `type: hybrid_context_provider` baselines.
+    all `type: hybrid_context_provider` baselines (9 file hashes
+    total: 3 hybrids × {config, route_schema, router}).
   - **12-case refresh surfaced two findings.** Phase 3 was re-run
     with Sonnet + Haiku on the 2 new v2/stress cases (16 calls each
     debugger). Hybrid sv1.1 stayed flat (0.4427 → 0.4353 Sonnet,
@@ -359,6 +361,26 @@ to let the numbers pick.
        fallback (0.12) loses to hybrid-v1's rtk-err-cat fallback
        (0.56) on Sonnet there. Full §3f detail at
        [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md).
+    5. **§3g — Second hold-out (Batch 6, 2 cases).** dubbo
+       (java-maven timeout) + hibernate (java-gradle test).
+       Confirms direction: hybrid-v2 stays #1 on Sonnet
+       (0.6838 vs grep 0.6494 on combined B5+B6, +0.034); on
+       Haiku tied with grep. **§3e Haiku CLI-flake reproduces
+       a third time** on dubbo (hybrid-v2 0.60 vs grep 0.75).
+    6. **§3h — Hybrid-v3 prototype (negative result).** Built
+       3-way router `hybrid-grep-120k-rtk-tail-v3` to test §3f's
+       rtk-err-cat-fallback hypothesis. Result: **v3 LOSES to v2
+       on Sonnet** (−0.055 v2 macro) — the killer is nodejs
+       where rtk-err-cat output is too-big-but-not-truncated
+       (320k tokens, Sonnet abstains). The §3f hypothesis
+       splits 1-1-1: wins rust (+0.05), catastrophic loss on
+       nodejs (−0.75), wrapper-variance loss on argocd (−0.12).
+       Sub-finding: v3 BEATS v2 on Haiku Batch 6 hold-out
+       (+0.15) because the §3e Haiku CLI-flake is empirically
+       wrapper-content-specific — v3's different wrapper
+       sidesteps it (artifact-driven gain, not method-driven).
+       **No v3 promotion**; hybrid-v2 stays canonical. v3 is in
+       the lock as a documented prototype.
   - Phase 2 acceptance-criteria-C deliverables landed:
     [`reports/v2_corpus_summary.md`](reports/v2_corpus_summary.md),
     [`reports/v2_split_balance.md`](reports/v2_split_balance.md),

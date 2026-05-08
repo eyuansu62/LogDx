@@ -1,0 +1,59 @@
+{
+  "case_id": "airflow-precommit-tsc-middle-v2-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The pre-commit hook `ts-compile-lint-ui` failed during TypeScript compilation of the Airflow UI. `tsc` reported 3 errors: an unused type alias `ColorMode` in `UserSettingsButton.tsx`, an unused import `ParamsSpec` in `ConnectionForm.tsx`, and a type mismatch in `testsSetup.ts` where `SetupServer` is missing private members from `SetupServerApi`.",
+  "root_cause_category": "compile_error",
+  "root_cause": "TypeScript compilation (`pnpm tsc`) failed with 3 errors: (1) `ColorMode` type declared but never used in `src/layouts/Nav/UserSettingsButton.tsx:55`, (2) `ParamsSpec` imported but never read in `src/pages/Connections/ConnectionForm.tsx:33`, and (3) `SetupServer` type missing properties `#private` and `network` from `SetupServerApi` in `testsSetup.ts:78`.",
+  "confidence": 0.97,
+  "relevant_files": [
+    "src/layouts/Nav/UserSettingsButton.tsx",
+    "src/pages/Connections/ConnectionForm.tsx",
+    "testsSetup.ts"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "'ColorMode' is declared but never used.",
+      "reason": "TypeScript error TS6196 in UserSettingsButton.tsx at line 55 causes tsc to exit non-zero"
+    },
+    {
+      "quote": "'ParamsSpec' is declared but its value is never read.",
+      "reason": "TypeScript error TS6133 in ConnectionForm.tsx at line 33 causes tsc to exit non-zero"
+    },
+    {
+      "quote": "Type 'SetupServer' is missing the following properties from type 'SetupServerApi': #private, network",
+      "reason": "TypeScript error TS2739 in testsSetup.ts at line 78 causes tsc to exit non-zero"
+    },
+    {
+      "quote": "Found 3 errors in 3 files.",
+      "reason": "Summary of tsc output confirming compilation failure"
+    },
+    {
+      "quote": "subprocess.CalledProcessError: Command '['pnpm', 'tsc', '--p', '/home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json']' returned non-zero exit status 2.",
+      "reason": "The tsc command returned a non-zero exit code, causing the hook script to raise an exception and fail the CI step"
+    },
+    {
+      "quote": "Compile / format / lint UI................................................................................\u001b[41mFailed\u001b[49m",
+      "reason": "The pre-commit hook `ts-compile-lint-ui` is explicitly marked as Failed in the prek output"
+    }
+  ],
+  "suggested_fix": "Fix the 3 TypeScript errors: (1) remove or use the `ColorMode` type alias in `src/layouts/Nav/UserSettingsButton.tsx:55`; (2) remove the unused `ParamsSpec` import from `src/pages/Connections/ConnectionForm.tsx:33`; (3) update `testsSetup.ts:78` to use `SetupServerApi` instead of `SetupServer` (or update the msw version so the types align).",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-120k-rtk-tail-v3/airflow-precommit-tsc-middle-v2-001.txt",
+    "context_tokens_estimate": 100909
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 632
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 25054.94,
+    "cache_key": "16c9739129aeebf73c28fbe9490896b38c44bd703af9bd75fe1cb193ac420ee9",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

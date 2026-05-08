@@ -1,0 +1,60 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The integration test for dubbo-samples-test-11137 failed because its Docker containers never started successfully. The zookeeper image pull returned an HTTP 500 from the Docker daemon, leaving the test container in a pending state until the 600-second timeout was exceeded.",
+  "root_cause_category": "network_or_flaky",
+  "root_cause": "Docker registry returned 'received unexpected HTTP status: 500 Internal Server Error' when pulling the zookeeper image for dubbo-samples-test-11137, preventing the required containers from starting and causing the test to time out after 602 seconds.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "99-integration/dubbo-samples-test-11137/target/logs",
+    "99-integration/dubbo-samples-test-11137/target/docker-compose.yml"
+  ],
+  "relevant_tests": [
+    "dubbo-samples-test-11137"
+  ],
+  "evidence": [
+    {
+      "quote": "zookeeper Error received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "The Docker daemon returned a 500 error while pulling the zookeeper image, which prevented the zookeeper container from starting."
+    },
+    {
+      "quote": "Error response from daemon: received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "Confirms the Docker registry returned a server-side error during image pull, a transient/infrastructure failure."
+    },
+    {
+      "quote": "wait for container is timeout: 602 s",
+      "reason": "Because the zookeeper container never came up, the test harness waited until the configured timeout (600 s) was exceeded."
+    },
+    {
+      "quote": "[dubbo-samples-test-11137] :ErrorMsg: Run tests timeout",
+      "reason": "The test framework surfaced the failure as a timeout, directly caused by the container never becoming ready."
+    },
+    {
+      "quote": "Error response from daemon: No such container: dubbo-samples-test-11137--zookeeper-1",
+      "reason": "The zookeeper container was never created, consistent with the failed image pull being the blocking step."
+    },
+    {
+      "quote": "[2/23] [dubbo-samples-test-11137:1/1] TEST FAILURE: Run tests timeout, version: -Ddubbo.version=3.3.7-SNAPSHOT -Dspring.version=5.3.24 -Djava.version=21",
+      "reason": "Final summary confirming this is the sole failing test in the batch."
+    }
+  ],
+  "suggested_fix": "Re-run the job; the 500 from the Docker registry is transient. If the error recurs, investigate Docker Hub / registry rate limits or mirror availability for the zookeeper image used in dubbo-samples-test-11137's docker-compose.yml, and consider pinning to a registry mirror that is more stable.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-rtk-tail-v3/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 17018
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 611
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 37893.235,
+    "cache_key": "2206452111a9d83b2cf1fbe78baa98940878a1dc973e02c2875bbda3f1b469c9",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

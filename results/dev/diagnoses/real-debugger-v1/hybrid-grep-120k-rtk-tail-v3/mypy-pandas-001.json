@@ -1,0 +1,66 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Type checkers (pyright and mypy) report that multiple attributes from pyarrow.compute and other pyarrow modules do not exist, causing 279 mypy errors and 69 pyright errors across PyArrow-related code.",
+  "root_cause_category": "type_error",
+  "root_cause": "PyArrow type stubs or py.typed information are missing or incompatible with the installed PyArrow version, causing type checkers to report missing attributes like is_null, if_else, utf8_length, etc. in the pyarrow.compute module and other pyarrow submodules.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "pandas/compat/pyarrow.py",
+    "pandas/core/arrays/_arrow_string_mixins.py",
+    "pandas/core/arrays/arrow/accessors.py",
+    "pandas/core/arrays/arrow/extension_types.py",
+    "pandas/core/arrays/arrow/array.py",
+    "pandas/io/parquet.py",
+    "pandas/io/orc.py",
+    "pandas/core/arrays/string_arrow.py",
+    "pandas/core/strings/accessor.py",
+    "pandas/io/feather_format.py"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "pyright..................................................................[41mFailed[m",
+      "reason": "pyright hook failed with exit code 1"
+    },
+    {
+      "quote": "\"Expression\" is not exported from module \"pyarrow.compute\" (reportPrivateImportUsage)",
+      "reason": "pyright cannot find Expression in pyarrow.compute module type information"
+    },
+    {
+      "quote": "mypy.....................................................................[41mFailed[m\n- hook id: mypy\n- duration: 108.37s\n- exit code: 1",
+      "reason": "mypy hook failed after 108 seconds, indicating type checking errors"
+    },
+    {
+      "quote": "pandas/compat/pyarrow.py:76: error: Module has no attribute \"is_null\"  [attr-defined]",
+      "reason": "mypy reports is_null attribute not found in pyarrow.compute module across multiple files"
+    },
+    {
+      "quote": "Found 279 errors in 9 files (checked 1458 source files)",
+      "reason": "279 type errors concentrated in 9 PyArrow-related files indicates systematic type information problem"
+    },
+    {
+      "quote": "mypy (stubtest)..........................................................[41mFailed[m\n- hook id: stubtest\n- exit code: 1\nerror: not checking stubs due to mypy build errors:",
+      "reason": "stubtest cannot run because mypy has build errors, preventing stub validation"
+    }
+  ],
+  "suggested_fix": "Verify PyArrow version compatibility and ensure type stubs are available. Check environment.yml for PyArrow version constraints and update or pin PyArrow to a version with complete type information, or suppress these specific errors in mypy/pyright configuration if using undocumented APIs intentionally.",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-120k-rtk-tail-v3/mypy-pandas-001.txt",
+    "context_tokens_estimate": 27293
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 631
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 29528.304,
+    "cache_key": "8a93c5d6bdf83bc0bd1ebbf7b4bd9271f8cd7a1ce5026c58d140380aab9685d8",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

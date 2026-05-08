@@ -1,0 +1,36 @@
+{
+  "method": "hybrid-grep-120k-rtk-tail-v3",
+  "mode": "context_provider",
+  "router_version": "v3",
+
+  "primary_method": "grep",
+  "intermediate_method": "rtk-err-cat",
+  "fallback_method": "tail",
+
+  "routing_rule": {
+    "type": "final_context_token_budget_with_rtk_intermediate",
+    "budget_tokens": 120000,
+    "comparison": "<=",
+    "token_field": "output_byte_size_div_4",
+    "_doc": "v3 router. Three-way routing: (1) IF grep_tokens ≤ 120k, use grep (matches v2); (2) ELIF grep too large AND rtk-err-cat manifest row has metadata.rtk_input_truncated=False, use rtk-err-cat (NEW); (3) ELSE use tail (matches v2 fallback). Motivated by §3f's argocd finding that rtk-err-cat scored 0.56 Sonnet vs hybrid-v2's tail at 0.12 on the 89k-line argocd log — but ONLY when rtk's input wasn't silently truncated. Codex 2026-05-08-#2 [high] surfaced that rtk truncates filter input at 10 MiB and the v2 design ignored this; v3 explicitly gates the intermediate on the truncation flag (which run_rtk_baseline.py now writes to manifest metadata). The 120k budget is unchanged from v2 — calibrated on eval_diagnosis_*.json outputs at 13-case state. Like v2, v3 is EVALUATION-TUNED (uses_diagnosis_eval=True) and the headline numbers should be read as 'v3 demonstrates the §3f hypothesis on the 17-case calibration + 6-case hold-out' rather than 'v3 generalizes blind' — separate v4 train/holdout would be the cleaner generalization test."
+  },
+
+  "fallback_behavior": {
+    "on_primary_too_large": "use_intermediate_else_fallback",
+    "on_intermediate_truncated": "use_fallback",
+    "on_intermediate_missing": "use_fallback",
+    "on_intermediate_provider_error": "use_fallback",
+    "on_primary_missing": "provider_error",
+    "on_fallback_missing": "provider_error",
+    "on_fallback_provider_error": "provider_error",
+    "raw_fallback_enabled": false
+  },
+
+  "anti_leakage": {
+    "uses_ground_truth": false,
+    "uses_signal_eval": false,
+    "uses_diagnosis_eval": true,
+    "uses_review_labels": false,
+    "_doc": "Same calibration-leakage posture as v2: the 120k threshold was originally selected from eval_diagnosis_*.json abstain-cliff observations. v3's intermediate-routing decision is gated on metadata.rtk_input_truncated, which is a deterministic property of the rtk-err-cat manifest row — not derived from any ground-truth-aware artifact. So v3's INCREMENTAL leakage over v2 is zero (same 120k threshold + a deterministic-flag gate). The CUMULATIVE leakage matches v2: declared True so the lock layer makes it visible. v4 / future work: tune both the budget and the rtk-input-cap threshold against a fresh train/holdout split."
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "case_id": "prettier-react-stress-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Run prettier' CI job failed because two files did not pass the prettier formatting check. Prettier detected unformatted code in a React DOM test file and a compiler TypeScript file, then exited with code 1.",
+  "root_cause_category": "formatting_failure",
+  "root_cause": "Prettier found unformatted code in 'packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js' and 'compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts', causing the yarn prettier check command to exit with code 1.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+    "compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+      "reason": "File listed immediately before the error, consistent with prettier output listing files that need reformatting."
+    },
+    {
+      "quote": "compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts",
+      "reason": "Second file listed before the error, also consistent with prettier reporting an unformatted file."
+    },
+    {
+      "quote": "error Command failed with exit code 1.",
+      "reason": "Yarn reported exit code 1, indicating the prettier check command failed after finding improperly formatted files."
+    },
+    {
+      "quote": "info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.",
+      "reason": "This is yarn's standard output when a script it invoked exits with a non-zero code, confirming the failure originated from the yarn-run prettier script."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions recorded the step as failed with exit code 1, confirming the job-level failure."
+    }
+  ],
+  "suggested_fix": "Run the repository's prettier formatting command (e.g., `yarn prettier-all` or `yarn prettier --write`) on 'packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js' and 'compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts', then commit the reformatted files.",
+  "input": {
+    "context_path": "results/stress/hybrid-grep-120k-rtk-tail-v3/prettier-react-stress-001.txt",
+    "context_tokens_estimate": 385
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 535
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 22660.321,
+    "cache_key": "76fb21766615f4ce0179a5b75dbcf436fec8ec7c7a5182f038f40a0aa79bfffd",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "case_id": "tsc-typescript-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "A fourslash test assertion failed because the generated code fix returned a simplified return type instead of the expected fully-parameterized type. The test expected 'Add return type \\'Foo<string, string[…\\'' but received 'Add return type \\'Foo<string>\\''.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The fourslash test 'codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts' failed with an AssertionError: the code fix produced 'Add return type \\'Foo<string>\\'' instead of the expected 'Add return type \\'Foo<string, string[…\\''  — indicating the type annotation inference logic is oversimplifying generic type parameters.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts",
+    "src/harness/fourslashImpl.ts",
+    "src/harness/fourslashInterfaceImpl.ts",
+    "src/testRunner/fourslashRunner.ts"
+  ],
+  "relevant_tests": [
+    "fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts runs correctly"
+  ],
+  "evidence": [
+    {
+      "quote": "AssertionError: expected 'Add return type \\'Foo<string>\\'' to equal 'Add return type \\'Foo<string, string[…'",
+      "reason": "This is the direct test assertion failure showing the mismatch between actual and expected code fix output."
+    },
+    {
+      "quote": "tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts",
+      "reason": "This is the specific test file that failed, and its name ('oversimplification') suggests it is testing that the fix does NOT oversimplify generic type annotations."
+    },
+    {
+      "quote": "at _TestState.verifyCodeFix (src/harness/fourslashImpl.ts:3435:20)",
+      "reason": "Confirms the failure occurred during code fix verification, not compilation or setup."
+    },
+    {
+      "quote": "Error in do-runtests-parallel in 10m 38.9s",
+      "reason": "Confirms the test run task failed, which caused the overall CI job to exit with code 1."
+    }
+  ],
+  "suggested_fix": "Investigate the code fix logic responsible for generating return type annotations for exported functions with generic types — specifically why it produces 'Foo<string>' instead of the full parameterization 'Foo<string, string[…'. Update the inference logic or the test baseline in 'tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts' to match the correct expected output.",
+  "input": {
+    "context_path": "results/holdout/hybrid-grep-120k-rtk-tail-v3/tsc-typescript-001.txt",
+    "context_tokens_estimate": 953
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 592
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 21306.573,
+    "cache_key": "94e3bf96e08de9dc52eeb1bf04740feb0c71e3c7ef1ac42c4e7f43f7a4c45e7d",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

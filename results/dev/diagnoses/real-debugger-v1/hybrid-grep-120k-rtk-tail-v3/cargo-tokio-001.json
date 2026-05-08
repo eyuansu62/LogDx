@@ -1,0 +1,56 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The `compile_fail_full` test in the `tests-build` crate failed because actual compiler error messages don't match expected messages for invalid async function code patterns.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Trybuild test assertion failed: expected compiler error messages for tests/fail/macros_type_mismatch.rs don't match actual output. Expected E0308 errors at user code locations; actual output includes additional E0271 errors at macro expansion locations.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "tests-build/tests/compiletest.rs",
+    "tests/fail/macros_type_mismatch.rs"
+  ],
+  "relevant_tests": [
+    "tests-build::macros::compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out",
+      "reason": "Indicates exactly one test failed in the test suite"
+    },
+    {
+      "quote": "1 of 10 tests failed",
+      "reason": "Trybuild assertion showing one out of ten compile-fail test cases failed"
+    },
+    {
+      "quote": "EXPECTED:\nerror[E0308]: mismatched types",
+      "reason": "Test expected E0308 compiler errors at specific user code locations"
+    },
+    {
+      "quote": "ACTUAL OUTPUT:\nerror[E0271]: expected `{async block@..}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
+      "reason": "Actual compiler output includes E0271 errors related to macro expansion, showing error messages changed"
+    },
+    {
+      "quote": "thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13",
+      "reason": "Trybuild test framework explicitly panicked due to error message mismatch"
+    }
+  ],
+  "suggested_fix": "Update the expected error messages in tests/fail/macros_type_mismatch.rs.stderr to match the actual compiler output shown in the ACTUAL OUTPUT section, or verify if a change to the tokio::main macro or Rust compiler version caused the error output format to change",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-120k-rtk-tail-v3/cargo-tokio-001.txt",
+    "context_tokens_estimate": 43413
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 476
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 28275.818,
+    "cache_key": "e5f52d4b79e949a47c1b75c947f3626599949cb1c6d2f773da862a727966e12b",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

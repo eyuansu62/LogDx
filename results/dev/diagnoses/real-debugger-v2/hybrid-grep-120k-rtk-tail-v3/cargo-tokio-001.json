@@ -1,0 +1,55 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The trybuild compile-fail test `compile_fail_full` in the `tests-build::macros` crate failed because the actual compiler output for `tests/fail/macros_type_mismatch.rs` does not match the expected output stored in the test fixtures. The newer Rust compiler emits additional `error[E0271]` diagnostics that were not present in the expected output, causing a mismatch between EXPECTED and ACTUAL OUTPUT.",
+  "root_cause_category": "compile_error",
+  "root_cause": "A newer Rust compiler version produces extra `error[E0271]` diagnostics for the `#[tokio::main]` attribute macro in `tests/fail/macros_type_mismatch.rs` that are absent from the stored `.stderr` snapshot files used by trybuild. The trybuild `compile_fail_full` test panics because 1 of 10 compile-fail tests has a stderr mismatch.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "tests/fail/macros_type_mismatch.rs"
+  ],
+  "relevant_tests": [
+    "tests-build::macros compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "test compile_fail_full ... FAILED",
+      "reason": "The trybuild test explicitly failed, not any runtime test."
+    },
+    {
+      "quote": "EXPECTED:\n    ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n    error[E0308]: mismatched types\n     --> tests/fail/macros_type_mismatch.rs:5:5",
+      "reason": "The expected output only contains E0308 errors; E0271 errors are absent from the expected snapshot."
+    },
+    {
+      "quote": "ACTUAL OUTPUT:\n    ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n    error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
+      "reason": "The actual compiler output has additional E0271 diagnostics for each `#[tokio::main]` function that are not in the snapshot, causing the mismatch."
+    },
+    {
+      "quote": "thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13:\n    1 of 10 tests failed",
+      "reason": "Trybuild panics when actual compiler output differs from the stored expected output; exactly 1 of 10 compile-fail tests failed."
+    },
+    {
+      "quote": "1 failed",
+      "reason": "Final summary confirms exactly one test failure out of 396 total."
+    }
+  ],
+  "suggested_fix": "Update the stored trybuild stderr snapshot for `tests/fail/macros_type_mismatch.rs` to include the new `error[E0271]` diagnostics emitted by the current compiler. Running `TRYBUILD=overwrite cargo nextest run --workspace --features full,test-util` (or the equivalent `cargo test`) will regenerate the `.stderr` files automatically.",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-120k-rtk-tail-v3/cargo-tokio-001.txt",
+    "context_tokens_estimate": 43413
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 643
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 27251.64,
+    "cache_key": "b6293b492cc3c1301c3997a099beb325331f043ed2e90204fa60957e39b8202a",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

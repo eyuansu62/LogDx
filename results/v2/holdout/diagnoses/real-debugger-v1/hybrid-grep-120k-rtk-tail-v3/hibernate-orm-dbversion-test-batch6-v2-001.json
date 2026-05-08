@@ -1,0 +1,51 @@
+{
+  "case_id": "hibernate-orm-dbversion-test-batch6-v2-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "One test in DbVersionTest.testCollectionVersion failed: the owner entity version was not incremented when a collection was modified, contrary to test expectations. This is the only failure among 16,923 tests run in the hibernate-core test suite.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Test assertion failure at DbVersionTest.java:60. The test expected ownerVersionNotIncremented to be false (owner version should increment when collection changes), but it was true (owner version did not increment). Assertion: assertFalse(ownerVersionNotIncremented).",
+  "confidence": 0.85,
+  "relevant_files": [
+    "hibernate-core/src/test/java/org/hibernate/orm/test/version/db/DbVersionTest.java"
+  ],
+  "relevant_tests": [
+    "org.hibernate.orm.test.version.db.DbVersionTest.testCollectionVersion(SessionFactoryScope)"
+  ],
+  "evidence": [
+    {
+      "quote": "Gradle Test Executor 25 > DbVersionTest > testCollectionVersion(SessionFactoryScope) FAILED",
+      "reason": "Explicit statement of test failure in the execution log"
+    },
+    {
+      "quote": "org.opentest4j.AssertionFailedError: owner version not incremented ==> expected: <false> but was: <true>",
+      "reason": "Root cause of failure: assertion expected false but received true, indicating owner version was not incremented when it should have been"
+    },
+    {
+      "quote": "at app//org.hibernate.orm.test.version.db.DbVersionTest.testCollectionVersion(DbVersionTest.java:60)",
+      "reason": "Identifies the exact test file and line number where assertion failed"
+    },
+    {
+      "quote": "16923 tests completed, 1 failed, 2596 skipped",
+      "reason": "Shows this is an isolated failure affecting only one test in a large test suite"
+    }
+  ],
+  "suggested_fix": "Investigate the collection version behavior in DbVersionTest.testCollectionVersion at line 60 to determine whether: (1) the test expectation is incorrect and should be updated, or (2) the Hibernate ORM versioning behavior for collections has regressed and needs to be fixed in the version handling code",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-rtk-tail-v3/hibernate-orm-dbversion-test-batch6-v2-001.txt",
+    "context_tokens_estimate": 65091
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 489
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 24560.92,
+    "cache_key": "f5c4f5105000537bdba171c20304de699bff8c707ce7970b2b22fb12fccb62ff",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

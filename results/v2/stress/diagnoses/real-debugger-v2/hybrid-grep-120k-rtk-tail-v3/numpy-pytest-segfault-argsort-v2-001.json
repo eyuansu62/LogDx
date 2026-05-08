@@ -1,0 +1,52 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed due to a fatal segmentation fault (SIGSEGV) raised during the pytest run. The crash occurred inside the `argsort` call within the test `test_datetime_nat_argsort_stability` in `numpy/_core/tests/test_datetime.py`, causing Python to abort with exit code 245.",
+  "root_cause_category": "other",
+  "root_cause": "A segmentation fault (SIGSEGV) in numpy's C extension code was triggered when `test_datetime_nat_argsort_stability` called `numpy.argsort` on datetime NaT values, crashing the Python interpreter and terminating the pytest process with exit code 245.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "numpy/_core/tests/test_datetime.py",
+    "numpy/_core/fromnumeric.py"
+  ],
+  "relevant_tests": [
+    "test_datetime_nat_argsort_stability"
+  ],
+  "evidence": [
+    {
+      "quote": "Fatal Python error: Segmentation fault",
+      "reason": "Explicit fatal crash message printed by CPython when a SIGSEGV is caught, confirming the process was killed by a segmentation fault rather than a normal test assertion failure."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
+      "reason": "Identifies the exact test function and file that was executing when the crash occurred."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 1231 in argsort",
+      "reason": "Shows the numpy `argsort` function on the call stack at the moment of the crash, pinpointing which operation triggered the SIGSEGV."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 245.",
+      "reason": "Exit code 245 equals 256 − 11 (SIGSEGV signal number), confirming the process was terminated by a segmentation fault signal."
+    }
+  ],
+  "suggested_fix": "Investigate the datetime NaT argsort path in numpy's C extension (the code exercised by `test_datetime_nat_argsort_stability` at `test_datetime.py` line 226) for a NULL-pointer dereference or out-of-bounds memory access when sorting arrays containing NaT values.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-120k-rtk-tail-v3/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 28056
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 519
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 38815.751,
+    "cache_key": "e7cb82b8b2e0188ee27118b4f1fc93a8b61613b5c32701081d9bce60b314a648",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

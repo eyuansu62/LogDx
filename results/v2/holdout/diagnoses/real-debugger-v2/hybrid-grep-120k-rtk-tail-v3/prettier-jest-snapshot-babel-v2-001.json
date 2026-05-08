@@ -1,0 +1,71 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest snapshot tests for Babel parser error messages failed because the installed Babel version produces different error text and column positions than what is stored in the snapshots. 13 snapshots across 3 test suites are stale, and one test throws an unexpected SyntaxError instead of being handled as a format error.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The Babel parser (babel, babel-flow, babel-ts) now emits different error messages and column positions for invalid import() syntax and TypeScript-specific errors than the ones stored in the Jest snapshots. For example, the snapshot expected 'Unexpected token (1:8)' but the parser now throws '`import()` requires exactly one or two arguments. (1:1)', and 'Cannot use new with import(...). (1:5)' is now 'Cannot use new with import(). (1:5)'. The error column offsets also shifted (e.g. (1:0) vs (1:1)). This indicates a Babel package upgrade changed error message wording and source-location reporting.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js",
+    "tests/config/format-test/test-format.js"
+  ],
+  "relevant_tests": [
+    "snippet: #0 > format[babel]",
+    "snippet: #0 > format[babel-flow]",
+    "snippet: #0 > format[babel-ts]",
+    "snippet: #1 > format[babel]",
+    "snippet: #1 > format[babel-flow]",
+    "snippet: #1 > format[babel-ts]",
+    "snippet: #2 > format[babel]",
+    "snippet: #2 > format[babel-flow]",
+    "snippet: #2 > format[babel-ts]",
+    "snippet: #3 > format[babel]",
+    "snippet: #3 > format[babel-flow]",
+    "snippet: #3 > format[babel-ts]",
+    "constructorOverloadsWithDefaultValues.ts > format[babel-ts]",
+    "snippet: #0 > format[babel-ts]"
+  ],
+  "evidence": [
+    {
+      "quote": "- Unexpected token (1:8)\n     + `import()` requires exactly one or two arguments. (1:1)",
+      "reason": "Shows the stored snapshot expected the old Babel error message 'Unexpected token' but the parser now emits a more specific message about import() argument count, indicating a Babel version change."
+    },
+    {
+      "quote": "- Cannot use new with import(...). (1:5)\n     + Cannot use new with import(). (1:5)",
+      "reason": "The error message wording changed from 'import(...)' to 'import()' between Babel versions, causing the snapshot to no longer match."
+    },
+    {
+      "quote": "- An implementation cannot be declared in ambient contexts. (1:1)\n     + An implementation cannot be declared in ambient contexts. (1:24)",
+      "reason": "Same error message text but the reported column position shifted, indicating the Babel parser now points to a different token in the source for this error."
+    },
+    {
+      "quote": "SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)",
+      "reason": "The babel-ts parser now throws a SyntaxError for constructorOverloadsWithDefaultValues.ts rather than formatting the file, which is a behavioral change in how babel-ts handles TypeScript constructor overloads."
+    },
+    {
+      "quote": "13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "Jest's own summary confirms this is a snapshot mismatch issue and suggests running with -u to update the stored snapshots."
+    }
+  ],
+  "suggested_fix": "Update the Jest snapshots to reflect the new Babel error messages and positions by running: yarn jest tests/format/js/_errors_/import/format.test.js tests/format/typescript/_errors_/declare-function-with-body/format.test.js -u. Then separately investigate the constructorOverloadsWithDefaultValues.ts test to determine whether it should be excluded from babel-ts or if the test fixture needs updating.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-rtk-tail-v3/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 20981
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 937
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 32606.78,
+    "cache_key": "fd3a7fa1e2b37d63653e93ea88344d5f0e5e4cfc04dda7b19a172cd4a87d9b93",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

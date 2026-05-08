@@ -1,0 +1,59 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Integration test [2/23] (dubbo-samples-test-11137) exceeded the 600-second container startup timeout and failed. Docker daemon returned HTTP 500 errors during test execution.",
+  "root_cause_category": "timeout_or_oom",
+  "root_cause": "Test container for dubbo-samples-test-11137 failed to reach ready state within the configured 600-second timeout. Docker daemon reported HTTP 500 Internal Server Error during container initialization.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137"
+  ],
+  "relevant_tests": [
+    "[2/23] [dubbo-samples-test-11137:1/1]"
+  ],
+  "evidence": [
+    {
+      "quote": "wait for container is timeout: 602 s",
+      "reason": "Explicit timeout message showing container exceeded 600-second wait threshold"
+    },
+    {
+      "quote": "[dubbo-samples-test-11137] :ErrorMsg: Run tests timeout",
+      "reason": "Error message confirms test failure due to timeout"
+    },
+    {
+      "quote": "TEST FAILURE: Run tests timeout, version: -Ddubbo.version=3.3.7-SNAPSHOT -Dspring.version=5.3.24 -Djava.version=21",
+      "reason": "Final test result explicitly indicates timeout as failure reason"
+    },
+    {
+      "quote": "zookeeper Error received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "Docker daemon returned HTTP 500 error, indicating infrastructure issue during container startup"
+    },
+    {
+      "quote": "Error response from daemon: No such container: dubbo-samples-test-11137--zookeeper-1",
+      "reason": "Containers failed to start properly; cleanup found no running containers"
+    },
+    {
+      "quote": "timeout: 600",
+      "reason": "Configured timeout threshold was 600 seconds; test exceeded this at 602 seconds"
+    }
+  ],
+  "suggested_fix": "Investigate Docker daemon stability on the runner. The HTTP 500 error suggests transient Docker infrastructure issues. Consider: (1) increasing container startup timeout if containers legitimately need more time, (2) checking Docker daemon logs for errors, (3) retrying the job to confirm if this is a transient infrastructure failure, or (4) allocating more resources to the test runner.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-rtk-tail-v3/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 17018
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 508
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 33132.814,
+    "cache_key": "4b1e2a420f28c23986bb47181c820763ec8780bd71f332c937614287eb6a067f",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "case_id": "docbuild-hf-stress-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The doc_build_status_check job failed because an upstream documentation build job produced a 'failure' status rather than 'success' or 'skipped'. The status check script evaluated the upstream result and exited with code 1 since the condition was not met.",
+  "root_cause_category": "other",
+  "root_cause": "The gating shell script checked whether a prior job's result was 'success' or 'skipped', but the actual result was 'failure', causing the condition to evaluate to false and the script to execute 'exit 1'.",
+  "confidence": 0.82,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\",
+      "reason": "The literal string 'failure' is being compared to 'success' and 'skipped', showing the upstream job produced a failure status rather than a successful or skipped result."
+    },
+    {
+      "quote": "exit 1",
+      "reason": "The else branch of the script calls exit 1, which is executed because the upstream job status was 'failure', not a passing state."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the script exited with code 1, causing the job to fail."
+    },
+    {
+      "quote": "[[ \"skipped\" == \"success\" || \"skipped\" == \"skipped\" ]]",
+      "reason": "The second condition checks a second dependency's status as 'skipped', which would have passed, but the first condition on 'failure' already made the combined AND condition false."
+    }
+  ],
+  "suggested_fix": "Investigate and fix the upstream documentation build job that produced a 'failure' result; this status check job itself is working as designed and will pass once the upstream build succeeds.",
+  "input": {
+    "context_path": "results/stress/hybrid-grep-120k-rtk-tail-v3/docbuild-hf-stress-001.txt",
+    "context_tokens_estimate": 275
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 414
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 17417.642,
+    "cache_key": "b5b1c6d04fd5425052f3a203800ac5f1ea5d830b8647e06cac8f00bedbed20e5",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

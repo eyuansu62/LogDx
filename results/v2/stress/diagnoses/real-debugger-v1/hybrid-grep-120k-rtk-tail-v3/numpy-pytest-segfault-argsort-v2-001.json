@@ -1,0 +1,48 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Segmentation fault during pytest execution in test_datetime_nat_argsort_stability when calling argsort on datetime arrays with NaT values. The test crashes in native NumPy code rather than failing an assertion.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Segmentation fault in numpy._core.fromnumeric.argsort function when processing datetime arrays with NaT (Not a Time) values during the test_datetime_nat_argsort_stability test at line 226 of test_datetime.py.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "numpy/_core/fromnumeric.py",
+    "numpy/_core/tests/test_datetime.py"
+  ],
+  "relevant_tests": [
+    "numpy/_core/tests/test_datetime.py::test_datetime_nat_argsort_stability"
+  ],
+  "evidence": [
+    {
+      "quote": "Fatal Python error: Segmentation fault",
+      "reason": "Explicit indication of segmentation fault crash during test execution"
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 54 in _wrapfunc\n   File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 1231 in argsort\n   File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
+      "reason": "Stack trace shows crash originates in argsort function called from test_datetime_nat_argsort_stability"
+    },
+    {
+      "quote": "##[error]Process completed with exit code 245",
+      "reason": "Exit code 245 typically indicates a segmentation fault (128 + 11 = 139, or on some systems 245 for SIGSEGV)"
+    }
+  ],
+  "suggested_fix": "Investigate the argsort implementation for handling datetime arrays with NaT values; check for buffer overflows, use-after-free, or null pointer dereferences in the native C/Cython code path for datetime dtype sorting.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-120k-rtk-tail-v3/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 28056
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 461
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 26063.658,
+    "cache_key": "5c7443e4a7ec3bb3453dca440f260dc3ed9019eaceeb641297ffd75325c9f37d",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

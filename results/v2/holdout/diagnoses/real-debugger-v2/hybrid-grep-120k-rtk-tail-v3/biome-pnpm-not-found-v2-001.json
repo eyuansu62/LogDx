@@ -1,0 +1,43 @@
+{
+  "case_id": "biome-pnpm-not-found-v2-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed during the `gen-all` recipe when attempting to run `pnpm format`. The `pnpm` command was not found on the runner, causing the recipe to exit with code 127. All Rust tests passed successfully prior to this failure.",
+  "root_cause_category": "dependency_install",
+  "root_cause": "The `pnpm` package manager is not installed on the runner, so the `pnpm format` command invoked by the `format` recipe (called from `gen-all`) fails with 'not found' (exit code 127).",
+  "confidence": 0.95,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "pnpm format\nsh: 1: pnpm: not found",
+      "reason": "The shell cannot find the pnpm binary, indicating pnpm is not installed on the runner."
+    },
+    {
+      "quote": "error: Recipe `format` failed on line 221 with exit code 127",
+      "reason": "The `format` recipe in the Justfile fails because pnpm is missing, exit code 127 means command not found."
+    },
+    {
+      "quote": "error: Recipe `gen-all` failed on line 32 with exit code 127",
+      "reason": "The parent `gen-all` recipe also fails as a result of the `format` recipe failure."
+    }
+  ],
+  "suggested_fix": "Install pnpm on the CI runner before running `gen-all`, either by adding a setup step (e.g., `npm install -g pnpm` or using the `pnpm/action-setup` GitHub Action) in the workflow prior to the step that calls `cargo run -p xtask_codegen --features global_types -- global-types --verify`.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-rtk-tail-v3/biome-pnpm-not-found-v2-001.txt",
+    "context_tokens_estimate": 98701
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 348
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 19688.648,
+    "cache_key": "fa28f92f0a2f02e2b88cc79582ff763352e0b0f5c448c06e3d7d1e1ca51d18cd",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because mypy (and pyright) reported that numerous functions and attributes from the `pyarrow.compute` module are not recognized — e.g., `is_null`, `if_else`, `utf8_lower`, `equal`, `add`, etc. — across multiple pandas source files. This indicates that the installed version of pyarrow's type stubs no longer expose these symbols, causing 279 mypy errors and 73 pyright errors. The stubtest hook was also blocked from running due to these same mypy build errors.",
+  "root_cause_category": "type_error",
+  "root_cause": "The installed pyarrow package's type stubs do not export or define the `compute` module attributes (e.g., `is_null`, `if_else`, `utf8_lower`, `equal`, `add`, and hundreds of others) that pandas source files reference directly via `pyarrow.compute`. This causes widespread `Module has no attribute` errors in both mypy and pyright across files like `pandas/core/arrays/arrow/array.py`, `pandas/core/arrays/_arrow_string_mixins.py`, `pandas/compat/pyarrow.py`, and others.",
+  "confidence": 0.93,
+  "relevant_files": [
+    "pandas/compat/pyarrow.py",
+    "pandas/core/arrays/_arrow_string_mixins.py",
+    "pandas/core/arrays/arrow/array.py",
+    "pandas/core/arrays/arrow/accessors.py",
+    "pandas/core/arrays/arrow/extension_types.py",
+    "pandas/core/arrays/datetimes.py",
+    "pandas/core/arrays/string_arrow.py",
+    "pandas/core/strings/accessor.py",
+    "pandas/io/feather_format.py",
+    "pandas/io/orc.py",
+    "pandas/io/parquet.py",
+    "pandas/tests/reshape/test_get_dummies.py"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "pandas/compat/pyarrow.py:76: error: Module has no attribute \"is_null\"  [attr-defined]",
+      "reason": "mypy cannot find `is_null` on the `pyarrow.compute` module, indicating the stubs don't expose this attribute"
+    },
+    {
+      "quote": "Found 279 errors in 9 files (checked 1458 source files)",
+      "reason": "mypy reports 279 type errors across 9 files, all caused by missing pyarrow.compute attributes"
+    },
+    {
+      "quote": "mypy.....................................................................[41mFailed[m\n- hook id: mypy\n- duration: 108.37s\n- exit code: 1",
+      "reason": "The mypy pre-commit hook explicitly failed with exit code 1, causing the CI job to fail"
+    },
+    {
+      "quote": "\"Expression\" is not exported from module \"pyarrow.compute\"  (reportPrivateImportUsage)",
+      "reason": "pyright also reports pyarrow.compute symbols as not exported/accessible, confirming the stubs issue affects both type checkers"
+    },
+    {
+      "quote": "error: not checking stubs due to mypy build errors:",
+      "reason": "The stubtest hook was also blocked by the same mypy errors, showing cascading failures from the pyarrow typing issue"
+    },
+    {
+      "quote": "pandas/core/arrays/arrow/array.py:101: error: Module has no attribute \"equal\"  [attr-defined]",
+      "reason": "Even very basic pyarrow.compute functions like `equal` are not found, suggesting the entire compute module's type stubs are missing or incompatible"
+    }
+  ],
+  "suggested_fix": "Update or pin the pyarrow type stubs (e.g., `pyarrow-stubs` or the stubs bundled with pyarrow) to a version that fully exposes `pyarrow.compute` attributes. Alternatively, add `# type: ignore[attr-defined]` or use `getattr`-based access with proper type annotations for the affected pyarrow.compute calls, or add the missing attributes to pandas' own pyarrow stub overrides.",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-120k-rtk-tail-v3/mypy-pandas-001.txt",
+    "context_tokens_estimate": 27293
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 821
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 25692.947,
+    "cache_key": "be76af986c059f97ac198795ea0ca0b6df3117b92bae36e88833a9c5aae449fa",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}
