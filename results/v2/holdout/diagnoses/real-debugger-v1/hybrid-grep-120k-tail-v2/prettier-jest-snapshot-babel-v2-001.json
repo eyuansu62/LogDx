@@ -1,0 +1,56 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest snapshot tests are failing due to Babel parser producing different error messages than the stored snapshots. Multiple test files show mismatched error message formats and positions from Babel (e.g., import() validation errors, TypeScript declaration errors).",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Babel parser has changed error message output format, causing snapshot mismatches in error handling tests. Expected snapshots contain old error messages (e.g., 'Unexpected token', 'Cannot use new with import(...)'), but received error messages are different (e.g., '`import()` requires exactly one or two arguments', 'Cannot use new with import()').",
+  "confidence": 0.85,
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js"
+  ],
+  "relevant_tests": [
+    "snippet: #0 > format[babel]",
+    "snippet: #0 > format[babel-flow]",
+    "snippet: #0 > format[babel-ts]",
+    "constructorOverloadsWithDefaultValues.ts > format[babel-ts]"
+  ],
+  "evidence": [
+    {
+      "quote": "Error: expect(received).rejects.toThrowErrorMatchingSnapshot()",
+      "reason": "Indicates Jest snapshot assertion failure, core test failure mechanism"
+    },
+    {
+      "quote": "- Snapshot  - 3\n+ Received  + 3\n\n- Unexpected token (1:8)\n+ `import()` requires exactly one or two arguments. (1:1)",
+      "reason": "Shows Babel error message changed from 'Unexpected token' to a more specific validation error message"
+    },
+    {
+      "quote": "- Cannot use new with import(...). (1:5)\n+ Cannot use new with import(). (1:5)",
+      "reason": "Demonstrates Babel error message formatting change, removing ellipsis from import(...)"
+    },
+    {
+      "quote": "Snapshot Summary\n › 13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "Confirms snapshot mismatch is the failure mechanism; suggests `-u` flag to update snapshots"
+    }
+  ],
+  "suggested_fix": "Update Jest snapshots by running `yarn test -u` or `jest -u` to regenerate snapshots with current Babel parser output, or verify that Babel dependency version change is intentional.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-tail-v2/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 20980
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 554
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 26113.741,
+    "cache_key": "03b08843fb145e2a34304bc7e3bcd42b471ce4bb33af96939bcfe189d65118a3",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

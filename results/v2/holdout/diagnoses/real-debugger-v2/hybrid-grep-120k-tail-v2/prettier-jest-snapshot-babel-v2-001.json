@@ -1,0 +1,71 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest snapshot tests failed because the Babel parser emits different error messages than what the stored snapshots expect. The received error messages for invalid import() calls and other constructs differ in wording and column positions from the snapshots, indicating a Babel version change altered parser error output.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Stored Jest snapshots for Babel parser error messages no longer match the errors produced by the installed version of Babel. For invalid import() syntax, the parser now emits '`import()` requires exactly one or two arguments.' instead of 'Unexpected token', and 'Cannot use new with import().' instead of 'Cannot use new with import(...).' Column positions in errors also shifted. A similar mismatch occurs for babel-ts snapshots in the declare-function-with-body and constructorParameters tests.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js",
+    "tests/config/format-test/test-format.js"
+  ],
+  "relevant_tests": [
+    "snippet: #0 > format[babel]",
+    "snippet: #0 > format[babel-flow]",
+    "snippet: #0 > format[babel-ts]",
+    "snippet: #1 > format[babel]",
+    "snippet: #1 > format[babel-flow]",
+    "snippet: #1 > format[babel-ts]",
+    "snippet: #2 > format[babel]",
+    "snippet: #2 > format[babel-flow]",
+    "snippet: #2 > format[babel-ts]",
+    "snippet: #3 > format[babel]",
+    "snippet: #3 > format[babel-flow]",
+    "snippet: #3 > format[babel-ts]",
+    "constructorOverloadsWithDefaultValues.ts > format[babel-ts]",
+    "snippet: #0 > format[babel-ts]"
+  ],
+  "evidence": [
+    {
+      "quote": "- Unexpected token (1:8)\n     + `import()` requires exactly one or two arguments. (1:1)",
+      "reason": "Shows the snapshot expected 'Unexpected token' but the Babel parser now emits a different, more specific error message for the same input, indicating a Babel version change."
+    },
+    {
+      "quote": "- Cannot use new with import(...). (1:5)\n     + Cannot use new with import(). (1:5)",
+      "reason": "The error message text itself changed — '...' was removed from 'import(...)' — confirming the Babel parser wording changed between the snapshot baseline and the current installed version."
+    },
+    {
+      "quote": "- An implementation cannot be declared in ambient contexts. (1:1)\n     + An implementation cannot be declared in ambient contexts. (1:24)",
+      "reason": "Same error message text but different column number, showing the Babel parser now points to a different token position than what the snapshot recorded."
+    },
+    {
+      "quote": "13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "Jest's own summary confirms the failures are snapshot mismatches and suggests updating snapshots, consistent with a dependency version change rather than a test logic error."
+    },
+    {
+      "quote": "SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)",
+      "reason": "For the constructorParameters test, the babel-ts parser now throws an unexpected SyntaxError instead of formatting normally or matching a snapshot, indicating changed parser behavior."
+    }
+  ],
+  "suggested_fix": "Update the outdated Jest snapshots by running jest with the `-u` flag (e.g., `yarn test --updateSnapshot` or `jest -u`) for the three failing test suites, then commit the updated snapshot files. Before doing so, confirm the new Babel error messages and column positions are correct for the test inputs.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-tail-v2/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 20980
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 900
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 30686.42,
+    "cache_key": "be56006e78f94d4aa383c3b4a1dd1cbc7a869cc6a29721da18744e3580591c91",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

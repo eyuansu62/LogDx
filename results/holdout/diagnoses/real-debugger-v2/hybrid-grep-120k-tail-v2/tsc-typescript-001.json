@@ -1,0 +1,54 @@
+{
+  "case_id": "tsc-typescript-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "A fourslash test assertion failed because the actual code fix suggestion did not match the expected string. The test expected a return type annotation of 'Foo<string, string[…' but the code produced 'Foo<string>' instead, causing the test runner to exit with code 1.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The fourslash test 'codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts' failed with an AssertionError because the generated code fix return type 'Foo<string>' did not match the expected return type 'Foo<string, string[…'",
+  "confidence": 0.95,
+  "relevant_files": [
+    "tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts",
+    "src/harness/fourslashImpl.ts",
+    "src/harness/fourslashInterfaceImpl.ts",
+    "src/testRunner/fourslashRunner.ts"
+  ],
+  "relevant_tests": [
+    "fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts runs correctly"
+  ],
+  "evidence": [
+    {
+      "quote": "AssertionError: expected 'Add return type \\'Foo<string>\\'' to equal 'Add return type \\'Foo<string, string[…'",
+      "reason": "This is the direct assertion failure showing the mismatch between the actual code fix output ('Foo<string>') and the expected value ('Foo<string, string[…')"
+    },
+    {
+      "quote": "at _TestState.verifyCodeFix (src/harness/fourslashImpl.ts:3435:20)",
+      "reason": "Confirms the failure occurred in the verifyCodeFix method, which checks that code fix suggestions match expected output"
+    },
+    {
+      "quote": "Error in do-runtests-parallel in 10m 38.9s\nError: Process exited with code: 1",
+      "reason": "Confirms the test run terminated with a non-zero exit code due to the test failure"
+    },
+    {
+      "quote": "Failed tasks: do-runtests-parallel",
+      "reason": "Confirms the parallel test runner task failed, leading to the overall CI job failure"
+    }
+  ],
+  "suggested_fix": "Update the expected return type annotation in 'tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts' to match the actual output 'Foo<string>', or fix the code fix logic so it produces the full generic signature 'Foo<string, string[…' as originally expected.",
+  "input": {
+    "context_path": "results/holdout/hybrid-grep-120k-tail-v2/tsc-typescript-001.txt",
+    "context_tokens_estimate": 952
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 532
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 18489.682,
+    "cache_key": "f7ed6bf9107288c593bd0c591cda075494a835d6a077850584321c2202ab67e5",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

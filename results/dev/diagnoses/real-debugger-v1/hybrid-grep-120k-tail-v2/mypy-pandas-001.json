@@ -1,0 +1,61 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Type checkers (pyright and mypy) failed with 69+ errors across multiple files. Most errors are about missing or non-exported attributes from the pyarrow.compute and pyarrow.fs modules (e.g., 'is_null', 'if_else', 'utf8_lower' are not recognized as attributes).",
+  "root_cause_category": "type_error",
+  "root_cause": "PyArrow functions and classes accessed by pandas code are not recognized by type checkers. Specifically, many compute functions like 'is_null', 'if_else', 'utf8_lower', 'utf8_upper', 'list_value_length', 'struct_field', and 'FileSystem' are reported as either non-exported or missing attributes of their respective pyarrow modules.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "pandas/compat/pyarrow.py",
+    "pandas/core/arrays/_arrow_string_mixins.py",
+    "pandas/core/arrays/arrow/accessors.py",
+    "pandas/core/arrays/arrow/array.py",
+    "pandas/core/arrays/arrow/extension_types.py",
+    "pandas/io/orc.py",
+    "pandas/io/parquet.py",
+    "pandas/core/arrays/string_arrow.py",
+    "pandas/core/strings/accessor.py"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "\"Expression\" is not exported from module \"pyarrow.compute\"",
+      "reason": "Indicates that pyarrow.compute.Expression is not recognized in the type stubs or is private/unavailable"
+    },
+    {
+      "quote": "\"FileSystem\" is not exported from module \"pyarrow.fs\"",
+      "reason": "Shows type stubs are not recognizing FileSystem from pyarrow.fs"
+    },
+    {
+      "quote": "Module has no attribute \"is_null\"  [attr-defined]",
+      "reason": "Both mypy and pyright report that pyarrow.compute.is_null is not recognized as an available attribute"
+    },
+    {
+      "quote": "pyright reportGeneralTypeIssues..........................................[41mFailed[m\n[2m- hook id: pyright[m\n[2m- exit code: 1[m\n\n69 errors, 0 warnings, 0 informations",
+      "reason": "Multiple type checkers (pyright and mypy) are failing with the same pyarrow attribute errors, not linting or compilation issues"
+    },
+    {
+      "quote": "mypy.....................................................................[41mFailed[m\n[2m- hook id: mypy[m\n[2m- duration: 108.37s[m\n[2m- exit code: 1[m\n\nFound 279 errors in 9 files",
+      "reason": "Mypy independently confirms extensive type-checking failures across the same files and modules"
+    }
+  ],
+  "suggested_fix": "Verify PyArrow version compatibility and type stubs. Check if pandas requires a specific PyArrow version or if pyarrow type stubs need updating to include the compute functions being used (is_null, if_else, utf8_lower, utf8_upper, list_value_length, struct_field, etc.).",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-120k-tail-v2/mypy-pandas-001.txt",
+    "context_tokens_estimate": 27292
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 626
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 29108.234,
+    "cache_key": "6955d5dc4aa20d59f8ec377981c1a0738963cbb03561f4fb289a345d63fcdea9",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

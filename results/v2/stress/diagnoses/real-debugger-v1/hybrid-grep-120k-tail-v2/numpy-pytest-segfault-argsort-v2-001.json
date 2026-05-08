@@ -1,0 +1,52 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Segmentation fault in numpy's argsort function when processing datetime arrays with NaT (Not-a-Time) values during a stability test.",
+  "root_cause_category": "other",
+  "root_cause": "Segmentation fault in argsort function at numpy/_core/fromnumeric.py line 1231, triggered by test_datetime_nat_argsort_stability test when sorting datetime arrays containing NaT values.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "numpy/_core/fromnumeric.py",
+    "numpy/_core/tests/test_datetime.py"
+  ],
+  "relevant_tests": [
+    "test_datetime_nat_argsort_stability"
+  ],
+  "evidence": [
+    {
+      "quote": "Fatal Python error: Segmentation fault",
+      "reason": "Direct indication that the process crashed due to a segmentation fault rather than a test assertion failure or build error."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 1231 in argsort",
+      "reason": "Identifies argsort function as the exact location of the segmentation fault."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
+      "reason": "Identifies the specific test that triggered the crash, which involves datetime arrays and argsort stability."
+    },
+    {
+      "quote": "Process completed with exit code 245",
+      "reason": "Exit code 245 indicates abnormal process termination due to signal 139 (128 + 11), which is SIGSEGV (segmentation fault)."
+    }
+  ],
+  "suggested_fix": "Investigate the argsort implementation for handling datetime arrays with NaT values. The crash likely involves a bounds check or memory access issue in the sorting algorithm when processing NaT sentinel values. Review recent changes to argsort or datetime handling code.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-120k-tail-v2/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 28055
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 444
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 25178.571,
+    "cache_key": "d8e96999c5ae0076438f031c2c03ef17644d4b32c82b059aba96c74391417a84",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

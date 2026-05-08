@@ -1,0 +1,51 @@
+{
+  "case_id": "biome-pnpm-not-found-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed during the `gen-all` recipe after running `rustfmt`. The `format` sub-recipe invoked `pnpm format`, but `pnpm` is not installed on the runner, causing a command-not-found exit with code 127.",
+  "root_cause_category": "other",
+  "root_cause": "The `pnpm` package manager is not available on the runner (`sh: 1: pnpm: not found`), so the `format` recipe (called from `gen-all`) failed with exit code 127.",
+  "confidence": 0.97,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "pnpm format",
+      "reason": "The Justfile recipe attempted to run `pnpm format` as part of code generation/verification."
+    },
+    {
+      "quote": "sh: 1: pnpm: not found",
+      "reason": "The shell reported that pnpm is not installed on the runner, causing the command to fail."
+    },
+    {
+      "quote": "error: Recipe `format` failed on line 221 with exit code 127",
+      "reason": "The `format` recipe exited with code 127 (command not found) due to the missing pnpm binary."
+    },
+    {
+      "quote": "error: Recipe `gen-all` failed on line 32 with exit code 127",
+      "reason": "The parent `gen-all` recipe also failed because its sub-recipe `format` failed."
+    },
+    {
+      "quote": "Process completed with exit code 127",
+      "reason": "GitHub Actions marked the step as failed with exit code 127, confirming the root cause is the missing `pnpm` binary."
+    }
+  ],
+  "suggested_fix": "Install `pnpm` on the runner before executing the `gen-all` / `format` recipe, e.g., add a step `npm install -g pnpm` (or use the `pnpm/action-setup` action) prior to running `cargo run -p xtask_codegen --features global_types -- global-types --verify`.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-tail-v2/biome-pnpm-not-found-v2-001.txt",
+    "context_tokens_estimate": 98700
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 397
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 22416.27,
+    "cache_key": "cde8425100b23b5abbff19b663b7bff386f44af2223526500b3a5c66f3ad6207",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

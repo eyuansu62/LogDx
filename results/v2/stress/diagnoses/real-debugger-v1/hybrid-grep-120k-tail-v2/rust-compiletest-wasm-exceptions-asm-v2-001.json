@@ -1,0 +1,55 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "An assembly comparison test for WebAssembly exception handling failed because the generated WASM assembly does not match the expected output. The test `tests/assembly-llvm/wasm_exceptions.rs` for target `wasm32-wasip1` showed a diff mismatch in the `.text.test_rtry` section assembly code.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The generated WASM assembly output does not match the expected assembly in the test expectation file. The diff marker `>>>>>>` at line 133 indicates a mismatch in the assembly code after line `.section .text.test_rtry,\"\",@`.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "relevant_tests": [
+    "[assembly] tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "failures:\n    [assembly] tests/assembly-llvm/wasm_exceptions.rs",
+      "reason": "Explicitly identifies the failing test file"
+    },
+    {
+      "quote": "test result: FAILED. 550 passed; 1 failed; 103 ignored; 0 measured; 0 filtered out",
+      "reason": "Confirms a single test assertion failure in the assembly-llvm test suite"
+    },
+    {
+      "quote": ">>>>>>",
+      "reason": "Diff conflict marker indicating mismatch between expected and actual assembly output"
+    },
+    {
+      "quote": "Some tests failed in compiletest suite=assembly-llvm mode=assembly host=x86_64-unknown-linux-gnu target=wasm32-wasip1",
+      "reason": "Confirms the test is an assembly comparison test for the wasm32-wasip1 target"
+    },
+    {
+      "quote": ".section .text.test_rtry,\"\",@",
+      "reason": "The assembly section where the mismatch occurs, immediately before the diff marker"
+    }
+  ],
+  "suggested_fix": "Verify whether recent changes to the Rust compiler's WASM codegen for exception handling are intentional. If the changes are correct, update the expected assembly output in tests/assembly-llvm/wasm_exceptions.rs to match the new generated assembly.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-120k-tail-v2/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 3961
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 458
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 21775.941,
+    "cache_key": "2320169600a7ad64a187e014fce4b3053e1ed08bd453c9f92e364b170e129217",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "case_id": "pip-pytest-network-github-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Functional test failed due to GitHub returning repeated 502 Bad Gateway errors when attempting to download a test package, causing HTTP connection pool to exhaust retries.",
+  "root_cause_category": "network_or_flaky",
+  "root_cause": "HTTPSConnectionPool to github.com exhausted retries after receiving multiple 502 error responses while attempting to fetch https://github.com/pypa/pip-test-package/archive/refs/heads/master.zip",
+  "confidence": 0.95,
+  "relevant_files": [
+    "tests/functional/test_truststore.py"
+  ],
+  "relevant_tests": [
+    "tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]"
+  ],
+  "evidence": [
+    {
+      "quote": "HTTPSConnectionPool(host='github.com', port=443): Max retries exceeded with url: /pypa/pip-test-package/archive/refs/heads/master.zip (Caused by ResponseError('too many 502 error responses'))",
+      "reason": "Direct error message explicitly indicating network failure due to 502 responses from GitHub"
+    },
+    {
+      "quote": "ERROR: Could not install packages due to an OSError",
+      "reason": "pip install command failed with OSError caused by network connectivity issue"
+    },
+    {
+      "quote": "[gw1]^[[36m [ 99%] ^[[0m^[[31mFAILED^[[0m tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]",
+      "reason": "Only 1 of 1148 functional tests failed, indicating isolated transient issue rather than code defect"
+    },
+    {
+      "quote": "@pytest.mark.network",
+      "reason": "Test explicitly marked as network test, confirming network connectivity is required and subject to transient failures"
+    }
+  ],
+  "suggested_fix": "Retry the test; this is a transient GitHub infrastructure issue. If failures persist, verify GitHub status and network connectivity.",
+  "input": {
+    "context_path": "results/v2/dev/hybrid-grep-120k-tail-v2/pip-pytest-network-github-v2-001.txt",
+    "context_tokens_estimate": 50906
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 416
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 26181.534,
+    "cache_key": "2f4dcad3a59ca4287cc8a917a74118e6aa093226caab3a14fe872bac3bfac1a1",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

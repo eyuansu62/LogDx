@@ -1,0 +1,55 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The compiletest assembly test `tests/assembly-llvm/wasm_exceptions.rs` failed when targeting `wasm32-wasip1`. The generated assembly output did not match the expected CHECK patterns, causing 1 test failure out of 551. This caused the bootstrap build to exit with a non-zero status.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The assembly output for `tests/assembly-llvm/wasm_exceptions.rs` did not match the expected FileCheck patterns when compiled for the `wasm32-wasip1` target. The CHECK directives in the test file were not satisfied by the actual assembly emitted by the compiler.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "relevant_tests": [
+    "[assembly] tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "failures:\n    [assembly] tests/assembly-llvm/wasm_exceptions.rs",
+      "reason": "Explicitly names the single failing test as the assembly check test for wasm_exceptions."
+    },
+    {
+      "quote": "test result: FAILED. 550 passed; 1 failed; 103 ignored; 0 measured; 0 filtered out; finished in 15.38s",
+      "reason": "Confirms exactly one test failed in the assembly-llvm suite."
+    },
+    {
+      "quote": "Some tests failed in compiletest suite=assembly-llvm mode=assembly host=x86_64-unknown-linux-gnu target=wasm32-wasip1",
+      "reason": "Identifies the suite (assembly-llvm), mode (assembly), and target (wasm32-wasip1) where the failure occurred."
+    },
+    {
+      "quote": "Bootstrap failed while executing `--stage 2 test --host= --target wasm32-wasip1 tests/run-make tests/run-make-cargo tests/ui tests/mir-opt tests/codegen-units tests/codegen-llvm tests/assembly-llvm library/core`",
+      "reason": "Shows the overall bootstrap failure was triggered by the failing test suite, propagating as exit code 1."
+    },
+    {
+      "quote": ">>>>>>",
+      "reason": "This marker in compiletest output indicates a CHECK pattern mismatch — the expected pattern was not found in the actual assembly output."
+    }
+  ],
+  "suggested_fix": "Inspect the actual assembly output for `tests/assembly-llvm/wasm_exceptions.rs` on the `wasm32-wasip1` target and update the CHECK directives in the test file to match the current compiler output, or fix the code-generation regression that caused the assembly to diverge from the expected patterns.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-120k-tail-v2/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 3961
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 562
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 22653.764,
+    "cache_key": "a2f7dd5367be55190891047768748edb1db03f85a44c21493a92cd403c0a914f",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

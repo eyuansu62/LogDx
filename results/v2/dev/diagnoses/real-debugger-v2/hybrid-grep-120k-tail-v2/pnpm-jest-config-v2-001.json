@@ -1,0 +1,55 @@
+{
+  "case_id": "pnpm-jest-config-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "One Jest test suite failed in the pnpm package's test run, causing the overall CI job to exit with code 1. The failure occurred in test/config/get.ts, which produced an assertion error at line 32. The recursive pnpm test runner then reported the failure and propagated exit code 1.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "A test in test/config/get.ts failed at line 32 (an Object.<anonymous> assertion), causing 1 test suite to fail out of 65 total, which in turn caused the jest process to exit with status 1 and the pnpm recursive test run to fail.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "test/config/get.ts"
+  ],
+  "relevant_tests": [
+    "test/config/get.ts"
+  ],
+  "evidence": [
+    {
+      "quote": "Test Suites: 1 failed, 3 skipped, 61 passed, 62 of 65 total",
+      "reason": "Confirms exactly one test suite failed out of the 65 total, which triggered the overall job failure."
+    },
+    {
+      "quote": "Tests:       1 failed, 9 skipped, 475 passed, 485 total",
+      "reason": "Confirms exactly one individual test case failed, consistent with a single assertion error."
+    },
+    {
+      "quote": "at Object.<anonymous> (test/config/get.ts:32:38)",
+      "reason": "Identifies the specific file and line number where the failing assertion occurred."
+    },
+    {
+      "quote": "[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] pnpm@11.0.6 .test: `cross-env NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules --disable-warning=ExperimentalWarning --disable-warning=DEP0169\" jest`\nExit status 1",
+      "reason": "Shows that the jest process exited with status 1 due to the test failure, causing the pnpm recursive runner to fail and the CI job to exit with code 1."
+    },
+    {
+      "quote": "[ELIFECYCLE] Command failed with exit code 1.",
+      "reason": "The pnpm lifecycle command failure confirms the non-zero exit propagated up to the CI job level."
+    }
+  ],
+  "suggested_fix": "Investigate the failing assertion at test/config/get.ts:32 — reproduce locally with `jest test/config/get.ts` and fix the test expectation or the underlying code behaviour that the test checks.",
+  "input": {
+    "context_path": "results/v2/dev/hybrid-grep-120k-tail-v2/pnpm-jest-config-v2-001.txt",
+    "context_tokens_estimate": 15325
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 499
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 22927.805,
+    "cache_key": "cfc21709f5d6575927464f123d714c4b79c9f2e793684eb1d2dfbc2a3cccbf96",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

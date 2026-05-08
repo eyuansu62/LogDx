@@ -1,0 +1,56 @@
+{
+  "case_id": "cpython-tcl-windows-matrix-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because two tests in test_tcl produced assertion errors: the _tkinter module returned surrogate-pair strings where the tests expected a single combined Unicode character. The build itself completed successfully with 0 errors.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "test_eval_surrogates_in_result and test_evalfile_surrogates_in_result both fail because tcl.eval() returns '<\\ud83d\\udcbb>' (a surrogate pair) instead of the expected '<\\U0001f4bb>' (the combined emoji). This mismatch is consistent with Tcl 9.0 (patchlevel = 9.0.3) changing surrogate-pair handling compared to Tcl 8.x: Tcl 9.0 treats strings as proper UTF-8, so the surrogate pair the test inserts is no longer round-tripped back as surrogates but instead comes back as the combined code point, which Python's _tkinter then represents differently.",
+  "confidence": 0.93,
+  "relevant_files": [
+    "D:\\a\\cpython\\cpython\\Lib\\test\\test_tcl.py"
+  ],
+  "relevant_tests": [
+    "test.test_tcl.TclTest.test_eval_surrogates_in_result",
+    "test.test_tcl.TclTest.test_evalfile_surrogates_in_result"
+  ],
+  "evidence": [
+    {
+      "quote": "test_eval_surrogates_in_result (test.test_tcl.TclTest.test_eval_surrogates_in_result) ... FAIL",
+      "reason": "Confirms which specific test failed."
+    },
+    {
+      "quote": "self.assertEqual(tcl.eval(r'set a \"<\\ud83d\\udcbb>\"'), '<\\U0001f4bb>')",
+      "reason": "Shows the assertion: the test expects the surrogate pair to be recombined into U+1F4BB."
+    },
+    {
+      "quote": "AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ'»>'",
+      "reason": "tcl.eval() returned the surrogate pair unchanged, not the combined character; '<ðŸ'»>' is U+1F4BB rendered in latin-1 bytes, matching the expected value."
+    },
+    {
+      "quote": "patchlevel = 9.0.3",
+      "reason": "Identifies Tcl 9.0.3 as the runtime, a version known to change surrogate-pair handling to strict UTF-8, which alters the round-trip behavior the tests rely on."
+    },
+    {
+      "quote": "1 test failed:\n    test_tcl",
+      "reason": "Confirms test_tcl is the sole test failure that caused the overall job to fail."
+    }
+  ],
+  "suggested_fix": "Update test_eval_surrogates_in_result and test_evalfile_surrogates_in_result in Lib/test/test_tcl.py to account for Tcl 9.0's changed surrogate-pair behavior, or version-gate the expected value based on the Tcl patchlevel (e.g., expect '<\\U0001f4bb>' for Tcl 9.x and '<\\ud83d\\udcbb>' for Tcl 8.x).",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-120k-tail-v2/cpython-tcl-windows-matrix-v2-001.txt",
+    "context_tokens_estimate": 73559
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 588
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 44641.916,
+    "cache_key": "77d5feecae4434bb7a2ce8cd12fe950e221a7fe77957543f9a834132a53c8fbe",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

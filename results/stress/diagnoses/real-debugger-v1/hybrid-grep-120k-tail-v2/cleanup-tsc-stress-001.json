@@ -1,0 +1,43 @@
+{
+  "case_id": "cleanup-tsc-stress-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The cleanup artifacts job failed when GitHub CLI (gh) attempted to delete artifacts, receiving an HTTP 403 Forbidden response indicating insufficient permissions.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GitHub Actions integration token lacks sufficient permissions to delete artifacts. The gh CLI command failed with 'Resource not accessible by integration (HTTP 403)'.",
+  "confidence": 0.85,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "Explicit HTTP 403 Forbidden error from GitHub CLI, indicating authorization failure on artifact deletion"
+    },
+    {
+      "quote": "Deleting artifacts for run ID: 24823635328",
+      "reason": "Shows the gh command was attempting artifact deletion before the permission error occurred"
+    },
+    {
+      "quote": "Process completed with exit code 1",
+      "reason": "Confirms the gh command failed and caused the job to exit with error status"
+    }
+  ],
+  "suggested_fix": "Add explicit 'permissions' configuration to the workflow or job to grant the token sufficient permissions for artifact deletion, or verify that the GitHub Actions token has the required 'actions:write' or equivalent scope for artifact management.",
+  "input": {
+    "context_path": "results/stress/hybrid-grep-120k-tail-v2/cleanup-tsc-stress-001.txt",
+    "context_tokens_estimate": 127
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 311
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 22493.268,
+    "cache_key": "e106821dc0b0e0f6e1aca08368294667e5acf3a8c74148f60611aa74627472d2",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

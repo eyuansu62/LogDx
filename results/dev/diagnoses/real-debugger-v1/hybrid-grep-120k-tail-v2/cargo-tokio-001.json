@@ -1,0 +1,55 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The compile_fail_full test in tests-build::macros failed because actual Rust compiler error messages don't match expected compiler error messages. The actual output includes additional E0271 errors about async block return type mismatches that aren't in the expected reference output.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The trybuild test comparing compiler diagnostic output failed. The actual compiler output contains additional `error[E0271]` messages about async blocks not resolving to expected future types, which are not present in the expected error output stored in the reference file. This indicates the Rust compiler's error reporting for async functions or the tokio macros' error diagnostics have changed.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "tests/fail/macros_type_mismatch.rs"
+  ],
+  "relevant_tests": [
+    "tests-build::macros::compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "1 of 10 tests failed",
+      "reason": "Indicates exactly one test in the trybuild suite failed"
+    },
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
+      "reason": "E0271 errors appear in actual output but not in expected output section"
+    },
+    {
+      "quote": "panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13: 1 of 10 tests failed",
+      "reason": "Confirms trybuild's error output comparison failed"
+    },
+    {
+      "quote": "= note: this error originates in the attribute macro `tokio::main`",
+      "reason": "Shows errors are related to tokio::main macro error diagnostics"
+    },
+    {
+      "quote": "EXPECTED:\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\nerror[E0308]: mismatched types\n...ACTUAL OUTPUT:\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\nerror[E0271]",
+      "reason": "Direct comparison shows expected output does not include E0271 errors that actual compiler produced"
+    }
+  ],
+  "suggested_fix": "Update the expected compiler error output for tests/fail/macros_type_mismatch.rs to include the new E0271 error messages about async block return types. Run the test with the trybuild library's `wasm` or `overwrite` mode to regenerate the expected output, or manually update the reference file to match the actual compiler diagnostic output.",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-120k-tail-v2/cargo-tokio-001.txt",
+    "context_tokens_estimate": 43412
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 584
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 33763.136,
+    "cache_key": "90d09a2388ad4fc22aa5b8a26f386165a87d48ff48fab4c0d8ba5e8adf880ccb",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}

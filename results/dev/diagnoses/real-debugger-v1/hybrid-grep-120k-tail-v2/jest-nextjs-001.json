@@ -1,0 +1,73 @@
+{
+  "case_id": "jest-nextjs-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "All example test suites (Jest, Vitest, Mocha) failed to generate results files after git reported a dubious ownership error in the repository. Tests ran but produced no output, suggesting a permissions or git-related infrastructure issue prevented test execution.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "Git detected dubious ownership of the `/work` repository directory, which may have prevented test runners from executing or accessing git-dependent build artifacts needed for test execution. The error 'fatal: detected dubious ownership in repository at '/work'' appeared before test failures, followed by all test suites failing with code 1 and producing no `.results.json` files.",
+  "confidence": 0.75,
+  "relevant_files": [
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest-babel/__tests__/index.test.tsx",
+    "examples/with-vitest/__tests__/Home.test.tsx",
+    "examples/with-mocha/test/index.test.js",
+    "examples/with-typescript-graphql/test/index.test.tsx",
+    "examples/with-zones/home/test/next-config.test.ts"
+  ],
+  "relevant_tests": [
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest-babel/__tests__/index.test.tsx",
+    "examples/with-jest/app/blog/[slug]/page.test.tsx",
+    "examples/with-jest/app/counter.test.tsx",
+    "examples/with-jest/app/utils/add.test.ts",
+    "examples/with-jest/app/page.test.tsx",
+    "examples/with-mocha/test/index.test.js",
+    "examples/with-typescript-graphql/test/index.test.tsx",
+    "examples/with-vitest/__tests__/Home.test.tsx",
+    "examples/with-vitest/app/blog/[slug]/page.test.tsx",
+    "examples/with-vitest/app/counter.test.tsx",
+    "examples/with-vitest/app/page.test.tsx",
+    "examples/with-vitest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts"
+  ],
+  "evidence": [
+    {
+      "quote": "fatal: detected dubious ownership in repository at '/work'",
+      "reason": "Git security check failed before tests began, indicating repository ownership/permission issue"
+    },
+    {
+      "quote": "To add an exception for this directory, call: git config --global --add safe.directory /work",
+      "reason": "Git suggests the directory has ownership or permission problems that require explicit safe directory configuration"
+    },
+    {
+      "quote": "Pattern: examples/with-jest/__tests__/index.test.tsx - 0 matches",
+      "reason": "Test runner found no test output, suggesting tests did not execute"
+    },
+    {
+      "quote": "failed due to Error: failed with code: 1",
+      "reason": "All test suites across all frameworks (Jest, Vitest, Mocha) failed with exit code 1 before producing results"
+    },
+    {
+      "quote": "Failed to load test output Error: ENOENT: no such file or directory, open 'examples/with-jest/__tests__/index.test.tsx.results.json'",
+      "reason": "Test runner expected results JSON file that was never created, indicating test execution did not complete"
+    }
+  ],
+  "suggested_fix": "Configure git safe directory for the `/work` repository by running `git config --global --add safe.directory /work` in the CI environment before running tests, or adjust file ownership/permissions of the repository directory to match the user running the tests.",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-120k-tail-v2/jest-nextjs-001.txt",
+    "context_tokens_estimate": 60313
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 766
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 29642.268,
+    "cache_key": "7f6b7f790cac2ee7fefecc3680aab127ba3bae989ef05515f2501770c2818c28",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py"
+  }
+}
