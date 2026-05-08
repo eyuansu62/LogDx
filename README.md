@@ -278,19 +278,25 @@ to let the numbers pick.
        the failure is non-failure pre-commit hook chatter from
        the ~30 OTHER hooks pre-commit keeps running. Selected
        deliberately to test the §3c tail-winner sampling caveat.
-  - **Four protocol locks now exist for v2:**
+  - **Four protocol locks exist for v2; only `cilogbench-v2-checkpoint-13`
+    validates today.** The full reference is in
+    [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md)
+    header. Quick summary:
     [`cilogbench-v2-partial`](protocols/cilogbench-v2-partial.lock.json)
-    (8 v2 cases — original Phase 3 baseline),
+    (8 v2 cases — frozen pre-v2/stress; validates today since v2/stress
+    is absent),
     [`cilogbench-v2-checkpoint`](protocols/cilogbench-v2-checkpoint.lock.json)
     + [`cilogbench-v2-checkpoint-12`](protocols/cilogbench-v2-checkpoint-12.lock.json)
-    (10/12-case checkpoints — both regenerated post-Codex-fix and
-    now resolve to the current 13-case manifest; historical eval
-    states recoverable via git), and
-    [`cilogbench-v2-checkpoint-13`](protocols/cilogbench-v2-checkpoint-13.lock.json)
-    (13 v2 cases — current canonical). All four pin 20 hashes
-    each (10 schemas + 3 prompts + 4 evaluators + 3 hybrid-baseline
-    file hashes — `validate_protocol_lock.py` fail-closes on
-    hybrid drift after the Codex-response fix in commit f370ea2).
+    (both frozen at the post-Codex-fix 12-case state with v2/stress=4
+    — fail validation now because the on-disk v2/stress manifest
+    moved to 5 cases at commit 64c7340; treat as historical snapshots),
+    and [`cilogbench-v2-checkpoint-13`](protocols/cilogbench-v2-checkpoint-13.lock.json)
+    (13 v2 cases / v2/stress=5 — **current canonical**). The
+    13-case lock includes BOTH hybrid baselines (v1
+    `hybrid-grep-4k-rtk-err-cat-v1` + the evaluation-tuned v2
+    `hybrid-grep-120k-tail-v2` added 2026-05-08 per Codex review
+    Finding 2). `validate_protocol_lock.py` fail-closes on hybrid
+    drift across all `type: hybrid_context_provider` baselines.
   - **12-case refresh surfaced two findings.** Phase 3 was re-run
     with Sonnet + Haiku on the 2 new v2/stress cases (16 calls each
     debugger). Hybrid sv1.1 stayed flat (0.4427 → 0.4353 Sonnet,
@@ -322,6 +328,23 @@ to let the numbers pick.
        [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md)
        §3d, narrative in
        [`reports/v2_split_balance.md`](reports/v2_split_balance.md).
+    3. **§3e — v2 router prototype (evaluation-tuned).** Built
+       `hybrid-grep-120k-tail-v2` (budget 4k → 120k, fallback
+       rtk-err-cat → tail) to test §3d's hypothesis. **Per Codex
+       adversarial review 2026-05-08, the threshold was
+       calibrated by reading `eval_diagnosis_*.json` outputs
+       which are produced after `evaluate_diagnosis.py` loads
+       `ground_truth.json` — so the prototype is
+       evaluation-tuned, not a clean blind generalization
+       result.** On the 13-case calibration data: Sonnet v2
+       macro 0.6801 (#1), Haiku 0.5311 (#2). Drop from v1.3 is
+       −0.11 / −0.16 vs v1's −0.34 / −0.30. The result
+       demonstrates the *direction* (a budget-recalibrated
+       grep+tail router can beat v1) but does NOT yet establish
+       generalization — that requires v3 with a train/holdout
+       split. The hybrid-v2 config declares
+       `uses_diagnosis_eval: true` to make this calibration-
+       source visible at the lock layer.
   - Phase 2 acceptance-criteria-C deliverables landed:
     [`reports/v2_corpus_summary.md`](reports/v2_corpus_summary.md),
     [`reports/v2_split_balance.md`](reports/v2_split_balance.md),

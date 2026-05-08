@@ -11,7 +11,7 @@
     "budget_tokens": 120000,
     "comparison": "<=",
     "token_field": "output_byte_size_div_4",
-    "_doc": "v2 router. Two changes vs v1 (hybrid-grep-4k-rtk-err-cat-v1): (1) budget raised from 4k to 120k tokens, sized against the abstain cliff observed empirically — at the 13-case state, Sonnet/Haiku scored grep cleanly at ≤100k tokens (airflow 0.717 at 100864, biome 0.550 at 98656) but abstained at ≥161k (rust 0.000 at 161086, nodejs 0.000 at 359459). 120k is conservative buffer. (2) Fallback switched from rtk-err-cat to tail-200, motivated by the §3c finding that rtk-err-cat ALSO collapses on density-driven contexts (320k tokens on nodejs) where tail's bounded 200-line window survives. The trade-off: tail loses on middle-signal cases, but those are exactly the cases where grep fits the 120k budget. The 13-case Phase 3 analysis (§3d) showed that no individual baseline wins across both signal positions; this router picks the right one via the budget proxy."
+    "_doc": "v2 router. Two changes vs v1 (hybrid-grep-4k-rtk-err-cat-v1): (1) budget raised from 4k to 120k tokens; (2) fallback switched from rtk-err-cat to tail-200. **The 120k threshold was tuned on the same 13-case evaluation data it is then scored against** (see anti_leakage._doc below); this config is an EVALUATION-TUNED PROTOTYPE, not a fully blind generalization result. The prototype demonstrates a hypothesis (a properly-budgeted grep+tail router beats hybrid-v1 on v2) but does not yet PROVE the hypothesis on a hold-out corpus. The corresponding §3e in reports/e10_v2_generalization_partial.md is framed accordingly: hybrid-v2 wins on the calibration data; v3 train/holdout split is required before promoting the result."
   },
 
   "fallback_behavior": {
@@ -25,8 +25,8 @@
   "anti_leakage": {
     "uses_ground_truth": false,
     "uses_signal_eval": false,
-    "uses_diagnosis_eval": false,
+    "uses_diagnosis_eval": true,
     "uses_review_labels": false,
-    "_doc": "Same anti-leakage as v1: router reads only the grep + tail manifest rows for the case (case_id, context_path, output_byte_size). The 120k budget was tuned against v2 but does NOT use ground_truth or eval_* outputs — it was set from the empirical Sonnet/Haiku abstain-vs-non-abstain boundary in eval_diagnosis_*.json output, which itself never reads ground_truth. The threshold is calibrated, not selected — it would generalize to any reasoning-budget-constrained debugger."
+    "_doc": "**`uses_diagnosis_eval` is TRUE** for this v2 router and that is a real leakage. The 120k threshold was selected by reading `results/v2/stress/eval_diagnosis_real-debugger-v[12].json` to find the empirical Sonnet/Haiku abstain cliff (between 100k and 161k tokens at the 13-case state — airflow 100k tokens scored cleanly, rust 161k abstained). Those eval files are produced by `tools/evaluate_diagnosis.py`, which loads each case's `ground_truth.json` to compute scores — so the threshold is downstream of ground-truth-aware artifacts even though the router code itself never opens ground_truth.json at runtime. The original Codex review (2026-05-08) flagged the prior version of this comment as a contradiction; this revision is the honest disclosure. The router itself remains `uses_ground_truth: false` and `uses_review_labels: false` — those properties hold for the router code's runtime behavior. The `uses_diagnosis_eval: true` declaration captures the threshold-calibration leakage at the design layer. Hybrid-v1 (4k budget) had the same calibration risk on v1.3 (see cilogbench_v1_3_limitations.md §9); this is being explicit about it for v2."
   }
 }

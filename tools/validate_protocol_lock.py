@@ -47,47 +47,53 @@ def check_hash_block(label: str, block: dict[str, dict]) -> list[str]:
     return errs
 
 
-def check_hybrid_baseline(baselines_block: dict) -> list[str]:
+def check_hybrid_baselines(baselines_block: dict) -> list[str]:
     """Verify content-addressed hybrid baseline fields still match disk.
 
-    The hybrid baseline carries config_sha256, route_schema_sha256, and
-    router_sha256 in addition to the static parameters. A change to any
-    of those files (router code, config, route schema) without
-    regenerating the lock should fail this check.
+    Each hybrid baseline (v1, v2, ...) carries config_sha256,
+    route_schema_sha256, and router_sha256 in addition to the static
+    parameters. A change to any of those files (router code, config,
+    route schema) without regenerating the lock should fail this check.
+
+    Detects all hybrid baselines in the lock by `type ==
+    "hybrid_context_provider"` so freezer can add v3+ without changes here.
     """
     errs: list[str] = []
-    HYBRID_KEY = "hybrid-grep-4k-rtk-err-cat-v1"
-    hybrid = baselines_block.get(HYBRID_KEY)
-    if hybrid is None:
-        # Older locks (pre-fix) silently omitted the hybrid block. Flag
-        # rather than fail-soft so the omission is visible.
+    hybrid_keys = [
+        k for k, v in baselines_block.items()
+        if isinstance(v, dict) and v.get("type") == "hybrid_context_provider"
+    ]
+    if not hybrid_keys:
         errs.append(
-            f"MISSING baseline block: {HYBRID_KEY} not found in lock.baselines. "
-            f"Re-freeze the protocol with the current freeze_protocol.py to add it."
+            "MISSING baseline block: no hybrid_context_provider entries found in "
+            "lock.baselines. Re-freeze the protocol with the current "
+            "freeze_protocol.py to add at least the v1 hybrid."
         )
         return errs
-    for path_key, sha_key in [
-        ("config_path",       "config_sha256"),
-        ("route_schema_path", "route_schema_sha256"),
-        ("router_path",       "router_sha256"),
-    ]:
-        rel = hybrid.get(path_key)
-        expected = hybrid.get(sha_key)
-        if rel is None or expected is None:
-            errs.append(f"MISSING {path_key}/{sha_key} in lock.baselines.{HYBRID_KEY}")
-            continue
-        path = ROOT / rel
-        if not path.exists():
-            errs.append(f"MISSING: {rel} (lock key: baselines.{HYBRID_KEY}.{path_key})")
-            continue
-        actual = sha256_path(path)
-        if actual != expected:
-            errs.append(
-                f"CHANGED: {rel}\n"
-                f"  expected sha256: {expected}\n"
-                f"  actual sha256:   {actual}\n"
-                f"  lock key: baselines.{HYBRID_KEY}.{sha_key}"
-            )
+    for hybrid_key in hybrid_keys:
+        hybrid = baselines_block[hybrid_key]
+        for path_key, sha_key in [
+            ("config_path",       "config_sha256"),
+            ("route_schema_path", "route_schema_sha256"),
+            ("router_path",       "router_sha256"),
+        ]:
+            rel = hybrid.get(path_key)
+            expected = hybrid.get(sha_key)
+            if rel is None or expected is None:
+                errs.append(f"MISSING {path_key}/{sha_key} in lock.baselines.{hybrid_key}")
+                continue
+            path = ROOT / rel
+            if not path.exists():
+                errs.append(f"MISSING: {rel} (lock key: baselines.{hybrid_key}.{path_key})")
+                continue
+            actual = sha256_path(path)
+            if actual != expected:
+                errs.append(
+                    f"CHANGED: {rel}\n"
+                    f"  expected sha256: {expected}\n"
+                    f"  actual sha256:   {actual}\n"
+                    f"  lock key: baselines.{hybrid_key}.{sha_key}"
+                )
     return errs
 
 
@@ -140,7 +146,7 @@ def main(argv: list[str] | None = None) -> int:
     errs += check_hash_block("schemas",    lock.get("schemas") or {})
     errs += check_hash_block("prompts",    lock.get("prompts") or {})
     errs += check_hash_block("evaluators", lock.get("evaluators") or {})
-    errs += check_hybrid_baseline(lock.get("baselines") or {})
+    errs += check_hybrid_baselines(lock.get("baselines") or {})
     errs += check_splits(lock.get("splits") or {})
 
     if errs:
@@ -155,8 +161,12 @@ def main(argv: list[str] | None = None) -> int:
         + len(lock.get("prompts") or {})
         + len(lock.get("evaluators") or {})
     )
-    # Count the hybrid baseline's 3 content-addressed file hashes too.
-    hybrid_hashes = 3 if lock.get("baselines", {}).get("hybrid-grep-4k-rtk-err-cat-v1") else 0
+    # Count each hybrid baseline's 3 content-addressed file hashes.
+    hybrid_baseline_count = sum(
+        1 for v in (lock.get("baselines") or {}).values()
+        if isinstance(v, dict) and v.get("type") == "hybrid_context_provider"
+    )
+    hybrid_hashes = 3 * hybrid_baseline_count
     split_cases = sum(
         int(s.get("case_count", 0)) for s in (lock.get("splits") or {}).values()
     )
