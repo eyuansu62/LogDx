@@ -119,10 +119,18 @@ def route_and_emit(
     fallback_name = config["fallback_method"]
     # v3+ optional 3-way routing: when grep doesn't fit the budget, try the
     # intermediate method (e.g. rtk-err-cat) BEFORE falling back to tail.
-    # The intermediate is used iff its manifest row has
-    # metadata.rtk_input_truncated == False (per Codex 2026-05-08-#2 [high]
-    # finding that rtk silently truncates input at 10 MiB).
+    # The intermediate is selected iff (1) its manifest row's
+    # metadata.rtk_input_truncated == False (per Codex 2026-05-08-#2 [high]:
+    # rtk silently truncates input at 10 MiB), AND (2) its own context_tokens
+    # are within `intermediate_budget_tokens` (per Codex 2026-05-09 [high]:
+    # nodejs's rtk-err-cat output was 320k tokens despite a 120k primary
+    # budget; routing there reproduced exactly the prompt-blowup the hybrid
+    # is supposed to avoid). If either gate fails, fall through to tail.
     intermediate_name = config.get("intermediate_method")
+    intermediate_budget = int(
+        (config.get("routing_rule") or {}).get("intermediate_budget_tokens")
+        or budget  # default: same as primary budget
+    )
 
     def candidate(name: str, row: dict | None) -> dict:
         if not row:
@@ -158,7 +166,15 @@ def route_and_emit(
             selected_reason = "primary_fits_budget"
         elif cand_intermediate is not None:
             # 3-way routing: try intermediate before falling back to tail.
-            if cand_intermediate["available"] and not cand_intermediate["rtk_input_truncated"]:
+            # Three gates that must ALL pass to use the intermediate:
+            #  (a) intermediate manifest row exists and provider_error is None
+            #  (b) rtk_input_truncated is False (rtk's INPUT wasn't cut)
+            #  (c) context_tokens <= intermediate_budget (rtk's OUTPUT fits)
+            # If any gate fails, fall through to fallback (tail).
+            if (cand_intermediate["available"]
+                    and not cand_intermediate["rtk_input_truncated"]
+                    and cand_intermediate["context_tokens"] is not None
+                    and cand_intermediate["context_tokens"] <= intermediate_budget):
                 selected_method = intermediate_name
                 selected_reason = "primary_too_large_used_intermediate"
             elif cand_intermediate["rtk_input_truncated"]:
@@ -166,6 +182,15 @@ def route_and_emit(
                 if cand_fallback["available"]:
                     selected_method = fallback_name
                     selected_reason = "intermediate_truncated_used_fallback"
+                else:
+                    selected_reason = "fallback_missing_provider_error"
+            elif (cand_intermediate["available"]
+                    and cand_intermediate["context_tokens"] is not None
+                    and cand_intermediate["context_tokens"] > intermediate_budget):
+                # Intermediate's OUTPUT exceeds its budget — fall through.
+                if cand_fallback["available"]:
+                    selected_method = fallback_name
+                    selected_reason = "intermediate_too_large_used_fallback"
                 else:
                     selected_reason = "fallback_missing_provider_error"
             elif cand_intermediate["provider_error"]:

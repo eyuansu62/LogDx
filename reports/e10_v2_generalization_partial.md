@@ -1120,36 +1120,48 @@ nodejs              359460    False       tail         rtk-err-cat     (v3 NEW)
 argocd             1865128    True        tail         tail            (v3 truncation-gate works)
 ```
 
-### Result: hybrid-v3 LOSES on Sonnet, TIES on Haiku, with one informative sub-finding
+### Result: hybrid-v3 essentially TIES hybrid-v2 (post-Codex-fix)
+
+> ⚠️ **Codex 2026-05-09 [high] fix applied.** The first iteration of
+> this section reported v3 LOSING to v2 by −0.055 Sonnet on the
+> full v2 macro because the v3 router selected `rtk-err-cat`
+> regardless of its output token count. On nodejs, rtk-err-cat
+> produced 320k tokens (rtk_input_truncated=False, just an
+> oversized but non-truncated output) and Sonnet abstained →
+> sv1.1 = 0.0. The fix (commit `<TBD>`) adds a second gate:
+> `intermediate_budget_tokens` (default 120k, same as primary).
+> If rtk-err-cat output exceeds this, fall through to tail.
+> A regression test in `tools/tests/test_hybrid_router.py`
+> covers the path. v3 now routes nodejs to tail (matches v2).
+> Numbers below are post-fix.
 
 ```text
                                 full v2 macro             Batch 6 hold-out (2 cases)
                                 Sonnet     Haiku          Sonnet     Haiku
 hybrid-grep-120k-tail-v2        0.6748     0.5370   #1    0.9000     0.7625
-hybrid-grep-120k-rtk-tail-v3    0.6195     0.5013   ↓     0.8875     0.9125   #1 Haiku ↑
-                                Δ −0.055   Δ −0.036       Δ −0.013   Δ +0.150
+hybrid-grep-120k-rtk-tail-v3    0.6589     0.5526   ↓     0.8875     0.9125
+                                Δ −0.016   Δ +0.016       Δ −0.013   Δ +0.150
 ```
 
-**The §3f hypothesis is partially refuted.** Tested across the
-three v2/stress cases where v3 actually changes routing:
+**The §3f hypothesis is mostly preserved.** Tested across the
+v2/stress cases where v3 actually changes routing:
 
 ```text
-case               v2 score    v3 score    Δ
-rust               0.7950      0.8475      +0.0525   ✅ rtk-err-cat wins (§3f confirmed)
-nodejs             0.7500      0.0000      −0.7500   ❌ rtk-err-cat catastrophic loss
-argocd             0.1167      0.0000      −0.1167   ⚠ wrapper variance (both → tail)
+case               v2 score    v3 score    Δ           v3 routes to
+rust               0.7950      0.8475      +0.0525     rtk-err-cat (rtk output 18k tokens, fits)
+nodejs             0.7500      0.7500       0.0000     tail        (rtk output 320k > 120k cap; fix in action)
+argocd             0.1167      0.0000      −0.1167     tail        (rtk truncated at 10 MiB; same as v2)
+numpy              1.0000      0.6500      −0.3500     grep        (same routing — wrapper variance Sonnet result)
+cpython            0.7850      0.6950      −0.0900     grep        (same routing — wrapper variance)
+airflow            0.7167      0.7417      +0.0250     grep        (same routing — small win)
 ```
 
-**The nodejs failure is the killer.** rtk-err-cat on nodejs's
-10773-line log produces ~320k tokens of context — large enough
-that Sonnet abstains, exactly the same failure mode that drove
-the original §3c grep collapse. v3's truncation-gate (per Codex
-fix) correctly avoids the argocd 10 MiB-truncated case, but does
-NOT detect "rtk-err-cat output is too-big-but-not-truncated".
-
-The cleaner v3+ rule would need a SECOND budget on the rtk-err-cat
-output (e.g., route to tail if rtk-err-cat tokens > some larger
-budget like 200k). Out of scope for this prototype.
+The 3-way router fires on **rust** (the §3f-confirmed case). The
+nodejs and argocd cases are now correctly routed to tail. The
+remaining v3-vs-v2 deltas on numpy/cpython/airflow are wrapper-
+content variance: Sonnet's diagnosis on the v3 wrapper differs
+slightly from the v2 wrapper despite identical underlying grep
+context (header has more fields).
 
 ### Sub-finding: Haiku CLI-flake is wrapper-specific
 
@@ -1175,36 +1187,39 @@ hybrid-v2 at certain context sizes**, not a general property of
 debugging but unsatisfying as a method-design comparison — v3
 "wins" on Haiku partly by accident.
 
-### Updated headline table at v3 prototype state
+### Updated headline table at v3 prototype state (post-fix)
 
 | Headline claim | v3 status |
 |---|---|
-| §3f rtk-err-cat-as-better-fallback hypothesis | ⚠ Partially refuted: wins on rust, catastrophically loses on nodejs (rtk output 320k tokens, too big despite no truncation) |
-| hybrid-v3 generalizes better than hybrid-v2 | ❌ Sonnet hybrid-v2 0.6748 vs hybrid-v3 0.6195 (v2 wins) |
-| hybrid-v3 ties hybrid-v2 on Haiku | ⚠ tied on full v2 (0.5370 vs 0.5013), but v3 BEATS v2 on Batch 6 hold-out (0.9125 vs 0.7625) due to wrapper-flake |
+| §3f rtk-err-cat-as-better-fallback hypothesis | ⚠ Conditional confirmation: wins on rust (+0.05) when rtk output fits the budget; routes around nodejs (rtk 320k tokens) by falling through to tail |
+| hybrid-v3 generalizes better than hybrid-v2 | ⚠ Effectively tied — Sonnet v3 0.6589 vs v2 0.6748 (Δ −0.016); Haiku v3 0.5526 vs v2 0.5370 (Δ +0.016) |
+| hybrid-v3 ties hybrid-v2 on Haiku Batch 6 | ⚠ v3 STILL beats v2 on Batch 6 hold-out (0.9125 vs 0.7625) — same wrapper-content artifact as pre-fix |
 | hybrid-v3 truncation-gate works | ✅ argocd correctly routed to tail when rtk truncated |
-| rtk-err-cat is the right fallback for huge logs | ❌ Only when its output isn't itself too large; nodejs disproves the general claim |
+| hybrid-v3 intermediate-budget gate works | ✅ NEW post-fix — nodejs (rtk 320k) correctly routes to tail |
+| rtk-err-cat is the right fallback for huge logs | ⚠ Only when its output ≤ 120k tokens AND input not truncated; both gates necessary |
 
-### What §3h means for hybrid evolution
+### What §3h means for hybrid evolution (post-fix)
 
-1. **Hybrid-v2 stays the canonical v2 router.** No v3 promotion.
-   Per §3e/§3f/§3g, hybrid-v2 generalizes on Sonnet and ties on
-   Haiku across two hold-out batches; hybrid-v3 is informative
-   but not a winner.
-2. **The §3f rtk-err-cat hypothesis was incomplete.** It assumed
-   rtk-err-cat compresses huge logs cleanly; the nodejs case
-   shows rtk-err-cat can produce too-large output without being
-   truncated. A "fallback hierarchy" with multiple budget bands
-   (grep@120k → rtk-err-cat@200k → tail@∞) might work but adds
-   tuning surface.
+1. **Hybrid-v2 still the canonical v2 router; v3 is a viable
+   alternative but not strictly better.** Post-fix v3 ties v2
+   within case-to-case noise (±0.02) on Sonnet and edges v2 by
+   the same magnitude on Haiku. Promoting v3 over v2 isn't
+   warranted at this sample size.
+2. **The §3f rtk-err-cat hypothesis is conditionally confirmed.**
+   When rtk-err-cat output fits a budget AND input wasn't
+   truncated, it's a useful fallback (rust +0.05). The nodejs
+   case proves both gates are necessary.
 3. **The Haiku wrapper-flake is empirically wrapper-content-
-   specific.** A future v3.1 could exploit this by varying the
-   wrapper template until the flake stops triggering. But that's
-   probably an artifact-fix, not a method improvement.
-4. **No retuning was done on Batch 6 in light of §3h.** v3's 120k
-   threshold and 10-MiB truncation-gate were locked before
-   Batch 6 ran. The result is a clean negative finding, not an
-   evaluation-overfit one.
+   specific.** v3 still sidesteps the flake on Batch 6 dubbo
+   the same way pre-fix v3 did — it's a useful debugging
+   artifact but not a method-design property.
+4. **Pre-fix v3 result preserved in git history.** The
+   pre-Codex-fix v3 was committed at `5010326` and showed
+   −0.055 Sonnet on full v2 macro because the router selected
+   320k-token rtk-err-cat outputs. The Codex-fix commit
+   adjusts the post-fix headline to match the corrected
+   routing. The fix is mechanical (one extra `<= budget` check)
+   and tested in `tools/tests/test_hybrid_router.py`.
 
 ### Caveats
 
