@@ -144,7 +144,30 @@ def route_and_emit(
         # `provider_error` may live in metadata or top-level depending on the row source.
         meta = row.get("metadata") or {}
         pe = meta.get("provider_error") or row.get("provider_error")
-        ctx_tok = chars_to_tokens(row.get("output_byte_size"))
+        # Per Codex 2026-05-09-#2 [high]: when output_byte_size is missing
+        # from a manifest row (stale or partially regenerated row), the
+        # previous code coerced None → 0 tokens via chars_to_tokens(None),
+        # which silently passed any budget gate (`0 <= 120000`). A
+        # version-skewed rtk-err-cat manifest could therefore route to
+        # rtk-err-cat with `context_tokens: 0` while the actual context
+        # file was 320k+ tokens — exactly the failure mode the budget gate
+        # is meant to block. Fail closed: if the row exists but lacks
+        # output_byte_size, treat it as provider-error so the candidate is
+        # unavailable and the router falls through to the next branch.
+        size = row.get("output_byte_size")
+        if size is None:
+            return {
+                "available": False,
+                "context_tokens": None,
+                "context_path": row.get("context_path"),
+                "provider_error": (
+                    pe or
+                    "manifest row missing output_byte_size — failing closed per "
+                    "Codex 2026-05-09-#2 [high] (cannot prove budget compliance)"
+                ),
+                "rtk_input_truncated": bool(meta.get("rtk_input_truncated", False)),
+            }
+        ctx_tok = chars_to_tokens(size)
         return {
             "available": pe is None,
             "context_tokens": ctx_tok,

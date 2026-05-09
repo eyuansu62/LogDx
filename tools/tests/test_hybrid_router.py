@@ -204,6 +204,53 @@ def test_v2_two_way_routing_unchanged():
     print("PASS test_v2_two_way_routing_unchanged")
 
 
+def test_intermediate_missing_output_byte_size_fails_closed():
+    """Per Codex 2026-05-09-#2 [high]: when intermediate manifest row
+    is missing `output_byte_size`, the previous code coerced None → 0
+    tokens and silently routed to the intermediate (passing any budget
+    gate trivially). Fix: treat missing size as provider-error so the
+    router falls through to fallback.
+
+    Repro from Codex review: a stale rtk-err-cat manifest row with no
+    output_byte_size and no provider_error was routing to rtk-err-cat
+    with context_tokens=0 even though the underlying file was over
+    budget. Post-fix: must route to tail."""
+    primary = make_row("grep", ctx_bytes=chars(160000))
+    # Synthetic intermediate row with NO output_byte_size — simulates a
+    # stale or partially regenerated rtk-err-cat manifest.
+    intermediate = {
+        "case_id": "synthetic",
+        "method": "rtk-err-cat",
+        "context_path": "results/x.txt",
+        # output_byte_size deliberately absent
+        "metadata": {},
+    }
+    fallback = make_row("tail", ctx_bytes=chars(1000))
+    sel, reason = route(primary_row=primary, intermediate_row=intermediate, fallback_row=fallback)
+    assert sel == "tail" and reason == "intermediate_provider_error_used_fallback", (sel, reason)
+    print("PASS test_intermediate_missing_output_byte_size_fails_closed")
+
+
+def test_primary_missing_output_byte_size_fails_closed():
+    """Same fail-closed semantics on the primary row: if grep manifest
+    row is missing output_byte_size, treat as primary provider-error
+    rather than 0-token grep that trivially fits the budget."""
+    # Synthetic primary row with NO output_byte_size
+    primary = {
+        "case_id": "synthetic",
+        "method": "grep",
+        "context_path": "results/x.txt",
+        "metadata": {},
+    }
+    intermediate = make_row("rtk-err-cat", ctx_bytes=chars(50000))
+    fallback = make_row("tail", ctx_bytes=chars(1000))
+    sel, reason = route(primary_row=primary, intermediate_row=intermediate, fallback_row=fallback)
+    # Primary is unavailable (provider-error from missing size), so the
+    # router takes the "primary provider error" path → fallback.
+    assert sel == "tail" and reason == "primary_provider_error_used_fallback", (sel, reason)
+    print("PASS test_primary_missing_output_byte_size_fails_closed")
+
+
 # === Main ===
 
 def main() -> int:
@@ -215,6 +262,8 @@ def main() -> int:
         test_intermediate_provider_error_falls_back,
         test_intermediate_missing_falls_back,
         test_v2_two_way_routing_unchanged,
+        test_intermediate_missing_output_byte_size_fails_closed,
+        test_primary_missing_output_byte_size_fails_closed,
     ]
     failed = 0
     for t in tests:
