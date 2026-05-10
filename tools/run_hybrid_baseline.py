@@ -301,12 +301,22 @@ def route_and_emit(
 
     provider_error_msg = None
     if selected_method is None:
-        # Provider error path
-        if selected_reason in ("primary_missing_provider_error",
-                                "fallback_missing_provider_error",
-                                "fallback_provider_error"):
-            provider_error_msg = f"hybrid: {selected_reason}; primary={primary_name} fallback={fallback_name}"
-        # Still write a placeholder context file so downstream tools have a path
+        # Provider error path. Per Codex 2026-05-10 [high]: previously this
+        # branch only set provider_error_msg for 3 of N selected_reasons,
+        # so a router that exhausts every option (e.g. missing primary +
+        # missing fallback) silently emitted a placeholder context file
+        # AND a method_row with provider_error=None. run_diagnosis would
+        # then evaluate the UNAVAILABLE placeholder as a low-quality
+        # diagnosis. Fail closed: ALWAYS set provider_error_msg when no
+        # method was selected so downstream tools can detect this state.
+        provider_error_msg = (
+            f"hybrid: {selected_reason or 'no_method_selected'}; "
+            f"primary={primary_name} fallback={fallback_name}"
+        )
+        # Still write a placeholder context file so downstream tools have
+        # a path to read. The placeholder's first line carries an
+        # UNAVAILABLE marker that run_diagnosis also checks as a backup
+        # signal.
         if not out_ctx_path.exists():
             out_ctx_path.parent.mkdir(parents=True, exist_ok=True)
             out_ctx_path.write_text(

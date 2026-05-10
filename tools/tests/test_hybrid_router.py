@@ -251,6 +251,124 @@ def test_primary_missing_output_byte_size_fails_closed():
     print("PASS test_primary_missing_output_byte_size_fails_closed")
 
 
+def test_hybrid_provider_error_propagates_through_run_diagnosis():
+    """Per Codex 2026-05-10 [high] end-to-end fix: when the hybrid
+    router can't select any context (e.g. primary missing + fallback
+    missing), it emits an UNAVAILABLE placeholder + a method_row with
+    metadata.provider_error set. Pre-fix, run_diagnosis happily
+    evaluated the placeholder and produced a normal low-quality
+    diagnosis row with provider_error=null — hiding the data failure
+    behind a low sv1.1 score. Post-fix, run_diagnosis MUST detect the
+    upstream provider_error and emit a provider-error diagnosis row
+    with a context_provider_error message propagated.
+    """
+    import subprocess, os
+    rd_tool = ROOT / "tools" / "run_diagnosis.py"
+
+    with tempfile.TemporaryDirectory() as tmp_str:
+        tmp = Path(tmp_str)
+        cases_dir = tmp / "cases"
+        results_dir = tmp / "results"
+        split = "synthetic_split"
+
+        # Build a minimal case (enough for load_safe_case_metadata)
+        case_id = "synthetic-provider-error-case"
+        case_dir = cases_dir / split / case_id
+        case_dir.mkdir(parents=True)
+        (case_dir / "raw.log").write_text("synthetic raw log\n")
+        (case_dir / "case.json").write_text(json.dumps({
+            "case_id": case_id, "repo": "x/y", "framework": "generic",
+            "source": "github_actions", "failure_category": "unknown",
+            "raw_log_path": "raw.log", "line_count": 1, "byte_size": 20,
+            "workflow_name": "x", "job_name": "y", "notes": "synthetic",
+        }))
+        (case_dir / "ground_truth.json").write_text(json.dumps({
+            "root_cause": {"summary": "x", "category": "unknown"},
+            "required_signals": [],
+            "relevant_files": [], "relevant_tests": [],
+            "evidence_spans": [],
+            "expected_diagnosis": {"must_mention": [], "must_not_claim": []},
+        }))
+        (case_dir / "tags.json").write_text(json.dumps({
+            "case_id": case_id, "split": split, "origin": "new_v2",
+            "ecosystem": "generic-github-actions", "primary_language": "x",
+            "ci_provider": "github_actions", "repo_visibility": "public",
+            "failure_category": "unknown", "framework": "generic",
+            "log_size_bucket": "small", "signal_position": "late",
+            "evidence_formats": ["shell_command_output"],
+            "noise_profile": ["runner_setup"],
+            "multi_failure": False, "flaky_or_transient": False,
+            "requires_repo_context": False, "diagnosis_difficulty": "easy",
+            "notes": "synthetic test fixture",
+        }))
+
+        # Hybrid method_output row with provider_error set + the
+        # placeholder context file the router would have written.
+        method = "synthetic-hybrid"
+        method_dir = results_dir / split / method
+        method_dir.mkdir(parents=True)
+        ctx_path = method_dir / f"{case_id}.txt"
+        ctx_path.write_text(
+            "UNAVAILABLE: hybrid router could not select a context.\n"
+            "selected_reason: primary_missing_provider_error\n"
+        )
+        manifest = results_dir / split / f"{method}.jsonl"
+        # run_diagnosis resolves context_path against ROOT, so to make
+        # the test self-contained without polluting the real repo we
+        # write absolute paths and rely on Path's behavior of preserving
+        # absolutes when joined.
+        method_row = {
+            "case_id": case_id,
+            "method": method,
+            "mode": "context_provider",
+            "raw_log_path": str(cases_dir / split / case_id / "raw.log"),
+            "context_path": str(ctx_path),
+            "input_line_count": 1, "output_line_count": 2,
+            "input_byte_size": 20, "output_byte_size": ctx_path.stat().st_size,
+            "reduction_ratio": 0.0,
+            "included_line_ranges": [], "line_mapping_available": False,
+            "metadata": {
+                "hybrid": True, "router_version": "synthetic",
+                "selected_method": None,
+                "selected_reason": "primary_missing_provider_error",
+                "provider_error": "hybrid: primary_missing_provider_error; primary=grep fallback=tail",
+            },
+        }
+        manifest.write_text(json.dumps(method_row) + "\n")
+
+        env = {k: v for k, v in os.environ.items()
+                if k in ("PATH", "PYTHONPATH", "HOME")}
+        r = subprocess.run(
+            ["python3", str(rd_tool),
+             "--split", split, "--diagnoser", "mock",
+             "--cases-dir", str(cases_dir),
+             "--results-dir", str(results_dir),
+             "--context-method", method],
+            capture_output=True, text=True, cwd=ROOT, env=env,
+        )
+        assert r.returncode == 0, (
+            f"run_diagnosis exited {r.returncode}\nstderr: {r.stderr}"
+        )
+
+        diag_dir = results_dir / split / "diagnoses"
+        diag_files = list(diag_dir.rglob(f"{method}.jsonl"))
+        assert diag_files, f"diagnosis manifest not written under {diag_dir}"
+        diag_rows = [json.loads(l) for l in diag_files[0].read_text().splitlines() if l.strip()]
+        assert len(diag_rows) == 1, f"expected 1 row, got {len(diag_rows)}"
+        diag_row = diag_rows[0]
+        # Post-fix: provider_error must be propagated.
+        pe = diag_row.get("metadata", {}).get("provider_error") or diag_row.get("provider_error")
+        assert pe, (f"provider_error not propagated; diag_row metadata="
+                    f"{diag_row.get('metadata')}")
+        assert "context_provider_error" in pe, (
+            f"provider_error doesn't reference upstream cause: {pe!r}"
+        )
+        ok = (diag_row.get("root_cause_category") == "unknown"
+                and (diag_row.get("confidence") or 0.0) == 0.0)
+        assert ok, f"expected unknown/0.0 placeholder body, got {diag_row}"
+        print("PASS test_hybrid_provider_error_propagates_through_run_diagnosis")
+
+
 # === Main ===
 
 def main() -> int:
@@ -264,6 +382,7 @@ def main() -> int:
         test_v2_two_way_routing_unchanged,
         test_intermediate_missing_output_byte_size_fails_closed,
         test_primary_missing_output_byte_size_fails_closed,
+        test_hybrid_provider_error_propagates_through_run_diagnosis,
     ]
     failed = 0
     for t in tests:

@@ -367,6 +367,12 @@ def build_row(
     reported separately in the run summary printed to stdout."""
     proc_tokens = 0  # mock has no processing cost; command may report later
     out_tokens = estimate_tokens(json.dumps(diagnosis_body, ensure_ascii=False))
+    try:
+        ctx_path_str = str(context_path.relative_to(ROOT))
+    except ValueError:
+        # context_path outside ROOT (e.g. tests pointing at a tmp dir).
+        # Same fallback pattern audit_context_privacy.py uses.
+        ctx_path_str = str(context_path)
     row = {
         "case_id": case_id,
         "context_method": context_method,
@@ -374,7 +380,7 @@ def build_row(
         "mode": "root_cause_diagnosis",
         **diagnosis_body,
         "input": {
-            "context_path": str(context_path.relative_to(ROOT)),
+            "context_path": ctx_path_str,
             "context_tokens_estimate": estimate_tokens(context_text),
         },
         "usage": {
@@ -456,6 +462,48 @@ def run(
                 print(f"  skip {method}/{case_id}: context file missing "
                       f"({ctx_path})", file=sys.stderr)
                 continue
+
+            # Per Codex 2026-05-10 [high]: a context-provider (e.g. hybrid
+            # router) can emit a method_row whose metadata.provider_error is
+            # set when no method could be selected. Previously the diagnoser
+            # would happily evaluate the placeholder UNAVAILABLE context and
+            # produce a normal low-quality diagnosis row with
+            # provider_error=null, hiding the version-skew/data failure
+            # behind a benchmark-corrupting low score. Fail closed: if the
+            # context-provider already declared a provider_error, propagate
+            # it directly into a provider-error diagnosis row WITHOUT
+            # invoking the diagnoser.
+            ctx_meta = m_row.get("metadata") or {}
+            ctx_provider_error = ctx_meta.get("provider_error")
+            if ctx_provider_error:
+                ctx_text = ""  # not used; we skip the diagnoser
+                provider_error_msg = (
+                    f"context_provider_error: {ctx_provider_error}"
+                )
+                diag_body = {
+                    "summary": "Context provider failed. See "
+                                "metadata.provider_error.",
+                    "root_cause_category": "unknown",
+                    "root_cause": "unknown",
+                    "confidence": 0.0,
+                    "relevant_files": [],
+                    "relevant_tests": [],
+                    "evidence": [],
+                    "suggested_fix": "",
+                }
+                row = build_row(
+                    case_id=case_id, context_method=method,
+                    diagnoser=diagnoser_name, diagnosis_body=diag_body,
+                    context_path=ctx_path, context_text=ctx_text,
+                    prompt_sha=prompt_sha, runtime_ms=0.0,
+                    provider_name=diagnoser_provider,
+                    command_str=command_str, cache_key="",
+                    provider_error=provider_error_msg,
+                )
+                out_rows.append(row)
+                method_cache_misses += 1
+                continue
+
             ctx_text = ctx_path.read_text(encoding="utf-8", errors="replace")
             ctx_sha = sha256_text(ctx_text)
             safe_meta = load_safe_case_metadata(cases_dir, split, case_id)
@@ -563,8 +611,14 @@ def run(
         with manifest_path.open("w", encoding="utf-8") as f:
             for row in out_rows:
                 f.write(json.dumps(row, ensure_ascii=False) + "\n")
+        try:
+            display_path = str(manifest_path.relative_to(ROOT))
+        except ValueError:
+            # results-dir outside ROOT (e.g. tests with tmp dirs). Same
+            # fallback pattern audit_context_privacy.py uses.
+            display_path = str(manifest_path)
         print(f"  {method}: wrote {len(out_rows)} diagnoses to "
-              f"{manifest_path.relative_to(ROOT)} "
+              f"{display_path} "
               f"({method_cache_hits} cache hit, {method_cache_misses} miss)")
 
     if not _HAS_JSONSCHEMA:
