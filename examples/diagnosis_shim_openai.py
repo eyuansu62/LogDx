@@ -218,11 +218,16 @@ def main() -> int:
     try:
         user_message = build_user_message(payload)
     except _ContextTooLargeError as e:
-        out = unknown_body(f"unsupported_context_too_large: {e}")
-        out["_provider_error"] = f"unsupported_context_too_large: {e}"
-        json.dump(out, sys.stdout, ensure_ascii=False)
-        sys.stdout.write("\n")
-        return 0
+        # Per Codex 2026-05-11 [high]: exit non-zero so run_diagnosis
+        # records this as a real provider_error in row metadata.
+        # Previously this path returned 0 with `_provider_error` set,
+        # but run_diagnosis drops underscored keys when normalizing
+        # the shim output, so the row ended up looking like a valid
+        # model abstention (confidence=0, unknown category).
+        sys.stderr.write(
+            f"diagnosis_shim_openai: unsupported_context_too_large: {e}\n"
+        )
+        return 1
 
     try:
         wrapper = invoke_openai(
@@ -241,6 +246,26 @@ def main() -> int:
             )
         diag_raw = parse_diagnosis_json(content)
         diag = normalize(diag_raw)
+        # Per Codex 2026-05-11 [high] F2: persist model identity so the
+        # benchmark artifact records which exact model produced the row.
+        # The shim previously took both model and base_url from env and
+        # neither was written to the diagnosis row — a run against
+        # gpt-5-mini, a dated snapshot, or a proxy would produce
+        # indistinguishable committed artifacts. The runner copies
+        # `_model_info` (underscored: not part of the M5 contract; runner
+        # treats as opt-in metadata) into row.metadata.model_info.
+        # Also persist what OpenAI's response says (model field is the
+        # snapshot ID the request actually hit; OpenAI may resolve an
+        # alias to a dated snapshot).
+        diag["_model_info"] = {
+            "provider_name": "openai",
+            "requested_model": model,
+            "resolved_model": wrapper.get("model"),
+            "base_url": base_url,
+            "max_completion_tokens": 4096,
+            "system_fingerprint": wrapper.get("system_fingerprint"),
+            "usage": wrapper.get("usage"),
+        }
         json.dump(diag, sys.stdout, ensure_ascii=False)
         sys.stdout.write("\n")
         return 0

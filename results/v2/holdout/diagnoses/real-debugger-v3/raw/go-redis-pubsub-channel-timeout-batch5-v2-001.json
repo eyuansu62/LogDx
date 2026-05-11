@@ -3,28 +3,80 @@
   "context_method": "raw",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "Diagnoser failed. See metadata.provider_error.",
-  "root_cause_category": "unknown",
-  "root_cause": "unknown",
-  "confidence": 0.0,
-  "relevant_files": [],
-  "relevant_tests": [],
-  "evidence": [],
-  "suggested_fix": "",
+  "summary": "CI failed because one test/spec in the PubSub suite timed out waiting for a message on a channel, causing the test run to fail.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The Ginkgo spec 'PubSub [It] should ChannelMessage' timed out waiting to receive from a channel (Timed out after 1.001s), causing the test suite to fail.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "/home/runner/work/go-redis/go-redis/pubsub_test.go"
+  ],
+  "relevant_tests": [
+    "PubSub [It] should ChannelMessage"
+  ],
+  "evidence": [
+    {
+      "quote": "PubSub [It] should ChannelMessage",
+      "reason": "Identifies the failing test/spec name reported by Ginkgo."
+    },
+    {
+      "quote": "/home/runner/work/go-redis/go-redis/pubsub_test.go:645",
+      "reason": "Shows the test file and approximate location where the failure was reported."
+    },
+    {
+      "quote": "Timed out after 1.001s.",
+      "reason": "Explicit timeout message indicating the test waited and did not receive the expected event within the timeout."
+    },
+    {
+      "quote": "Expected\n        <<-chan *redis.Message | len:0, cap:10>: 0xc0012d96c0\n    to receive something.",
+      "reason": "Assertion from the test framework showing the test expected to receive a message on a channel but did not."
+    },
+    {
+      "quote": "FAIL! -- 1223 Passed | 1 Failed",
+      "reason": "Summarizes that a single test failure caused the overall test suite to be marked as failed."
+    },
+    {
+      "quote": "make: *** [Makefile:46: test.ci] Error 1",
+      "reason": "The make target failed because the test command exited with a non-zero status after the test failure."
+    }
+  ],
+  "suggested_fix": "Inspect /home/runner/work/go-redis/go-redis/pubsub_test.go around the failing lines (≈645-661) to determine why no message was received (race, missing publish, subscription not ready). Reproduce the failing spec locally, and consider increasing the test timeout, adding retries/waits for subscription confirmation, or adding logging to verify the publisher and Redis test container are sending/receiving messages before the assertion.",
   "input": {
     "context_path": "results/v2/holdout/raw/go-redis-pubsub-channel-timeout-batch5-v2-001.txt",
     "context_tokens_estimate": 61446
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 55
+    "output_tokens_estimate": 621
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 19766.645,
+    "runtime_ms": 29844.351,
     "cache_key": "c79d70c9364e3ba502f0fa3dd0fe591b9bb6919fb8272318255f309565fcc337",
-    "provider_error": "RuntimeError: diagnosis command exited 1: diagnosis_shim_openai: JSONDecodeError: Expecting value: line 26 column 16 (char 963)\n",
-    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
+    "model_info": {
+      "provider_name": "openai",
+      "requested_model": "gpt-5-mini",
+      "resolved_model": "gpt-5-mini-2025-08-07",
+      "base_url": "https://api.openai.com/v1",
+      "max_completion_tokens": 4096,
+      "system_fingerprint": null,
+      "usage": {
+        "prompt_tokens": 98632,
+        "completion_tokens": 1564,
+        "total_tokens": 100196,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1024,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
+    }
   }
 }

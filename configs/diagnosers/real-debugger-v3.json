@@ -1,0 +1,42 @@
+{
+  "diagnoser_name": "real-debugger-v3",
+  "provider": "command",
+  "command_env_var": "DIAGNOSIS_COMMAND",
+  "command_override": null,
+  "prompt_path": "prompts/debugger_v1.md",
+
+  "model": {
+    "provider_name": "openai",
+    "model_name": "gpt-5-mini",
+    "model_version": null,
+    "model_alias_note": "gpt-5-mini is an OpenAI alias that resolves to a dated snapshot at request time. The actual snapshot ID returned by the API is persisted in each diagnosis row's metadata.model_info.resolved_model, so a future re-run can verify whether the snapshot has changed underneath the alias.",
+    "temperature": null,
+    "top_p": null,
+    "temperature_note": "gpt-5-mini is a reasoning-class model: temperature/top_p are ignored by the API. The shim does not send them.",
+    "max_output_tokens": 4096,
+    "max_completion_tokens_note": "OpenAI's reasoning models use `max_completion_tokens` (capped here at 4096) instead of `max_tokens`. Reasoning tokens are not counted against this cap by the API.",
+    "json_mode": false,
+    "json_mode_note": "JSON-only output is requested via the system prompt + user message ('STRICT JSON ... No prose, no code fences, JSON only'). The shim's `parse_diagnosis_json` strips fence markers if any leak through.",
+    "deterministic": false,
+    "tool_use": false,
+    "web_access": false
+  },
+
+  "context_policy": {
+    "allow_raw_context": true,
+    "max_context_tokens": null,
+    "max_chars_passed_to_shim": 480000,
+    "max_chars_note": "Same cap as the Claude shim for cross-debugger comparability — contexts >480000 chars cause the shim to exit 1 with `unsupported_context_too_large` (post-Codex-2026-05-11 F1 fix; pre-fix the shim exited 0 with a placeholder body).",
+    "on_context_too_large": "provider_error",
+    "allow_truncation": false
+  },
+
+  "privacy": {
+    "requires_explicit_external_llm_opt_in": true,
+    "explicit_opt_in_env_var": "CILOGBENCH_ALLOW_EXTERNAL_LLM",
+    "redaction_mode": "audit_only",
+    "allow_secret_values_in_results": false
+  },
+
+  "_doc": "Added 2026-05-11 per Codex adversarial review on commit 772520d. The §3i cross-family validation run committed before this file existed used the same effective settings — see model card and §3i for the run-time invariants. This config is what FUTURE re-runs must match for the §3i numbers to remain reproducible. The shim records actual model_info into each row so any divergence between this config and a future run is detectable."
+}

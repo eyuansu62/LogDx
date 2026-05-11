@@ -193,12 +193,14 @@ def main() -> int:
     try:
         user_message = build_user_message(payload)
     except _ContextTooLargeError as e:
-        out = unknown_body(f"unsupported_context_too_large: {e}")
-        # Tag so the runner's metadata captures it.
-        out["_provider_error"] = f"unsupported_context_too_large: {e}"
-        json.dump(out, sys.stdout, ensure_ascii=False)
-        sys.stdout.write("\n")
-        return 0
+        # Per Codex 2026-05-11 [high]: exit non-zero so run_diagnosis
+        # records this as a real provider_error. Previously returned 0
+        # with `_provider_error` set, but run_diagnosis dropped the
+        # underscored key, making it look like a valid model abstention.
+        sys.stderr.write(
+            f"diagnosis_shim_claude_cli: unsupported_context_too_large: {e}\n"
+        )
+        return 1
 
     try:
         wrapper = invoke_claude(system_prompt, user_message, model, timeout_s)

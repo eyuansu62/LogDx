@@ -346,6 +346,16 @@ def diagnose_command(
     if normalized["root_cause_category"] not in CATEGORY_ENUM:
         normalized["root_cause_category"] = "other"
     normalized["confidence"] = max(0.0, min(1.0, normalized["confidence"]))
+    # Per Codex 2026-05-11 F2 [high]: preserve shim-provided opt-in
+    # metadata under underscore-prefixed keys. `_model_info` records
+    # which exact model/snapshot/base_url produced the row, so the
+    # benchmark artifact is auditable (not just "ran some model from
+    # env"). `_provider_error` is preserved as defense-in-depth even
+    # though the F1 fix now makes shims exit non-zero for hard errors.
+    if isinstance(out.get("_model_info"), dict):
+        normalized["_model_info"] = out["_model_info"]
+    if out.get("_provider_error"):
+        normalized["_provider_error"] = out["_provider_error"]
     return normalized
 
 
@@ -373,12 +383,22 @@ def build_row(
         # context_path outside ROOT (e.g. tests pointing at a tmp dir).
         # Same fallback pattern audit_context_privacy.py uses.
         ctx_path_str = str(context_path)
+    # Lift shim-opt-in underscored hints out of diagnosis_body into
+    # metadata so the on-disk row carries them in a stable location.
+    # Per Codex 2026-05-11 [high]: `_model_info` records the actual
+    # model/snapshot/base_url that produced this row (auditability);
+    # `_provider_error` is preserved defense-in-depth even though the
+    # F1 fix now makes shims exit non-zero for hard errors.
+    diagnosis_clean = {k: v for k, v in diagnosis_body.items()
+                        if not k.startswith("_")}
+    model_info = diagnosis_body.get("_model_info")
+    shim_provider_error = diagnosis_body.get("_provider_error")
     row = {
         "case_id": case_id,
         "context_method": context_method,
         "diagnoser": diagnoser,
         "mode": "root_cause_diagnosis",
-        **diagnosis_body,
+        **diagnosis_clean,
         "input": {
             "context_path": ctx_path_str,
             "context_tokens_estimate": estimate_tokens(context_text),
@@ -392,8 +412,19 @@ def build_row(
             "prompt_sha256": prompt_sha,
             "runtime_ms": round(runtime_ms, 3),
             "cache_key": cache_key,
-            "provider_error": provider_error,
+            # If the shim returned a provider_error hint AND the runner
+            # also recorded one, prefer the runner's (it's the higher-
+            # level signal — e.g. subprocess exit-1). Concatenate if both
+            # present and distinct.
+            "provider_error": (
+                provider_error if provider_error and not shim_provider_error
+                else (shim_provider_error if shim_provider_error and not provider_error
+                       else (f"{provider_error}; shim_hint={shim_provider_error}"
+                              if provider_error and shim_provider_error
+                              else None))
+            ),
             "command": command_str,
+            "model_info": model_info,
         },
     }
     return row

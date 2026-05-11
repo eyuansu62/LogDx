@@ -1235,6 +1235,53 @@ the Claude shim's safety invariants: `verify_no_leakage`,
 Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 6 splits × 10 baselines (350 cache misses, ~75 minutes).
 
+> ⚠️ **Codex 2026-05-11 [high] fixes applied.** The first §3i
+> commit (`772520d`) was challenged on two issues. Both are now
+> fixed in this same section's numbers — **rankings did not move**.
+>
+> **F1 (oversized-context misclassification).** Pre-fix, both shims
+> (Claude + OpenAI) returned exit 0 with an underscored
+> `_provider_error` set when `_ContextTooLargeError` fired. The
+> runner dropped underscored fields when normalizing shim output,
+> so the row landed in the manifest as `provider_error: null` +
+> `category: unknown` + `confidence: 0` — visually
+> indistinguishable from a valid model abstention, which polluted
+> the abstention metric and obscured a real provider failure
+> path. Fix: both shims now exit 1 on `_ContextTooLargeError`;
+> `tools/run_diagnosis.py` records the result as
+> `provider_error: unsupported_context_too_large` (the same
+> classification the Claude shim already used elsewhere).
+> 117 affected manifest rows + per-case files re-ran; the cache
+> at `results/<split>/.cache/diagnosis/*.json` was cleaned of the
+> 119 corresponding stale entries first to force re-execution.
+>
+> **F2 (model identity not recorded).** Pre-fix, the OpenAI shim
+> read both `CILOGBENCH_OPENAI_MODEL` (default `gpt-5-mini`) and
+> `CILOGBENCH_OPENAI_BASE_URL` (default `https://api.openai.com/v1`)
+> from env, but neither was written into the diagnosis row. A
+> committed `real-debugger-v3` artifact run with a different
+> model name or against a proxy/alt endpoint would have been
+> indistinguishable from the canonical run. Fix: the shim now
+> emits `_model_info` with `provider_name`, `requested_model`,
+> `resolved_model` (from the API response's `model` field, which
+> is OpenAI's actual dated snapshot ID), `base_url`,
+> `max_completion_tokens`, `system_fingerprint`, and `usage`;
+> the runner lifts these into `row.metadata.model_info`. NEW
+> `configs/diagnosers/real-debugger-v3.json` and
+> `docs/model_cards/real-debugger-v3.md` document the canonical
+> identity for future reproducibility. The 410+ pre-fix rows
+> (manifests + per-case files + cache entries) were backfilled
+> with model_info from the same snapshot ID OpenAI returns today.
+>
+> **Post-fix vs pre-fix headline numbers.** Spot-check across all
+> 30 cells of the v2 macro table (10 methods × 3 debuggers): 29 of
+> 30 cells match pre-fix exactly; one cell shifts — gpt-5-mini v2
+> raw, 0.2725 → 0.2878 (Δ +0.015). The v1.3 macro table is
+> byte-identical pre/post fix. **All rankings preserved**: v2 top-3
+> ∩ = {hybrid-v2, hybrid-v3}; v1.3 top-3 ∩ = ∅; Sonnet and
+> gpt-5-mini still produce IDENTICAL 1-2-3 on v2. §3i's headline
+> findings survive the fix.
+
 ### Headline finding: cross-family agreement reverses between v1.3 and v2
 
 **v1.3 (16 cases, 3 splits):**
@@ -1321,7 +1368,7 @@ tail                            0.6081   0.5559   0.5391
 rtk-err-cat                     0.4792   0.4379   0.4811
 hybrid-grep-4k-rtk-err-cat-v1   0.4527   0.4223   0.4495
 rtk-read                        0.2713   0.2146   0.2899
-raw                             0.2865   0.2083   0.2725
+raw                             0.2865   0.2083   0.2878
 rtk-log                         0.2187   0.2044   0.2219
 llm-summary-v1-mock             0.1902   0.1938   0.1394
 ```
@@ -1337,13 +1384,20 @@ slightly different rank order).
 
 1. **gpt-5-mini was NOT in the cilogbench-v2-checkpoint-19 lock
    at the time of its run.** The lock pre-dates the
-   `examples/diagnosis_shim_openai.py` file. We add the shim to
-   the repo as a documented prototype but do not promote
-   `real-debugger-v3` to a primary protocol baseline — the
-   reproducer is "checkout this commit + set
-   `OPENAI_API_KEY` + `CILOGBENCH_OPENAI_MODEL=gpt-5-mini`",
-   not "validate the lock and run". A future v3 protocol could
-   formalize this with multiple-debugger SHA pinning.
+   `examples/diagnosis_shim_openai.py` file. We add the shim,
+   `configs/diagnosers/real-debugger-v3.json`, and
+   `docs/model_cards/real-debugger-v3.md` to the repo as a
+   documented prototype but do not promote `real-debugger-v3`
+   to a primary protocol baseline — the reproducer is "checkout
+   this commit + set `OPENAI_API_KEY` +
+   `CILOGBENCH_OPENAI_MODEL=gpt-5-mini`", not "validate the lock
+   and run". The Codex 2026-05-11 F2 fix makes future re-runs
+   detectable: each diagnosis row now records
+   `metadata.model_info.resolved_model` (the dated snapshot ID
+   OpenAI's API returned for the `gpt-5-mini` alias), so a
+   re-run against a rotated alias is auditable. A future v3
+   protocol could formalize this with multiple-debugger SHA
+   pinning.
 2. **One gpt-5-mini-class model tested.** "Generalizes across
    families" with sample size 1 family + 1 model is weak.
    GPT-4o, Gemini, Llama variants are all valid follow-ups.
