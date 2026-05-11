@@ -1325,8 +1325,8 @@ grep                                  3       4       3   ← Sonnet+gpt #3 (ide
 tail                                  4       2       4
 rtk-err-cat                           5       5       5   ← unanimous #5
 hybrid-grep-4k-rtk-err-cat-v1         6       6       6   ← unanimous #6
-rtk-read                              7       7       7   ← unanimous #7
-raw                                   8       8       8   ← unanimous #8
+raw                                   7       8       8   ← Sonnet #7, Haiku+gpt #8 (1-cell swap with rtk-read)
+rtk-read                              8       7       7   ← Sonnet #8, Haiku+gpt #7 (1-cell swap with raw)
 rtk-log                               9       9       9   ← unanimous #9
 llm-summary-v1-mock                  10      10      10   ← unanimous #10
 ```
@@ -1336,9 +1336,13 @@ llm-summary-v1-mock                  10      10      10   ← unanimous #10
 **Sonnet and gpt-5-mini produce IDENTICAL top-3 rankings on v2.**
 Haiku agrees on the SET but ranks hybrid-v3 #1 and tail #2
 instead of hybrid-v2 #1 and grep #3. The bottom 6 ranks are
-unanimous across all three debuggers — rtk-read, raw, rtk-log,
-and llm-summary-v1-mock occupy positions 7-10 in the same order
-on every debugger.
+**near-unanimous** across all three debuggers — rtk-err-cat,
+hybrid-v1, rtk-log, and llm-summary-v1-mock occupy positions
+5, 6, 9, 10 in the same order on every debugger. The only
+disagreement at the bottom is a single rank swap between raw and
+rtk-read on Sonnet (raw 0.2865 vs rtk-read 0.2713) — Sonnet
+puts raw #7 and rtk-read #8; Haiku and gpt-5-mini both have
+rtk-read #7 and raw #8 (both ≈ 0.27/0.28 — adjacent scores).
 
 ### What v1.3 vs v2 says about benchmark quality
 
@@ -1346,9 +1350,11 @@ on every debugger.
 |---|---|---|
 | Cases | 16 | 19 (partial, target 34) |
 | Family-stable top-3 | ❌ ∅ | ✅ {hybrid-v2, hybrid-v3} |
-| Family-stable bottom-3 | ⚠ {rtk-log} only | ✅ {rtk-read, rtk-log, summary-mock, raw} |
+| Family-stable bottom-4 set (pos 7-10) | ⚠ {rtk-log} only | ✅ {rtk-read, raw, rtk-log, summary-mock} as SET; raw↔rtk-read swap on Sonnet |
 | Sonnet/gpt-5-mini #1-#3 agreement | 0/3 | 3/3 identical |
-| Spearman rank correlation Sonnet↔gpt | ~0.5 | ~0.95 |
+| Spearman rank correlation Sonnet↔gpt | 0.758 | 0.988 |
+| Spearman rank correlation Sonnet↔Haiku | 0.927 | 0.927 |
+| Spearman rank correlation Haiku↔gpt-5-mini | 0.721 | 0.939 |
 
 v2's broader corpus produces benchmark rankings that are
 **robust to model family**, while v1.3's smaller (Sonnet-tuned)
