@@ -1,0 +1,59 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "An assembly test failed: tests/assembly-llvm/wasm_exceptions.rs produced unexpected assembly output (1 test failed in the assembly-llvm suite).",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The compiletest assembly test tests/assembly-llvm/wasm_exceptions.rs failed due to a mismatch in the emitted assembly output (assembly check failure / expected vs actual difference).",
+  "confidence": 0.78,
+  "relevant_files": [
+    "tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "relevant_tests": [
+    "tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "failures:\n    [assembly] tests/assembly-llvm/wasm_exceptions.rs",
+      "reason": "Shows which specific test failed in the run."
+    },
+    {
+      "quote": "test result: FAILED. 550 passed; 1 failed; 103 ignored; 0 measured; 0 filtered out; finished in 15.38s",
+      "reason": "Summarizes overall test outcome and that exactly one test failed."
+    },
+    {
+      "quote": "---- [assembly] tests/assembly-llvm/wasm_exceptions.rs stdout end ----",
+      "reason": "Indicates the failing test was an assembly test and that its stdout (the assembly check) ended with a failure."
+    },
+    {
+      "quote": ".ascii \"exception-handling\"",
+      "reason": "Part of the assembly output shown in the log; suggests the failure is related to emitted target features / assembly contents that the test checks."
+    },
+    {
+      "quote": "Some tests failed in compiletest suite=assembly-llvm mode=assembly host=x86_64-unknown-linux-gnu target=wasm32-wasip1",
+      "reason": "Confirms the failing suite/mode/target where the assembly mismatch occurred."
+    },
+    {
+      "quote": "Bootstrap failed while executing `--stage 2 test --host= --target wasm32-wasip1 tests/run-make tests/run-make-cargo tests/ui tests/mir-opt tests/codegen-units tests/codegen-llvm tests/assembly-llvm library/core`",
+      "reason": "Shows the top-level bootstrap test command that failed because the assembly test failed; useful to reproduce or re-run the failing suite/target."
+    }
+  ],
+  "suggested_fix": "Run the failing assembly test locally to inspect the diff and either update the test's expected assembly or adjust the compiler output. For example, reproduce the failure under the same target (wasm32-wasip1) and examine tests/assembly-llvm/wasm_exceptions.rs expected output; update the expected assembly to match the emitted output (noting the presence of \".ascii \\\"exception-handling\\\"\") or change the codegen if the emitted feature is incorrect.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-120k-tail-v2/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 3961
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 597
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 19861.452,
+    "cache_key": "bd2521e9af25714113eb0e4ae30265997a3eb776d09a0c805b384e645640318d",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

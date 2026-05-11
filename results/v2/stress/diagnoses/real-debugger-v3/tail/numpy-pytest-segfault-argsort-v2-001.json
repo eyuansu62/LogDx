@@ -1,0 +1,56 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The test run crashed with a segmentation fault while running numpy.argsort from a datetime test (test_datetime_nat_argsort_stability).",
+  "root_cause_category": "other",
+  "root_cause": "A segmentation fault occurred in NumPy during execution of numpy.argsort called from the test test_datetime_nat_argsort_stability, causing the test process to abort.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py",
+    "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py"
+  ],
+  "relevant_tests": [
+    "test_datetime_nat_argsort_stability"
+  ],
+  "evidence": [
+    {
+      "quote": "Fatal Python error: Segmentation fault",
+      "reason": "Shows the test run crashed with a native segmentation fault rather than a Python exception or assertion failure."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 1231 in argsort",
+      "reason": "Indicates the crash happened during execution of numpy.argsort in fromnumeric.py."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
+      "reason": "Shows the specific test function that triggered the call into argsort when the segfault occurred."
+    },
+    {
+      "quote": "Extension modules: numpy._core._multiarray_umath, numpy.linalg._umath_linalg, numpy._core._multiarray_tests",
+      "reason": "Indicates compiled NumPy extension modules were loaded, so the segfault likely originates in native (C/C++) extension code."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 245.",
+      "reason": "Confirms the job ended due to an abnormal process termination after the segfault."
+    }
+  ],
+  "suggested_fix": "Reproduce the failure in isolation and gather a native backtrace: run the single test (for example, pytest numpy/_core/tests/test_datetime.py::test_datetime_nat_argsort_stability) locally or in CI configured to produce a core/backtrace (or run under a debugger/ASAN/valgrind). Inspect the argsort implementation and the involved compiled extensions (e.g. numpy._core._multiarray_umath) for memory-safety bugs and fix any C-extension code causing the segfault.",
+  "input": {
+    "context_path": "results/v2/stress/tail/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 11078
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 578
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 46283.041,
+    "cache_key": "94c628753b11b364928308631c3eef3104b2dbd4c6c8e736ebd6839659477fc2",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

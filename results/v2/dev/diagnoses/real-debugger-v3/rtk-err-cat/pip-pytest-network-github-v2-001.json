@@ -1,0 +1,51 @@
+{
+  "case_id": "pip-pytest-network-github-v2-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "A functional test failed because pip could not download a GitHub archive: repeated 502 responses caused the install step to error and the test to exit with code 1.",
+  "root_cause_category": "network_or_flaky",
+  "root_cause": "The test tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub] failed because pip was unable to fetch the GitHub-hosted package: HTTPSConnectionPool to host='github.com' returned repeated 502 errors and max retries were exceeded, causing the install command to exit with code 1.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "tests/functional/test_truststore.py"
+  ],
+  "relevant_tests": [
+    "tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]"
+  ],
+  "evidence": [
+    {
+      "quote": "[gw1]^[[36m [ 99%] ^[[0m^[[31mFAILED^[[0m tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]",
+      "reason": "This is the failing test identifier reported by pytest."
+    },
+    {
+      "quote": "ERROR: Could not install packages due to an OSError: HTTPSConnectionPool(host='github.com', port=443): Max retries exceeded with url: /pypa/pip-test-package/archive/refs/heads/master.zip (Caused by ResponseError('too many 502 error responses'))",
+      "reason": "Shows pip failed to download from GitHub due to repeated 502 responses, which explains the install failure."
+    },
+    {
+      "quote": "E       AssertionError: Script returned code: 1",
+      "reason": "The test harness reports the script exited with a non-zero status, consistent with the failed download/installation."
+    },
+    {
+      "quote": "^[[36mnox > ^[[31mCommand pytest tests/functional --verbose --numprocesses auto --showlocals --durations=15 failed with exit code 1^[[0m",
+      "reason": "The overall functional test session failed as a result of the test error."
+    }
+  ],
+  "suggested_fix": "Treat this as a transient network failure: re-run the CI job. If failures recur, make the test independent of live GitHub (mock the download or use a local test server/fixture), or add handling/increased retries in test setup to avoid flaky external network dependencies.",
+  "input": {
+    "context_path": "results/v2/dev/rtk-err-cat/pip-pytest-network-github-v2-001.txt",
+    "context_tokens_estimate": 12439
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 509
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 13367.015,
+    "cache_key": "c11e55ec5f4846ebc65c17906beaadf2e2ebf0945a47ed2bf804b11f98a62498",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

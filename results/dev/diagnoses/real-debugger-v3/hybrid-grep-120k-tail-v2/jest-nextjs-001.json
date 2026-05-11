@@ -1,0 +1,72 @@
+{
+  "case_id": "jest-nextjs-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Git refused to operate on the workspace because it detected dubious ownership of '/work', causing git status checks to fail and test runs to exit without producing results (ENOENT). The job failed with exit code 1 as the test harness could not find result files.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "Git reported 'detected dubious ownership in repository at '/work'', which prevented git status operations (used by turborepo/test runner) and caused tests to abort without producing results files (leading to ENOENT).",
+  "confidence": 0.85,
+  "relevant_files": [
+    "/work/run-tests.js",
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest-babel/__tests__/index.test.tsx",
+    "examples/with-vitest/__tests__/Home.test.tsx"
+  ],
+  "relevant_tests": [
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest-babel/__tests__/index.test.tsx",
+    "examples/with-vitest/__tests__/Home.test.tsx"
+  ],
+  "evidence": [
+    {
+      "quote": "fatal: detected dubious ownership in repository at '/work'",
+      "reason": "Direct git error showing git refused to operate due to repository ownership at '/work'."
+    },
+    {
+      "quote": "git config --global --add safe.directory /work",
+      "reason": "Git's own suggested command to add an exception for the directory, indicating the ownership check is the problem."
+    },
+    {
+      "quote": "WARNING  failed to get git status for dirty hash: Git error: fatal: detected dubious ownership in repository at '/work'",
+      "reason": "The turborepo/test runner logged that it failed to get git status because of the dubious ownership error."
+    },
+    {
+      "quote": "Pattern: examples/with-jest/__tests__/index.test.tsx - 0 matches",
+      "reason": "Test harness shows patterns produced no matches/output, indicating tests did not run or produce expected output files."
+    },
+    {
+      "quote": "Failed to load test output Error: ENOENT: no such file or directory, open 'examples/with-jest/__tests__/index.test.tsx.results.json'",
+      "reason": "The test harness attempted to read a results file that was never created because the test run aborted, producing an ENOENT."
+    },
+    {
+      "quote": "at async runTest (/work/run-tests.js:927:29)",
+      "reason": "Stack trace shows the test-run orchestration code that failed to read outputs, linking the ENOENT to the test runner script in the workspace."
+    },
+    {
+      "quote": "Some tests failed",
+      "reason": "Final failure summary indicating the overall test run failed as a consequence of the preceding errors."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions job exited with a non-zero code, consistent with tests aborting due to the git ownership error."
+    }
+  ],
+  "suggested_fix": "Add the repository directory as a safe Git directory before running the build/tests. For example, add a step in the workflow to run: git config --global --add safe.directory /work (or the actual workspace path) so git status operations used by turborepo/test runner succeed. Alternatively ensure the runner's user/ownership of the workspace matches expectations.",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-120k-tail-v2/jest-nextjs-001.txt",
+    "context_tokens_estimate": 60313
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 747
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 22767.454,
+    "cache_key": "ef6f05aef464c66493ce4a36a51281f2fbe226ebf6f278ffadcec7b606111d7b",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

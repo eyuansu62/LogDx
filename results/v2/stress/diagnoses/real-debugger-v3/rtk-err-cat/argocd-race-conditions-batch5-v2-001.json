@@ -1,0 +1,65 @@
+{
+  "case_id": "argocd-race-conditions-batch5-v2-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The race-test job failed because unit tests failed (3 test failures) — a panic from a testify/mock unexpected call to RepoServerServiceClient.GenerateManifest plus data-race warnings caused the test run to exit non‑zero.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "A unit test panicked due to an unexpected/mock mismatch: the mock for RepoServerServiceClient.GenerateManifest was called more times than expected, triggering a panic and test failure; data race(s) were also detected during the run.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "/home/runner/work/argo-cd/argo-cd/reposerver/apiclient/mocks/RepoServerServiceClient.go:54",
+    "/home/runner/work/argo-cd/argo-cd/controller/appcontroller.go:1704",
+    "/home/runner/work/argo-cd/argo-cd/controller/appcontroller.go:1841",
+    "/home/runner/work/argo-cd/argo-cd/controller/appcontroller_test.go:2192",
+    "/home/runner/work/argo-cd/argo-cd/cmd/argocd/commands/app_test.go:1936",
+    "Makefile:473"
+  ],
+  "relevant_tests": [
+    "app_test.go:1936",
+    "github.com/argoproj/argo-cd/v3/controller.TestUpdateReconciledAt.func3"
+  ],
+  "evidence": [
+    {
+      "quote": "assert: mock: The method has been called over 1 times.\n\tEither do one more Mock.On(\"GenerateManifest\").Return(...), or remove extra call.\n\tThis call was unexpected:\n\t\tGenerateManifest(context.backgroundCtx,*apiclient.ManifestRequest)",
+      "reason": "Shows the testify/mock panic: the mock was called more times than configured and explicitly suggests adding a Mock.On(\"GenerateManifest\").Return(...) or removing the extra call."
+    },
+    {
+      "quote": "/usr/bin/tar: Exiting with failure status due to previous errors",
+      "reason": "Earlier step failed to restore tar cache (non-blocking to tests) — indicates a separate restore/cache issue occurred before tests started."
+    },
+    {
+      "quote": "WARNING: DATA RACE",
+      "reason": "The race detector reported data races during test execution; running with -race (this job) will fail if races are present or can cause flaky failures."
+    },
+    {
+      "quote": "testing.go:1712: race detected during execution of test",
+      "reason": "Confirms the Go race detector found at least one race, which is relevant because the job runs tests with -race."
+    },
+    {
+      "quote": "=== \u001b[[31mFailed\u001b[[0m\n    app_test.go:1936:\n         Error Trace:    /home/runner/work/argo-cd/argo-cd/cmd/argocd/commands/app_test.go:1936\n         Error:      Not equal:",
+      "reason": "Shows an assertion failure in app_test.go at line 1936 — one of the failing tests that caused the test run to exit non-zero."
+    },
+    {
+      "quote": "DONE 7346 tests, 5 skipped, 3 failures in 468.930s\nmake: *** [Makefile:473: test-race-local] Error 1",
+      "reason": "Final summary: test run completed with 3 failures and make returned a non-zero exit, causing the CI job to fail."
+    }
+  ],
+  "suggested_fix": "Reproduce the failing test locally with the race detector (e.g. make test-race-local or go test ./... -race). Inspect the failing test at cmd/argocd/commands/app_test.go:1936 and the controller test around controller/appcontroller_test.go:2192. Update the mock expectations so GenerateManifest is expected (add Mock.On(\"GenerateManifest\").Return(...)) or remove the extra call as indicated by the panic message: \"Either do one more Mock.On(\\\"GenerateManifest\\\").Return(...), or remove extra call.\" Also investigate and fix any reported data races so tests pass reliably under -race, then re-run the test target.",
+  "input": {
+    "context_path": "results/v2/stress/rtk-err-cat/argocd-race-conditions-batch5-v2-001.txt",
+    "context_tokens_estimate": 93627
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 847
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 56027.086,
+    "cache_key": "c28be80cc28176a39c76d33d898d2f5023ddf249b63ca71a526686b8a79fe0ae",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "case_id": "pytest-pandas-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Test run failed because NumPy now emits a DeprecationWarning for use of generic timedelta/datetime units (e.g. np.datetime64(\"NaT\")), which is being raised during test collection and treated as an error, causing many tests to error/fail.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Numerous tests instantiate np.datetime64(\"NaT\") or similar generic-unit datetime/timedelta values which trigger the NumPy deprecation: \"The 'generic' unit for NumPy timedelta is deprecated... Please use a specific unit instead.\" Pytest is treating this deprecation as an error during collection, causing test failures/errors.",
+  "confidence": 0.8,
+  "relevant_files": [
+    "pandas/tests/arrays/masked/test_indexing.py",
+    "pandas/tests/arrays/test_timedeltas.py",
+    "pandas/core/internals/concat.py",
+    "pandas/tests/arithmetic/test_datetime64.py",
+    "pandas/tests/reshape/concat/test_append.py",
+    "pandas/tests/tslibs/test_array_to_datetime.py"
+  ],
+  "relevant_tests": [
+    "pandas/tests/arithmetic/test_datetime64.py::TestDatetimeIndexComparisons::test_dti_cmp_nat_behaves_like_float_cmp_nan",
+    "pandas/tests/reshape/concat/test_append.py::TestAppend::test_append_dtype_coerce[True]",
+    "pandas/tests/reshape/concat/test_categorical.py::TestCategoricalConcat::test_concat_categorical_datetime",
+    "pandas/tests/tslibs/test_array_to_datetime.py::TestArrayToDatetimeResolutionInference::test_infer_homogeoneous_date_objects"
+  ],
+  "evidence": [
+    {
+      "quote": "E   DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific unit instead.",
+      "reason": "Shows the exact deprecation message emitted by NumPy that is causing errors during test collection and runs."
+    },
+    {
+      "quote": "pandas/tests/arrays/masked/test_indexing.py:11: in <module>",
+      "reason": "Indicates test collection error in a file that uses np.datetime64(\"NaT\")."
+    },
+    {
+      "quote": "np.datetime64(\"NaT\"),",
+      "reason": "Multiple occurrences of this exact expression in tracebacks; these are the sites where the deprecated generic unit is being invoked."
+    },
+    {
+      "quote": "pandas/core/internals/concat.py:412: DeprecationWarning",
+      "reason": "Shows that library code (concat internals) is calling dtype.type(\"NaT\") which triggers the same deprecation."
+    },
+    {
+      "quote": "ERROR collecting pandas/tests/arrays/masked/test_indexing.py",
+      "reason": "Pytest reports error during collection rather than a simple warning, indicating deprecation is treated as an error in CI."
+    },
+    {
+      "quote": "= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s (0:12:39) =",
+      "reason": "Summary showing many failures and errors consistent with a widespread deprecation-triggered problem."
+    }
+  ],
+  "suggested_fix": "Either (A) update code/tests to avoid using generic-unit NumPy datetime/timedelta constructs (replace np.datetime64(\"NaT\") / np.timedelta64(\"NaT\", ...) with explicit units, e.g. np.datetime64(\"NaT\", \"ns\") or use pandas.NaT/pd.NaT where appropriate), or (B) adjust CI/test warnings policy temporarily (do not treat this DeprecationWarning as error) while updating code to be compatible with the NumPy change. The deprecation message itself states: \"Please use a specific unit instead.\"",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-120k-tail-v2/pytest-pandas-001.txt",
+    "context_tokens_estimate": 81147
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 816
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 32670.202,
+    "cache_key": "8fcc7be9d136ed185a9d800a81e046acd9b1b1e68af0b65b4699e488c66077ef",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "An assembly test failed FileCheck verification: the CHECK patterns in tests/assembly-llvm/wasm_exceptions.rs were not found in the generated assembly file, causing the test suite to fail.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "/checkout/tests/assembly-llvm/wasm_exceptions.rs failed FileCheck verification because expected CHECK strings were not found in /checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "/checkout/tests/assembly-llvm/wasm_exceptions.rs",
+    "/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s",
+    "/checkout/obj/build/x86_64-unknown-linux-gnu/ci-llvm/bin/FileCheck"
+  ],
+  "relevant_tests": [
+    "[assembly] tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "test [assembly] tests/assembly-llvm/wasm_exceptions.rs ... FAILED",
+      "reason": "Shows the specific assembly test that failed."
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:38:12: error: CHECK: expected string not found in input",
+      "reason": "FileCheck reported that an expected CHECK pattern from the test file was not found in the assembly input."
+    },
+    {
+      "quote": "/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s:33:16: note: scanning from here",
+      "reason": "Indicates where FileCheck began scanning the generated assembly file, tying the test to this specific output file."
+    },
+    {
+      "quote": "call may_panic",
+      "reason": "This actual assembly text appears in the generated file near the scanning position; the test's expected string(s) around this call were not matched."
+    },
+    {
+      "quote": "error: verification with 'FileCheck' failed",
+      "reason": "Confirms that FileCheck verification of the assembly against the CHECK patterns failed."
+    },
+    {
+      "quote": "command: \"/checkout/obj/build/x86_64-unknown-linux-gnu/ci-llvm/bin/FileCheck\" \"--input-file\" \"/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s\" \"/checkout/tests/assembly-llvm/wasm_exceptions.rs\"",
+      "reason": "Shows the exact FileCheck invocation used to compare the generated assembly to the test's CHECK file."
+    },
+    {
+      "quote": "test result: FAILED. 550 passed; 1 failed; 103 ignored; 0 measured; 0 filtered out; finished in 15.38s",
+      "reason": "Shows overall test run result and that this single failure caused the suite to report failure."
+    },
+    {
+      "quote": "Some tests failed in compiletest suite=assembly-llvm mode=assembly host=x86_64-unknown-linux-gnu target=wasm32-wasip1",
+      "reason": "Places the failure in the assembly-llvm compiletest suite and indicates the host/target context."
+    }
+  ],
+  "suggested_fix": "Compare the CHECK patterns in /checkout/tests/assembly-llvm/wasm_exceptions.rs with the actual assembly in /checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s. Either update the test's CHECK lines to match the current emitted assembly, or adjust the codegen so the expected patterns appear. Then re-run the FileCheck-based assembly test.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-4k-rtk-err-cat-v1/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 18150
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 772
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 20218.841,
+    "cache_key": "8475504c1b2f6e4e4938f0bde8e373b83c2992c90e92c6a6fe486bc8cbe76d7b",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

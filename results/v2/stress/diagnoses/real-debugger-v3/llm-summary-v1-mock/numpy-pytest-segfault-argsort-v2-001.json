@@ -1,0 +1,62 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The build failed during C/C++ compilation and linking checks: Meson/CMake preliminary checks could not find required headers and several compile errors (undeclared functions) occurred, causing link failures and aborting the build.",
+  "root_cause_category": "compile_error",
+  "root_cause": "C compilation/linking failed because required system and Python C headers were not found and builtin math/complex functions were undeclared, causing Meson/CMake preliminary checks to fail and the linker to exit with errors.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "/home/runner/work/numpy/numpy/build/meson-private/tmpati5_57k/testfile.c",
+    "/home/runner/work/numpy/numpy/build/meson-private/tmpktaptscn/testfile.c",
+    "/home/runner/work/numpy/numpy/build/meson-private/tmp_plgfkr4/testfile.c",
+    "/home/runner/work/numpy/numpy/build/meson-private/tmpmfkk_fp3/testfile.c",
+    "/home/runner/work/numpy/numpy/build/meson-private/tmpri6wbstk/testfile.c",
+    "/home/runner/work/numpy/numpy/build/meson-private/tmpg2l9qbth/testfile.c"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "#error \"Header 'Python.h' could not be found\"",
+      "reason": "Shows the Python C API header was not found during build checks, indicating missing Python development headers."
+    },
+    {
+      "quote": "#error \"Header 'complex.h' could not be found\"",
+      "reason": "Indicates a required system header (complex.h) was not found, causing configuration checks to fail."
+    },
+    {
+      "quote": "/home/runner/work/numpy/numpy/build/meson-private/tmpati5_57k/testfile.c:9:32: error: 'isfinite' undeclared (first use in this function)",
+      "reason": "A compile error shows builtin/math functions were undeclared, pointing to missing headers or incorrect include environment."
+    },
+    {
+      "quote": "/home/runner/work/numpy/numpy/build/meson-private/tmp_plgfkr4/testfile.c:9:32: error: 'isnan' undeclared (first use in this function); did you mean 'nan'?",
+      "reason": "Another compile error for an undeclared math function reinforces that header/configuration checks failed."
+    },
+    {
+      "quote": "collect2: error: ld returned 1 exit status",
+      "reason": "Linker exited with errors, a downstream result of earlier compilation/configuration failures."
+    },
+    {
+      "quote": "Preliminary CMake check failed. Aborting.",
+      "reason": "CMake/Meson configuration checks aborted, indicating the build system detected missing functionality or headers and stopped the build."
+    }
+  ],
+  "suggested_fix": "Ensure the build environment has the Python development headers and required system headers installed (e.g., install the appropriate python3-dev/python3-devel package and libc development headers), and verify compiler include paths so Meson/CMake preliminary checks can find Python.h, complex.h, features.h, and math builtin functions.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-mock/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 1326
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 681
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 16540.157,
+    "cache_key": "22d2adad236b6561528ea5f174cda2f4e4681fe5641fb34f9aef41dfa7d70221",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

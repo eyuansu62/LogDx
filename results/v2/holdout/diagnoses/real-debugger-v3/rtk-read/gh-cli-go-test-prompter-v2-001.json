@@ -1,0 +1,55 @@
+{
+  "case_id": "gh-cli-go-test-prompter-v2-001",
+  "context_method": "rtk-read",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "A unit test in package github.com/cli/cli/v2/internal/prompter failed because form.Run() did not complete before the test's timeout, causing the test job to exit non‑zero.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The test TestHuhPrompterMultiSelectWithSearchPersistence (subtest selections_persist_after_changing_search_query) timed out: 'form.Run() did not complete in time', causing the package github.com/cli/cli/v2/internal/prompter to fail.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "huh_prompter_test.go:478"
+  ],
+  "relevant_tests": [
+    "TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query"
+  ],
+  "evidence": [
+    {
+      "quote": " --- FAIL: TestHuhPrompterMultiSelectWithSearchPersistence (5.19s)",
+      "reason": "Shows the top-level test that failed and its elapsed time."
+    },
+    {
+      "quote": " --- FAIL: TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query (5.13s)",
+      "reason": "Shows the specific subtest that failed and its elapsed time."
+    },
+    {
+      "quote": "huh_prompter_test.go:478: form.Run() did not complete in time",
+      "reason": "The failure message from the test indicating that form.Run blocked/timeout'd and is the direct cause of the test failure."
+    },
+    {
+      "quote": "FAIL\tgithub.com/cli/cli/v2/internal/prompter\t8.475s",
+      "reason": "Indicates the package that failed its tests and that the test run returned a non-zero exit status."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the CI job failed because of the test failure."
+    }
+  ],
+  "suggested_fix": "Reproduce and debug the failing test locally: run the package tests for the prompter package and the single failing test (for example, `go test ./internal/prompter -run TestHuhPrompterMultiSelectWithSearchPersistence -v`) and inspect huh_prompter_test.go at line 478. If form.Run is legitimately slow or blocked, either ensure the test provides the necessary input/events to allow form.Run to complete, or increase/adjust the test timeout around form.Run so the test does not fail spuriously.",
+  "input": {
+    "context_path": "results/v2/holdout/rtk-read/gh-cli-go-test-prompter-v2-001.txt",
+    "context_tokens_estimate": 11367
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 516
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 19155.458,
+    "cache_key": "b8637cd911a50786aef8d049ad1ebd3273fb4c94278179b83c14699f3ae9f7bd",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

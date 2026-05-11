@@ -1,0 +1,70 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "A trybuild compile-fail test (compile_fail_full) failed because the actual compiler diagnostics for tests/fail/macros_type_mismatch.rs differ from the expected recorded output.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The trybuild test 'compile_fail_full' failed due to a mismatch between the expected compiler error output and the actual compiler diagnostics for tests/fail/macros_type_mismatch.rs (trybuild reported 1 of 10 tests failed).",
+  "confidence": 0.78,
+  "relevant_files": [
+    "tests/fail/macros_type_mismatch.rs",
+    "/home/runner/work/tokio/tokio/tests-build",
+    "/home/runner/work/tokio/tokio/target/tests/trybuild/tests-build"
+  ],
+  "relevant_tests": [
+    "tests-build::macros::compile_fail_full",
+    "compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "test compile_fail_full ... FAILED",
+      "reason": "Shows the specific test that failed."
+    },
+    {
+      "quote": "EXPECTED:",
+      "reason": "trybuild prints an \"EXPECTED\" block, indicating the test compares expected compiler output."
+    },
+    {
+      "quote": "ACTUAL OUTPUT:",
+      "reason": "trybuild prints an \"ACTUAL OUTPUT\" block, showing the observed compiler diagnostics that were compared against the expected output."
+    },
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
+      "reason": "Concrete example of an actual diagnostic that differs from expectations; points to tests/fail/macros_type_mismatch.rs."
+    },
+    {
+      "quote": "1 of 10 tests failed",
+      "reason": "Indicates trybuild detected a mismatch failure among its checked compile-fail cases."
+    },
+    {
+      "quote": "thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13:",
+      "reason": "Shows the trybuild harness panicked while validating the compile-fail output, causing the test run to fail."
+    },
+    {
+      "quote": "Summary [   9.876s] 396 tests run: 395 passed, 1 failed, 1 skipped",
+      "reason": "Summarizes that a single test failure caused the CI job to fail."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 100.",
+      "reason": "Final CI exit indicating the job failed due to the test failure."
+    }
+  ],
+  "suggested_fix": "Update the trybuild expected output for tests/fail/macros_type_mismatch.rs to match the current compiler diagnostics (or adjust the test input) so that the compile-fail test output matches the recorded expectations. Re-run the test and commit the updated expected output files.",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-120k-rtk-tail-v3/cargo-tokio-001.txt",
+    "context_tokens_estimate": 43413
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 622
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 18688.506,
+    "cache_key": "75f9b3648af346400a1363120f082f37c34a695231033c1e3195a84ec22e3e97",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

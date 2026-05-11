@@ -1,0 +1,57 @@
+{
+  "case_id": "biome-pnpm-not-found-v2-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because the build step attempted to run the pnpm formatter but the pnpm executable was not available in the runner, causing a command failure and aborting the xtask codegen verification.",
+  "root_cause_category": "dependency_install",
+  "root_cause": "The command 'pnpm format' failed because the pnpm binary was not found: \"sh: 1: pnpm: not found\", causing \"Recipe `format` failed on line 221 with exit code 127\" and then \"Recipe `gen-all` failed on line 32 with exit code 127\".",
+  "confidence": 0.9,
+  "relevant_files": [
+    "/home/runner/work/biome/biome/xtask/codegen/src/main.rs",
+    "/home/runner/work/biome/biome/xtask/codegen/tests/global_types_codegen.rs"
+  ],
+  "relevant_tests": [
+    "global_types_codegen",
+    "tests/global_types_codegen.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "pnpm format",
+      "reason": "Shows the CI attempted to run the pnpm formatter as part of the build/gen step."
+    },
+    {
+      "quote": "sh: 1: pnpm: not found",
+      "reason": "Direct shell error indicating the pnpm executable is missing from the runner's PATH."
+    },
+    {
+      "quote": "error: Recipe `format` failed on line 221 with exit code 127",
+      "reason": "The format recipe failed with exit code 127 (command not found) shortly after pnpm was invoked."
+    },
+    {
+      "quote": "error: Recipe `gen-all` failed on line 32 with exit code 127",
+      "reason": "The higher-level generation recipe aborted because the format recipe failed, propagating the exit code."
+    },
+    {
+      "quote": "cargo run -p xtask_codegen --features global_types -- global-types --verify",
+      "reason": "Context shows xtask/codegen was running a verify step which eventually invoked the pnpm format command that failed."
+    }
+  ],
+  "suggested_fix": "Make pnpm available in the CI runner before running the xtask step. For example, add a setup step to the workflow to install pnpm (e.g., using a Node setup action and then install pnpm globally, or run a pnpm install script) so that the 'pnpm format' command succeeds.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-rtk-tail-v3/biome-pnpm-not-found-v2-001.txt",
+    "context_tokens_estimate": 98701
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 480
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 40090.132,
+    "cache_key": "d9e69b5b731fc9fd162522e33306cc65bb7aafe682a10dec61bf61318062a0b5",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

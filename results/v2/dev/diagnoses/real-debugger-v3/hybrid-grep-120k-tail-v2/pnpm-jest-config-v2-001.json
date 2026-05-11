@@ -1,0 +1,51 @@
+{
+  "case_id": "pnpm-jest-config-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "One Jest test suite failed: a test in test/config/get.ts emitted an unexpected warning about an environment variable replacement and the test run exited with status 1.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "A test in test/config/get.ts failed due to an unexpected warning: \"[WARN] Failed to replace env in config: ${ENV_VAR_123}\" which is reported from test/config/get.ts (line 32), causing the Jest run to exit with status 1.",
+  "confidence": 0.7,
+  "relevant_files": [
+    "test/config/get.ts"
+  ],
+  "relevant_tests": [
+    "test/config/get.ts"
+  ],
+  "evidence": [
+    {
+      "quote": "Test Suites: 1 failed, 3 skipped, 61 passed, 62 of 65 total",
+      "reason": "Shows that one test suite failed while most others passed."
+    },
+    {
+      "quote": "[WARN] Failed to replace env in config: ${ENV_VAR_123}",
+      "reason": "The unexpected warning message that likely triggered the failing assertion or indicates missing environment variable substitution."
+    },
+    {
+      "quote": "at Object.<anonymous> (test/config/get.ts:32:38)",
+      "reason": "Stack trace points to the failing test location inside test/config/get.ts at line 32."
+    },
+    {
+      "quote": "[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] pnpm@11.0.6 .test: `cross-env NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules --disable-warning=ExperimentalWarning --disable-warning=DEP0169\" jest`",
+      "reason": "Shows the test run exited with a non-zero status, confirming the CI job failed because Jest returned exit code 1."
+    }
+  ],
+  "suggested_fix": "Provide the expected environment variable before running tests (e.g. set ENV_VAR_123 in the CI environment) or update the test/config/get.ts test to mock or handle missing environment variables so it does not emit the warning/trigger a failure.",
+  "input": {
+    "context_path": "results/v2/dev/hybrid-grep-120k-tail-v2/pnpm-jest-config-v2-001.txt",
+    "context_tokens_estimate": 15325
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 425
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 14590.707,
+    "cache_key": "4e57271c4a0672f40417156d9d4f1aa2079d66b684b219c0a006677c9d96db22",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

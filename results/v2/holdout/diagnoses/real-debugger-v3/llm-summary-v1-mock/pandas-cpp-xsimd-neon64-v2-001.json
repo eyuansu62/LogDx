@@ -1,0 +1,60 @@
+{
+  "case_id": "pandas-cpp-xsimd-neon64-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The build failed during C++ compilation: explicit instantiation of 'operator()' in simd moments code produced compiler errors, causing the meson/ninja build to stop and pip metadata generation to fail.",
+  "root_cause_category": "compile_error",
+  "root_cause": "C++ compilation error: invalid explicit instantiation of 'operator()' in pandas/_libs/include/pandas/simd/moments_simd.hpp referenced (and instantiated) from pandas/_libs/simd/moments_inst_neon.cpp, causing object compilation to fail.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "../../pandas/_libs/include/pandas/simd/moments_simd.hpp",
+    "../../pandas/_libs/simd/moments_inst_neon.cpp",
+    "pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o",
+    "pandas/_libs/simd/libmoments_base.a.p/moments.cpp.o"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "FAILED: [code=1] pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o",
+      "reason": "Shows the specific build target that failed to produce an object file."
+    },
+    {
+      "quote": "arm64-apple-darwin20.0.0-clang++ -Ipandas/_libs/simd/libmoments_simd_neon.a.p -Ipandas/_libs/simd -I../../pandas/_libs/simd -I../../pandas/_libs/include -I../../subproje…",
+      "reason": "Shows the compiler invocation for the failing compile unit (C++ compilation on macOS arm64)."
+    },
+    {
+      "quote": "../../pandas/_libs/include/pandas/simd/moments_simd.hpp:255:50: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, m…",
+      "reason": "Direct compiler error pointing to an invalid explicit instantiation in moments_simd.hpp."
+    },
+    {
+      "quote": "../../pandas/_libs/simd/moments_inst_neon.cpp:14:43: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member funct…",
+      "reason": "Compiler error in the instantiation source file confirming the instantiation is invalid there as well."
+    },
+    {
+      "quote": "ninja: build stopped: subcommand failed.",
+      "reason": "Shows the build system stopped due to the compilation error."
+    },
+    {
+      "quote": "error: metadata-generation-failed",
+      "reason": "Because the native build failed, pip's metadata generation for editable install also failed and terminated the packaging step."
+    }
+  ],
+  "suggested_fix": "Fix the explicit instantiation of 'operator()' in the SIMD moments code: update moments_simd.hpp and/or moments_inst_neon.cpp so the instantiation refers to a valid function/variable template (or remove the incorrect explicit instantiation). Then rebuild (meson/ninja) and re-run the editable install (pip) to confirm the compilation and metadata generation succeed.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-mock/pandas-cpp-xsimd-neon64-v2-001.txt",
+    "context_tokens_estimate": 1093
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 646
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 20568.426,
+    "cache_key": "c218e20f5118fff897ff83bcb0ecf05fdd7d87b8491537075786cdc77d3fe7c0",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

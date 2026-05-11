@@ -1,0 +1,56 @@
+{
+  "case_id": "pytest-sklearn-stress-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "A doctest in doc/callbacks.rst failed because the example's expected output (a progress-bar display) did not match the actual output (the estimator repr).",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The doctest in doc/callbacks.rst expected a progress-bar output ('LogisticRegression - fit ...') but the actual output was 'LogisticRegression()'; the example that registers the progress bar was skipped ('>>> estimator.set_callbacks(progress_bar) # doctest: +SKIP'), so the progress bar was not present during the doctest.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst",
+    "../doc/callbacks.rst"
+  ],
+  "relevant_tests": [
+    "../doc/callbacks.rst::callbacks.rst"
+  ],
+  "evidence": [
+    {
+      "quote": ">>> estimator.set_callbacks(progress_bar) # doctest: +SKIP",
+      "reason": "Shows the doctest that would register the progress bar is being skipped, so the progress bar is not set during the test."
+    },
+    {
+      "quote": "Expected:\n    LogisticRegression - fit ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:03:12",
+      "reason": "The doctest expected the progress-bar output from fitting the estimator."
+    },
+    {
+      "quote": "Got:\n    LogisticRegression()",
+      "reason": "The actual output was just the estimator repr, indicating no progress-bar output was produced."
+    },
+    {
+      "quote": "FAILED ../doc/callbacks.rst::callbacks.rst",
+      "reason": "Identifies the failing doctest file and test identifier."
+    },
+    {
+      "quote": "1 failed, 41 passed, 2 skipped, 59 warnings",
+      "reason": "Summarizes that this single doctest failure caused the job to fail while many other tests passed."
+    }
+  ],
+  "suggested_fix": "Either remove the '# doctest: +SKIP' from the '>>> estimator.set_callbacks(progress_bar)' line in doc/callbacks.rst so the progress bar is registered in the doctest, or update the doctest expected output to match the current behavior (i.e., expect 'LogisticRegression()' or otherwise document that the progress bar is not shown in doctests).",
+  "input": {
+    "context_path": "results/stress/tail/pytest-sklearn-stress-001.txt",
+    "context_tokens_estimate": 11243
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 490
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 29066.356,
+    "cache_key": "e0b149fa55bf8902e6babce3d42212c02a45efa8a3d690a4e67d1a71199a4539",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

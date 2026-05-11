@@ -1,0 +1,49 @@
+{
+  "case_id": "docbuild-hf-stress-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The workflow's status-check step exited with code 1 because the conditional comparing job status strings evaluated false (one status was \"failure\").",
+  "root_cause_category": "github_actions_config",
+  "root_cause": "The status-check conditional in the doc_build_status_check job evaluated to false because one status string is \"failure\" (not \"success\" or \"skipped\"), so the script ran the else branch and exited 1.",
+  "confidence": 0.8,
+  "relevant_files": [],
+  "relevant_tests": [
+    "doc_build_status_check"
+  ],
+  "evidence": [
+    {
+      "quote": "Run if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\",
+      "reason": "Shows the conditional is comparing a status value of \"failure\" against \"success\" and \"skipped\"."
+    },
+    {
+      "quote": "   [[ \"skipped\" == \"success\" || \"skipped\" == \"skipped\" ]]; then",
+      "reason": "Shows the second part of the conditional uses a status value of \"skipped\"; combined with the first part the overall && will be false if either side is false."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Indicates the script executed the else branch and exited with code 1 because the overall conditional evaluated false."
+    },
+    {
+      "quote": "Complete job name: doc_build_status_check",
+      "reason": "Identifies the job that performed this status check."
+    }
+  ],
+  "suggested_fix": "Investigate the documentation build that reported the \"failure\" status and fix that job so it succeeds, or update the status-check logic in the workflow to handle the observed statuses as intended (e.g., adjust the conditional or reporting of upstream job statuses).",
+  "input": {
+    "context_path": "results/stress/tail/docbuild-hf-stress-001.txt",
+    "context_tokens_estimate": 606
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 401
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 22249.787,
+    "cache_key": "b25c553965fca5a0442ac0f1f4eaa786725189ca8d8ec52b23cc39e7da1e1428",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

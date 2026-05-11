@@ -1,0 +1,63 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Integration tests for dubbo-samples-test-11137 timed out; Docker/compose errors (daemon 500, invalid filter, missing network/containers) appear in the log and likely prevented the test containers from starting.",
+  "root_cause_category": "timeout_or_oom",
+  "root_cause": "The integration test run timed out: the test harness reported a run timeout and multiple Docker errors (daemon 500, 'invalid filter', missing network and containers) occurred while bringing up or tearing down containers.",
+  "confidence": 0.7,
+  "relevant_files": [
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs"
+  ],
+  "relevant_tests": [
+    "[2/23] [dubbo-samples-test-11137:1/1]"
+  ],
+  "evidence": [
+    {
+      "quote": "[2/23] [dubbo-samples-test-11137:1/1] TEST FAILURE: Run tests timeout, version: -Ddubbo.version=3.3.7-SNAPSHOT -Dspring.version=5.3.24 -Djava.version=21, please check logs: /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
+      "reason": "Explicit message that the test run timed out and points to logs for the failing integration test run."
+    },
+    {
+      "quote": "Error response from daemon: invalid filter 'reference'",
+      "reason": "Repeated Docker daemon error indicating a problem interacting with the Docker API/filters while running tests."
+    },
+    {
+      "quote": "Error response from daemon: No such container: dubbo-samples-test-11137--zookeeper-1",
+      "reason": "Shows expected test containers (zookeeper) were not present, suggesting container startup or teardown failed."
+    },
+    {
+      "quote": "zookeeper Error received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "A Docker/compose-related 500 error occurred for the zookeeper service, indicating the daemon or compose operation failed."
+    },
+    {
+      "quote": "Error response from daemon: network dubbo-samples-test-11137-21 not found",
+      "reason": "Docker network required for the integration test was not found, which would prevent services from communicating and the tests from running."
+    },
+    {
+      "quote": "Failed tests count: 1",
+      "reason": "Confirms that at least one test ultimately failed in the suite (consistent with the overall test failure outcome)."
+    },
+    {
+      "quote": "Total: 23, Success: 18, Failures: 1, Ignored: 4",
+      "reason": "Summarizes the test run results and corroborates that the job ended with failures after the timeout."
+    }
+  ],
+  "suggested_fix": "Inspect the integration test logs at /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs to see detailed failures; address the Docker/compose errors (investigate Docker daemon 500 responses and the 'invalid filter \"reference\"' messages), ensure the docker network and expected containers (e.g., zookeeper) can be created, and remove the obsolete 'version' attribute from the generated docker-compose.yml as suggested by the warning before re-running the tests.",
+  "input": {
+    "context_path": "results/v2/holdout/rtk-err-cat/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 1834
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 705
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 17585.501,
+    "cache_key": "57ddccb745779407ef3545b2c797b963b757814fadf5373e7dfacffcde3b8832",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "case_id": "airflow-precommit-tsc-middle-v2-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "TypeScript compilation step for the UI failed during the static checks: tsc (run via pnpm) returned a non-zero exit status which caused the 'Compile / format / lint UI' step to fail.",
+  "root_cause_category": "compile_error",
+  "root_cause": "The TypeScript compiler (tsc) invoked via pnpm returned a non-zero exit status (2), causing the UI compile/lint step to fail.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "/home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json",
+    "src/airflow/ui/tsconfig.json",
+    "src/airflow/ui"
+  ],
+  "relevant_tests": [
+    "ts-compile-lint-ui"
+  ],
+  "evidence": [
+    {
+      "quote": "Compile / format / lint UI................................................................................^[[41mFailed^[[49m",
+      "reason": "Shows the UI compile/format/lint step failed."
+    },
+    {
+      "quote": "subprocess.CalledProcessError: Command '['pnpm', 'tsc', '--p', '/home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json']' returned non-zero exit status 2.",
+      "reason": "Direct error from the subprocess indicating tsc (TypeScript compiler) failed with non-zero exit status."
+    },
+    {
+      "quote": "Running command: `pnpm eslint --fix src/layouts/Nav/BrowseButton.tsx ...`",
+      "reason": "Shows the pnpm-driven static-checks sequence (eslint, prettier, then tsc) used for UI and that pnpm was used to run linters/formatters before tsc."
+    },
+    {
+      "quote": "Running command: `pnpm prettier --write src/layouts/Nav/BrowseButton.tsx ...`",
+      "reason": "Shows prettier was run prior to tsc as part of the UI checks; the next step was tsc which failed."
+    },
+    {
+      "quote": "  All TypeScript files: ['src/layouts/Nav/BrowseButton.tsx', 'src/queries/useRefreshOnNewDagRuns.ts',",
+      "reason": "Confirms a list of TypeScript files was assembled and passed to the tooling before invoking tsc, indicating the tsc invocation was for the UI TypeScript sources."
+    }
+  ],
+  "suggested_fix": "Run the same tsc command locally to inspect the TypeScript errors: pnpm tsc --p /home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json (or run the repository's equivalent pnpm script). Fix the TypeScript compilation errors reported by tsc (or adjust tsconfig if intentional) and re-run the static checks.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-4k-rtk-err-cat-v1/airflow-precommit-tsc-middle-v2-001.txt",
+    "context_tokens_estimate": 69089
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 552
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 22724.431,
+    "cache_key": "b3584c38c92cf24dfc2be347a9e1b3017ceae44755ddae16615bda951b469b0a",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

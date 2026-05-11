@@ -1,0 +1,59 @@
+{
+  "case_id": "pytest-pandas-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Pytest test collection failed because a NumPy DeprecationWarning about the 'generic' timedelta unit was raised and treated as an error, aborting test collection across multiple test files.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "A DeprecationWarning ('The \\'generic\\' unit for NumPy timedelta is deprecated') was raised during pytest collection and was treated as an error (warnings-as-errors enabled), causing collection to fail for many tests.",
+  "confidence": 0.78,
+  "relevant_files": [
+    "pandas/tests/util/test_assert_almost_equal.py:309",
+    "pandas/tests/util/test_assert_index_equal.py:262"
+  ],
+  "relevant_tests": [
+    "pandas/tests/arrays/masked/test_indexing.py",
+    "pandas/tests/arrays/test_timedeltas.py",
+    "pandas/tests/dtypes/test_inference.py",
+    "pandas/tests/dtypes/test_missing.py"
+  ],
+  "evidence": [
+    {
+      "quote": "E   DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.…",
+      "reason": "Shows the DeprecationWarning about NumPy timedelta was emitted during test collection."
+    },
+    {
+      "quote": "_________ ERROR collecting pandas/tests/arrays/masked/test_indexing.py _________",
+      "reason": "Shows pytest failed while collecting the listed test file (error during collection)."
+    },
+    {
+      "quote": "+ pixi run --environment numpy-nightly build-pandas --editable -Csetup-args=--werror",
+      "reason": "The build/run command includes -Csetup-args=--werror, indicating warnings are being promoted to errors."
+    },
+    {
+      "quote": "werror      : true",
+      "reason": "Meson/build output indicates werror is enabled, reinforcing that warnings are treated as errors."
+    },
+    {
+      "quote": "==================================== ERRORS ====================================",
+      "reason": "Overall test run shows errors (not just failures), consistent with warnings-as-errors aborting collection."
+    }
+  ],
+  "suggested_fix": "Disable treating warnings as errors for this run or address the deprecated usage. Concretely, remove or stop passing the --werror setup arg (e.g. remove -Csetup-args=--werror from the pixi/pipeline invocation) or update the code/tests to avoid implicit bare-integer to timedelta conversions that trigger the NumPy deprecation.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-mock/pytest-pandas-001.txt",
+    "context_tokens_estimate": 2056
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 558
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 19296.155,
+    "cache_key": "c2043afe2a2e1072e3f046a8266b514de707806e66adb2d295aca8bfdfe1c081",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

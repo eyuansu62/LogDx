@@ -1,0 +1,72 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest snapshot tests failed because thrown errors did not match stored snapshots; a SyntaxError from the parser is shown in the test output.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Multiple Jest snapshot assertions failed: the received errors (including a SyntaxError from the parser) did not match expected snapshots, causing snapshot test failures.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "src/common/parser-create-error.js",
+    "src/language-js/parse/utilities/create-babel-parse-error.js",
+    "tests/format/flow/flow-repo/match_failure/format.test.js",
+    "tests/format/flow/flow-repo/esproposal_export_star_as.warn/format.test.js",
+    "tests/format/flow/flow-repo/esproposal_decorators.warn/format.test.js",
+    "tests/format/flow/flow-repo/esproposal_class_static_fields.warn/format.test.js",
+    "tests/format/flow/flow-repo/esproposal_class_instance_fields.warn/format.test.js"
+  ],
+  "relevant_tests": [
+    "expect(received).rejects.toThrowErrorMatchingSnapshot()",
+    "Test Suites: 3 failed, 1500 passed, 1503 total",
+    "Tests:       14 failed, 5 skipped, 29634 passed, 29653 total",
+    "Snapshots:   13 failed, 12086 passed, 12099 total"
+  ],
+  "evidence": [
+    {
+      "quote": "Error: expect(received).rejects.toThrowErrorMatchingSnapshot()",
+      "reason": "Shows the specific Jest assertion that failed (snapshot mismatch on thrown error) repeated many times in the log."
+    },
+    {
+      "quote": "› 12 snapshots failed.",
+      "reason": "Indicates multiple Jest snapshots failed early in the run."
+    },
+    {
+      "quote": "SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)",
+      "reason": "A parser SyntaxError is present in the output; this error likely changed the error text or behavior that snapshots expect."
+    },
+    {
+      "quote": "at createError (file:///home/runner/work/prettier/prettier/src/common/parser-create-error.js:5:17)",
+      "reason": "Stack trace points to parser error creation code in the repository, tying the SyntaxError to project code mentioned in the tests."
+    },
+    {
+      "quote": "at createBabelParseError (file:///home/runner/work/prettier/prettier/src/language-js/parse/utilities/create-babel-parse-error.js:33:10)",
+      "reason": "Stack trace shows Babel parse error utility produced the error observed by tests, explaining why snapshot of the thrown error did not match."
+    },
+    {
+      "quote": "› 13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "Jest recommends inspecting code changes or running `-u` when snapshots differ, directly relevant to resolving the failures."
+    },
+    {
+      "quote": "Test Suites: 3 failed, 1500 passed, 1503 total",
+      "reason": "Summarizes that a small number of test suites failed while the rest passed, indicating localized snapshot assertion failures rather than a broad test outage."
+    }
+  ],
+  "suggested_fix": "Inspect the failing snapshots and the code that produces the parser error; if the new error messages are expected, re-run jest with -u to update snapshots (as suggested by the output: `Inspect your code changes or re-run jest with `-u` to update them.`). Otherwise fix the parser behavior that produces the different SyntaxError so the thrown errors match existing snapshots.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-4k-rtk-err-cat-v1/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 1397
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 794
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 27403.043,
+    "cache_key": "118107addc0839430a86d56eb29de7cfc3880a44951aec998ef51cfe50608351",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

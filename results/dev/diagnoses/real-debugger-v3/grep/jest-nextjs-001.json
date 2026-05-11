@@ -1,0 +1,64 @@
+{
+  "case_id": "jest-nextjs-001",
+  "context_method": "grep",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Git refused to operate on the workspace due to dubious ownership (safe.directory) which caused test runners to fail to produce result files, leading the job to exit with code 1.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "Git returned \"detected dubious ownership in repository at '/work'\" (unsafe repository ownership), causing tooling (turbo/tests) to fail to get git status and the test harness to not produce per-test result JSON files.",
+  "confidence": 0.9,
+  "relevant_files": [
+    "/work/run-tests.js",
+    "examples/with-jest/__tests__/index.test.tsx.results.json",
+    "examples/with-vitest/__tests__/Home.test.tsx.results.json"
+  ],
+  "relevant_tests": [
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest-babel/__tests__/index.test.tsx",
+    "examples/with-vitest/__tests__/Home.test.tsx",
+    "examples/with-mocha/test/index.test.js"
+  ],
+  "evidence": [
+    {
+      "quote": "fatal: detected dubious ownership in repository at '/work'",
+      "reason": "Shows git refused to operate because of repository ownership at /work."
+    },
+    {
+      "quote": "To add an exception for this directory, call:\n\n\tgit config --global --add safe.directory /work",
+      "reason": "Git suggests a concrete remediation (adding /work to safe.directory), confirming the ownership/safe.directory issue."
+    },
+    {
+      "quote": "WARNING  failed to get git status for dirty hash: Git error: fatal: detected dubious ownership in repository at '/work'",
+      "reason": "Turbo/turborepo failed to get git status because of the same git ownership error, indicating upstream tooling couldn't access git state."
+    },
+    {
+      "quote": "Failed to load test output Error: ENOENT: no such file or directory, open 'examples/with-jest/__tests__/index.test.tsx.results.json'",
+      "reason": "The test runner expected a results JSON file but it wasn't produced, consistent with tests not running or failing early due to the git/ownership problem."
+    },
+    {
+      "quote": "at async runTest (/work/run-tests.js:927:29)",
+      "reason": "The run-tests.js harness attempted to process test results and failed while reading output, linking the failure to the test orchestration script executed in the workspace."
+    },
+    {
+      "quote": "Some tests failed\nexiting with code 1",
+      "reason": "CI exited non-zero after multiple test failures / missing outputs, the observed symptom."
+    }
+  ],
+  "suggested_fix": "Ensure the workspace is added to Git's safe.directory before running build/tests. For example, add a step that runs: git config --global --add safe.directory /work (or the actual workspace path used by the runner) — or fix repository ownership so git does not flag the directory as dubious.",
+  "input": {
+    "context_path": "results/dev/grep/jest-nextjs-001.txt",
+    "context_tokens_estimate": 60269
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 648
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 19996.03,
+    "cache_key": "4b0aa2e7ae1888c0fe6513c4b0ea96064e65b359c244dc5699cb153a245c1056",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

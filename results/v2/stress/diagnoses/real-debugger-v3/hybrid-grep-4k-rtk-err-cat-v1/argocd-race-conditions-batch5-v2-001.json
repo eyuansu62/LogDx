@@ -1,0 +1,65 @@
+{
+  "case_id": "argocd-race-conditions-batch5-v2-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The race-enabled unit test run failed: multiple tests failed (3 failures) including an assertion mismatch in cmd/argocd/commands/app_test.go and a panic in a controller test due to a mock expectation; the Go race detector also reported data races.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "One or more unit tests failed at runtime: an assertion failure in cmd/argocd/commands/app_test.go (line 1936) and a panic in controller tests caused by an over-invoked mock; the race detector also reported data races. The test run exited non‑zero (make target test-race-local failed).",
+  "confidence": 0.78,
+  "relevant_files": [
+    "cmd/argocd/commands/app_test.go:1936",
+    "controller/appcontroller_test.go:2192",
+    "Makefile:473"
+  ],
+  "relevant_tests": [
+    "github.com/argoproj/argo-cd/v3/controller.TestUpdateReconciledAt.func3"
+  ],
+  "evidence": [
+    {
+      "quote": "app_test.go:1936:",
+      "reason": "Shows the file and line where an assertion failure was reported."
+    },
+    {
+      "quote": "Error:       \tNot equal:",
+      "reason": "Indicates an assertion mismatch (test expectation did not match actual), i.e. a failing test assertion."
+    },
+    {
+      "quote": "panic: assert: mock: The method has been called over 1 times.",
+      "reason": "Shows a panic triggered by a mocked method being called more often than the test expected, causing a test failure."
+    },
+    {
+      "quote": "WARNING: DATA RACE",
+      "reason": "The race detector reported data races during test execution, which can cause test failures under -race."
+    },
+    {
+      "quote": "testing.go:1712: race detected during execution of test",
+      "reason": "Explicit confirmation that the Go race detector detected races while running tests."
+    },
+    {
+      "quote": "DONE 7346 tests, 5 skipped, 3 failures in 468.930s",
+      "reason": "Summary line showing the test run completed with 3 failures."
+    },
+    {
+      "quote": "make: *** [Makefile:473: test-race-local] Error 1",
+      "reason": "The overall Make target for race tests failed and returned a non-zero exit code, causing the CI job to fail."
+    }
+  ],
+  "suggested_fix": "Run the failing tests locally with the race detector (e.g. make test-race-local or go test ./... -race). Inspect cmd/argocd/commands/app_test.go at line 1936 to see why the expected value differs and fix the test or code. Inspect controller/appcontroller_test.go (around line 2192) and adjust mock expectations (Mock.On/Return) so mocked methods are not called more times than expected. Resolve reported data races (address concurrent access to shared state) and re-run the race tests until they pass.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-4k-rtk-err-cat-v1/argocd-race-conditions-batch5-v2-001.txt",
+    "context_tokens_estimate": 93677
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 622
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 26860.512,
+    "cache_key": "fab828e36502a2277fcdee69dc43b3aa2b91a5087d5a254bcb886ae86ff3e902",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

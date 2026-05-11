@@ -1,0 +1,51 @@
+{
+  "case_id": "docbuild-hf-stress-001",
+  "context_method": "raw",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "A workflow step ran a shell conditional that evaluated to false and executed 'exit 1', causing the job to fail.",
+  "root_cause_category": "github_actions_config",
+  "root_cause": "The step's shell conditional evaluated to false and the script executed 'exit 1', causing the job to exit with code 1.",
+  "confidence": 0.8,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "Complete job name: doc_build_status_check",
+      "reason": "Identifies the failing job so the failure is tied to this workflow step."
+    },
+    {
+      "quote": "if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\",
+      "reason": "Shows the shell conditional being evaluated; the literal strings indicate the condition was checking for mismatched statuses."
+    },
+    {
+      "quote": "echo \"OK\"",
+      "reason": "Shows the branch that would run if the condition were true (not reached)."
+    },
+    {
+      "quote": "else\\n  exit 1\\nfi",
+      "reason": "Shows the script explicitly exits with status 1 when the condition is false, which causes the job failure."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the job failed due to the script exiting with code 1."
+    }
+  ],
+  "suggested_fix": "Update the workflow step's shell conditional so it matches the actual statuses you intend to accept (or remove the explicit 'exit 1' branch). For example, edit the conditional comparing \"failure\"/\"skipped\"/\"success\" to the correct values or change the logic so the step prints OK when expected, then re-run the workflow.",
+  "input": {
+    "context_path": "results/stress/raw/docbuild-hf-stress-001.txt",
+    "context_tokens_estimate": 606
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 376
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 16335.4,
+    "cache_key": "f850c674dcccf697c84acaf55fdc26c2437d6e2b556eff9c7e35f884f05a564d",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

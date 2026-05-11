@@ -1,0 +1,45 @@
+{
+  "case_id": "docbuild-hf-stress-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The docs status-check job exited with code 1 because a shell conditional did not match the status string and executed the else branch that calls exit 1.",
+  "root_cause_category": "github_actions_config",
+  "root_cause": "A shell if-condition in the workflow compared the string \"failure\" only against \"success\" and \"skipped\", so the condition was false and the else branch ran 'exit 1', causing the job to fail.",
+  "confidence": 0.85,
+  "relevant_files": [],
+  "relevant_tests": [
+    "Complete job name: doc_build_status_check"
+  ],
+  "evidence": [
+    {
+      "quote": "Run if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\",
+      "reason": "Shows the conditional is comparing the literal string \"failure\" only to \"success\" and \"skipped\", which will be false."
+    },
+    {
+      "quote": "  exit 1",
+      "reason": "Shows the else branch explicitly calls exit 1, which will fail the job when the condition is false."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the job terminated with an exit code 1 as a result of the script's exit."
+    }
+  ],
+  "suggested_fix": "Update the workflow's shell conditional to handle the actual status value (for example, include \"failure\" in the allowed comparisons or change the logic so it doesn't call 'exit 1' for this case), e.g. adjust the if expression so it does not fall through to the 'exit 1' else branch.",
+  "input": {
+    "context_path": "results/stress/hybrid-grep-4k-rtk-err-cat-v1/docbuild-hf-stress-001.txt",
+    "context_tokens_estimate": 274
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 344
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 10222.501,
+    "cache_key": "02784f8721975ba6fafb45b296394de4b069eb31930a670ce05db9be2c7a2e71",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

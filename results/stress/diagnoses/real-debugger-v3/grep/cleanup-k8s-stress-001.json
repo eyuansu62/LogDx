@@ -1,0 +1,43 @@
+{
+  "case_id": "cleanup-k8s-stress-001",
+  "context_method": "grep",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The cleanup step attempted to delete run artifacts but the GitHub CLI returned an HTTP 403 and the job failed.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GitHub CLI ('gh') lacked permission to access/delete the artifacts, producing 'Resource not accessible by integration (HTTP 403)'.",
+  "confidence": 0.88,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "Deleting artifacts for run ID: 23485708914",
+      "reason": "Shows the job was attempting to delete artifacts for a specific run."
+    },
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "Direct error from the GitHub CLI indicating an authorization/permission failure (HTTP 403)."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the permission error caused the cleanup step to fail the job."
+    }
+  ],
+  "suggested_fix": "Give the token/integration used by the cleanup step permission to access and delete actions artifacts (or run-level artifacts). For example, configure the workflow to use a token with the needed scopes/permissions (or a PAT) or adjust the job's permissions in the workflow (e.g., grant actions/artifacts write access) so 'gh' can delete the artifacts.",
+  "input": {
+    "context_path": "results/stress/grep/cleanup-k8s-stress-001.txt",
+    "context_tokens_estimate": 83
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 308
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 14606.727,
+    "cache_key": "c83234b4f8ce265d6ad94f0efea9c9199f34e6600a9532e6c190f8a68125c335",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

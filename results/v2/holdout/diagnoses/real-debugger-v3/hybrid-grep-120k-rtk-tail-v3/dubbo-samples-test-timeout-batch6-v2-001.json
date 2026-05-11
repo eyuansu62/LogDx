@@ -1,0 +1,65 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "One integration test (dubbo-samples-test-11137) failed because its test container did not start in time and the test run hit the 600s timeout; Docker reported errors while attempting to manage containers.",
+  "root_cause_category": "timeout_or_oom",
+  "root_cause": "The integration test dubbo-samples-test-11137 timed out waiting for its test container to become ready (timeout configured as 600s); Docker returned errors (HTTP 500 and missing-container responses) during container startup/cleanup.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/docker-compose.yml"
+  ],
+  "relevant_tests": [
+    "dubbo-samples-test-11137",
+    "[2/23] [dubbo-samples-test-11137:1/1]"
+  ],
+  "evidence": [
+    {
+      "quote": "wait for container is timeout: 602 s",
+      "reason": "Shows the test harness waited for a container and exceeded the allowed wait time."
+    },
+    {
+      "quote": "[dubbo-samples-test-11137] :ErrorMsg: Run tests timeout",
+      "reason": "Explicit error message stating the test run timed out."
+    },
+    {
+      "quote": "[dubbo-samples-test-11137] timeout: 600",
+      "reason": "Displays the configured timeout value (600s) used for the test run."
+    },
+    {
+      "quote": "Error response from daemon: received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "Docker daemon returned an HTTP 500 while pulling/starting containers, indicating container management failures during startup/cleanup."
+    },
+    {
+      "quote": "Error response from daemon: No such container: dubbo-samples-test-11137--zookeeper-1",
+      "reason": "Docker could not find containers that the test expected to inspect/stop, indicating failed or incomplete container creation."
+    },
+    {
+      "quote": "please check logs: /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
+      "reason": "Points to the logs directory for the failing test, supporting investigation of the container start/timeout."
+    },
+    {
+      "quote": "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion",
+      "reason": "Shows the docker-compose file used and a warning that may affect compose behavior; relevant to container startup issues."
+    }
+  ],
+  "suggested_fix": "Inspect the logs at /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs for container startup errors; address the Docker daemon 500 errors (check daemon health and registry/network access); consider increasing the test timeout (>600s) or fixing the container startup (docker-compose.yml) so the test container can become ready within the timeout.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-rtk-tail-v3/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 17018
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 681
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 30599.601,
+    "cache_key": "472167dbef5915874a83249697aabc809c8b0043940b3e64297d502c2d3eb107",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

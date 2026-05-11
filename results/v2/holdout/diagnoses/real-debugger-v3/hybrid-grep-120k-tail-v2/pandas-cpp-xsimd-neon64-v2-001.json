@@ -1,0 +1,56 @@
+{
+  "case_id": "pandas-cpp-xsimd-neon64-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Build failed during compilation while building SIMD-related C++ sources; the compiler emitted errors about an explicit template instantiation that does not match the declared operator() signature.",
+  "root_cause_category": "compile_error",
+  "root_cause": "Clang compilation failed due to an explicit template instantiation mismatch in pandas/_libs/include/pandas/simd/moments_simd.hpp: the code instantiates accumulate_moments_simd::operator()<xsimd::neon64> but the candidate operator() signature uses xsimd::neon (mismatch between neon64 and neon).",
+  "confidence": 0.86,
+  "relevant_files": [
+    "../../pandas/_libs/include/pandas/simd/moments_simd.hpp",
+    "../../pandas/_libs/simd/moments_inst_neon.cpp",
+    "../../pandas/_libs/simd/moments.cpp",
+    "pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "FAILED: [code=1] pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o",
+      "reason": "Shows the build target that failed during compilation."
+    },
+    {
+      "quote": "../../pandas/_libs/include/pandas/simd/moments_simd.hpp:255:50: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "reason": "Compiler error message indicating an explicit template instantiation is invalid."
+    },
+    {
+      "quote": "../../pandas/_libs/include/pandas/simd/moments_simd.hpp:182:34: note: candidate template ignored: could not match 'Moments (xsimd::neon64, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int) noexcept' (aka 'Moments (xsimd::neon64, span<const double>, int, optional<span<const unsigned char>>, int) noexcept') against 'Moments (xsimd::neon, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int)' (aka 'Moments (xsimd::neon, span<const double>, int, optional<span<const unsigned char>>, int)')",
+      "reason": "Shows the compiler's detailed note that the candidate template's parameter type is xsimd::neon64 but the matched signature uses xsimd::neon, indicating a type-name mismatch causing the instantiation failure."
+    },
+    {
+      "quote": "../../pandas/_libs/simd/moments_inst_neon.cpp:14:43: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "reason": "Same explicit instantiation error reported in the neon instantiation translation unit, confirming the source of the compile error."
+    },
+    {
+      "quote": "Preparing editable metadata (pyproject.toml) did not run successfully.",
+      "reason": "The pip/meson build step failed overall due to the compilation error, causing metadata generation to fail."
+    }
+  ],
+  "suggested_fix": "Make the explicit template instantiation match the actual operator() signature: either change the extern/template instantiation to use xsimd::neon (or the correct xsimd type) or adjust the operator() declaration to accept xsimd::neon64 so the types agree; ensure the SIMD target typedefs/macros (neon vs neon64) are consistent across moments_simd.hpp and the instantiation files.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-tail-v2/pandas-cpp-xsimd-neon64-v2-001.txt",
+    "context_tokens_estimate": 5045
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 775
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 24007.803,
+    "cache_key": "db2e8535a962556f797bd3b67e057e93177a091db9870fcb6f9c3e61111c85f3",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

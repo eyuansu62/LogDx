@@ -1,0 +1,66 @@
+{
+  "case_id": "jest-nextjs-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest repeatedly reported \"No tests found\" for multiple example test files, exited with code 1, and the test harness failed when it couldn't find the expected results JSON files.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Jest exited with code 1 because it reported \"No tests found\" for the requested test file(s), so no results JSON was written and run-tests.js failed when trying to open the missing results file(s).",
+  "confidence": 0.85,
+  "relevant_files": [
+    "examples/with-vitest/app/counter.test.tsx",
+    "examples/with-vitest/app/page.test.tsx",
+    "examples/with-vitest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts",
+    "/work/run-tests.js",
+    "examples/with-vitest/app/counter.test.tsx.results.json",
+    "examples/with-vitest/app/page.test.tsx.results.json",
+    "examples/with-vitest/app/utils/add.test.ts.results.json",
+    "examples/with-zones/home/test/next-config.test.ts.results.json"
+  ],
+  "relevant_tests": [
+    "examples/with-vitest/app/counter.test.tsx",
+    "examples/with-vitest/app/page.test.tsx",
+    "examples/with-vitest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts"
+  ],
+  "evidence": [
+    {
+      "quote": "No tests found, exiting with code 1",
+      "reason": "Shows that Jest did not find any tests and exited with a non-zero status for the run."
+    },
+    {
+      "quote": "Pattern: examples/with-vitest/app/counter.test.tsx - 0 matches",
+      "reason": "Shows Jest attempted to match the specific test file but found zero matches."
+    },
+    {
+      "quote": "Failed to load test output Error: ENOENT: no such file or directory, open 'examples/with-vitest/app/counter.test.tsx.results.json'",
+      "reason": "run-tests.js failed because the expected Jest results JSON file was not created due to the Jest failure."
+    },
+    {
+      "quote": "Run with `--passWithNoTests` to exit with code 0",
+      "reason": "Jest suggests an option that would avoid failing when no tests are found, indicating an actionable mitigation."
+    },
+    {
+      "quote": "at async runTest (/work/run-tests.js:927:29)",
+      "reason": "Identifies the harness code that attempted to read the missing results file and surfaced the ENOENT error."
+    }
+  ],
+  "suggested_fix": "Either ensure Jest can discover the example test files (verify test paths, testMatch/testRegex, and that the files exist in the test roots) or run Jest with --passWithNoTests (as suggested by the log) if an absence of tests should not fail the job. Also update run-tests.js to handle the case where Jest returns no tests to avoid ENOENT when reading results.",
+  "input": {
+    "context_path": "results/dev/tail/jest-nextjs-001.txt",
+    "context_tokens_estimate": 5404
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 621
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 17161.458,
+    "cache_key": "06f0ab7e61072e95c2702b35259a89581f4d642d3e8c32a17330d9f8a6f28959",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

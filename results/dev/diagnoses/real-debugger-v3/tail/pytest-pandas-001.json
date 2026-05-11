@@ -1,0 +1,58 @@
+{
+  "case_id": "pytest-pandas-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Many tests emitted a NumPy timedelta deprecation warning that was reported as errors, and the test run ended with multiple failures and errors causing the job to exit non‑zero.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Numerous tests emitted the DeprecationWarning: \"The 'generic' unit for NumPy timedelta is deprecated...\" which were reported as errors (see 'ERROR ... - DeprecationWarning' entries), leading to test failures and errors (45 failed, 52 errors).",
+  "confidence": 0.78,
+  "relevant_files": [
+    "pandas/tests/frame/test_constructors.py",
+    "pandas/tests/indexes/datetimes/methods/test_insert.py",
+    "pandas/tests/indexes/test_index_new.py",
+    "pandas/tests/indexes/timedeltas/test_indexing.py",
+    "pandas/tests/io/json/test_ujson.py",
+    "pandas/tests/scalar/timestamp/test_constructors.py",
+    "pandas/tests/series/indexing/test_indexing.py",
+    "pandas/tests/util/test_assert_almost_equal.py"
+  ],
+  "relevant_tests": [
+    "= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s (0:12:39) ="
+  ],
+  "evidence": [
+    {
+      "quote": "ERROR pandas/tests/frame/test_constructors.py - DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future.",
+      "reason": "Shows a test file produced a DeprecationWarning that pytest logged with an \"ERROR\" prefix, indicating the deprecation was treated as an error in the run."
+    },
+    {
+      "quote": "ERROR pandas/tests/indexes/datetimes/methods/test_insert.py - DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future.",
+      "reason": "Additional instance of the same DeprecationWarning reported as an ERROR in another test file, indicating widespread occurrences."
+    },
+    {
+      "quote": "= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s (0:12:39) =",
+      "reason": "Test run summary shows there were failures and errors, demonstrating the run did not pass."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "The job exited non-zero, confirming the CI run failed due to the test failures/errors."
+    }
+  ],
+  "suggested_fix": "Make code/tests avoid implicit conversion of bare integers to NumPy timedeltas by specifying an explicit unit (e.g. use np.timedelta64(1, 's') or pass a unit argument) or modify the test suite to filter/ignore this DeprecationWarning for NumPy nightly; alternatively pin NumPy to a compatible version until the changes are addressed.",
+  "input": {
+    "context_path": "results/dev/tail/pytest-pandas-001.txt",
+    "context_tokens_estimate": 7002
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 610
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 25025.029,
+    "cache_key": "bdc77043d14838e615fb3f3d1c8e70410c499de7659ae08aec7b7bb0be2b95ba",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

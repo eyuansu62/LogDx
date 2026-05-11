@@ -1,0 +1,52 @@
+{
+  "case_id": "pip-pytest-network-github-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The pytest functional test suite run exited with a non-zero status (exit code 1), causing the CI job to fail.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The pytest invocation for the functional tests (pytest tests/functional ...) failed and returned exit code 1, causing the job to fail.",
+  "confidence": 0.7,
+  "relevant_files": [
+    "tests/functional",
+    "tests/unit/test_exceptions.py:604"
+  ],
+  "relevant_tests": [
+    "pytest tests/functional --verbose --numprocesses auto --showlocals --durations=15"
+  ],
+  "evidence": [
+    {
+      "quote": "nox > Command pytest tests/functional --verbose --numprocesses auto --showlocals --durations=15 failed with exit code 1",
+      "reason": "Directly shows the pytest command for the functional tests failed with exit code 1."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Indicates the CI job terminated with a non-zero exit code due to the failure."
+    },
+    {
+      "quote": "tests/unit/test_collector.py::test_parse_links__yanked_reason[<a href=\"/pkg4-1.0.tar.gz\" data-yanked=\"error\"></a>-error]",
+      "reason": "Shows pytest was running tests (this test ran and passed), implying the failure occurred later during the test run (the functional tests referenced in the failing command)."
+    },
+    {
+      "quote": "SKIPPED [3] tests/unit/test_exceptions.py:604: Non-Windows should implement localization",
+      "reason": "Shows pytest executed and reported test outcomes (including skips), supporting that the test run progressed and then failed as reported by the exit code."
+    }
+  ],
+  "suggested_fix": "Re-run the failing command locally or in CI to capture the failing test output: run `pytest tests/functional --verbose --numprocesses auto --showlocals --durations=15`. Inspect the pytest failure trace to identify the failing test(s) and fix the test or underlying code; then re-run CI.",
+  "input": {
+    "context_path": "results/v2/dev/llm-summary-v1-mock/pip-pytest-network-github-v2-001.txt",
+    "context_tokens_estimate": 1940
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 454
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 25619.857,
+    "cache_key": "783fbe1cc977cf8366d99d68742a077318e4f809c944e17969ba0e2545fe566d",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

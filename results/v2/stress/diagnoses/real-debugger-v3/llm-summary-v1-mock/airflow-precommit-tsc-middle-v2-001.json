@@ -1,0 +1,55 @@
+{
+  "case_id": "airflow-precommit-tsc-middle-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed during the UI \"Compile / format / lint\" step and the process exited with code 1. Logs show Prek and related checks ran and there are messages about failing to extract uv/prek versions from uv.lock, but no specific TypeScript compile, lint, or test error is present in the provided context.",
+  "root_cause_category": "unknown",
+  "root_cause": "unknown",
+  "confidence": 0.18,
+  "relevant_files": [
+    "src/airflow/ui/src/components/AssetProgressCell.tsx",
+    "src/layouts/Nav/BrowseButton.tsx",
+    "src/airflow/ui/src/components/Time.test.tsx"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "Compile / format / lint UI................................................................................^[[41mFailed^[[49m",
+      "reason": "Explicitly shows the UI compile/format/lint step reported failure."
+    },
+    {
+      "quote": "- exit code: 1",
+      "reason": "Indicates the job terminated with a non-zero exit code."
+    },
+    {
+      "quote": "2026-05-07T12:01:40.4734512Z ^[[36;1m  echo \"Failed to extract uv version from uv.lock\" >&2^[[0m",
+      "reason": "Shows a script error about failing to extract a version from uv.lock, which could be related to tool/version resolution but is not definitive."
+    },
+    {
+      "quote": "prek --all-files --show-diff-on-failure --color always",
+      "reason": "Shows the Prek command invoked; suggests formatting/linting checks were run with Prek."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Final GitHub Actions failure message confirming the workflow failed."
+    }
+  ],
+  "suggested_fix": "Re-run the failing UI compile/format/lint step with full verbose output or run locally: 'prek --all-files --show-diff-on-failure --color always' to see the detailed diffs/errors. Inspect the full job log around the 'Compile / format / lint UI' output for the first concrete TypeScript/lint/format error and fix that; also check uv.lock for uv/prek version entries if Prek/version extraction errors persist.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-mock/airflow-precommit-tsc-middle-v2-001.txt",
+    "context_tokens_estimate": 1939
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 480
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 20470.584,
+    "cache_key": "90ff0759317a84f1a5a66b53f27bee46414ee47b69b71b201f97c3a45fbbf540",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

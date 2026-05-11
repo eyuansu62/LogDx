@@ -1,0 +1,51 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The test run ended with exit code 1 while many Jest assertions invoking toThrowErrorMatchingSnapshot and parser error creation (createBabelParseError) appear in the logs.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Jest snapshot-style assertions (toThrowErrorMatchingSnapshot) were executed alongside errors created by createBabelParseError, and the test run terminated with a non-zero exit code.",
+  "confidence": 0.46,
+  "relevant_files": [
+    "/home/runner/work/prettier/prettier/node_modules/expect/build/index.js",
+    "file:///home/runner/work/prettier/prettier/src/common/parser-create-error.js",
+    "file:///home/runner/work/prettier/prettier/src/language-js/parse/utilities/create-babel-parse-error.js"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "at Object.toThrowErrorMatchingSnapshot (/home/runner/work/prettier/prettier/node_modules/expect/build/index.js:2155:20)",
+      "reason": "Shows Jest assertions using toThrowErrorMatchingSnapshot were invoked (snapshot-style assertion points)."
+    },
+    {
+      "quote": "at createBabelParseError (file:///home/runner/work/prettier/prettier/src/language-js/parse/utilities/create-babel-parse-error.js:33:10)",
+      "reason": "Indicates parser errors were created by createBabelParseError during the test run, which are present in the stack traces."
+    },
+    {
+      "quote": "YN0007: │ esbuild@npm:0.28.0 must be built because it never has been before or the last one failed",
+      "reason": "Shows native/additional dependencies required build steps during installation, which may be relevant to test environment setup (present in logs)."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the CI job failed with a non-zero exit code."
+    }
+  ],
+  "suggested_fix": "Run the failing Jest tests locally to inspect snapshot diffs and the thrown errors; if snapshots are expected to change, update them (jest -u or equivalent). If the thrown parser errors are unexpected, investigate and fix the parser (create-babel-parse-error.js / parser-create-error.js) so the assertions pass.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-mock/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 2665
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 507
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 20244.303,
+    "cache_key": "7d5a34d931540dcdefff2e9f7b17d1cd7758d5fc7de8dafcf196139325b4ab72",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

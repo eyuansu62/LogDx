@@ -1,0 +1,64 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "raw",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest snapshot tests failed because the received parser error messages differ from the stored snapshots (several import()/TypeScript error messages changed), causing test assertions to fail.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Snapshot assertions failed: tests expected specific error message text (e.g. \"Unexpected token ...\") but the parser produced different messages (e.g. \"`import()` requires exactly one or two arguments.\").",
+  "confidence": 0.77,
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js",
+    "tests/config/format-test/test-format.js"
+  ],
+  "relevant_tests": [
+    "FAIL tests/format/js/_errors_/import/format.test.js",
+    "FAIL tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "FAIL tests/format/typescript/_errors_/declare-function-with-body/format.test.js"
+  ],
+  "evidence": [
+    {
+      "quote": "Error: expect(received).rejects.toThrowErrorMatchingSnapshot()",
+      "reason": "Shows the failing assertion type: tests expect an error to match a stored snapshot."
+    },
+    {
+      "quote": "- Unexpected token (1:8)",
+      "reason": "Part of the stored snapshot (expected parser message) that the tests compare against."
+    },
+    {
+      "quote": "+ `import()` requires exactly one or two arguments. (1:1)",
+      "reason": "The actual received parser message differs from the expected snapshot, causing the mismatch."
+    },
+    {
+      "quote": "SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)",
+      "reason": "An example of a parser error message produced during tests (used by a failing TypeScript test)."
+    },
+    {
+      "quote": "› 12 snapshots failed.",
+      "reason": "Indicates multiple snapshot failures were detected during the test run."
+    },
+    {
+      "quote": "› 13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "Jest's summary explicitly reports snapshot failures and suggests re-running with -u to update snapshots."
+    }
+  ],
+  "suggested_fix": "If the changed messages are intentional (due to parser or error-message changes), update the snapshots by re-running Jest with the update flag and committing the new snapshots (e.g. run `yarn test -u` or `jest -u` locally). If the changes are unintentional, revert or adjust the code that changed parser/error messages so tests produce the expected output.",
+  "input": {
+    "context_path": "results/v2/holdout/raw/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 48106
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 633
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 19548.947,
+    "cache_key": "e1359c1185e745544909674718d26d41e98d72649a0c2c172a3bd8022b75f408",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "case_id": "docbuild-hf-stress-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "A workflow shell step evaluated a conditional as false and ran 'exit 1', causing the job to fail.",
+  "root_cause_category": "github_actions_config",
+  "root_cause": "A GitHub Actions shell step's conditional evaluated to false and executed the else branch which calls 'exit 1', causing the job to fail.",
+  "confidence": 0.85,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "Complete job name: doc_build_status_check",
+      "reason": "Shows which job failed."
+    },
+    {
+      "quote": "Run if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\",
+      "reason": "Shows the exact conditional being evaluated in the shell step."
+    },
+    {
+      "quote": "  exit 1",
+      "reason": "The else branch of the conditional explicitly calls 'exit 1', which will fail the step."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the job failed due to the step exiting with code 1."
+    }
+  ],
+  "suggested_fix": "Update the workflow shell conditional so it matches the intended status values (or remove the 'exit 1' else branch). For example, correct the string comparisons in the 'if [[ ... ]]' expression to include the actual expected outcomes, ensuring the step echoes OK instead of exiting with code 1.",
+  "input": {
+    "context_path": "results/stress/hybrid-grep-120k-rtk-tail-v3/docbuild-hf-stress-001.txt",
+    "context_tokens_estimate": 275
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 306
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 9725.527,
+    "cache_key": "cd2ad787b17c42a9dd97958cff05892dbd66f4df01a7a569b487f0f96b8e2e10",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

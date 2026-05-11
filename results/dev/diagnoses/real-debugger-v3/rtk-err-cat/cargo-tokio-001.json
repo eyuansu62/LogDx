@@ -1,0 +1,60 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "A trybuild compile-fail test (compile_fail_full) failed because compilation produced unexpected type-mismatch errors originating from the tokio::main attribute, causing the test harness to panic.",
+  "root_cause_category": "compile_error",
+  "root_cause": "A compile-fail test produced compiler errors (multiple E0308/E0271/E0277 mismatched-type errors) — the actual compiler diagnostics (originating in the `tokio::main` attribute) did not match the expected trybuild output, causing trybuild's test `compile_fail_full` to fail.",
+  "confidence": 0.78,
+  "relevant_files": [
+    "$DIR/tests/fail/macros_type_mismatch.rs",
+    "/home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13"
+  ],
+  "relevant_tests": [
+    "compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "test compile_fail_full ... FAILED",
+      "reason": "Shows which test failed in the test run."
+    },
+    {
+      "quote": "error[E0308]: mismatched types",
+      "reason": "Compiler emitted type-mismatch errors (E0308) which caused compilation to fail."
+    },
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
+      "reason": "Indicates the specific mismatch in return type from an async block in the failing test file."
+    },
+    {
+      "quote": "note: this error originates in the attribute macro `tokio::main`",
+      "reason": "Shows that the diagnostics are produced by the tokio attribute macro, pointing to the source of the compile errors."
+    },
+    {
+      "quote": "thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13",
+      "reason": "trybuild panicked because a compile-fail test did not produce the expected output."
+    },
+    {
+      "quote": "1 of 10 tests failed",
+      "reason": "Confirms the overall test suite failure count and that this was a single failing trybuild test among multiple."
+    }
+  ],
+  "suggested_fix": "Inspect tests/fail/macros_type_mismatch.rs and fix the async function return types to match the expected types for #[tokio::main] (e.g., return () or change to Result and unwrap/expect as suggested by the compiler). If compiler diagnostics changed intentionally, update the trybuild expected stderr files by re-running the trybuild-approved update procedure so the compile-fail test expectations match current compiler output.",
+  "input": {
+    "context_path": "results/dev/rtk-err-cat/cargo-tokio-001.txt",
+    "context_tokens_estimate": 7313
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 594
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 21470.204,
+    "cache_key": "74a86276eabfde0aeaef2ad34fee15b5c498cba4ff1f9dbd0fc272c63716de5b",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

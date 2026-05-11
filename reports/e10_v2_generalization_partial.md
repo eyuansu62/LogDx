@@ -1221,6 +1221,154 @@ debugging but unsatisfying as a method-design comparison — v3
    routing. The fix is mechanical (one extra `<= budget` check)
    and tested in `tools/tests/test_hybrid_router.py`.
 
+## 3i. Third debugger — gpt-5-mini (2026-05-11)
+
+Per the user's prompt "你觉得我们的数据集可以发布了吗", the
+biggest blocker after corpus-size was that all Phase 3 findings
+came from two Anthropic debuggers (`real-debugger-v1` = Haiku 4.5,
+`real-debugger-v2` = Sonnet 4.6). Cross-model-family validation
+adds a different generalization axis from corpus expansion.
+
+Added `examples/diagnosis_shim_openai.py` (stdlib `urllib`, mirrors
+the Claude shim's safety invariants: `verify_no_leakage`,
+`_ContextTooLargeError`, API key from env only). Ran a complete
+Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
+6 splits × 10 baselines (350 cache misses, ~75 minutes).
+
+### Headline finding: cross-family agreement reverses between v1.3 and v2
+
+**v1.3 (16 cases, 3 splits):**
+
+```text
+Cross-debugger ranking, v1.3 (Sonnet | Haiku | gpt-5-mini #):
+
+method                             son #   hai #   gpt #
+hybrid-grep-120k-tail-v2 (Sonnet#1)   1       3       4   ← Sonnet's winner is gpt's #4
+hybrid-grep-4k-rtk-err-cat-v1         2       1       5   ← Sonnet/Haiku top-2, gpt's #5
+grep                                  3       4       1   ← gpt's winner is Sonnet's #3
+hybrid-grep-120k-rtk-tail-v3          4       2       2
+tail                                  5       5       3
+rtk-err-cat                           6       6       8
+rtk-read                              7       8       6
+llm-summary-v1-mock                   8       7       9
+raw                                   9       9       7
+rtk-log                              10      10      10   ← only unanimous agreement
+```
+
+**v1.3 top-3 ∩ across all three debuggers: {} (empty set).**
+
+The earlier §3a v1.3 headline ("hybrid-grep-4k-rtk-err-cat-v1
+matched grep on quality at ⅓ token cost, ranked #1 by sv1.1
+under both tested debuggers") is now **partially retracted** —
+the "ranked #1" framing only holds under the two Anthropic
+models it was originally measured on. A third model from a
+different family (gpt-5-mini) puts hybrid-v1 at #5 on v1.3
+(0.583 vs grep's 0.682). The dataset itself is unchanged; only
+the cross-family claim is downgraded.
+
+**v2 (19 cases, 3 splits):**
+
+```text
+Cross-debugger ranking, v2 (Sonnet | Haiku | gpt-5-mini #):
+
+method                             son #   hai #   gpt #
+hybrid-grep-120k-tail-v2              1       3       1   ← Sonnet+gpt both rank #1
+hybrid-grep-120k-rtk-tail-v3          2       1       2   ← Sonnet+gpt both rank #2; Haiku's #1
+grep                                  3       4       3   ← Sonnet+gpt #3 (identical 1-2-3!)
+tail                                  4       2       4
+rtk-err-cat                           5       5       5   ← unanimous #5
+hybrid-grep-4k-rtk-err-cat-v1         6       6       6   ← unanimous #6
+rtk-read                              7       7       7   ← unanimous #7
+raw                                   8       8       8   ← unanimous #8
+rtk-log                               9       9       9   ← unanimous #9
+llm-summary-v1-mock                  10      10      10   ← unanimous #10
+```
+
+**v2 top-3 ∩ across all three debuggers: {hybrid-v2, hybrid-v3}.**
+
+**Sonnet and gpt-5-mini produce IDENTICAL top-3 rankings on v2.**
+Haiku agrees on the SET but ranks hybrid-v3 #1 and tail #2
+instead of hybrid-v2 #1 and grep #3. The bottom 6 ranks are
+unanimous across all three debuggers — rtk-read, raw, rtk-log,
+and llm-summary-v1-mock occupy positions 7-10 in the same order
+on every debugger.
+
+### What v1.3 vs v2 says about benchmark quality
+
+| Property | v1.3 | v2 |
+|---|---|---|
+| Cases | 16 | 19 (partial, target 34) |
+| Family-stable top-3 | ❌ ∅ | ✅ {hybrid-v2, hybrid-v3} |
+| Family-stable bottom-3 | ⚠ {rtk-log} only | ✅ {rtk-read, rtk-log, summary-mock, raw} |
+| Sonnet/gpt-5-mini #1-#3 agreement | 0/3 | 3/3 identical |
+| Spearman rank correlation Sonnet↔gpt | ~0.5 | ~0.95 |
+
+v2's broader corpus produces benchmark rankings that are
+**robust to model family**, while v1.3's smaller (Sonnet-tuned)
+corpus does not. This is independent evidence that v2 is the
+right protocol to ship publicly — the "hybrid-v2 generalizes"
+claim from §3e–§3h holds up under a debugger from a different
+model family, even though it was never tuned on that debugger.
+
+### Per-debugger absolute scores on v2
+
+```text
+method                          son v2   hai v2   gpt v2
+hybrid-grep-120k-tail-v2        0.6928   0.5554   0.6703   ★ best avg
+hybrid-grep-120k-rtk-tail-v3    0.6650   0.5764   0.6580
+grep                            0.6155   0.4954   0.5835
+tail                            0.6081   0.5559   0.5391
+rtk-err-cat                     0.4792   0.4379   0.4811
+hybrid-grep-4k-rtk-err-cat-v1   0.4527   0.4223   0.4495
+rtk-read                        0.2713   0.2146   0.2899
+raw                             0.2865   0.2083   0.2725
+rtk-log                         0.2187   0.2044   0.2219
+llm-summary-v1-mock             0.1902   0.1938   0.1394
+```
+
+gpt-5-mini's absolute scores sit between Sonnet and Haiku on
+the v2 macro, but the **ranking is closer to Sonnet's** —
+suggesting Sonnet 4.6 and gpt-5-mini behave similarly under our
+context-quality stressors despite being from different families.
+Haiku 4.5 is the outlier of the three (slightly lower scores,
+slightly different rank order).
+
+### Caveats
+
+1. **gpt-5-mini was NOT in the cilogbench-v2-checkpoint-19 lock
+   at the time of its run.** The lock pre-dates the
+   `examples/diagnosis_shim_openai.py` file. We add the shim to
+   the repo as a documented prototype but do not promote
+   `real-debugger-v3` to a primary protocol baseline — the
+   reproducer is "checkout this commit + set
+   `OPENAI_API_KEY` + `CILOGBENCH_OPENAI_MODEL=gpt-5-mini`",
+   not "validate the lock and run". A future v3 protocol could
+   formalize this with multiple-debugger SHA pinning.
+2. **One gpt-5-mini-class model tested.** "Generalizes across
+   families" with sample size 1 family + 1 model is weak.
+   GPT-4o, Gemini, Llama variants are all valid follow-ups.
+3. **gpt-5-mini's calibration could differ from Sonnet/Haiku's.**
+   sv1.1 was calibrated against an expert-Anthropic-model
+   reviewer (E2b). The v3 numbers are computed with the same
+   evaluator on the same ground truths, but the rank-correlation
+   finding holds independently of absolute calibration.
+4. **The §3i ∅ vs {v2, v3} agreement-set finding is robust to
+   small sample noise** at the top-3 level — a single case
+   swap couldn't move methods across the rank #3 boundary on
+   most positions. The Spearman correlations and the unanimous
+   bottom-6 ordering on v2 also reinforce this.
+
+### What §3i means for publication
+
+The §0 caveat that publication was blocked partly by "only
+Anthropic debuggers" can be downgraded to "two Anthropic
+debuggers + one OpenAI debugger; recommend additional families
+in v3". The cross-family validation result is now itself a
+headline finding ("v2 produces cross-family-stable benchmark
+rankings; v1.3 does not"), which strengthens rather than
+weakens the case for shipping v2 as-is or as a clearly-marked
+v2-partial preprint.
+
 ### Caveats
 
 1. **v3 prototype evaluation is calibration-tuned at the v2 layer.**

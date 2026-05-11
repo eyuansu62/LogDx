@@ -1,0 +1,55 @@
+{
+  "case_id": "pandas-cpp-xsimd-neon64-v2-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The build failed during C++ compilation: explicit template instantiation for accumulate_moments_simd::operator()<xsimd::neon64> does not match the declared operator() signature (which uses xsimd::neon), causing the compiler to error and the build to stop.",
+  "root_cause_category": "compile_error",
+  "root_cause": "An explicit template instantiation/declaration for accumulate_moments_simd::operator()<xsimd::neon64> in moments_simd.hpp / moments_inst_neon.cpp does not match the actual operator() declaration (which takes xsimd::neon), so the compiler reports 'explicit instantiation ... does not refer to a function template' and fails.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "../../pandas/_libs/include/pandas/simd/moments_simd.hpp",
+    "../../pandas/_libs/simd/moments_inst_neon.cpp",
+    "../../pandas/_libs/simd/moments.cpp"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "reason": "The compiler error string shows the immediate cause: an explicit instantiation is invalid and the compiler rejects it."
+    },
+    {
+      "quote": "extern template Moments accumulate_moments_simd::operator()<xsimd::neon64>(",
+      "reason": "This line from moments_simd.hpp shows an explicit extern template instantiation for operator()<xsimd::neon64>, which is the instantiation the compiler is rejecting."
+    },
+    {
+      "quote": "candidate template ignored: could not match 'Moments (xsimd::neon64, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int) noexcept' (aka 'Moments (xsimd::neon64, span<const double>, int, optional<span<const unsigned char>>, int) noexcept') against 'Moments (xsimd::neon, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int)' (aka 'Moments (xsimd::neon, span<const double>, int, optional<span<const unsigned char>>, int)')",
+      "reason": "The compiler note explains the mismatch: the candidate template expects xsimd::neon64 but the declared operator() is for xsimd::neon, showing the type mismatch causing the instantiation failure."
+    },
+    {
+      "quote": "arm64-apple-darwin20.0.0-clang++ -Ipandas/_libs/simd/libmoments_simd_neon.a.p -Ipandas/_libs/simd -I../../pandas/_libs/simd -I../../pandas/_libs/include -I../../subprojects/xsimd-14.2.0/include ... -DPANDAS_SIMD_NEON ... -c ../../pandas/_libs/simd/moments_inst_neon.cpp",
+      "reason": "The compile command shows the build was attempting to compile the NEON-specific moments_inst_neon.cpp with PANDAS_SIMD_NEON defined, which is where the instantiation mismatch occurs."
+    },
+    {
+      "quote": "ninja: build stopped: subcommand failed.",
+      "reason": "Indicates the compilation error halted the build system (ninja) and caused the overall build failure."
+    }
+  ],
+  "suggested_fix": "Make the explicit template instantiation and the operator() declaration use the same SIMD type: either change the extern/template instantiation to use xsimd::neon (matching the declared operator()), or update the operator() declaration/definition to accept xsimd::neon64. Update ../../pandas/_libs/include/pandas/simd/moments_simd.hpp and/or ../../pandas/_libs/simd/moments_inst_neon.cpp accordingly and rebuild.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-rtk-tail-v3/pandas-cpp-xsimd-neon64-v2-001.txt",
+    "context_tokens_estimate": 5046
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 805
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 60214.491,
+    "cache_key": "167f2d1e5b749d78d3fbd373e6fc7b904daf3641c3c4cce6c7bea09c053a1d40",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

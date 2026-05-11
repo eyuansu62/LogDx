@@ -1,0 +1,66 @@
+{
+  "case_id": "cpython-tcl-windows-matrix-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The test suite failed because two tests in test.test_tcl (surrogate-handling tests) asserted that Tcl evaluation results preserve surrogate/unicode sequences but received a mis-decoded string instead.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Two tests in test.test_tcl failed because Tcl evaluation results were decoded incorrectly: the returned string '<ðŸ’»>' did not match the expected surrogate-escaped or Unicode form '<\\ud83d\\udcbb>' / '<\\U0001f4bb>'.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "D:\\a\\cpython\\cpython\\Lib\\test\\test_tcl.py",
+    "..\\Modules\\_tkinter.c"
+  ],
+  "relevant_tests": [
+    "test_eval_surrogates_in_result (test.test_tcl.TclTest.test_eval_surrogates_in_result)",
+    "test_evalfile_surrogates_in_result (test.test_tcl.TclTest.test_evalfile_surrogates_in_result)",
+    "test_tcl"
+  ],
+  "evidence": [
+    {
+      "quote": "test_eval_surrogates_in_result (test.test_tcl.TclTest.test_eval_surrogates_in_result) ... FAIL",
+      "reason": "Shows the specific test that failed."
+    },
+    {
+      "quote": "self.assertEqual (tcl.eval(r'set a \"<\\ud83d\\udcbb>\"'), '<\\U0001f4bb>')",
+      "reason": "Shows the assertion the test performs: it expects Tcl eval result to match the Unicode code point / surrogate escape."
+    },
+    {
+      "quote": "AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ’»>'",
+      "reason": "Shows the actual mismatch: the test expected '<\\ud83d\\udcbb>' but got '<ðŸ’»>' (mis-decoded/encoded bytes)."
+    },
+    {
+      "quote": "self.assertEqual (tcl.eval('set b'), '<\\U0001f4bb>')",
+      "reason": "Shows the second failing assertion in test_evalfile_surrogates_in_result expecting U+1F4BB."
+    },
+    {
+      "quote": "test_evalfile_surrogates_in_result (test.test_tcl.TclTest.test_evalfile_surrogates_in_result) ... FAIL",
+      "reason": "Shows the second test that failed in the same test file, indicating the issue is with Tcl result decoding/handling."
+    },
+    {
+      "quote": "test test_tcl failed",
+      "reason": "Top-level test summary confirming the test module that failed."
+    },
+    {
+      "quote": "..\\Modules\\_tkinter.c",
+      "reason": "The build log shows Modules/_tkinter.c was compiled/linked, indicating the Tcl/Tk integration code is present and relevant to tests that exercise Tcl."
+    }
+  ],
+  "suggested_fix": "Investigate how Tcl evaluation results are decoded in the Tcl/Tk integration (e.g. Modules/_tkinter.c) and ensure surrogate pairs / non-UTF-8 sequences are preserved or decoded the way the tests expect (surrogate-escape or proper UTF-8 handling). Reproduce and iterate locally by running the failing tests directly: python -m test test.test_tcl.TclTest.test_eval_surrogates_in_result test.test_tcl.TclTest.test_evalfile_surrogates_in_result, add logging around the Tcl result decoding, and adjust the decoding logic to return '<\\ud83d\\udcbb>' / '<\\U0001f4bb>' as expected.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-120k-tail-v2/cpython-tcl-windows-matrix-v2-001.txt",
+    "context_tokens_estimate": 73559
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 684
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 43353.402,
+    "cache_key": "84cb3ae06993defcfa8fe68e54093b9e820d5f0829d058f3bca8090ee0aaabf7",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

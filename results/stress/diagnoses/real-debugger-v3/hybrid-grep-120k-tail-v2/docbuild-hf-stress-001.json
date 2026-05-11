@@ -1,0 +1,47 @@
+{
+  "case_id": "docbuild-hf-stress-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "A workflow step ran a shell conditional that evaluated to false and executed 'exit 1', causing the job doc_build_status_check to fail with exit code 1.",
+  "root_cause_category": "github_actions_config",
+  "root_cause": "A shell 'if' condition in the workflow evaluated to false and hit the else branch which runs 'exit 1' (the step contains the exact check [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] and then 'exit 1').",
+  "confidence": 0.86,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "##[group]Run if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\",
+      "reason": "Shows the exact shell conditional being evaluated in the workflow step."
+    },
+    {
+      "quote": "  echo \"OK\"\nelse\n  exit 1\nfi",
+      "reason": "Shows the else branch contains 'exit 1', which will cause a non-zero exit when the condition is false."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the job failed due to the non-zero exit triggered by the step."
+    },
+    {
+      "quote": "Complete job name: doc_build_status_check",
+      "reason": "Identifies the failing job as doc_build_status_check."
+    }
+  ],
+  "suggested_fix": "Update the GitHub Actions workflow conditional so it matches the expected status (for example, adjust the if to include 'failure' when appropriate or compare the actual job status variable) or remove/modify the 'exit 1' in the else branch. For example, change the condition from [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] to a check that uses the real status variable (e.g. ${{ job.status }}) or include 'failure' if that's intended.",
+  "input": {
+    "context_path": "results/stress/hybrid-grep-120k-tail-v2/docbuild-hf-stress-001.txt",
+    "context_tokens_estimate": 274
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 405
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 14319.406,
+    "cache_key": "e63eeed2f7c514f11e934f93a81a967d4f9c30fad36cfd3c7ae55a336ebc0c69",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

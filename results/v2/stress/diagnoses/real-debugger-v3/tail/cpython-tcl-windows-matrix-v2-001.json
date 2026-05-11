@@ -1,0 +1,61 @@
+{
+  "case_id": "cpython-tcl-windows-matrix-v2-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "A Tcl-related test file failed: two tests in test_tcl expected a surrogate-escaped Unicode result but got a mojibake string ('<ðŸ’»>') instead of the expected '<\\ud83d\\udcbb>' / '<\\U0001f4bb>'.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The tests test_eval_surrogates_in_result and test_evalfile_surrogates_in_result failed because the Tcl result was decoded incorrectly on Windows: the returned string '<ðŸ’»>' does not match the expected surrogate-escaped representation '<\\ud83d\\udcbb>' (U+1F4BB).",
+  "confidence": 0.85,
+  "relevant_files": [
+    "D:\\a\\cpython\\cpython\\Lib\\test\\test_tcl.py"
+  ],
+  "relevant_tests": [
+    "test.test_tcl.TclTest.test_eval_surrogates_in_result",
+    "test.test_tcl.TclTest.test_evalfile_surrogates_in_result",
+    "test_tcl"
+  ],
+  "evidence": [
+    {
+      "quote": "test_eval_surrogates_in_result (test.test_tcl.TclTest.test_eval_surrogates_in_result) ... ^[[31mFAIL^[[0m^[[0m",
+      "reason": "Shows the specific test that failed (test_eval_surrogates_in_result) and that it failed."
+    },
+    {
+      "quote": "test_evalfile_surrogates_in_result (test.test_tcl.TclTest.test_evalfile_surrogates_in_result) ... ^[[31mFAIL^[[0m",
+      "reason": "Shows the second specific test that failed (test_evalfile_surrogates_in_result)."
+    },
+    {
+      "quote": "AssertionError^[[0m: ^[[35m'<\\ud83d\\udcbb>' != '<ðŸ’»>'",
+      "reason": "The assertion shows the expected value '<\\ud83d\\udcbb>' differs from the actual '<ðŸ’»>', indicating a decoding/encoding mismatch."
+    },
+    {
+      "quote": "- <\\ud83d\\udcbb>",
+      "reason": "Diff output showing the expected surrogate-escaped string."
+    },
+    {
+      "quote": "+ <ðŸ’»>",
+      "reason": "Diff output showing the actual mojibake string returned by Tcl."
+    },
+    {
+      "quote": "File ^[[35m\"D:\\a\\cpython\\cpython\\Lib\\test\\test_tcl.py\"^[[0m, line ^[[35m57^[[0m, in ^[[35mtest_eval_surrogates_in_result^[[0m",
+      "reason": "Identifies the test file and location where the failing assertion occurred."
+    }
+  ],
+  "suggested_fix": "Investigate and fix Tcl result decoding on Windows: ensure values returned from Tcl (tcl.eval / tcl.evalfile) are decoded as Unicode preserving surrogate escapes (or decoded as UTF-8 with surrogateescape) so the returned string is '<\\U0001f4bb>' / '<\\ud83d\\udcbb>' rather than mojibake. Re-run the failing tests: test.test_tcl.TclTest.test_eval_surrogates_in_result and test.test_tcl.TclTest.test_evalfile_surrogates_in_result.",
+  "input": {
+    "context_path": "results/v2/stress/tail/cpython-tcl-windows-matrix-v2-001.txt",
+    "context_tokens_estimate": 5443
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 587
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 54583.074,
+    "cache_key": "9ab8690c4f46ca0db0d47875a5bfa0bf8c0b479b1eedbb4868835f9cb8ea4223",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

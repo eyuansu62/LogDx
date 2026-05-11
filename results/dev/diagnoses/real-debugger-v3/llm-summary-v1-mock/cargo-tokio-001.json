@@ -1,0 +1,51 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The build failed due to Rust compiler type-mismatch errors in test sources: async blocks in tests/fail/macros_type_mismatch.rs return types that don't match expected futures.",
+  "root_cause_category": "compile_error",
+  "root_cause": "Rust compiler emitted E0271 type-mismatch errors in $DIR/tests/fail/macros_type_mismatch.rs: async blocks resolve to the wrong types (e.g., Result vs () and integer vs ()), causing the job to fail with exit code 100.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "$DIR/tests/fail/macros_type_mismatch.rs"
+  ],
+  "relevant_tests": [
+    "$DIR/tests/fail/macros_type_mismatch.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
+      "reason": "Shows a compile-time type mismatch where an async block yields Result but () was expected."
+    },
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:13:1: 13:15}` to be a future that resolves to `Result<(), ()>`, but it resolves to `()`",
+      "reason": "Another compile-time mismatch: async block returns () but Result<(), ()> was expected."
+    },
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:63:1: 63:15}` to be a future that resolves to `()`, but it resolves to `{integer}`",
+      "reason": "Shows a different kind of mismatch where an integer is returned instead of the expected ()."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 100.",
+      "reason": "Indicates the CI job terminated with a non-zero exit code after the compiler errors."
+    }
+  ],
+  "suggested_fix": "Edit $DIR/tests/fail/macros_type_mismatch.rs to make the async blocks return the expected types (e.g., return () where () is expected, or return Result where a Result is expected). Re-run the build/tests (cargo test) to verify the compile errors are resolved.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-mock/cargo-tokio-001.txt",
+    "context_tokens_estimate": 2264
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 475
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 14530.127,
+    "cache_key": "1533f91b1657b4561214e44f95cfb869522a482a5bc58b8299c7aee813831b62",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

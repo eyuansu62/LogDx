@@ -1,0 +1,54 @@
+{
+  "case_id": "pandas-cpp-xsimd-neon64-v2-001",
+  "context_method": "raw",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Build failed during C++ compilation with errors in explicit template instantiation for SIMD moments code (neon/neon64 mismatch).",
+  "root_cause_category": "compile_error",
+  "root_cause": "C++ compilation error: explicit instantiation of accumulate_moments_simd::operator() uses xsimd::neon64 while the defined template signature uses xsimd::neon, causing the instantiation to not match and compilation to fail.",
+  "confidence": 0.67,
+  "relevant_files": [
+    "pandas/_libs/include/pandas/simd/moments_simd.hpp",
+    "pandas/_libs/simd/moments_inst_neon.cpp"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "reason": "Shows the compiler rejected an explicit template instantiation as invalid (compile-time error)."
+    },
+    {
+      "quote": "extern template Moments accumulate_moments_simd::operator()<xsimd::neon64>(",
+      "reason": "Shows the explicit instantiation in moments_simd.hpp is for xsimd::neon64, which is the instantiation the compiler is trying to apply."
+    },
+    {
+      "quote": "candidate template ignored: could not match 'Moments (xsimd::neon64, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int) noexcept' ... against 'Moments (xsimd::neon, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int)'",
+      "reason": "Shows the compiler found a template whose first parameter is xsimd::neon (not neon64), explaining the mismatch and why instantiation failed."
+    },
+    {
+      "quote": "template Moments accumulate_moments_simd::operator()<xsimd::neon64>(",
+      "reason": "Shows moments_inst_neon.cpp attempts to explicitly instantiate the template for xsimd::neon64, matching the extern template but conflicting with the actual template parameter type."
+    },
+    {
+      "quote": "FAILED: [code=1] pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o",
+      "reason": "Indicates the compilation unit that failed (moments_inst_neon.cpp)."
+    }
+  ],
+  "suggested_fix": "Ensure the explicit instantiation and the template definition use the same xsimd target type. Either change the template parameter in moments_simd.hpp/moments.cpp to xsimd::neon64, or change the instantiation in moments_inst_neon.cpp (and the extern template in moments_simd.hpp) to use xsimd::neon. Inspect and harmonize the typedef/defines that select neon vs neon64 (e.g. PANDAS_SIMD_NEON) so the declared signature and the explicit instantiation match.",
+  "input": {
+    "context_path": "results/v2/holdout/raw/pandas-cpp-xsimd-neon64-v2-001.txt",
+    "context_tokens_estimate": 35666
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 621
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 13882.374,
+    "cache_key": "f7e940820a6100cec5137fa7b8329047a904159d775104aebe27315c4eefc163",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

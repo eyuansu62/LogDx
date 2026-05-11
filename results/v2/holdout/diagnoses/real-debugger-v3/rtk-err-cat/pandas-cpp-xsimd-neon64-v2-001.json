@@ -1,0 +1,59 @@
+{
+  "case_id": "pandas-cpp-xsimd-neon64-v2-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The build failed during C++ compilation: explicit instantiation of operator() in the SIMD moments code produced errors, stopping the meson/ninja build and causing packaging metadata generation to fail.",
+  "root_cause_category": "compile_error",
+  "root_cause": "C++ compilation error: explicit instantiation of 'operator()' in the SIMD moments sources does not refer to a valid function template/member, causing the compiler to fail.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "../../pandas/_libs/include/pandas/simd/moments_simd.hpp",
+    "../../pandas/_libs/simd/moments_inst_neon.cpp",
+    "../../pandas/_libs/simd/moments.cpp"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "../../pandas/_libs/include/pandas/simd/moments_simd.hpp:255:50: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "reason": "Direct compiler error pointing to an invalid explicit instantiation in moments_simd.hpp"
+    },
+    {
+      "quote": "../../pandas/_libs/simd/moments_inst_neon.cpp:14:43: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "reason": "The same explicit-instantiation error is reported from the NEON instantiation source, confirming the instantiation site is problematic"
+    },
+    {
+      "quote": "FAILED: [code=1] pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o",
+      "reason": "The compilation of the NEON object file failed (nonzero exit code)"
+    },
+    {
+      "quote": "1 error generated.",
+      "reason": "The compiler emitted an error and stopped compilation"
+    },
+    {
+      "quote": "ninja: build stopped: subcommand failed.",
+      "reason": "The ninja build halted due to the compilation failure"
+    },
+    {
+      "quote": "error: metadata-generation-failed",
+      "reason": "The packaging step failed because the build/subprocess exited with an error"
+    }
+  ],
+  "suggested_fix": "Inspect the explicit instantiation at the locations reported (e.g. '../../pandas/_libs/include/pandas/simd/moments_simd.hpp' line 255 and '../../pandas/_libs/simd/moments_inst_neon.cpp' line 14). Ensure that operator() is a function template/member that can be explicitly instantiated, or remove/correct the invalid explicit instantiation; then re-run the meson/ninja build.",
+  "input": {
+    "context_path": "results/v2/holdout/rtk-err-cat/pandas-cpp-xsimd-neon64-v2-001.txt",
+    "context_tokens_estimate": 1130
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 577
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 18741.857,
+    "cache_key": "a62fa409e8c0679e41ea2958699db086f395fac49e43fb14373da64013e89c0d",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

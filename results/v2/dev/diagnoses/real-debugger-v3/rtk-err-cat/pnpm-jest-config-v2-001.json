@@ -1,0 +1,56 @@
+{
+  "case_id": "pnpm-jest-config-v2-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The test run failed with one failing test suite; logs show a config env-variable replacement warning from src/getConfig.ts and the test command exited with code 1.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "A Jest test suite failed during CI (1 failed). The logs include a warning from src/getConfig.ts about failing to replace an environment variable (${ENV_VAR_123}), indicating the test encountered unexpected config/env behavior and caused the test run to exit non-zero.",
+  "confidence": 0.7,
+  "relevant_files": [
+    "src/getConfig.ts"
+  ],
+  "relevant_tests": [
+    "Test Suites: 1 failed, 3 skipped, 61 passed, 62 of 65 total",
+    "Error: Missing ShellJS command name"
+  ],
+  "evidence": [
+    {
+      "quote": "Test Suites: 1 failed, 3 skipped, 61 passed, 62 of 65 total",
+      "reason": "Shows that one test suite failed in the Jest run."
+    },
+    {
+      "quote": "console.warn\n      [WARN] Failed to replace env in config: ${ENV_VAR_123}\n      at warn (src/getConfig.ts:39:13)",
+      "reason": "Identifies a warning originating from src/getConfig.ts about failing to replace an env var, which is likely related to the test failure."
+    },
+    {
+      "quote": "[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] pnpm@11.0.6 .test: `cross-env NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules --disable-warning=ExperimentalWarning --disable-warning=DEP0169\" jest`",
+      "reason": "Shows the test script (jest) failed under pnpm, indicating the test run aborted with an error."
+    },
+    {
+      "quote": "[ELIFECYCLE] Command failed with exit code 1.",
+      "reason": "Confirms the test command exited with a non-zero status, causing the CI job to fail."
+    },
+    {
+      "quote": "Error: Missing ShellJS command name",
+      "reason": "An explicit error present in the logs that may be part of the failing test behavior or related setup error observed during the run."
+    }
+  ],
+  "suggested_fix": "Run the failing test locally with the same environment to reproduce; ensure the environment variable ENV_VAR_123 is set or mock the env replacement in the test (or adjust src/getConfig.ts to handle missing env vars without warning). Re-run jest and verify the suite passes before pushing.",
+  "input": {
+    "context_path": "results/v2/dev/rtk-err-cat/pnpm-jest-config-v2-001.txt",
+    "context_tokens_estimate": 4536
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 523
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 18106.904,
+    "cache_key": "f241f97ab6ef09ebae700b9283ba96b509fa1175d69d71d3ab7ef12a1d491f2c",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

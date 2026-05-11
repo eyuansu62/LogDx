@@ -1,0 +1,57 @@
+{
+  "case_id": "cleanup-tsc-stress-001",
+  "context_method": "rtk-read",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The gh CLI call to the GitHub Actions API failed with a 403 while attempting to list/delete artifacts for run 24823635328, causing the Cleanup artifacts job to exit with code 1.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GitHub API request returned HTTP 403: 'Resource not accessible by integration', indicating the token used by the gh CLI did not have permission (or was not available) to access/delete artifacts for the run.",
+  "confidence": 0.78,
+  "relevant_files": [
+    "artifact_ids.txt"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "Shows the GitHub CLI/API returned a 403 Forbidden error, the immediate failure observed."
+    },
+    {
+      "quote": "gh api \\\n  -H \"Accept: application/vnd.github+json\" \\\n  /repos/microsoft/TypeScript/actions/runs/24823635328/artifacts \\\n  --jq '.artifacts[].id' > artifact_ids.txt",
+      "reason": "Shows the workflow attempted to call the Actions artifacts API for run 24823635328 and save artifact ids to artifact_ids.txt before deleting them."
+    },
+    {
+      "quote": "Deleting artifacts for run ID: 24823635328",
+      "reason": "Confirms the job was performing artifact deletion when the error occurred."
+    },
+    {
+      "quote": "##[group]GITHUB_TOKEN Permissions",
+      "reason": "Indicates the workflow considered token permissions; relevant to diagnosing a permissions-related failure."
+    },
+    {
+      "quote": "Actions: write",
+      "reason": "Shows the declared GITHUB_TOKEN permission for Actions in the log, which is relevant to whether the token should allow deletes — but the 403 indicates the token in use still lacked access."
+    },
+    {
+      "quote": "Secret source: None",
+      "reason": "Suggests secrets (tokens) may not have been provided to the runner in the expected way, which can cause authentication/permission failures."
+    }
+  ],
+  "suggested_fix": "Ensure the gh CLI is authenticated with a token that has permission to read and delete Actions artifacts (for example a GITHUB_TOKEN or PAT with appropriate repo/actions scopes). Verify the workflow's permissions (Actions: write) and that the token is actually available to the job (not overridden or unset); if necessary, provide a personal access token with repo and actions permissions and authenticate gh (gh auth login) before calling the API.",
+  "input": {
+    "context_path": "results/stress/rtk-read/cleanup-tsc-stress-001.txt",
+    "context_tokens_estimate": 1291
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 570
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 19740.278,
+    "cache_key": "27b905be533067593344a980d39bd84c8befdac2a9b9f369f38e666af6f50866",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

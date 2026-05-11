@@ -1,0 +1,60 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "An assembly test failed because FileCheck did not find expected CHECK patterns in the generated assembly for wasm_exceptions.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "FileCheck verification failed: the expected CHECK strings in /checkout/tests/assembly-llvm/wasm_exceptions.rs were not found in the generated assembly /checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "/checkout/tests/assembly-llvm/wasm_exceptions.rs",
+    "/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s"
+  ],
+  "relevant_tests": [
+    "[assembly] tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "test [assembly] tests/assembly-llvm/wasm_exceptions.rs ... FAILED",
+      "reason": "Shows which test failed."
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:38:12: error: CHECK: expected string not found in input",
+      "reason": "FileCheck reported that a CHECK at line 38 of the test file did not match the assembly input."
+    },
+    {
+      "quote": "error: verification with 'FileCheck' failed",
+      "reason": "Confirms the failure mode is FileCheck verification (pattern-matching of expected output)."
+    },
+    {
+      "quote": "33:  call may_panic",
+      "reason": "Shows the generated assembly around the scan point; FileCheck scanned from this location and did not find the expected pattern."
+    },
+    {
+      "quote": "Input file: /checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s",
+      "reason": "Identifies the generated assembly file that was checked."
+    },
+    {
+      "quote": "Check file: /checkout/tests/assembly-llvm/wasm_exceptions.rs",
+      "reason": "Identifies the FileCheck input (the test with CHECK patterns) that failed to match."
+    }
+  ],
+  "suggested_fix": "Compare the generated assembly file /checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s with the CHECK patterns in /checkout/tests/assembly-llvm/wasm_exceptions.rs and either update the test's CHECK lines to match the new assembly output or adjust the codegen so the assembly includes the expected patterns. Re-run the assembly test (FileCheck) locally to verify the fix.",
+  "input": {
+    "context_path": "results/v2/stress/rtk-err-cat/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 18101
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 554
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 41730.152,
+    "cache_key": "67cfa7437192e9f73f9c342513ebd31efcafb584d95167a446bd2258b61c6445",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

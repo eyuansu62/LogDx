@@ -1,0 +1,64 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest snapshot tests failed because the received parser error messages differ from the stored snapshots (13 snapshots failed across test suites), causing test assertions to fail.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Snapshot test mismatches caused by changed parser error messages (tests expected messages like \"Unexpected token (...)\" but received messages like \"`import()` requires exactly one or two arguments.\") and a SyntaxError observed during a TypeScript test.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js",
+    "tests/config/format-test/test-format.js"
+  ],
+  "relevant_tests": [
+    "snippet: #0 > format[babel]",
+    "snippet: #2 > format[babel]",
+    "constructorOverloadsWithDefaultValues.ts > format[babel-ts]"
+  ],
+  "evidence": [
+    {
+      "quote": "› 13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "Shows that snapshot assertions failed and suggests updating snapshots, indicating snapshot mismatches are the failure cause."
+    },
+    {
+      "quote": "FAIL tests/format/js/_errors_/import/format.test.js",
+      "reason": "Identifies one of the failing test files where snapshot mismatches occurred."
+    },
+    {
+      "quote": "- Unexpected token (1:8)",
+      "reason": "This is the expected error text in the snapshot (the '-' indicates the snapshot content) that the test expected."
+    },
+    {
+      "quote": "+ `import()` requires exactly one or two arguments. (1:1)",
+      "reason": "This is the actual error message received (the '+' indicates received output) and demonstrates the message changed compared to the snapshot."
+    },
+    {
+      "quote": "constructorOverloadsWithDefaultValues.ts > format[babel-ts]\n    SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)",
+      "reason": "Shows a SyntaxError thrown in a TypeScript test, indicating a parse error surfaced during formatting and contributed to test failure."
+    },
+    {
+      "quote": "at file:///home/runner/work/prettier/prettier/tests/config/format-test/test-format.js:17:48",
+      "reason": "Points to the test assertion location that uses toThrowErrorMatchingSnapshot, confirming the failures are test assertion/snapshot mismatches."
+    }
+  ],
+  "suggested_fix": "If the changed error messages are expected, update the Jest snapshots by re-running tests with snapshot update (re-run jest with `-u`, e.g. `yarn test -u`). If the changes are unintended, revert or fix the parser/error-message changes so the output matches existing snapshots and re-run the test suite.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-rtk-tail-v3/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 20981
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 677
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 34015.52,
+    "cache_key": "ead3eab3e83bf6576648e9d4e71d70feb6e35adf78f7bbb5e1e13e24b3a072f5",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

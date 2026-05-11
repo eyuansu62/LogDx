@@ -1,0 +1,61 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "A compile-fail test run by trybuild failed: the test 'compile_fail_full' encountered multiple Rust type/async-return errors originating in macros_type_mismatch.rs (tokio::main attribute), causing the test suite to abort.",
+  "root_cause_category": "compile_error",
+  "root_cause": "The trybuild test 'compile_fail_full' failed due to multiple Rust compiler errors (mismatched types and incorrect async block return types) in the test cases under tests/fail/macros_type_mismatch.rs (errors E0308, E0277, E0271 originating from the tokio::main attribute macro).",
+  "confidence": 0.88,
+  "relevant_files": [
+    "$DIR/tests/fail/macros_type_mismatch.rs",
+    "/home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13"
+  ],
+  "relevant_tests": [
+    "test compile_fail_full ... FAILED",
+    "compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "test compile_fail_full ... FAILED",
+      "reason": "Shows the specific test that failed in the CI run."
+    },
+    {
+      "quote": "error[E0308]: mismatched types",
+      "reason": "Indicates Rust compiler type mismatch errors occurred during compilation."
+    },
+    {
+      "quote": "error[E0277]: the `?` operator can only be used in an async block that returns `Result` or `Option`",
+      "reason": "Shows async-return-related compile errors that caused the failure."
+    },
+    {
+      "quote": "expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
+      "reason": "Pinpoints the failing test source and the mismatched expected vs actual async return types in macros_type_mismatch.rs."
+    },
+    {
+      "quote": "thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13",
+      "reason": "Shows trybuild itself panicked while running the compile-fail tests, causing the test run to abort."
+    },
+    {
+      "quote": "1 of 10 tests failed",
+      "reason": "Confirms the overall test suite failure count and that this is a test (compile) error rather than e.g. a network or permission issue."
+    }
+  ],
+  "suggested_fix": "Fix the failing compile-fail test(s): adjust the code in tests/fail/macros_type_mismatch.rs so async functions annotated with #[tokio::main] return the expected types (e.g., change return types to match () or Result as required), or update the trybuild expected stderr output for these cases. Re-run the trybuild tests (cargo test) locally to verify.",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-4k-rtk-err-cat-v1/cargo-tokio-001.txt",
+    "context_tokens_estimate": 7362
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 603
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 16907.16,
+    "cache_key": "db7dbdaa4d58d4118c083d6a71d9f9a785ae5446663670268fbebceb1f54ee55",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

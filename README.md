@@ -381,6 +381,18 @@ to let the numbers pick.
        sidesteps it (artifact-driven gain, not method-driven).
        **No v3 promotion**; hybrid-v2 stays canonical. v3 is in
        the lock as a documented prototype.
+    7. **§3i — Third debugger (gpt-5-mini, cross-family
+       validation).** Added `examples/diagnosis_shim_openai.py`
+       and ran full Phase 3 with gpt-5-mini as `real-debugger-v3`.
+       Result: **v2 produces cross-family-stable benchmark
+       rankings; v1.3 does not.** v1.3 top-3 ∩ across the 3
+       debuggers is ∅ (Sonnet's #1 hybrid-v1 is gpt's #5; gpt's
+       #1 grep is Sonnet's #3). v2 top-3 ∩ = {hybrid-v2,
+       hybrid-v3}; Sonnet and gpt-5-mini produce IDENTICAL #1-#3
+       rankings on v2 (hybrid-v2 → hybrid-v3 → grep). All three
+       debuggers also rank positions 7-10 in unanimous identical
+       order on v2. The hybrid-v2 #1 finding from §3e-§3h now
+       survives a debugger from a different model family.
   - Phase 2 acceptance-criteria-C deliverables landed:
     [`reports/v2_corpus_summary.md`](reports/v2_corpus_summary.md),
     [`reports/v2_split_balance.md`](reports/v2_split_balance.md),

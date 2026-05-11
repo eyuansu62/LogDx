@@ -1,0 +1,67 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "grep",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "One integration test (dubbo-samples-test-11137) timed out waiting for its Docker test container to start, causing the job to fail.",
+  "root_cause_category": "timeout_or_oom",
+  "root_cause": "The test run for dubbo-samples-test-11137 exceeded the configured timeout while waiting for containers to become ready (container start timed out and Docker reported errors), so the test was marked as failed due to timeout.",
+  "confidence": 0.86,
+  "relevant_files": [
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/docker-compose.yml",
+    "test/jobs/testjob_3-result-java21.txt",
+    "test/jobs/testjob_3.txt"
+  ],
+  "relevant_tests": [
+    "dubbo-samples-test-11137:1/1",
+    "dubbo-samples-memory-tri-server:1/1"
+  ],
+  "evidence": [
+    {
+      "quote": "wait for container is timeout: 602 s",
+      "reason": "Shows the test harness waited for a container but hit a timeout after 602 seconds."
+    },
+    {
+      "quote": "[dubbo-samples-test-11137] :ErrorMsg: Run tests timeout",
+      "reason": "Explicit message that the dubbo-samples-test-11137 test run timed out."
+    },
+    {
+      "quote": "[dubbo-samples-test-11137] timeout: 600",
+      "reason": "Shows the configured timeout for this test was 600 seconds, explaining why the run was aborted."
+    },
+    {
+      "quote": "please check logs: /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
+      "reason": "Indicates where detailed logs for the failing timed-out test are stored for investigation."
+    },
+    {
+      "quote": "Error response from daemon: received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "Docker daemon returned 500 errors while pulling/handling containers, suggesting Docker issues contributed to the timeout."
+    },
+    {
+      "quote": "Error response from daemon: No such container: dubbo-samples-test-11137--zookeeper-1",
+      "reason": "After timeout, the script attempted to inspect/stop containers but they did not exist, showing containers never reached running state."
+    },
+    {
+      "quote": "the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion",
+      "reason": "A warning from docker-compose referencing the compose file used for the test; indicates compose configuration may need attention when debugging container startup failures."
+    }
+  ],
+  "suggested_fix": "Inspect the logs at /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs to determine why containers (e.g. zookeeper/nacos) failed to start. If the failure is due to slow startup or transient Docker errors (see Docker 500), consider increasing the test timeout (currently 600s) and/or fixing Docker/compose issues (address the daemon 500 error and review the docker-compose.yml warning).",
+  "input": {
+    "context_path": "results/v2/holdout/grep/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 16973
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 683
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 25765.161,
+    "cache_key": "75d6aca4a1484693dd5a3e06356481f91aca9f0f4c73edcd7af49ee7636f7d11",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

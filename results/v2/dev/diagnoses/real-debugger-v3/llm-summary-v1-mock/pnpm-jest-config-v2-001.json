@@ -1,0 +1,58 @@
+{
+  "case_id": "pnpm-jest-config-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Native module postinstall steps failed during dependency installation: the unrs-resolver postinstall couldn't find or install a prebuilt binding and fuse-native's install errored with a permission problem when spawning node-gyp, leading to an npm lifecycle exit code 1.",
+  "root_cause_category": "dependency_install",
+  "root_cause": "Postinstall/install of native dependencies failed: '@unrs/resolver' could not find or install the prebuilt binding '@unrs/resolver-binding-linux-x64-gnu', and 'fuse-native' install failed with 'Error: spawn node-gyp EACCES', causing the install lifecycle to fail and exit with code 1.",
+  "confidence": 0.72,
+  "relevant_files": [
+    "/home/runner/work/pnpm/pnpm/agent/server/node_modules/.bin/pnpm-agent",
+    "/home/runner/work/pnpm/pnpm/pnpm/node_modules/.bin/pnpm-agent"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": ".../node_modules/unrs-resolver postinstall: [napi-postinstall@0.3.4] Failed to find package \"@unrs/resolver-binding-linux-x64-gnu\" on the file system",
+      "reason": "Shows a native binding package required by unrs-resolver was not found on disk during postinstall."
+    },
+    {
+      "quote": ".../node_modules/unrs-resolver postinstall: [napi-postinstall@0.3.4] Failed to install package \"@unrs/resolver-binding-linux-x64-gnu\" using npm Cannot find module 'unrs-re…",
+      "reason": "Shows an attempt to install the prebuilt resolver binding failed (cannot find module / install failure)."
+    },
+    {
+      "quote": ".../node_modules/fuse-native install: Error: spawn node-gyp EACCES",
+      "reason": "Shows a permission error when trying to spawn node-gyp during a native module install, which would abort the install lifecycle."
+    },
+    {
+      "quote": "[WARN] Failed to create bin at /home/runner/work/pnpm/pnpm/agent/server/node_modules/.bin/pnpm-agent. ENOENT: no such file or directory, open '/home/runner/work/pnpm/pnpm/…",
+      "reason": "Indicates file system/path issues (ENOENT) when creating package binaries during installation, consistent with install problems."
+    },
+    {
+      "quote": "[ELIFECYCLE] Command failed with exit code 1.",
+      "reason": "Shows the npm lifecycle exited with a non-zero code, the observable failure of the job after install/postinstall errors."
+    },
+    {
+      "quote": "^[[31merror^[[39m^[[37m^[[34m---^[[37m package not found, try to install ^[[32mverdaccio-htpasswd^[[37m with a package manager^[[39m",
+      "reason": "Repeated 'package not found' messages indicate additional package resolution/availability issues during the install process."
+    }
+  ],
+  "suggested_fix": "Make native install steps succeed: ensure prebuilt bindings are available or reachable (e.g. registry access for '@unrs/resolver-binding-linux-x64-gnu'), and ensure node-gyp can run (install native build toolchain and node-gyp prerequisites and fix permissions so node-gyp is executable). Re-run the install (or run with proper permissions / --unsafe-perm in CI) so postinstall scripts can complete.",
+  "input": {
+    "context_path": "results/v2/dev/llm-summary-v1-mock/pnpm-jest-config-v2-001.txt",
+    "context_tokens_estimate": 1701
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 720
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 21851.517,
+    "cache_key": "9443c0b5cdfbad2ba5a1846d8032dfbc1349c9919357237a317e67570d3b3f18",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

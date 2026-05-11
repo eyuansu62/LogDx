@@ -1,0 +1,61 @@
+{
+  "case_id": "cpython-tcl-windows-matrix-v2-001",
+  "context_method": "grep",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The test suite failed one test file (test_tcl) due to two assertion failures where Tcl string results were mojibaked (decoded with the wrong encoding) instead of producing the expected Unicode characters.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "test.test_tcl.TclTest tests failed because Tcl-returned characters were decoded incorrectly (mojibake) — the test expected a Unicode code point but received CP1252-decoded bytes instead.",
+  "confidence": 0.62,
+  "relevant_files": [
+    "Lib\\test\\test_tcl.py"
+  ],
+  "relevant_tests": [
+    "test.test_tcl.TclTest.test_eval_surrogates_in_result",
+    "test.test_tcl.TclTest.test_evalfile_surrogates_in_result",
+    "test_tcl"
+  ],
+  "evidence": [
+    {
+      "quote": "test_eval_surrogates_in_result (test.test_tcl.TclTest.test_eval_surrogates_in_result) ... \u001b[31mFAIL\u001b[0m",
+      "reason": "Shows the specific test that failed."
+    },
+    {
+      "quote": "test_evalfile_surrogates_in_result (test.test_tcl.TclTest.test_evalfile_surrogates_in_result) ... \u001b[31mFAIL\u001b[0m",
+      "reason": "Shows the second specific failing test in the same test file."
+    },
+    {
+      "quote": "AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ’»>'",
+      "reason": "Concrete assertion failure: expected a surrogate/Unicode escape form but got mojibaked characters ('ðŸ’»'), indicating an encoding/decoding mismatch."
+    },
+    {
+      "quote": "locale.getencoding: cp1252",
+      "reason": "The Python process locale encoding is cp1252, which can cause UTF-8 bytes to appear as mojibake when decoded with the wrong codec."
+    },
+    {
+      "quote": "patchlevel = 9.0.3",
+      "reason": "Shows the Tcl version in use during the tests (relevant because the failure arises from communication with the Tcl library)."
+    },
+    {
+      "quote": "/D \"Py_TCLTK_DIR=\\\"D:\\\\a\\\\cpython\\\\cpython\\\\externals\\\\tcltk-9.0.3.0-unsigned\\\\amd64\\\"\"",
+      "reason": "The build used an external Tcl/Tk distribution (tcltk-9.0.3.0), confirming the test exercised the embedded Tcl implementation."
+    }
+  ],
+  "suggested_fix": "Ensure Tcl results are decoded as UTF-8 (not the system code page) when converting Tcl strings to Python strings. Concretely: run the tests with a UTF-8 locale (so locale.getencoding returns 'utf-8') or modify the _tkinter/Tcl result decoding to explicitly use 'utf-8' for Tcl-returned byte sequences. Re-run the failing test file (Lib\\test\\test_tcl.py) after applying the change.",
+  "input": {
+    "context_path": "results/v2/stress/grep/cpython-tcl-windows-matrix-v2-001.txt",
+    "context_tokens_estimate": 73515
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 581
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 36194.283,
+    "cache_key": "ed5651af109f5b498599bfcb9e0d2e85ef7e700fe45185363133e9d0e5924855",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

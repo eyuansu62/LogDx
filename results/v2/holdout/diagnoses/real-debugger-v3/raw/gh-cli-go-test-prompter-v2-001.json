@@ -1,0 +1,53 @@
+{
+  "case_id": "gh-cli-go-test-prompter-v2-001",
+  "context_method": "raw",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "A unit test in internal/prompter failed because form.Run() timed out in a subtest expecting completion.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The test TestHuhPrompterMultiSelectWithSearchPersistence (subtest selections_persist_after_changing_search_query) failed due to a timeout: \"form.Run() did not complete in time\" reported in huh_prompter_test.go:478.",
+  "confidence": 0.72,
+  "relevant_files": [
+    "huh_prompter_test.go:478",
+    "github.com/cli/cli/v2/internal/prompter"
+  ],
+  "relevant_tests": [
+    "TestHuhPrompterMultiSelectWithSearchPersistence",
+    "TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query"
+  ],
+  "evidence": [
+    {
+      "quote": "--- FAIL: TestHuhPrompterMultiSelectWithSearchPersistence (5.19s)",
+      "reason": "Shows the top-level test that failed and that it ran for ~5s before failing."
+    },
+    {
+      "quote": "--- FAIL: TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query (5.13s)",
+      "reason": "Identifies the specific subtest that failed and its duration."
+    },
+    {
+      "quote": "huh_prompter_test.go:478: form.Run() did not complete in time",
+      "reason": "The test failure message explicitly states that form.Run() exceeded the allowed time, indicating a timeout in the test."
+    },
+    {
+      "quote": "FAIL\tgithub.com/cli/cli/v2/internal/prompter\t8.475s",
+      "reason": "Indicates that the internal/prompter package tests failed overall."
+    }
+  ],
+  "suggested_fix": "Reproduce and debug the failing test locally: run `go test -v -run TestHuhPrompterMultiSelectWithSearchPersistence github.com/cli/cli/v2/internal/prompter` and inspect huh_prompter_test.go at line 478. Investigate why form.Run() is not completing (race, deadlock, or missing signal) and either fix the code to ensure Run returns or adjust the test's timeout/wait logic if the test expectation is incorrect.",
+  "input": {
+    "context_path": "results/v2/holdout/raw/gh-cli-go-test-prompter-v2-001.txt",
+    "context_tokens_estimate": 11367
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 461
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 17434.232,
+    "cache_key": "04af867f0f90b817669367976ece2b7f095c8aaad9060b1308e60b2219838246",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

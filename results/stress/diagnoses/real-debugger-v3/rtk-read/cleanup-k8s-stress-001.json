@@ -1,0 +1,47 @@
+{
+  "case_id": "cleanup-k8s-stress-001",
+  "context_method": "rtk-read",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "GitHub CLI returned a 403 when attempting to delete workflow run artifacts, so the cleanup step failed due to an authorization problem.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GitHub token used by the gh CLI did not have permission to delete the repository's Actions artifacts, causing a 403 \"Resource not accessible by integration\" error.",
+  "confidence": 0.85,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh api \\n  -H \"Accept: application/vnd.github+json\" \\n  /repos/kubernetes/kubernetes/actions/runs/23485708914/artifacts \\n  --jq '.artifacts[].id' > artifact_ids.txt",
+      "reason": "Shows the workflow used gh CLI to list artifacts for the run before attempting deletion."
+    },
+    {
+      "quote": "gh api \\n    --silent \\n    -X DELETE \\n    -H \"Accept: application/vnd.github+json\" \\n    /repos/kubernetes/kubernetes/actions/artifacts/\"$artifact_id\"",
+      "reason": "Shows the workflow used gh CLI to send DELETE requests to remove artifacts."
+    },
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "The gh CLI reported an HTTP 403 Forbidden error, indicating lack of permission to perform the delete action."
+    },
+    {
+      "quote": "GITHUB_TOKEN Permissions\\nActions: write\\nMetadata: read",
+      "reason": "Workflow permissions are printed in the log; despite 'Actions: write' being displayed, the 403 shows the token actually used by gh lacked the needed access for this operation."
+    }
+  ],
+  "suggested_fix": "Use a token with sufficient permissions for deleting Actions artifacts (for example, ensure the workflow's GITHUB_TOKEN has Actions write permissions for artifacts or provide a PAT with repo/actions scopes as a secret and use it for gh), and verify the gh CLI is using that token (GH_TOKEN/GITHUB_TOKEN) when calling the API.",
+  "input": {
+    "context_path": "results/stress/rtk-read/cleanup-k8s-stress-001.txt",
+    "context_tokens_estimate": 1291
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 453
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 15551.326,
+    "cache_key": "58ff74f38e67c7e59d718cac5300f4cbdab4de4fe9965a84acf274f9e507ef9a",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

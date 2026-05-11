@@ -1,0 +1,55 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "One assembly test failed: tests/assembly-llvm/wasm_exceptions.rs produced unexpected assembly output causing the compiletest suite to fail for target wasm32-wasip1.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The assembly test tests/assembly-llvm/wasm_exceptions.rs failed because the produced assembly did not match the expected output in the compiletest assembly-llvm suite for target wasm32-wasip1.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "relevant_tests": [
+    "tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "---- [assembly] tests/assembly-llvm/wasm_exceptions.rs stdout end ----",
+      "reason": "Shows the specific assembly test that ended and is associated with the failure."
+    },
+    {
+      "quote": "failures:\n    [assembly] tests/assembly-llvm/wasm_exceptions.rs",
+      "reason": "Explicitly lists the failing test in the output."
+    },
+    {
+      "quote": "test result: FAILED. 550 passed; 1 failed; 103 ignored; 0 measured; 0 filtered out; finished in 15.38s",
+      "reason": "Confirms there was exactly one failing test in the test run."
+    },
+    {
+      "quote": "Some tests failed in compiletest suite=assembly-llvm mode=assembly host=x86_64-unknown-linux-gnu target=wasm32-wasip1",
+      "reason": "Indicates the failure occurred in the assembly-llvm compiletest suite for the wasm32-wasip1 target."
+    },
+    {
+      "quote": ".ascii \"exception-handling\"",
+      "reason": "Part of the assembly output shown in the log, indicating the test output (assembly content) that was compared; supports that the failure is an assembly output mismatch."
+    }
+  ],
+  "suggested_fix": "Re-run the failing assembly-llvm test for tests/assembly-llvm/wasm_exceptions.rs on the wasm32-wasip1 target to reproduce the mismatch, inspect the produced assembly vs the expected file, and either update the expected assembly for the test or fix the codegen that produced the unexpected output. (The CI run invoked the compiletest assembly-llvm suite for target wasm32-wasip1.)",
+  "input": {
+    "context_path": "results/v2/stress/tail/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 3914
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 493
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 25997.809,
+    "cache_key": "e7d71d88f21c51bd584696be9ac6b301b9bc4eedcab9afafaa7b092a414fa3e0",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

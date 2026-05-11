@@ -1,0 +1,59 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "tail",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest snapshot tests failed because the actual parser/error messages produced by the formatter differ from the stored snapshots (13 snapshot failures across 2 test suites), causing multiple expect(...).rejects.toThrowErrorMatchingSnapshot() assertions to fail.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Snapshot mismatches: the error messages/positions produced during parsing have changed (e.g. \"Cannot use new with import().\" vs expected \"Cannot use new with import(...).\"), so tests that assert error messages against snapshots failed.",
+  "confidence": 0.78,
+  "relevant_files": [
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js"
+  ],
+  "relevant_tests": [
+    "constructorOverloadsWithDefaultValues.ts > format[babel-ts]",
+    "snippet: #2 > format[babel]",
+    "snippet: #3 > format[babel-ts]",
+    "snippet: #0 > format[babel-ts]"
+  ],
+  "evidence": [
+    {
+      "quote": "Snapshot Summary\n › 13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "Explicitly shows snapshot failures and suggests updating snapshots with jest -u."
+    },
+    {
+      "quote": "- Cannot use new with import(...). (1:5)\n+ Cannot use new with import(). (1:5)",
+      "reason": "Example of a snapshot diff where the received error message differs from the snapshot (ellipses vs empty parentheses)."
+    },
+    {
+      "quote": "- Unexpected token (1:12)\n+ `import()` requires exactly one or two arguments. (1:5)\n  > 1 | new import();",
+      "reason": "Another snapshot diff showing the error text changed from 'Unexpected token' to a different message about import() arguments."
+    },
+    {
+      "quote": "FAIL tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js\nconstructorOverloadsWithDefaultValues.ts > format[babel-ts]\n    SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)\n      1 | class C {\n      2 |     foo: string;\n    > 3 |     constructor(x = 1);\n          |                 ^",
+      "reason": "Shows a concrete syntax error produced during a test run, including file, test name, and the parser error that likely contributed to snapshot mismatch or test failure."
+    },
+    {
+      "quote": "Error: expect(received).rejects.toThrowErrorMatchingSnapshot()\n\nSnapshot name: `snippet: #2 format[babel] 1`",
+      "reason": "Indicates the failing assertion type: a promise rejection was expected to match a snapshot but did not."
+    }
+  ],
+  "suggested_fix": "If the changed error messages are intentional, update the snapshots by re-running the tests with Jest's update flag (e.g., run jest -u or your project's test script with -u). If the change is unintentional, revert or adjust the change that modified the parser/error-message output so it matches existing snapshots.",
+  "input": {
+    "context_path": "results/v2/holdout/tail/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 4265
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 722
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 20169.863,
+    "cache_key": "668cadbdfd1fc9c717cf8531a845494bbd12b5fd642026c77845cf1f3279b4aa",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "case_id": "pytest-sklearn-stress-001",
+  "context_method": "rtk-log",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "CI failed because warnings were elevated to errors during the run, causing the job to exit with code 1.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "SKLEARN_WARNINGS_AS_ERRORS was set (SKLEARN_WARNINGS_AS_ERRORS: 1) which caused compiler/runtime warnings (from C-extension files) to be treated as errors and abort the test run.",
+  "confidence": 0.65,
+  "relevant_files": [
+    "sklearn/neighbors/_binary_tree.pxi",
+    "sklearn/_loss/_loss.cpython-313-x86_64-linux-gnu.so.p/_loss.c",
+    "metrics/_plot/tests/test_predict_error_display.py"
+  ],
+  "relevant_tests": [
+    "metrics/_plot/tests/test_predict_error_display.py"
+  ],
+  "evidence": [
+    {
+      "quote": "15 errors (9 unique)",
+      "reason": "Shows the run reported multiple errors rather than only warnings."
+    },
+    {
+      "quote": "SKLEARN_WARNINGS_AS_ERRORS: 1",
+      "reason": "Explicit environment/configuration setting indicating warnings are treated as errors."
+    },
+    {
+      "quote": "warning: sklearn/neighbors/_binary_tree.pxi:1091:8: Assigning to '...",
+      "reason": "A warning originating from a C-extension source file that would be promoted to an error under SKLEARN_WARNINGS_AS_ERRORS=1."
+    },
+    {
+      "quote": "sklearn/_loss/_loss.cpython-313-x86_64-linux-gnu.so.p/_loss.c:8474...",
+      "reason": "Another C-extension source file showing warnings present during the build/test run."
+    },
+    {
+      "quote": "$RAISE_SUBPROC_ERROR = True",
+      "reason": "Indicates subprocess failures are configured to raise errors, contributing to the job abort."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "The job terminated with a non-zero exit code, consistent with errors being raised from warnings."
+    }
+  ],
+  "suggested_fix": "Either unset or disable SKLEARN_WARNINGS_AS_ERRORS in the CI environment to allow warnings, or fix the underlying warnings in the listed C-extension sources (e.g., sklearn/neighbors/_binary_tree.pxi and sklearn/_loss/_loss.c) and re-run the tests.",
+  "input": {
+    "context_path": "results/stress/rtk-log/pytest-sklearn-stress-001.txt",
+    "context_tokens_estimate": 358
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 471
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 20924.246,
+    "cache_key": "612cbb76499255bfd4a17894deb19ac70cd5d30742d747b0dad2102950ed7c6e",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

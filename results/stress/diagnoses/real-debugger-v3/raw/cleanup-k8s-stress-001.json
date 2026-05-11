@@ -1,0 +1,55 @@
+{
+  "case_id": "cleanup-k8s-stress-001",
+  "context_method": "raw",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The Cleanup artifacts job attempted to delete workflow artifacts via the gh CLI but the gh API returned an HTTP 403 error, causing the step to fail with exit code 1.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "gh API call to delete artifacts failed with HTTP 403 'Resource not accessible by integration', indicating the token used by the gh CLI lacked permission to perform the deletion.",
+  "confidence": 0.8,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "Shows the gh CLI received an HTTP 403, indicating an authorization/permission failure when calling the GitHub API."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Shows the job failed as a result of the gh API error and the step exited non‑zero."
+    },
+    {
+      "quote": "GITHUB_TOKEN Permissions",
+      "reason": "The log includes a block about token permissions, indicating the failure is related to token scope or permissions."
+    },
+    {
+      "quote": "Actions: write",
+      "reason": "The permissions block shows 'Actions: write', which is relevant to whether the token should be able to manage actions artifacts; contrasts with the 403 error."
+    },
+    {
+      "quote": "Deleting artifacts for run ID: 23485708914",
+      "reason": "Shows the job was performing artifact deletion when the permission error occurred."
+    },
+    {
+      "quote": "/repos/kubernetes/kubernetes/actions/runs/23485708914/artifacts",
+      "reason": "Shows the exact API endpoint being queried to list artifacts prior to attempting deletion."
+    }
+  ],
+  "suggested_fix": "Ensure the token used by the gh CLI has permission to manage Actions artifacts (confirm GITHUB_TOKEN/GH_TOKEN is valid and has sufficient scopes). If needed, set a token with the required permissions (e.g., a PAT with repo/actions scopes) or adjust the workflow permissions (permissions: actions: write) and re-run the job.",
+  "input": {
+    "context_path": "results/stress/raw/cleanup-k8s-stress-001.txt",
+    "context_tokens_estimate": 1291
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 475
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 36512.734,
+    "cache_key": "a0954b53e89a98a23bf10e69bbb45ae2c95cac54f5ee8b9c3e27601f33cd6b25",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

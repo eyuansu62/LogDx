@@ -1,0 +1,67 @@
+{
+  "case_id": "airflow-precommit-tsc-middle-v2-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "TypeScript type-checking failed during the UI compile/lint step: tsc returned errors for three files causing the CI job to exit with a non-zero status.",
+  "root_cause_category": "type_error",
+  "root_cause": "TypeScript compilation (tsc) failed due to type-checking errors: unused/declared-but-unused types and an incompatible type assignment (SetupServer vs SetupServerApi), causing pnpm tsc to exit non-zero.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "src/layouts/Nav/UserSettingsButton.tsx",
+    "src/pages/Connections/ConnectionForm.tsx",
+    "testsSetup.ts",
+    "/home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json"
+  ],
+  "relevant_tests": [
+    "Compile / format / lint UI",
+    "ts-compile-lint-ui"
+  ],
+  "evidence": [
+    {
+      "quote": "Compile / format / lint UI................................................................................^[[41mFailed^[[49m",
+      "reason": "Shows the UI compile/format/lint step failed in the CI job."
+    },
+    {
+      "quote": "- hook id: ts-compile-lint-ui",
+      "reason": "Identifies the pre-commit hook / step that ran the TypeScript compile/lint tasks."
+    },
+    {
+      "quote": "TS6196: 'ColorMode' is declared but never used.",
+      "reason": "TypeScript reported an error for an unused type declaration in src/layouts/Nav/UserSettingsButton.tsx."
+    },
+    {
+      "quote": "TS6133: 'ParamsSpec' is declared but its value is never read.",
+      "reason": "TypeScript reported an unused import/type in src/pages/Connections/ConnectionForm.tsx."
+    },
+    {
+      "quote": "TS2739: Type 'SetupServer' is missing the following properties from type 'SetupServerApi': #private, network",
+      "reason": "TypeScript reported an incompatible type assignment in testsSetup.ts, indicating a type mismatch."
+    },
+    {
+      "quote": "Found 3 errors in 3 files.",
+      "reason": "tells us the tsc run failed with three TypeScript errors spread across files."
+    },
+    {
+      "quote": "subprocess.CalledProcessError: Command '['pnpm', 'tsc', '--p', '/home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json']' returned non-zero exit status 2.",
+      "reason": "Shows the pnpm tsc command returned a non-zero exit status, causing the script to raise an exception and fail the job."
+    }
+  ],
+  "suggested_fix": "Fix the TypeScript errors and re-run the checks: (1) remove or use the unused type declarations/imports (e.g. ColorMode, ParamsSpec) or rename/adjust them so they are used; (2) correct the testsSetup type so the server value matches the expected SetupServerApi (or cast to the correct type or update the type definitions); (3) run pnpm tsc --p src/airflow/ui/tmp<...>.json or the project's tsc locally to reproduce and verify. Once errors are resolved, commit the fixes to allow the CI hook to pass.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-120k-rtk-tail-v3/airflow-precommit-tsc-middle-v2-001.txt",
+    "context_tokens_estimate": 100909
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 663
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 24182.608,
+    "cache_key": "0de14e313ed32557d635d38ced818a4cb6a966d28abdaffa40d3d60227c41f92",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

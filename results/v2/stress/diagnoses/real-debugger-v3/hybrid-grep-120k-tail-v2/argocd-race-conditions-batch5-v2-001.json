@@ -1,0 +1,47 @@
+{
+  "case_id": "argocd-race-conditions-batch5-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI run experienced DNS lookup failures during the job, with repeated \"unable to resolve domain\" messages for several hosts, which likely caused network-dependent steps to fail.",
+  "root_cause_category": "network_or_flaky",
+  "root_cause": "DNS resolution failed repeatedly on the runner (e.g. lookups for cluster-api.example.com and other example hosts returned errors), indicating a network/DNS outage or misconfiguration during the job.",
+  "confidence": 0.65,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "unable to resolve domain: cluster-api.example.com. err: unable to resolve domain cluster-api.example.com., status 0",
+      "reason": "Shows repeated DNS lookup failures for cluster-api.example.com during the run."
+    },
+    {
+      "quote": "unable to resolve domain: doesnotexist.example.com. err: unable to resolve domain doesnotexist.example.com., status 0",
+      "reason": "Additional DNS resolution failure for another host, indicating a broader DNS issue rather than a single hostname."
+    },
+    {
+      "quote": "sudo[2323]:     root : *** ; USER=root ; COMMAND=/usr/bin/systemctl stop systemd-resolved",
+      "reason": "Shows systemd-resolved was stopped (and later restarted), suggesting resolver state was changed on the runner which could affect DNS availability."
+    },
+    {
+      "quote": "Cleaning up orphan processes",
+      "reason": "Indicates the job terminated/aborted cleanup after the failures logged above."
+    }
+  ],
+  "suggested_fix": "Investigate and restore DNS/network connectivity on the runner (check systemd-resolved and /etc/resolv.conf), then re-run the job. If this is transient, retry the CI; if recurring, add DNS/network diagnostics or retries to the job and ensure the runner's DNS settings are stable.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-120k-tail-v2/argocd-race-conditions-batch5-v2-001.txt",
+    "context_tokens_estimate": 7621
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 429
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 17597.538,
+    "cache_key": "53c671f5a5fab990a7a8cc81afbb2692f0221694f81b2a8f2caf90a09040da4d",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

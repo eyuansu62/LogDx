@@ -1,0 +1,60 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Pytest run crashed with a segmentation fault while running numpy/_core/tests/test_datetime.py::test_datetime_nat_argsort_stability; the crash occurred inside numpy.argsort (C extension).",
+  "root_cause_category": "test_assertion",
+  "root_cause": "A segmentation fault occurred in the native code path invoked by numpy._core.fromnumeric.argsort during the test test_datetime_nat_argsort_stability, causing the test run to terminate.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "numpy/_core/tests/test_datetime.py",
+    "numpy/_core/fromnumeric.py"
+  ],
+  "relevant_tests": [
+    "test_datetime_nat_argsort_stability"
+  ],
+  "evidence": [
+    {
+      "quote": "Fatal Python error: Segmentation fault",
+      "reason": "Shows the run terminated due to a native segfault rather than a Python exception or assertion failure."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 54 in _wrapfunc",
+      "reason": "The stack trace shows execution entered numpy._core.fromnumeric._wrapfunc when the crash occurred."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 1231 in argsort",
+      "reason": "The stack shows the segfault happened during argsort, implicating the argsort/native sorting implementation."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
+      "reason": "Identifies the specific test invoking argsort that triggered the segmentation fault."
+    },
+    {
+      "quote": "Extension modules: numpy._core._multiarray_umath, numpy.linalg._umath_linalg, numpy._core._multiarray_tests, numpy._core._rational_tests, numpy._core._umath_tests,",
+      "reason": "Indicates native C extension modules are loaded (where the crash likely occurred)."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 245.",
+      "reason": "CI reports a non-zero exit code consistent with an unrecoverable native crash during tests."
+    }
+  ],
+  "suggested_fix": "Reproduce the crash locally and capture a native backtrace: run the specific test under pytest (pytest numpy/_core/tests/test_datetime.py::test_datetime_nat_argsort_stability) inside a debugger or with tools like gdb/valgrind/ASAN (e.g. run Python under gdb or use pytest --maxfail=1 -k test_datetime_nat_argsort_stability) to get a C-level stack trace and then inspect the argsort C-extension implementation to locate and fix the cause of the segfault.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-120k-tail-v2/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 28055
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 631
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 23852.121,
+    "cache_key": "d61916877dc8d3bfb4ceaccdea54f04325b5a3d4b4f1ebd371cf30435c218900",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

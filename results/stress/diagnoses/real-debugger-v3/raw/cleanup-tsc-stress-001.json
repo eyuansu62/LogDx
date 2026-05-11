@@ -1,0 +1,53 @@
+{
+  "case_id": "cleanup-tsc-stress-001",
+  "context_method": "raw",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The Cleanup artifacts step failed because the GitHub CLI returned HTTP 403 when attempting to delete artifacts.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GitHub CLI returned \"Resource not accessible by integration (HTTP 403)\" while attempting to delete repository artifacts, indicating the token used by gh lacked permission to access/delete those artifacts.",
+  "confidence": 0.78,
+  "relevant_files": [],
+  "relevant_tests": [
+    "Cleanup artifacts"
+  ],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "The command failed with an HTTP 403 error, which indicates an authorization/permission problem when calling the GitHub API."
+    },
+    {
+      "quote": "gh api \\     /repos/microsoft/TypeScript/actions/runs/24823635328/artifacts \\     --jq '.artifacts[].id' > artifact_ids.txt",
+      "reason": "Shows the job used the gh CLI to list artifacts for the run before attempting deletion."
+    },
+    {
+      "quote": "gh api \\     --silent \\     -X DELETE \\     -H \"Accept: application/vnd.github+json\" \\     /repos/microsoft/TypeScript/actions/artifacts/\"$artifact_id\"",
+      "reason": "Shows the job used the gh CLI to send DELETE requests to remove artifacts, which triggered the 403 error."
+    },
+    {
+      "quote": "GITHUB_TOKEN Permissions\\nActions: write\\nMetadata: read",
+      "reason": "The log prints the declared GITHUB_TOKEN permissions, showing the job's intended permissions context for actions-related operations."
+    },
+    {
+      "quote": "Secret source: None",
+      "reason": "Indicates how secrets were sourced; relevant because a missing/incorrectly-provided token can cause authorization failures."
+    }
+  ],
+  "suggested_fix": "Ensure the gh CLI is authenticated with a token that has permission to delete workflow artifacts. Confirm the workflow's GITHUB_TOKEN (or GH_TOKEN) is available to the job and has the necessary actions/repo scopes, or use a personal access token (PAT) with appropriate repo/actions permissions for the cleanup step, then re-run the job.",
+  "input": {
+    "context_path": "results/stress/raw/cleanup-tsc-stress-001.txt",
+    "context_tokens_estimate": 1291
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 496
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 31634.558,
+    "cache_key": "91ea5082fdd8f61e597f92ced651c86293817ace48de77910de2bf4c047444cd",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

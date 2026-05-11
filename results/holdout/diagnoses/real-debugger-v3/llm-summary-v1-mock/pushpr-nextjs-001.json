@@ -1,0 +1,49 @@
+{
+  "case_id": "pushpr-nextjs-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The job failed when attempting to push a branch to the repository: git push returned HTTP 403 and the push command exited with code 128, causing the workflow to fail.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "git push to https://github.com/vercel/next.js/ failed with HTTP 403, indicating an authentication or permission failure when attempting to push the branch; the git push command exited with code 128.",
+  "confidence": 0.78,
+  "relevant_files": [
+    "/home/runner/work/next.js/next.js/node_modules/.pnpm/execa@2.0.3/node_modules/execa/lib/error.js:58:11"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403",
+      "reason": "Shows the remote returned HTTP 403 when trying to access the repository, indicating an auth/permission problem."
+    },
+    {
+      "quote": "Error: Command failed with exit code 128 (Unknown system error -128): git push origin update/react/19.3.0-canary-142cfde8-20260422",
+      "reason": "Shows the failing command was 'git push' for the branch and that it exited with code 128."
+    },
+    {
+      "quote": "exitCodeName: 'Unknown system error -128',",
+      "reason": "Additional metadata confirming the process exited with an error related to the git push failure."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Indicates the workflow failed as a result of the error."
+    }
+  ],
+  "suggested_fix": "Verify and fix repository push authentication for the CI runner: ensure the workflow uses credentials with write permission (for example configure GITHUB_TOKEN or a deploy key with repo write access and enable repo permissions in the workflow), or adjust the git remote to use an authenticated URL. Then re-run the job.",
+  "input": {
+    "context_path": "results/holdout/llm-summary-v1-mock/pushpr-nextjs-001.txt",
+    "context_tokens_estimate": 535
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 437
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 21158.64,
+    "cache_key": "1ad19c6604e3fef76f5695356c65cc08adfd818e5f1a53cfa0b6b034a7330459",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

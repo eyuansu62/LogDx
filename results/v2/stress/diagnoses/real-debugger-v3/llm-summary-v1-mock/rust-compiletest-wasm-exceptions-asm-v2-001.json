@@ -1,0 +1,67 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The build aborted after Git reported many 'could not lock config file .git/modules/.../config: No such file or directory' errors for submodules, and the job exited with code 1.",
+  "root_cause_category": "other",
+  "root_cause": "Git was unable to lock submodule config files ('.git/modules/.../config' missing) for multiple submodules, causing the build to fail and the CI job to exit with code 1.",
+  "confidence": 0.75,
+  "relevant_files": [
+    "./compiler/rustc_error_codes",
+    "./compiler/rustc_error_codes/src",
+    "./compiler/rustc_error_codes/src/error_codes",
+    ".git/modules/library/backtrace/config",
+    ".git/modules/src/doc/book/config",
+    ".git/modules/src/doc/edition-guide/config",
+    ".git/modules/src/doc/embedded-book/config",
+    ".git/modules/src/doc/nomicon/config",
+    ".git/modules/src/doc/reference/config",
+    ".git/modules/src/doc/rust-by-example/config",
+    ".git/modules/src/gcc/config",
+    ".git/modules/src/llvm-project/config",
+    ".git/modules/src/tools/cargo/config",
+    ".git/modules/src/tools/enzyme/config",
+    ".git/modules/src/tools/rustc-perf/config"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "error: could not lock config file .git/modules/library/backtrace/config: No such file or directory",
+      "reason": "Shows Git failing to lock a submodule config file because the file/directory is missing."
+    },
+    {
+      "quote": "error: could not lock config file .git/modules/src/doc/book/config: No such file or directory",
+      "reason": "Repeats the same missing .git/modules/*/config error for another submodule, indicating a systemic checkout/submodule issue."
+    },
+    {
+      "quote": "error: could not lock config file .git/modules/src/tools/cargo/config: No such file or directory",
+      "reason": "Additional occurrence for a tools submodule, supporting that multiple submodule config files are missing."
+    },
+    {
+      "quote": "echo ERROR: An error was encountered with the build.",
+      "reason": "The build script detected an error and emitted an explicit failure message."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "The CI job ended with a non-zero exit code, confirming the run failed."
+    }
+  ],
+  "suggested_fix": "Ensure the repository checkout provides submodule metadata (populate .git/modules). For example, enable submodules in the checkout step or run 'git submodule update --init --recursive' (or 'git submodule sync --recursive' then update) before starting the build so .git/modules/*/config files exist.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-mock/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 1297
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 600
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 17105.789,
+    "cache_key": "10939ed774a0113747cd241d221e027464fc4dcf7eba884ffaa8183c6f79829e",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

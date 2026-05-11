@@ -1,0 +1,51 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "rtk-log",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed due to a large number of test failures (1143 errors across the test suite). The logs also show a git submodule config lock error that may have affected the checkout or test setup.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The test suite produced 1143 errors (221 unique) with many failing [ui] tests; logs also contain 'error: could not lock config file .git/modules/library/backtrace/con...' indicating a git submodule config lock problem during the run.",
+  "confidence": 0.55,
+  "relevant_files": [
+    ".git/modules/library/backtrace/con..."
+  ],
+  "relevant_tests": [
+    "test [ui] tests/ui/alloc-error/alloc-error-handler-bad-signature-1.r..."
+  ],
+  "evidence": [
+    {
+      "quote": "[error] 1143 errors (221 unique)",
+      "reason": "Shows the overall failure: a large number of test errors caused the job to fail."
+    },
+    {
+      "quote": "test [ui] tests/ui/alloc-error/alloc-error-handler-bad-signature-1.r...",
+      "reason": "Example of an individual failing UI test reported in the log."
+    },
+    {
+      "quote": "error: could not lock config file .git/modules/library/backtrace/con...",
+      "reason": "Indicates a git submodule config lock error occurred during the run, which could have interfered with repository state or test setup."
+    },
+    {
+      "quote": "warning: Could not unset core.worktree setting in submodule 'src/doc...",
+      "reason": "Additional submodule-related warning supporting the presence of submodule/config issues in the log."
+    }
+  ],
+  "suggested_fix": "Investigate and resolve the git submodule config lock (inspect .git/modules/library/backtrace config/lock and fix permissions or remove stale lock), then re-run the test job to get the concrete failing test output and address individual test failures.",
+  "input": {
+    "context_path": "results/v2/stress/rtk-log/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 453
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 425
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 25201.475,
+    "cache_key": "6acb8dd79ed1387afbdcb8ff6d0325a9e34202a4c2987235c65d8be3d4c1b05f",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

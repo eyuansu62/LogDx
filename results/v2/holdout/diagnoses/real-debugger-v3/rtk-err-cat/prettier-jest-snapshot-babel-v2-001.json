@@ -1,0 +1,66 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest snapshot tests failed because several tests expecting a rejected error to match stored snapshots did not match; a SyntaxError from the parser appears in the stack trace and is likely the cause of the unexpected output.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Jest snapshot assertions failed: tests using expect(...).rejects.toThrowErrorMatchingSnapshot() produced different errors, including a SyntaxError: \"A parameter initializer is only allowed in a function or constructor implementation. (3:17)\" thrown from the parser code.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "file:///home/runner/work/prettier/prettier/src/common/parser-create-error.js:5:17",
+    "file:///home/runner/work/prettier/prettier/src/language-js/parse/utilities/create-babel-parse-error.js:33:10",
+    "tests/format/flow/flow-repo/match_failure/format.test.js",
+    "tests/format/flow/flow-repo/esproposal_export_star_as.warn/format.test.js"
+  ],
+  "relevant_tests": [
+    "expect(received).rejects.toThrowErrorMatchingSnapshot()"
+  ],
+  "evidence": [
+    {
+      "quote": "Error: expect(received).rejects.toThrowErrorMatchingSnapshot()",
+      "reason": "Shows the failing assertion used in the tests (snapshot expectation for rejected errors)."
+    },
+    {
+      "quote": "› 12 snapshots failed.",
+      "reason": "Indicates multiple snapshot mismatches occurred during the test run."
+    },
+    {
+      "quote": "SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)",
+      "reason": "Shows a concrete SyntaxError thrown during parsing that likely changed the error output captured by snapshots."
+    },
+    {
+      "quote": "at createError (file:///home/runner/work/prettier/prettier/src/common/parser-create-error.js:5:17)",
+      "reason": "Stack trace location implicates parser-create-error.js as where the error is created."
+    },
+    {
+      "quote": "at createBabelParseError (file:///home/runner/work/prettier/prettier/src/language-js/parse/utilities/create-babel-parse-error.js:33:10)",
+      "reason": "Stack trace shows the Babel parse error utility is involved in producing the error that snapshots assert against."
+    },
+    {
+      "quote": "Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "The test runner suggests either fixing code changes that altered output or updating snapshots, indicating snapshot mismatch is the observed failure mode."
+    },
+    {
+      "quote": "Test Suites: 3 failed, 1500 passed, 1503 total",
+      "reason": "Summarizes that a small number of test suites failed while the vast majority passed, consistent with localized snapshot failures."
+    }
+  ],
+  "suggested_fix": "Investigate and fix the SyntaxError in the parser (see parser-create-error.js / create-babel-parse-error.js stack trace) so the produced errors match expectations; if the changed behavior is intended, re-run jest with -u to update the snapshots as suggested by the test output.",
+  "input": {
+    "context_path": "results/v2/holdout/rtk-err-cat/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 1347
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 705
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 20812.429,
+    "cache_key": "f3d2cb20deef69a1f9bd9d3d5442d9e21cc11db3a51ec96ee53c6cc082b251af",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

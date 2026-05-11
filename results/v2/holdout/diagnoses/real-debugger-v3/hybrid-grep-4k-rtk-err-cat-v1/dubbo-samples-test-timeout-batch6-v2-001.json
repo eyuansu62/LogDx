@@ -1,0 +1,54 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Integration test job failed because the test run timed out; Docker/container errors are visible in the logs and tests report 1 failure.",
+  "root_cause_category": "timeout_or_oom",
+  "root_cause": "The integration test run timed out: the test harness reported 'TEST FAILURE: Run tests timeout' for dubbo-samples-test-11137.",
+  "confidence": 0.8,
+  "relevant_files": [
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/docker-compose.yml"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "[2/23] [dubbo-samples-test-11137:1/1] TEST FAILURE: Run tests timeout, version: -Ddubbo.version=3.3.7-SNAPSHOT -Dspring.version=5.3.24 -Djava.version=21, please check logs: /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
+      "reason": "Explicit message stating the tests failed due to a timeout and pointing to the logs directory."
+    },
+    {
+      "quote": "Failed tests count: 1",
+      "reason": "Shows that one test failed as a result of the run (consistent with a timed-out test run)."
+    },
+    {
+      "quote": "Total: 23, Success: 18, Failures: 1, Ignored: 4",
+      "reason": "Summary output confirming test results and that failures occurred during the test run."
+    },
+    {
+      "quote": "Error response from daemon: invalid filter 'reference'",
+      "reason": "Repeated Docker daemon errors in the log indicate container/docker issues that may have contributed to the timeout."
+    },
+    {
+      "quote": "zookeeper Error received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "A Docker-related service (zookeeper) returned a 500 error, suggesting service startup or container problems during the test run."
+    }
+  ],
+  "suggested_fix": "Examine the logs at /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs to identify which test timed out and why. Investigate and fix Docker/container errors (e.g., 'invalid filter \"reference\"' and the 500 from zookeeper), ensure required containers/networks start successfully, and consider increasing the test timeout for the integration job if appropriate before re-running the tests.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-4k-rtk-err-cat-v1/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 1883
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 535
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 19011.942,
+    "cache_key": "c77682d58860d40d4ab45433ce15ebfc8122fc89b02fdb3712362b5402bd2cf4",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

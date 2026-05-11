@@ -1,0 +1,58 @@
+{
+  "case_id": "airflow-precommit-tsc-middle-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The TypeScript compile step failed during the UI static checks: tsc reported three errors (unused declarations and a type mismatch) causing the pnpm tsc command to exit non‑zero.",
+  "root_cause_category": "compile_error",
+  "root_cause": "TypeScript compilation failed with 3 errors: unused declarations and a type incompatibility (TS6196, TS6133, TS2739) reported by tsc, causing the pnpm tsc command to exit with a non-zero status.",
+  "confidence": 0.86,
+  "relevant_files": [
+    "src/layouts/Nav/UserSettingsButton.tsx",
+    "src/pages/Connections/ConnectionForm.tsx",
+    "testsSetup.ts"
+  ],
+  "relevant_tests": [
+    "Compile / format / lint UI",
+    "ts-compile-lint-ui"
+  ],
+  "evidence": [
+    {
+      "quote": "src/layouts/Nav/UserSettingsButton.tsx:55:6 - error TS6196: 'ColorMode' is declared but never used.",
+      "reason": "Shows a TypeScript compiler error (TS6196) about an unused type declared in UserSettingsButton.tsx."
+    },
+    {
+      "quote": "src/pages/Connections/ConnectionForm.tsx:33:1 - error TS6133: 'ParamsSpec' is declared but its value is never read.",
+      "reason": "Shows another TypeScript compiler error (TS6133) about an unused imported type in ConnectionForm.tsx."
+    },
+    {
+      "quote": "testsSetup.ts:78:3 - error TS2739: Type 'SetupServer' is missing the following properties from type 'SetupServerApi': #private, network",
+      "reason": "Shows a TypeScript type incompatibility (TS2739) in testsSetup.ts where a value's type doesn't match the expected API shape."
+    },
+    {
+      "quote": "Found 3 errors in 3 files.",
+      "reason": "tells us exactly how many TypeScript errors caused the failure."
+    },
+    {
+      "quote": "subprocess.CalledProcessError: Command '['pnpm', 'tsc', '--p', '/home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json']' returned non-zero exit status 2.",
+      "reason": "Shows the pnpm TypeScript compile command failed and terminated the script with a non-zero exit status, failing the CI step."
+    }
+  ],
+  "suggested_fix": "Fix the TypeScript errors and re-run the UI compilation: (1) Remove or use the unused type alias 'ColorMode' in src/layouts/Nav/UserSettingsButton.tsx (or export/use it if intended). (2) Remove or use the unused import 'ParamsSpec' in src/pages/Connections/ConnectionForm.tsx or update the code to reference it. (3) Correct the testsSetup.ts assignment so the value assigned to 'server' matches the expected 'SetupServerApi' shape (or cast/adjust types) so TS2739 is resolved. After changes, run the UI type check locally (e.g. in src/airflow/ui run: pnpm tsc --noEmit or the same pnpm tsc --p <tsconfig>) to verify the compile succeeds.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-120k-tail-v2/airflow-precommit-tsc-middle-v2-001.txt",
+    "context_tokens_estimate": 100908
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 636
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 21971.645,
+    "cache_key": "52719e0ac1c4e31d84be95dba89bae518fedaa5a5d32dca18989ac528394ab86",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}

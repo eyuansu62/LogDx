@@ -1,0 +1,60 @@
+{
+  "case_id": "prettier-react-stress-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The prettier job failed with a non-zero exit (yarn returned exit code 1) while reporting source files, indicating a formatting check failure.",
+  "root_cause_category": "formatting_failure",
+  "root_cause": "The 'Run prettier' job exited with code 1 (yarn reported failure), and multiple source files were listed, indicating Prettier found formatting issues.",
+  "confidence": 0.67,
+  "relevant_files": [
+    "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+    "compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts"
+  ],
+  "relevant_tests": [
+    "Run prettier"
+  ],
+  "evidence": [
+    {
+      "quote": "Run prettier",
+      "reason": "The job name indicates this CI step was running Prettier/format checks."
+    },
+    {
+      "quote": "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+      "reason": "A source file is listed in the log output, implying it was checked/reported by the formatting step."
+    },
+    {
+      "quote": "compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts",
+      "reason": "Another source file listed in the log output likely identified by the formatting tool."
+    },
+    {
+      "quote": "error Command failed with exit code 1.",
+      "reason": "Yarn returned a non-zero exit code, which caused the job to fail."
+    },
+    {
+      "quote": "info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.",
+      "reason": "Shows the failing command was executed via yarn, consistent with running a formatting script that failed."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "CI recorded the job as failed due to the non-zero exit code."
+    }
+  ],
+  "suggested_fix": "Run the project's Prettier formatting command locally (for example via the project's yarn script used in CI) and commit the formatted changes — e.g. run the repo's prettier script or 'yarn prettier --write' on the listed files, then push the changes and re-run the CI.",
+  "input": {
+    "context_path": "results/stress/hybrid-grep-120k-rtk-tail-v3/prettier-react-stress-001.txt",
+    "context_tokens_estimate": 385
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 475
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 16138.71,
+    "cache_key": "9e0074d7c7d992df0d95cc43dda30f74b01faf33971130523bd10db2a57bc2a8",
+    "provider_error": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py"
+  }
+}
