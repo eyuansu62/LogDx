@@ -32,6 +32,7 @@ import re
 import shlex
 import subprocess
 import sys
+import urllib.parse
 import time
 from pathlib import Path
 from typing import Any, Callable
@@ -560,27 +561,63 @@ def load_diagnoser_config(
 _TRUTHY_OPT_IN_VALUES = {"1", "true", "yes", "on"}
 
 
-def check_external_llm_opt_in(config: dict | None) -> str | None:
-    """Per Codex 2026-05-13 F1: enforce the privacy gate the v3 config
-    declares.
+def check_external_llm_opt_in(
+    config: dict | None, *, provider: str = "mock"
+) -> str | None:
+    """Per Codex 2026-05-13 F1 + 2026-05-18 F1: enforce the privacy gate
+    for command-provider runs.
 
-    If the diagnoser config sets `privacy.requires_explicit_external_llm_opt_in:
-    true`, the runner must refuse to invoke the diagnoser unless the
-    declared env var (default `CILOGBENCH_ALLOW_EXTERNAL_LLM`) is set to a
-    truthy value. Returns None when the gate passes (or doesn't apply);
-    returns a human-readable error string otherwise so callers can print +
-    fail closed.
+    Behaviour:
+    - `mock` provider: never gates (no external egress).
+    - `command` provider with NO config loaded (auto-discovery missed,
+      typo in --diagnoser-name, malformed --diagnoser-config): FAIL
+      CLOSED. Pre-2026-05-18 this returned None ("pass"), which let a
+      misnamed run send CI logs to whatever DIAGNOSIS_COMMAND points
+      at without the runner-level gate firing.
+    - `command` provider WITH a config that does not declare
+      `privacy.requires_explicit_external_llm_opt_in` at all: FAIL
+      CLOSED. Configs MUST be explicit; a missing key is treated as
+      "policy not specified", not "policy: false".
+    - `command` provider WITH config declaring the gate `false`: pass
+      (explicit opt-out, e.g. for a mock-shim command that doesn't
+      actually call an external LLM).
+    - `command` provider WITH config declaring the gate `true`: pass
+      iff the declared env var (default
+      `CILOGBENCH_ALLOW_EXTERNAL_LLM`) is set to a truthy value.
+
+    Returns None when the gate passes; returns a human-readable error
+    string otherwise so callers print + return 1.
 
     The same gate is mirrored inside the shim binaries so an off-runner
     invocation (e.g. someone calling DIAGNOSIS_COMMAND directly for a
-    smoke-test) cannot send CI log context to an external API without the
-    explicit opt-in.
+    smoke-test) cannot send CI log context to an external API without
+    the explicit opt-in.
     """
+    if provider == "mock":
+        return None
+
     if not isinstance(config, dict):
-        return None
+        return (
+            "command-provider runs require a diagnoser config that "
+            "declares the external-LLM opt-in gate; none was loaded. "
+            "Pass --diagnoser-config <path> or use a --diagnoser-name "
+            "that auto-discovers `configs/diagnosers/<name>.json`."
+        )
+
     privacy = config.get("privacy") or {}
-    if not privacy.get("requires_explicit_external_llm_opt_in"):
-        return None
+    if "requires_explicit_external_llm_opt_in" not in privacy:
+        return (
+            f"diagnoser {config.get('diagnoser_name', '<unknown>')} "
+            f"config does not declare "
+            f"`privacy.requires_explicit_external_llm_opt_in`. "
+            f"Command-provider runs must declare this explicitly "
+            f"(true or false). Missing field is policy-unspecified, "
+            f"not policy-false."
+        )
+
+    if not privacy["requires_explicit_external_llm_opt_in"]:
+        return None  # explicit opt-out
+
     var = privacy.get("explicit_opt_in_env_var") or "CILOGBENCH_ALLOW_EXTERNAL_LLM"
     val = (os.environ.get(var) or "").strip().lower()
     if val in _TRUTHY_OPT_IN_VALUES:
@@ -692,6 +729,35 @@ def build_shim_env(
     return env
 
 
+def _sanitize_base_url_for_compare(url: str) -> str:
+    """Per Codex 2026-05-18 F3 [medium]: the OpenAI shim persists a
+    sanitized base_url (userinfo + query stripped) in
+    `metadata.model_info.base_url`. The runner's `effective_base_url`
+    returns the env value verbatim. Comparing sanitized-vs-raw caused
+    cache_hit_is_acceptable to reject the very row it had just
+    written when the user pointed CILOGBENCH_OPENAI_BASE_URL at a
+    credentialed proxy URL.
+
+    Same shape as `examples/diagnosis_shim_openai.py:sanitize_base_url`
+    — duplicated here so the runner has no shim-import dependency.
+    """
+    if not url:
+        return url
+    parts = urllib.parse.urlsplit(url)
+    netloc = parts.hostname or ""
+    if parts.port:
+        netloc = f"{netloc}:{parts.port}"
+    return urllib.parse.urlunsplit((parts.scheme, netloc, parts.path, "", ""))
+
+
+def _base_url_sha256_for_compare(url: str) -> str:
+    """sha256 of the FULL effective URL (including any proxy creds).
+    Used by cache_hit_is_acceptable to confirm endpoint identity
+    without leaking the secret-carrying parts. Matches what the
+    OpenAI shim stores as `metadata.model_info.base_url_sha256`."""
+    return hashlib.sha256((url or "").encode("utf-8")).hexdigest()
+
+
 def effective_base_url(config: dict | None) -> str | None:
     """Return the endpoint URL we expect the current run's shim to hit,
     used by `cache_hit_is_acceptable` to validate cached rows. Resolution
@@ -711,18 +777,40 @@ def effective_base_url(config: dict | None) -> str | None:
     return model_section.get("base_url") or None
 
 
+def _config_requires_model_info(config: dict | None) -> bool:
+    """Per Codex 2026-05-18 F2 [high]: a config that declares either
+    `cache_key_env` (env vars that affect output) or `model.model_name`
+    (a canonical model identity) is saying "this diagnoser is a real
+    backend-bound entity"; rows under it MUST carry model_info.
+
+    The explicit opt-out is `model.allow_missing_model_info: true`,
+    used for legacy mock / stub diagnosers that don't have a shim
+    yet. Pre-2026-05-18 the validators accepted missing model_info
+    universally as back-compat, which let a stale or custom shim
+    write rows under real-debugger-v1/v2/v3 with no provenance.
+    """
+    if not isinstance(config, dict):
+        return False
+    model = config.get("model") or {}
+    if model.get("allow_missing_model_info"):
+        return False
+    return bool(config.get("cache_key_env")) or bool(model.get("model_name"))
+
+
 def validate_fresh_row_model_identity(
     diag_body: dict, config: dict | None
 ) -> str | None:
-    """Per Codex 2026-05-15 F1 [high]: belt-and-suspenders for fresh rows.
+    """Per Codex 2026-05-15 F1 + 2026-05-18 F2 [high]: belt-and-suspenders
+    for fresh rows.
 
     The cache validator only fires on cache hits; fresh rows had no
-    such check. If the shim somehow returns a row whose
+    such check. If the shim returns a row whose
     `_model_info.requested_model` disagrees with the diagnoser config's
-    effective model (because of a stale shim, a wrapper bug, or a
-    misaligned env), the row should NOT be written under the diagnoser's
-    name. Returns None when validation passes (or doesn't apply),
-    otherwise a reason string the caller turns into a provider_error.
+    effective model (stale shim, wrapper bug, misaligned env), the row
+    should NOT be written under the diagnoser's name. Codex 2026-05-18
+    additionally requires that configs declaring a model identity get
+    a row WITH `_model_info` — missing provenance under a real diagnoser
+    is the same trust violation as wrong provenance.
     """
     if not isinstance(config, dict):
         return None
@@ -732,11 +820,16 @@ def validate_fresh_row_model_identity(
     mi = diag_body.get("_model_info") or {}
     actual = mi.get("requested_model")
     if actual is None:
-        # Pre-2026-05-11 shims don't emit _model_info. Don't reject the
-        # row on that ground alone — back-compat for diagnosers/shims
-        # that have not yet been upgraded. The cache_key_env mechanism
-        # is the primary defense; this check is the secondary one for
-        # diagnosers whose shim DOES emit but emits the wrong value.
+        if _config_requires_model_info(config):
+            return (
+                f"shim emitted no `_model_info.requested_model`, but "
+                f"diagnoser {config.get('diagnoser_name', '<unknown>')} "
+                f"declares model.model_name / cache_key_env — provenance "
+                f"required. Set `model.allow_missing_model_info: true` "
+                f"in the config to opt out (legacy diagnosers only)."
+            )
+        # Pre-2026-05-11 shims don't emit _model_info; back-compat for
+        # diagnosers/shims not yet upgraded.
         return None
     if actual != expected:
         return (
@@ -768,32 +861,57 @@ def cache_hit_is_acceptable(
     if expected_model:
         cached_requested = cached_mi.get("requested_model")
         if cached_requested is None:
-            # Legacy row predating model_info persistence — accept for
-            # back-compat with v1/v2 caches.
-            pass
+            # Per Codex 2026-05-18 F2 [high]: legacy back-compat is gated
+            # on the diagnoser config opting in. Real-debugger configs
+            # that declare model.model_name / cache_key_env REQUIRE
+            # provenance — a cached row without model_info under such
+            # a config could have come from any stale/custom shim.
+            if _config_requires_model_info(config):
+                return False, (
+                    f"cache row missing metadata.model_info.requested_model "
+                    f"but diagnoser config requires provenance "
+                    f"(model.model_name or cache_key_env declared)"
+                )
         elif cached_requested != expected_model:
             return False, (
                 f"cache row requested_model={cached_requested!r} != "
                 f"effective model={expected_model!r}"
             )
 
-    # Per Codex 2026-05-17 F2 [medium]: also validate endpoint identity.
-    # The cache_key_env already incorporates base_url via the env var so
-    # a swap MISSES the cache, but the validator catches the
-    # belt-and-suspenders case where someone hand-poisons a cache file
-    # under a matching key with rows from a different endpoint.
+    # Per Codex 2026-05-17 F2 + 2026-05-18 F3 [medium]: validate endpoint
+    # identity using the sha256 of the FULL URL when both sides have it
+    # (the OpenAI shim stores `base_url_sha256` alongside the sanitized
+    # `base_url`). If only the sanitized URL is available, compare both
+    # sides AFTER sanitizing — otherwise a sanitized-shim-side vs
+    # raw-config-side comparison rejects proxy users' own freshly-
+    # written rows on every cache hit, forcing repeated paid calls.
     expected_url = effective_base_url(config)
     if expected_url:
-        cached_url = cached_mi.get("base_url")
-        if cached_url is None:
-            # Legacy v1/v2 rows have no base_url — accept (Claude shim
-            # doesn't expose one).
-            pass
-        elif cached_url != expected_url:
-            return False, (
-                f"cache row base_url={cached_url!r} != "
-                f"effective base_url={expected_url!r}"
-            )
+        cached_hash = cached_mi.get("base_url_sha256")
+        if cached_hash is not None:
+            if cached_hash != _base_url_sha256_for_compare(expected_url):
+                return False, (
+                    f"cache row base_url_sha256={cached_hash[:16]}… != "
+                    f"effective sha256={_base_url_sha256_for_compare(expected_url)[:16]}…"
+                )
+        else:
+            cached_url = cached_mi.get("base_url")
+            if cached_url is None:
+                # Legacy v1/v2 rows have no base_url — accept (Claude
+                # shim doesn't expose one).
+                pass
+            else:
+                # Compare with both sides sanitized so a proxy URL's
+                # userinfo/query (only present on the config-effective
+                # side) doesn't false-mismatch the shim's already-
+                # sanitized cached value.
+                expected_sanitized = _sanitize_base_url_for_compare(expected_url)
+                cached_sanitized = _sanitize_base_url_for_compare(cached_url)
+                if cached_sanitized != expected_sanitized:
+                    return False, (
+                        f"cache row base_url (sanitized)={cached_sanitized!r} "
+                        f"!= effective (sanitized)={expected_sanitized!r}"
+                    )
     return True, None
 
 
@@ -875,7 +993,9 @@ def run(
     # any provider work happens. The shims also re-check this as
     # belt-and-suspenders so a stale DIAGNOSIS_COMMAND invocation from a
     # different harness cannot bypass the gate.
-    gate_err = check_external_llm_opt_in(diagnoser_config)
+    gate_err = check_external_llm_opt_in(
+        diagnoser_config, provider=diagnoser_provider
+    )
     if gate_err is not None:
         print(f"ERROR: {gate_err}", file=sys.stderr)
         return 1

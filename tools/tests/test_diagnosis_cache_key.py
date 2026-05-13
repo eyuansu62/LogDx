@@ -121,17 +121,21 @@ def test_cache_hit_rejected_on_mismatch():
 
 def test_cache_hit_accept_legacy_row_without_model_info():
     # Pre-F2 cached rows have model_info=null or no model_info at all.
-    # Accept them so we don't trigger a stampede of re-runs on v1/v2.
-    cfg = _cfg()
+    # The 2026-05-18 F2 fix tightened this: configs declaring identity
+    # (cache_key_env or model.model_name) REJECT missing model_info.
+    # Legacy back-compat now requires an explicit opt-out
+    # (`model.allow_missing_model_info: true`) in the config.
+    cfg_optout = {"model": {"model_name": "x", "allow_missing_model_info": True}}
     for row in (
         {"metadata": {"model_info": None}},
         {"metadata": {}},
         {"metadata": {"model_info": {"requested_model": None}}},
         {},
     ):
-        ok, reason = rd.cache_hit_is_acceptable(row, cfg)
+        ok, reason = rd.cache_hit_is_acceptable(row, cfg_optout)
         assert ok and reason is None, (
-            f"legacy row should pass: row={row} got ({ok}, {reason!r})"
+            f"legacy row with opt-out should pass: row={row} "
+            f"got ({ok}, {reason!r})"
         )
 
 
@@ -402,13 +406,18 @@ def test_validate_fresh_row_rejects_haiku_under_v2():
 
 
 def test_validate_fresh_row_back_compat_when_shim_emits_no_model_info():
-    """Legacy shims that don't emit `_model_info` get a free pass — the
-    cache_key_env mechanism is the primary defense. This keeps the
-    runner usable for diagnoser configs whose shim hasn't been upgraded
-    to the post-2026-05-11 model_info contract."""
-    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    """Pre-2026-05-18: real-debugger configs accepted missing model_info
+    as legacy back-compat. The 2026-05-18 F2 fix tightened this: real
+    configs REQUIRE provenance, legacy diagnosers need an explicit
+    `model.allow_missing_model_info: true` opt-out."""
+    # With opt-out: missing model_info passes.
+    cfg_optout = {"model": {"model_name": "x", "allow_missing_model_info": True}}
     diag = {"summary": "anything"}  # no _model_info at all
-    assert rd.validate_fresh_row_model_identity(diag, cfg) is None
+    assert rd.validate_fresh_row_model_identity(diag, cfg_optout) is None
+    # Without opt-out (real-debugger-v3): missing model_info is rejected.
+    cfg_v3 = rd.load_diagnoser_config("real-debugger-v3")
+    err = rd.validate_fresh_row_model_identity(diag, cfg_v3)
+    assert err is not None
 
 
 # === Codex 2026-05-15 F2: --diagnoser-config path validation ===
@@ -587,6 +596,157 @@ sys.exit(main())
     )
 
 
+def test_fresh_row_requires_model_info_when_config_declares_identity():
+    """Per Codex 2026-05-18 F2 [high]: a real-debugger config that
+    declares cache_key_env or model.model_name MUST get a row with
+    `_model_info.requested_model` from the shim. Pre-fix, missing
+    provenance was accepted as legacy back-compat for EVERY config,
+    letting a stale/custom shim write rows under real-debugger-v3
+    with no model identity."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    # Shim returns a diagnosis body with NO _model_info — should reject.
+    diag_no_mi = {"summary": "looks fine", "root_cause_category": "test_assertion"}
+    err = rd.validate_fresh_row_model_identity(diag_no_mi, cfg)
+    assert err is not None, "missing _model_info under v3 should reject"
+    assert "provenance" in err.lower() or "_model_info" in err
+
+
+def test_fresh_row_allows_missing_model_info_with_explicit_optout():
+    """Legacy diagnosers can opt out by setting model.allow_missing_model_info."""
+    cfg = {
+        "diagnoser_name": "legacy-mock",
+        "model": {"model_name": "x", "allow_missing_model_info": True},
+    }
+    diag_no_mi = {"summary": "x"}
+    err = rd.validate_fresh_row_model_identity(diag_no_mi, cfg)
+    assert err is None
+
+
+def test_cache_hit_rejects_null_model_info_for_real_debugger():
+    """Per Codex 2026-05-18 F2 [high]: cache_hit_is_acceptable now also
+    requires model_info when the config declares identity. Previously
+    a cached row with null model_info passed as legacy."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    row_no_mi = {"metadata": {"model_info": None}}
+    ok, reason = rd.cache_hit_is_acceptable(row_no_mi, cfg)
+    assert not ok, "v3 cached row without model_info should reject"
+    assert "provenance" in (reason or "").lower() or "model_info" in (reason or "")
+
+
+def test_cache_hit_accepts_legacy_null_when_config_opts_out():
+    cfg = {"model": {"model_name": "x", "allow_missing_model_info": True}}
+    row_no_mi = {"metadata": {"model_info": None}}
+    ok, reason = rd.cache_hit_is_acceptable(row_no_mi, cfg)
+    assert ok and reason is None
+
+
+def test_base_url_validation_uses_sha256_when_available():
+    """Per Codex 2026-05-18 F3 [medium]: when the cached row has
+    base_url_sha256, compare hashes — the shim writes a sanitized URL
+    but the hash is over the FULL URL (including proxy creds), so
+    sha256 comparison is the right identity check."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    # Canonical: hash matches both sides
+    expected_url = rd.effective_base_url(cfg)
+    expected_hash = rd._base_url_sha256_for_compare(expected_url)
+    row_ok = {"metadata": {"model_info": {
+        "requested_model": "gpt-5-mini",
+        "base_url": "https://api.openai.com/v1",
+        "base_url_sha256": expected_hash,
+    }}}
+    ok, reason = rd.cache_hit_is_acceptable(row_ok, cfg)
+    assert ok, f"canonical row should accept: {reason}"
+    # Hash mismatch (someone hand-poisoned with a row from a different
+    # endpoint) → reject.
+    row_bad = {"metadata": {"model_info": {
+        "requested_model": "gpt-5-mini",
+        "base_url": "https://api.openai.com/v1",
+        "base_url_sha256": "a" * 64,  # wrong hash
+    }}}
+    ok2, reason2 = rd.cache_hit_is_acceptable(row_bad, cfg)
+    assert not ok2
+    assert "sha256" in (reason2 or "").lower()
+
+
+def test_base_url_validation_credentialed_proxy_accepts_own_row():
+    """Per Codex 2026-05-18 F3 [medium]: the failing scenario.
+
+    User points CILOGBENCH_OPENAI_BASE_URL at a proxy URL with
+    userinfo: `https://u:p@proxy/v1?token=xyz`. The shim sanitizes
+    when persisting: `metadata.model_info.base_url = "https://proxy/v1"`,
+    `base_url_sha256 = sha256("https://u:p@proxy/v1?token=xyz")`. On
+    rerun, the cache_key matches (env-driven) and the validator must
+    NOT reject the row it just wrote.
+    """
+    cfg = {
+        "model": {
+            "model_name": "gpt-5-mini",
+            "env_var_name": "CILOGBENCH_OPENAI_MODEL",
+            "base_url": "https://api.openai.com/v1",
+            "base_url_env_var_name": "CILOGBENCH_OPENAI_BASE_URL",
+        }
+    }
+    proxy_url = "https://user:pass@proxy.example.com/v1?token=abc"
+    sanitized = "https://proxy.example.com/v1"
+    full_hash = rd._base_url_sha256_for_compare(proxy_url)
+    saved = os.environ.get("CILOGBENCH_OPENAI_BASE_URL")
+    saved_model = os.environ.get("CILOGBENCH_OPENAI_MODEL")
+    try:
+        os.environ["CILOGBENCH_OPENAI_BASE_URL"] = proxy_url
+        os.environ["CILOGBENCH_OPENAI_MODEL"] = "gpt-5-mini"
+        row = {"metadata": {"model_info": {
+            "requested_model": "gpt-5-mini",
+            "base_url": sanitized,
+            "base_url_sha256": full_hash,
+        }}}
+        ok, reason = rd.cache_hit_is_acceptable(row, cfg)
+        assert ok, f"proxy run should accept its own row; got: {reason}"
+    finally:
+        if saved is None:
+            os.environ.pop("CILOGBENCH_OPENAI_BASE_URL", None)
+        else:
+            os.environ["CILOGBENCH_OPENAI_BASE_URL"] = saved
+        if saved_model is None:
+            os.environ.pop("CILOGBENCH_OPENAI_MODEL", None)
+        else:
+            os.environ["CILOGBENCH_OPENAI_MODEL"] = saved_model
+
+
+def test_base_url_validation_falls_back_to_sanitized_compare():
+    """For legacy rows that have only `base_url` (no sha256), the
+    validator sanitizes BOTH sides before comparing — so a raw
+    config-effective URL with userinfo doesn't false-mismatch the
+    shim's already-sanitized cached value."""
+    cfg = {
+        "model": {
+            "model_name": "gpt-5-mini",
+            "env_var_name": "CILOGBENCH_OPENAI_MODEL",
+            "base_url": "https://api.openai.com/v1",
+            "base_url_env_var_name": "CILOGBENCH_OPENAI_BASE_URL",
+        }
+    }
+    saved = os.environ.get("CILOGBENCH_OPENAI_BASE_URL")
+    saved_model = os.environ.get("CILOGBENCH_OPENAI_MODEL")
+    try:
+        os.environ["CILOGBENCH_OPENAI_BASE_URL"] = "https://u:p@proxy/v1?t=1"
+        os.environ["CILOGBENCH_OPENAI_MODEL"] = "gpt-5-mini"
+        row = {"metadata": {"model_info": {
+            "requested_model": "gpt-5-mini",
+            "base_url": "https://proxy/v1",   # legacy: only sanitized, no sha256
+        }}}
+        ok, reason = rd.cache_hit_is_acceptable(row, cfg)
+        assert ok, f"legacy sanitized-only row should accept: {reason}"
+    finally:
+        if saved is None:
+            os.environ.pop("CILOGBENCH_OPENAI_BASE_URL", None)
+        else:
+            os.environ["CILOGBENCH_OPENAI_BASE_URL"] = saved
+        if saved_model is None:
+            os.environ.pop("CILOGBENCH_OPENAI_MODEL", None)
+        else:
+            os.environ["CILOGBENCH_OPENAI_MODEL"] = saved_model
+
+
 def test_v3_committed_artifacts_have_model_info_on_post_api_failures():
     """Lock the backfill: every committed v3 row whose provider_error is
     a POST-API failure must carry metadata.model_info. Pre-2026-05-16
@@ -632,7 +792,7 @@ def test_opt_in_gate_blocks_when_env_unset():
     }
     saved = os.environ.pop("CILOGBENCH_ALLOW_EXTERNAL_LLM", None)
     try:
-        err = rd.check_external_llm_opt_in(cfg)
+        err = rd.check_external_llm_opt_in(cfg, provider="command")
         assert err is not None, "gate should block when env var unset"
         assert "CILOGBENCH_ALLOW_EXTERNAL_LLM" in err
     finally:
@@ -650,7 +810,7 @@ def test_opt_in_gate_passes_when_env_set_to_truthy():
     try:
         for v in ("1", "true", "yes", "on", "TRUE", "YES"):
             os.environ["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = v
-            err = rd.check_external_llm_opt_in(cfg)
+            err = rd.check_external_llm_opt_in(cfg, provider="command")
             assert err is None, f"gate should accept {v!r}; got: {err}"
     finally:
         if saved is None:
@@ -668,7 +828,7 @@ def test_opt_in_gate_rejects_non_truthy_values():
     try:
         for v in ("0", "false", "no", "off", "", "maybe"):
             os.environ["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = v
-            err = rd.check_external_llm_opt_in(cfg)
+            err = rd.check_external_llm_opt_in(cfg, provider="command")
             assert err is not None, f"gate should reject {v!r}"
     finally:
         if saved is None:
@@ -678,12 +838,40 @@ def test_opt_in_gate_rejects_non_truthy_values():
 
 
 def test_opt_in_gate_skips_when_config_does_not_require():
-    # Mock diagnoser configs should not be gated.
+    # Mock-provider runs are never gated regardless of config shape.
     cfg_no_req = {"diagnoser_name": "mock",
                    "privacy": {"requires_explicit_external_llm_opt_in": False}}
-    assert rd.check_external_llm_opt_in(cfg_no_req) is None
-    assert rd.check_external_llm_opt_in({}) is None
-    assert rd.check_external_llm_opt_in(None) is None
+    assert rd.check_external_llm_opt_in(cfg_no_req, provider="mock") is None
+    assert rd.check_external_llm_opt_in({}, provider="mock") is None
+    assert rd.check_external_llm_opt_in(None, provider="mock") is None
+    # An explicit `false` gate setting also opts out for command-provider
+    # runs (e.g. a wrapper that uses a fake shim).
+    assert rd.check_external_llm_opt_in(cfg_no_req, provider="command") is None
+
+
+def test_opt_in_gate_fails_closed_when_command_has_no_config():
+    """Per Codex 2026-05-18 F1 [high]: command-provider runs MUST have a
+    loaded config that declares the gate. A missing config (auto-
+    discovery failure, typo in --diagnoser-name) used to pass silently
+    and ship CI logs without the gate firing."""
+    saved = os.environ.pop("CILOGBENCH_ALLOW_EXTERNAL_LLM", None)
+    try:
+        err = rd.check_external_llm_opt_in(None, provider="command")
+        assert err is not None, "command + no config should fail closed"
+        assert "diagnoser config" in err
+    finally:
+        if saved is not None:
+            os.environ["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = saved
+
+
+def test_opt_in_gate_fails_closed_when_command_config_omits_gate():
+    """Per Codex 2026-05-18 F1: command-provider config that doesn't
+    DECLARE privacy.requires_explicit_external_llm_opt_in fails closed.
+    Missing != false."""
+    cfg = {"diagnoser_name": "weird", "privacy": {}}
+    err = rd.check_external_llm_opt_in(cfg, provider="command")
+    assert err is not None
+    assert "does not declare" in err
 
 
 def test_runner_cli_flag_satisfies_opt_in_gate():
@@ -718,7 +906,7 @@ def test_runner_cli_flag_satisfies_opt_in_gate():
             "diagnoser_name": "wrap-test",
             "privacy": {"requires_explicit_external_llm_opt_in": True},
         }
-        err = rd.check_external_llm_opt_in(cfg)
+        err = rd.check_external_llm_opt_in(cfg, provider="command")
         assert err is None, f"--allow-external-llm did not satisfy gate: {err}"
     finally:
         os.environ.pop("CILOGBENCH_ALLOW_EXTERNAL_LLM", None)
@@ -739,10 +927,10 @@ def test_opt_in_gate_honors_custom_env_var_name():
         # different one.
         os.environ["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
         os.environ.pop("ALLOW_CUSTOM_LLM", None)
-        assert rd.check_external_llm_opt_in(cfg) is not None
+        assert rd.check_external_llm_opt_in(cfg, provider="command") is not None
         # Custom var set passes.
         os.environ["ALLOW_CUSTOM_LLM"] = "1"
-        assert rd.check_external_llm_opt_in(cfg) is None
+        assert rd.check_external_llm_opt_in(cfg, provider="command") is None
     finally:
         os.environ.pop("CILOGBENCH_ALLOW_EXTERNAL_LLM", None)
         if saved is None:
@@ -855,12 +1043,23 @@ def main() -> int:
         test_extract_shim_stdout_metadata_ignores_missing_fields,
         test_shim_call_error_carries_metadata,
         test_openai_shim_emits_model_info_envelope_on_parse_failure,
+        # Codex 2026-05-18 F2 (require model_info under real configs)
+        test_fresh_row_requires_model_info_when_config_declares_identity,
+        test_fresh_row_allows_missing_model_info_with_explicit_optout,
+        test_cache_hit_rejects_null_model_info_for_real_debugger,
+        test_cache_hit_accepts_legacy_null_when_config_opts_out,
+        # Codex 2026-05-18 F3 (base_url sha256 comparison)
+        test_base_url_validation_uses_sha256_when_available,
+        test_base_url_validation_credentialed_proxy_accepts_own_row,
+        test_base_url_validation_falls_back_to_sanitized_compare,
         test_v3_committed_artifacts_have_model_info_on_post_api_failures,
         # Codex 2026-05-13 F1
         test_opt_in_gate_blocks_when_env_unset,
         test_opt_in_gate_passes_when_env_set_to_truthy,
         test_opt_in_gate_rejects_non_truthy_values,
         test_opt_in_gate_skips_when_config_does_not_require,
+        test_opt_in_gate_fails_closed_when_command_has_no_config,
+        test_opt_in_gate_fails_closed_when_command_config_omits_gate,
         test_runner_cli_flag_satisfies_opt_in_gate,
         test_opt_in_gate_honors_custom_env_var_name,
         test_v1_v2_configs_also_declare_optin,

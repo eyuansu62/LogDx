@@ -1626,6 +1626,60 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > already locks the backfill state and continues to pass).
 > `test_hybrid_router.py` unchanged at 10. All 58 pass.
 
+> ⚠️ **Codex 2026-05-18 [high/high/medium] fixes applied — no scores
+> moved.** Codex re-reviewed the trust-boundary surface and flagged
+> three failure-open paths in the validators:
+>
+> **F1 [high] (Opt-in gate failed open when config missing/malformed).**
+> `check_external_llm_opt_in` returned success when no config was
+> loaded (auto-discovery missed, typo in --diagnoser-name, malformed
+> --diagnoser-config) AND when a loaded config didn't declare
+> `privacy.requires_explicit_external_llm_opt_in` at all. For
+> command-provider runs that's the wrong default — the runner-level
+> gate disappeared silently. Fix:
+> - Function now takes `provider`; for `command` runs without a
+>   loaded config OR without an explicitly-declared gate setting,
+>   FAILS CLOSED with a clear error
+> - Existing `mock`-provider call sites preserved (mock never gates)
+> - End-to-end verified: `--diagnoser-name nonexistent-diag` exits 1
+>
+> **F2 [high] (Fresh-row + cache-hit validators accepted missing
+> model_info under real-debugger configs).** Pre-fix, a stale or
+> custom shim emitting schema-valid JSON with no `_model_info`
+> would have its rows written/cached under real-debugger-v3 with
+> no provenance. Fix:
+> - New `_config_requires_model_info(config)` helper: a config
+>   that declares `cache_key_env` or `model.model_name` REQUIRES
+>   provenance from the shim
+> - Both `validate_fresh_row_model_identity` and
+>   `cache_hit_is_acceptable` reject `requested_model: null` under
+>   such configs
+> - Explicit opt-out is `model.allow_missing_model_info: true`
+>   (for legacy diagnosers without an upgraded shim)
+>
+> **F3 [medium] (Sanitized base_url false-mismatched against raw
+> config URL).** `cache_hit_is_acceptable` compared cached
+> `metadata.model_info.base_url` (sanitized — userinfo/query
+> stripped) against `effective_base_url(config)` (raw env value
+> with creds). With a credentialed-proxy URL, the cache key matched
+> on rerun but the validator rejected the row it had just written
+> → repeated API calls + repeated CI-log egress. Fix:
+> - Validator prefers `base_url_sha256` comparison (full-URL hash
+>   on both sides; no leakage) when both sides have it
+> - Falls back to sanitized-both-sides compare for legacy rows
+>   that only have `base_url`
+> - End-to-end test covers the proxy scenario: a row with
+>   sanitized base_url + full-URL sha256 ACCEPTS on rerun under
+>   a credentialed-proxy env
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 48 →
+> 57 (+9 covering F1 fail-closed, F2 require-model-info + opt-out,
+> F3 sha256 + sanitized-fallback comparisons). 2 pre-existing
+> tests updated to use the opt-out flag since the legacy-pass
+> behaviour they encoded is now (correctly) rejected.
+> `test_hybrid_router.py` unchanged at 10. All 67 pass. v1/v2/v3
+> eval all zero-drift.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**
