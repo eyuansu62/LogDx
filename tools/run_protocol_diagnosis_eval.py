@@ -123,6 +123,26 @@ def humanize_tokens(n: float | None) -> str:
 # ---------------------------------------------------------------------------
 
 
+def _is_unsupported_context_error(provider_error: str | None) -> bool:
+    """Per Codex 2026-05-20 F2 [medium]: the shim's
+    `_ContextTooLargeError` path used to set
+    `metadata.provider_error = "unsupported_context_too_large"` exactly,
+    but the Codex 2026-05-19 F2 fix made it a structured taxonomy
+    string `unsupported_context_too_large: context (...) exceeds shim
+    cap (...)`. This protocol report's exact-string comparison silently
+    started returning zero for the unsupported-context counts. Use a
+    prefix-aware predicate so both legacy bare-class rows and post-fix
+    detailed-class rows are counted.
+    """
+    if not provider_error:
+        return False
+    s = str(provider_error)
+    return (
+        s == "unsupported_context_too_large"
+        or s.startswith("unsupported_context_too_large:")
+    )
+
+
 def collect_per_split(split: str, diagnoser: str, results_dir: Path) -> dict | None:
     p = results_dir / split / f"eval_diagnosis_{diagnoser}.json"
     if not p.exists():
@@ -321,7 +341,9 @@ def write_m10_report(
             diag_tok = int(b.get("macro_diagnosis_tokens") or 0)
             total = ctx_tok + diag_tok + proc // n
             unsupp = sum(1 for r in rows_for_method(results_dir, s, diagnoser_name, method)
-                          if (r.get("metadata") or {}).get("provider_error") == "unsupported_context_too_large")
+                          if _is_unsupported_context_error(
+                              (r.get("metadata") or {}).get("provider_error")
+                          ))
             md.append(
                 f"| {method} "
                 f"| {humanize_tokens(ctx_tok)} "
@@ -351,7 +373,9 @@ def write_m10_report(
                 if key is None:
                     rows = rows_for_method(results_dir, s, diagnoser_name, b["context_method"])
                     hits = [r for r in rows
-                            if (r.get("metadata") or {}).get("provider_error") == "unsupported_context_too_large"]
+                            if _is_unsupported_context_error(
+                                (r.get("metadata") or {}).get("provider_error")
+                            )]
                 else:
                     hits = [c for c in b["cases"] if c.get(key)]
                 if not hits:

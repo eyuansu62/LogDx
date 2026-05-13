@@ -382,10 +382,20 @@ def test_build_shim_env_no_optin_means_no_injection():
 
 
 def test_validate_fresh_row_passes_when_shim_matches_config():
+    """v3 row with matching alias AND matching endpoint evidence. The
+    Codex 2026-05-20 F1 fix now requires endpoint evidence under
+    provenance-required configs (real-debugger-v3 declares
+    cache_key_env so this applies)."""
     cfg = rd.load_diagnoser_config("real-debugger-v3")
-    diag = {"_model_info": {"requested_model": "gpt-5-mini"}}
+    diag = {"_model_info": {
+        "requested_model": "gpt-5-mini",
+        "base_url": "https://api.openai.com/v1",
+        "base_url_sha256": rd._base_url_sha256_for_compare(
+            "https://api.openai.com/v1"
+        ),
+    }}
     err = rd.validate_fresh_row_model_identity(diag, cfg)
-    assert err is None, f"v3 fresh row with matching alias should pass: {err}"
+    assert err is None, f"v3 fresh row with full provenance should pass: {err}"
 
 
 def test_validate_fresh_row_rejects_haiku_under_v2():
@@ -791,6 +801,44 @@ def test_fresh_row_rejects_wrong_endpoint():
             os.environ["CILOGBENCH_OPENAI_MODEL"] = saved_model
 
 
+def test_fresh_row_rejects_when_endpoint_evidence_missing():
+    """Per Codex 2026-05-20 F1 [high]: a config that declares
+    cache_key_env / model.model_name AND model.base_url MUST get rows
+    with at least one of base_url / base_url_sha256. A stale shim
+    emitting only `requested_model` could otherwise bypass the
+    endpoint check entirely."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    diag = {"_model_info": {"requested_model": "gpt-5-mini"}}
+    err = rd.validate_fresh_row_model_identity(diag, cfg)
+    assert err is not None, "missing endpoint evidence should reject"
+    assert "base_url" in err and "provenance" in err.lower()
+
+
+def test_cache_hit_rejects_when_endpoint_evidence_missing():
+    """Same scenario at the cache layer."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    row = {"metadata": {"model_info": {"requested_model": "gpt-5-mini"}}}
+    ok, reason = rd.cache_hit_is_acceptable(row, cfg)
+    assert not ok
+    assert "base_url" in reason and "provenance" in reason.lower()
+
+
+def test_endpoint_evidence_optional_for_legacy_optout_config():
+    """Legacy configs that explicitly opt out of provenance via
+    `model.allow_missing_model_info: true` continue to pass without
+    endpoint evidence."""
+    cfg = {
+        "model": {
+            "model_name": "x",
+            "base_url": "https://api.openai.com/v1",
+            "allow_missing_model_info": True,
+        },
+    }
+    diag = {"_model_info": {"requested_model": "x"}}  # no base_url
+    err = rd.validate_fresh_row_model_identity(diag, cfg)
+    assert err is None
+
+
 def test_fresh_row_accepts_matching_endpoint():
     """Sanity: a shim emitting model + endpoint that match the config
     passes the fresh-row gate."""
@@ -879,6 +927,35 @@ def test_v3_committed_artifacts_provider_error_starts_with_class():
         "v3 provider_error values must start with a known taxonomy "
         "prefix:\n  " + "\n  ".join(failures[:10])
     )
+
+
+def test_protocol_report_unsupported_context_predicate_handles_both_forms():
+    """Per Codex 2026-05-20 F2 [medium]: the protocol report compared
+    `provider_error == "unsupported_context_too_large"` exactly. After
+    the 2026-05-19 F2 fix, the value is the structured detailed form
+    `unsupported_context_too_large: context (...) exceeds shim cap`.
+    The new `_is_unsupported_context_error` predicate must match both
+    the legacy bare class string AND the detailed prefix form, so
+    counts stay accurate across the format transition."""
+    import importlib.util
+    repo = Path(__file__).resolve().parent.parent.parent
+    spec = importlib.util.spec_from_file_location(
+        "_protocol_eval", repo / "tools" / "run_protocol_diagnosis_eval.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    fn = mod._is_unsupported_context_error
+    # Both forms count as a hit.
+    assert fn("unsupported_context_too_large") is True
+    assert fn("unsupported_context_too_large: context (1234) exceeds shim cap") is True
+    # Other taxonomy classes / unrelated errors do not.
+    assert fn("post_api_error: JSONDecodeError ...") is False
+    assert fn("RuntimeError: claude CLI exited 1: ''") is False
+    assert fn(None) is False
+    assert fn("") is False
+    # Prefix-only false-positive guard: a class whose name is a
+    # SUBSTRING of the legitimate taxonomy must not be matched.
+    assert fn("supported_context_too_large: foo") is False  # missing 'un'
 
 
 def test_v3_committed_artifacts_have_model_info_on_post_api_failures():
@@ -1188,10 +1265,16 @@ def main() -> int:
         test_base_url_validation_falls_back_to_sanitized_compare,
         # Codex 2026-05-19 F1 (fresh-row endpoint validation)
         test_fresh_row_rejects_wrong_endpoint,
+        # Codex 2026-05-20 F1 (require endpoint evidence)
+        test_fresh_row_rejects_when_endpoint_evidence_missing,
+        test_cache_hit_rejects_when_endpoint_evidence_missing,
+        test_endpoint_evidence_optional_for_legacy_optout_config,
         test_fresh_row_accepts_matching_endpoint,
         # Codex 2026-05-19 F2 (oversized-context taxonomy class)
         test_openai_shim_oversized_context_emits_structured_provider_error,
         test_v3_committed_artifacts_provider_error_starts_with_class,
+        # Codex 2026-05-20 F2 (protocol report prefix-aware comparison)
+        test_protocol_report_unsupported_context_predicate_handles_both_forms,
         test_v3_committed_artifacts_have_model_info_on_post_api_failures,
         # Codex 2026-05-13 F1
         test_opt_in_gate_blocks_when_env_unset,

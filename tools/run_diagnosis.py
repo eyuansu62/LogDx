@@ -804,13 +804,15 @@ def _validate_base_url_identity(
     cache-hit validators. Returns None when validation passes or
     doesn't apply; an error string otherwise.
 
-    Codex 2026-05-19 F1 [high]: previously this only ran on cache hits.
-    A stale shim that ignored CILOGBENCH_OPENAI_BASE_URL could write
-    rows to the manifest under a proxy-backed config; the cache
-    validator's later rejection wouldn't undo the polluted manifest
-    or stop --no-cache repeats. Now also called by
-    `validate_fresh_row_model_identity` so the wrong-endpoint row
-    never lands.
+    Codex 2026-05-19 F1 [high]: previously this only ran on cache hits;
+    fresh-row writes could pollute the manifest first.
+    Codex 2026-05-20 F1 [high]: previously this returned success when
+    BOTH `base_url_sha256` and `base_url` were absent from the row.
+    A stale shim emitting only `requested_model` could hit the wrong
+    backend and still be accepted because the validator had no
+    endpoint evidence to compare. Now: if the config requires
+    provenance (cache_key_env or model.model_name declared), missing
+    endpoint evidence is itself a failure.
     """
     if not isinstance(config, dict):
         return None
@@ -828,6 +830,15 @@ def _validate_base_url_identity(
         return None
     cached_url = cached_mi.get("base_url")
     if cached_url is None:
+        # No endpoint evidence in the row at all.
+        if _config_requires_model_info(config):
+            return (
+                f"row has no `base_url` or `base_url_sha256` but "
+                f"diagnoser config declares an expected endpoint "
+                f"({expected_url!r}); provenance required. Set "
+                f"`model.allow_missing_model_info: true` in the config "
+                f"to opt out (legacy diagnosers only)."
+            )
         return None
     expected_sanitized = _sanitize_base_url_for_compare(expected_url)
     cached_sanitized = _sanitize_base_url_for_compare(cached_url)

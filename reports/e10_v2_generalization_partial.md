@@ -1734,6 +1734,37 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > emit, F2 committed-artifact prefix lock). `test_hybrid_router.py`
 > unchanged at 10. All 71 pass. v1/v2/v3 eval all zero-drift.
 
+> ⚠️ **Codex 2026-05-20 [high/medium] fixes applied — no scores
+> moved.** Codex re-reviewed and flagged two remaining gaps:
+>
+> **F1 [high] (Endpoint validation passed when evidence missing).**
+> `_validate_base_url_identity` returned success when a config
+> declared `model.base_url` but the row had NEITHER `base_url`
+> NOR `base_url_sha256`. A stale shim emitting only
+> `requested_model` could ignore CILOGBENCH_OPENAI_BASE_URL, hit
+> the wrong backend, and bypass the audit entirely. Fix: when
+> the config requires provenance (cache_key_env or
+> model.model_name declared), missing endpoint evidence IS a
+> failure. Both fresh-row and cache-hit paths now reject such
+> rows. Legacy opt-out (`model.allow_missing_model_info: true`)
+> continues to pass.
+>
+> **F2 [medium] (Protocol report compared taxonomy by exact
+> equality).** `tools/run_protocol_diagnosis_eval.py` had two
+> places that compared `provider_error == "unsupported_context_too_large"`,
+> but the 2026-05-19 F2 fix made the stored value
+> `unsupported_context_too_large: context (...) exceeds shim cap`
+> (with detail). The report silently dropped all 39 oversized-
+> context rows from its protocol-level counts. Fix: new
+> `_is_unsupported_context_error()` predicate (prefix-or-bare
+> match); both call sites in the report generator use it.
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 61 →
+> 65 (+4: F1 fresh-row + cache-hit missing-endpoint reject + opt-out
+> accept; F2 taxonomy predicate). 1 pre-existing test updated to
+> include endpoint evidence (the v3 path now correctly requires it).
+> `test_hybrid_router.py` unchanged at 10. All 75 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**
