@@ -216,38 +216,49 @@ def main() -> int:
         )
         return 1
 
+    # Two-phase try: (1) the CLI subprocess (network/auth). (2) post-CLI
+    # parsing of the model's response. Phase 1 failures have no
+    # model_info; phase 2 failures DO (we already got a wrapper back).
     try:
         wrapper = invoke_claude(system_prompt, user_message, model, timeout_s)
+    except Exception as e:
+        msg = f"{type(e).__name__}: {e}"
+        sys.stderr.write(f"diagnosis_shim_claude_cli: {msg}\n")
+        return 1
+
+    # Per Codex 2026-05-14 F2 [high] + 2026-05-16 F1: build model_info
+    # the moment invoke_claude returns. resolved_model is best-effort
+    # (the claude CLI does not always include a dated snapshot in its
+    # envelope), but recording even the alias + session_id beats null.
+    model_info = {
+        "provider_name": "anthropic",
+        "requested_model": model,
+        "resolved_model": wrapper.get("model"),
+        "usage": wrapper.get("usage"),
+        "session_id": wrapper.get("session_id"),
+    }
+
+    try:
         diag_raw = parse_diagnosis_json(wrapper.get("result", ""))
         diag = normalize(diag_raw)
-        # Per Codex 2026-05-14 F2 [high]: persist model identity for the
-        # Claude shim too (the OpenAI shim has done this since 2026-05-11).
-        # Until now, v1/v2 cached rows + manifests carried no
-        # `metadata.model_info`, so a future re-run with
-        # CILOGBENCH_CLAUDE_MODEL set to a non-default value (e.g. opus
-        # while v1 is meant to be haiku) could silently replay or
-        # mislabel rows. The runner now requires model_info for cache-hit
-        # validation when the diagnoser config declares a fixed model.
-        #
-        # `resolved_model` is best-effort — Claude Code's CLI envelope
-        # historically does not include a dated snapshot field for every
-        # provider mode; the field is present here for symmetry with the
-        # OpenAI shim and will be populated whenever the CLI exposes it.
-        diag["_model_info"] = {
-            "provider_name": "anthropic",
-            "requested_model": model,
-            "resolved_model": wrapper.get("model"),
-            "usage": wrapper.get("usage"),
-            "session_id": wrapper.get("session_id"),
-        }
+        diag["_model_info"] = model_info
         json.dump(diag, sys.stdout, ensure_ascii=False)
         sys.stdout.write("\n")
         return 0
     except Exception as e:
-        # Hard fail: exit non-zero so run_diagnosis.py captures this as
-        # provider_error in metadata instead of silently emitting an
-        # unknown-with-fake-summary that pollutes the abstention metric.
+        # Post-CLI failure (e.g. parse_diagnosis_json choked on a model
+        # response containing unescaped control chars). Per Codex
+        # 2026-05-16 F1 [high]: write a JSON envelope carrying
+        # model_info + the structured error string to stdout so the
+        # runner can preserve provenance via
+        # tools/run_diagnosis.py:_extract_shim_stdout_metadata.
         msg = f"{type(e).__name__}: {e}"
+        envelope = {
+            "_model_info": model_info,
+            "_provider_error": f"post_cli_error: {msg}",
+        }
+        json.dump(envelope, sys.stdout, ensure_ascii=False)
+        sys.stdout.write("\n")
         sys.stderr.write(f"diagnosis_shim_claude_cli: {msg}\n")
         return 1
 

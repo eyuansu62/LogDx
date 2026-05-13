@@ -300,6 +300,50 @@ def diagnose_mock(
 # ---------------------------------------------------------------------------
 
 
+class ShimCallError(RuntimeError):
+    """Per Codex 2026-05-16 F1: raised when the diagnoser command exits
+    non-zero. Carries opt-in metadata (notably `_model_info`) that the
+    shim wrote to stdout even on its error path so the runner can
+    preserve provenance for failed-but-attempted API calls.
+
+    Without this, the existing exception path discarded stdout entirely
+    on non-zero exit, so a row whose API call succeeded but whose
+    content was malformed JSON landed in the manifest as
+    `provider_error=...` with `metadata.model_info=null` — same as a
+    no-call oversized-context skip. That broke the auditability claim
+    for post-API failures.
+    """
+
+    def __init__(self, message: str, *,
+                 model_info: dict | None = None,
+                 provider_error_hint: str | None = None):
+        super().__init__(message)
+        self.model_info = model_info
+        self.provider_error_hint = provider_error_hint
+
+
+def _extract_shim_stdout_metadata(stdout_bytes: bytes) -> dict:
+    """Try to parse the shim's stdout as a JSON envelope and pull
+    underscore-prefixed opt-in metadata fields (`_model_info`,
+    `_provider_error`). Returns {} if stdout isn't JSON or has no
+    metadata. Used on the non-zero-exit path so shims that succeeded
+    enough to know their model identity can preserve it. Per Codex
+    2026-05-16 F1.
+    """
+    try:
+        body = json.loads(stdout_bytes.decode("utf-8", errors="replace"))
+    except (json.JSONDecodeError, AttributeError):
+        return {}
+    if not isinstance(body, dict):
+        return {}
+    out: dict = {}
+    if isinstance(body.get("_model_info"), dict):
+        out["_model_info"] = body["_model_info"]
+    if body.get("_provider_error"):
+        out["_provider_error"] = body["_provider_error"]
+    return out
+
+
 def diagnose_command(
     *, context_text: str, safe_metadata: dict, case_id: str,
     context_method: str, command: str, prompt_text: str,
@@ -326,14 +370,21 @@ def diagnose_command(
         env=env,
     )
     if res.returncode != 0:
-        raise RuntimeError(
+        # Per Codex 2026-05-16 F1: read stdout for opt-in metadata
+        # before raising. A shim that reached the API and emitted
+        # _model_info before failing on (e.g.) JSONDecodeError gets
+        # to preserve provenance via this exception's `model_info`.
+        partial = _extract_shim_stdout_metadata(res.stdout or b"")
+        raise ShimCallError(
             f"diagnosis command exited {res.returncode}: "
-            f"{(res.stderr or b'').decode('utf-8', 'replace')[:600]}"
+            f"{(res.stderr or b'').decode('utf-8', 'replace')[:600]}",
+            model_info=partial.get("_model_info"),
+            provider_error_hint=partial.get("_provider_error"),
         )
     try:
         out = json.loads(res.stdout.decode("utf-8", errors="replace"))
     except json.JSONDecodeError as e:
-        raise RuntimeError(
+        raise ShimCallError(
             f"diagnosis command returned non-JSON: {e}. "
             f"First 400 chars: {res.stdout[:400]!r}"
         ) from e
@@ -935,6 +986,18 @@ def run(
                         "evidence": [],
                         "suggested_fix": "",
                     }
+                    # Per Codex 2026-05-16 F1 [high]: preserve shim-emitted
+                    # model_info on the error path. Without this, post-API
+                    # failures (e.g. JSONDecodeError from a malformed
+                    # model response) landed in manifests with
+                    # metadata.model_info=null — same shape as a no-call
+                    # oversized-context skip — which broke auditability
+                    # for failed-but-attempted API calls.
+                    if isinstance(e, ShimCallError):
+                        if e.model_info is not None:
+                            diag_body["_model_info"] = e.model_info
+                        if e.provider_error_hint:
+                            diag_body["_provider_error"] = e.provider_error_hint
                 runtime_ms = (time.perf_counter() - t0) * 1000
 
                 row = build_row(

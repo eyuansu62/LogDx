@@ -24,10 +24,20 @@
   full `usage` block are populated from live API responses
   rather than env-time backfill. 285 of 285 successful rows
   carry `metadata.model_info.resolved_model = gpt-5-mini-2025-08-07`
-  (zero alias rotation between original run and re-run);
-  the remaining 65 rows are provider_error (oversized-context
-  F1 path — no API call, no resolved_model possible).
+  (zero alias rotation between original run and re-run).
 - **Resolved snapshot ID at run time:** `gpt-5-mini-2025-08-07`
+- **Provider-error taxonomy (the 65 non-successful rows):**
+  | error class | count | API call made? | resolved_model |
+  |---|---|---|---|
+  | `unsupported_context_too_large` (F1 oversized-context skip) | 39 | NO | absent (legitimate null) |
+  | `post_api_error: JSONDecodeError` (model returned malformed JSON) | 24 | YES | preserved via Codex 2026-05-16 F1 fix; backfilled to `gpt-5-mini-2025-08-07` for pre-fix rows |
+  | `post_api_error: RemoteDisconnected` (network interrupt after request) | 2 | YES (attempted) | same backfill |
+
+  Earlier versions of this card claimed all 65 were the
+  oversized-context F1 path with no API call — this was a Codex
+  2026-05-16 [high] finding. The actual breakdown is shown above
+  and locked by
+  `tools/tests/test_diagnosis_cache_key.py:test_v3_committed_artifacts_have_model_info_on_post_api_failures`.
 
 gpt-5-mini was chosen as the third debugger to test §3i's cross-family
 generalization question: do hybrid-v2/v3 rankings on v2 survive a
@@ -146,11 +156,13 @@ Each diagnosis row contains `metadata.model_info.resolved_model` —
 the exact snapshot ID OpenAI returned. After the Codex 2026-05-12 F1
 re-run, **all 285 successful v3 rows carry
 `resolved_model: gpt-5-mini-2025-08-07`** populated from live API
-responses; the remaining 65 rows are provider_error (oversized-
-context cases that never reached the API). If a future re-run
-produces a different `resolved_model` value despite the same
-`requested_model`, that's the audit signal that OpenAI rotated the
-alias underneath us.
+responses. After the Codex 2026-05-16 F1 fix + backfill, the 26
+post-API failure rows (24 `JSONDecodeError` + 2 `RemoteDisconnected`)
+also carry `model_info`; the remaining 39 rows are pre-API
+oversized-context skips that legitimately never reached the API
+(model_info absent). If a future re-run produces a different
+`resolved_model` value despite the same `requested_model`, that's
+the audit signal that OpenAI rotated the alias underneath us.
 
 The row also carries `metadata.model_info.base_url` (sanitized —
 userinfo and query string stripped) and `metadata.model_info.base_url_sha256`

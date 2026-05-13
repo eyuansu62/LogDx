@@ -464,6 +464,164 @@ def test_load_diagnoser_config_legacy_missing_returns_none():
     assert rd.load_diagnoser_config("nonexistent-diagnoser-xyz") is None
 
 
+# === Codex 2026-05-16 F1: preserve model_info on shim error path ===
+
+def test_extract_shim_stdout_metadata_picks_up_model_info():
+    """Per Codex 2026-05-16 F1 [high]: the shim's error path writes a JSON
+    envelope with _model_info to stdout; the runner extracts it so
+    provider_error rows preserve model provenance for post-API failures."""
+    stdout = (
+        b'{"_model_info": {"provider_name": "openai", '
+        b'"requested_model": "gpt-5-mini", '
+        b'"resolved_model": "gpt-5-mini-2025-08-07"}, '
+        b'"_provider_error": "post_api_error: JSONDecodeError ..."}'
+    )
+    md = rd._extract_shim_stdout_metadata(stdout)
+    assert md.get("_model_info", {}).get("resolved_model") \
+        == "gpt-5-mini-2025-08-07"
+    assert md.get("_provider_error", "").startswith("post_api_error:")
+
+
+def test_extract_shim_stdout_metadata_handles_non_json():
+    # Legacy shims that write plain text to stdout on error: extract
+    # returns {} (no crash).
+    assert rd._extract_shim_stdout_metadata(b"some non-JSON garbage") == {}
+    assert rd._extract_shim_stdout_metadata(b"") == {}
+
+
+def test_extract_shim_stdout_metadata_ignores_non_dict():
+    assert rd._extract_shim_stdout_metadata(b'"just a string"') == {}
+    assert rd._extract_shim_stdout_metadata(b"[1,2,3]") == {}
+
+
+def test_extract_shim_stdout_metadata_ignores_missing_fields():
+    # JSON with no opt-in keys → {}.
+    assert rd._extract_shim_stdout_metadata(b'{"summary":"ok"}') == {}
+
+
+def test_shim_call_error_carries_metadata():
+    err = rd.ShimCallError(
+        "exit 1",
+        model_info={"requested_model": "gpt-5-mini"},
+        provider_error_hint="post_api_error: ...",
+    )
+    assert err.model_info == {"requested_model": "gpt-5-mini"}
+    assert err.provider_error_hint == "post_api_error: ..."
+    assert "exit 1" in str(err)
+
+
+def test_openai_shim_emits_model_info_envelope_on_parse_failure():
+    """End-to-end: the shim writes a JSON envelope containing
+    _model_info + _provider_error when post-API parsing fails. We
+    simulate this by monkeypatching urllib so the shim never makes a
+    real API call but still hits the parse path with a malformed
+    response.
+
+    The test is structural — it runs the shim as a subprocess with a
+    stubbed urlopen and asserts:
+      - exit code is 1 (caller's run_diagnosis treats as provider_error)
+      - stdout is valid JSON with _model_info populated
+      - _provider_error mentions the parse failure
+    """
+    import subprocess as _sub
+    import tempfile
+
+    # Build a tiny wrapper that monkeypatches urllib.request.urlopen
+    # to return a fake response with malformed JSON content. Then
+    # invokes the shim's main().
+    stub = '''
+import io
+import json as _json
+import os
+import sys
+import urllib.request as _req
+
+class _FakeResp:
+    def __init__(self, body): self._b = body
+    def read(self): return self._b.encode("utf-8")
+    def __enter__(self): return self
+    def __exit__(self, *a): pass
+
+def _fake_urlopen(req, timeout=None):
+    return _FakeResp(_json.dumps({
+        "model": "gpt-5-mini-2025-08-07",
+        "system_fingerprint": "fp_test",
+        "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+        "choices": [{"message": {"content": "{ this is broken JSON" }}],
+    }))
+
+_req.urlopen = _fake_urlopen
+os.environ.setdefault("OPENAI_API_KEY", "sk-test")
+os.environ["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+
+sys.path.insert(0, "{repo}/examples")
+from diagnosis_shim_openai import main
+sys.exit(main())
+'''
+    import json
+    repo = str(Path(__file__).resolve().parent.parent.parent)
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as fp:
+        fp.write(stub.replace("{repo}", repo))
+        fp.flush()
+        stub_path = fp.name
+    payload = json.dumps({
+        "case_id": "t1", "context_method": "raw", "prompt": "x",
+        "context": "y", "safe_case_metadata": {},
+        "expected_output_schema": "schemas/diagnosis.schema.json",
+    })
+    res = _sub.run(
+        ["python3", stub_path],
+        input=payload.encode("utf-8"),
+        capture_output=True, timeout=30,
+    )
+    assert res.returncode == 1, (
+        f"expected exit 1; got {res.returncode}. stderr={res.stderr!r}"
+    )
+    body = json.loads(res.stdout.decode("utf-8"))
+    mi = body.get("_model_info") or {}
+    assert mi.get("resolved_model") == "gpt-5-mini-2025-08-07", (
+        f"model_info lost on parse failure: {body!r}"
+    )
+    assert body.get("_provider_error", "").startswith("post_api_error:"), (
+        f"missing structured error hint: {body!r}"
+    )
+
+
+def test_v3_committed_artifacts_have_model_info_on_post_api_failures():
+    """Lock the backfill: every committed v3 row whose provider_error is
+    a POST-API failure must carry metadata.model_info. Pre-2026-05-16
+    these landed null and were indistinguishable from no-call skips.
+    """
+    import json as _json
+    repo = Path(__file__).resolve().parent.parent.parent
+    splits = ["dev", "holdout", "stress", "v2/dev", "v2/holdout", "v2/stress"]
+    failures = []
+    for sp in splits:
+        diag_dir = repo / "results" / sp / "diagnoses" / "real-debugger-v3"
+        if not diag_dir.exists():
+            continue
+        for mf in diag_dir.glob("*.jsonl"):
+            for line in mf.open():
+                row = _json.loads(line)
+                md = row.get("metadata") or {}
+                pe = md.get("provider_error") or ""
+                if not pe:
+                    continue
+                # Skip true no-call errors (oversized context) — those
+                # legitimately have no model_info.
+                if "unsupported_context_too_large" in pe:
+                    continue
+                mi = md.get("model_info") or {}
+                if not mi.get("requested_model"):
+                    failures.append(
+                        f"{sp}/{mf.stem}/{row.get('case_id')}: {pe[:80]}"
+                    )
+    assert not failures, (
+        "post-API provider_error rows missing model_info:\n  "
+        + "\n  ".join(failures[:10])
+    )
+
+
 # === Codex 2026-05-13 F1: external-LLM opt-in gate ===
 
 def test_opt_in_gate_blocks_when_env_unset():
@@ -690,6 +848,14 @@ def main() -> int:
         test_load_diagnoser_config_explicit_missing_path_raises,
         test_load_diagnoser_config_legacy_path_unchanged,
         test_load_diagnoser_config_legacy_missing_returns_none,
+        # Codex 2026-05-16 F1 (preserve model_info on shim error path)
+        test_extract_shim_stdout_metadata_picks_up_model_info,
+        test_extract_shim_stdout_metadata_handles_non_json,
+        test_extract_shim_stdout_metadata_ignores_non_dict,
+        test_extract_shim_stdout_metadata_ignores_missing_fields,
+        test_shim_call_error_carries_metadata,
+        test_openai_shim_emits_model_info_envelope_on_parse_failure,
+        test_v3_committed_artifacts_have_model_info_on_post_api_failures,
         # Codex 2026-05-13 F1
         test_opt_in_gate_blocks_when_env_unset,
         test_opt_in_gate_passes_when_env_set_to_truthy,

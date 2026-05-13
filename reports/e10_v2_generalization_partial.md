@@ -1503,6 +1503,55 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > 41 (Codex 2026-05-15 adds 6 F1 + 5 F2); `test_hybrid_router.py`
 > unchanged at 10. All 51 pass. v1/v2/v3 eval all zero-drift.
 
+> ⚠️ **Codex 2026-05-16 [high/high] fixes applied — no scores moved.**
+> Codex re-reviewed and flagged two issues that ran deeper than the
+> auditability disclosure block claimed:
+>
+> **F1 [high] Model card falsely classified provider errors.** The
+> 2026-05-13 model card said all 65 v3 provider_errors were the
+> oversized-context F1 path (no API call, no model_info possible).
+> An audit of committed artifacts showed:
+>
+> | error class | count | API made? |
+> |---|---|---|
+> | `unsupported_context_too_large` | 39 | no (pre-API skip) |
+> | `post_api_error: JSONDecodeError` | 24 | yes |
+> | `post_api_error: RemoteDisconnected` | 2 | yes (attempted) |
+>
+> So 26 of the 65 rows had reached the API but the OpenAI shim
+> emitted `_model_info` ONLY on the success path, so the 26 rows
+> landed in manifests with `metadata.model_info=null` — shape-
+> indistinguishable from no-call skips. The model card said
+> something the artifacts disagreed with; auditability failed for
+> 40% of failed-but-attempted v3 calls.
+>
+> **F1 fix (shim + runner).** Both shims (OpenAI + Claude) now build
+> `model_info` immediately after the API call succeeds and, if
+> post-API parsing fails, write a JSON envelope to stdout containing
+> the model_info plus a structured `_provider_error` string. The
+> runner has a new `ShimCallError` that carries `model_info` +
+> `provider_error_hint` extracted from stdout via
+> `_extract_shim_stdout_metadata()`; the runner's exception path
+> lifts those into the per-case row's `metadata.model_info` /
+> `metadata.provider_error`. 26 existing v3 manifest rows + 26
+> per-case JSONs were backfilled with the canonical model_info
+> (resolved_model=gpt-5-mini-2025-08-07, the snapshot the
+> 2026-05-13 re-run hit; flagged `_backfilled: true` so a future
+> auditor can distinguish from fresh API-emitted entries).
+>
+> **F2 fix (model card taxonomy).** The model card now shows the
+> correct 39/24/2 breakdown with which classes made an API call vs
+> not, and which carry model_info. The taxonomy is locked by a new
+> test: `test_v3_committed_artifacts_have_model_info_on_post_api_failures`
+> walks every committed v3 row and fails if any post-API failure
+> lacks model_info.
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 41 →
+> 48 (Codex 2026-05-16 adds 4 stdout-extractor tests + 1
+> ShimCallError test + 1 end-to-end shim-parse-failure subprocess
+> test + 1 committed-artifact lock); `test_hybrid_router.py`
+> unchanged at 10. All 58 pass. v1/v2/v3 eval all zero-drift.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

@@ -269,10 +269,39 @@ def main() -> int:
         )
         return 1
 
+    # Two-phase try: (1) make the API call; if it fails outright, exit 1
+    # with no model_info available. (2) Build model_info from the API
+    # response IMMEDIATELY, then attempt to parse content; if parsing
+    # fails, write a JSON envelope containing model_info to stdout and
+    # exit 1 so the runner preserves provenance for the failed-but-
+    # attempted call (Codex 2026-05-16 F1).
     try:
         wrapper = invoke_openai(
             system_prompt, user_message, model, timeout_s, api_key, base_url
         )
+    except Exception as e:
+        # The API call never succeeded — no model_info is available.
+        msg = f"{type(e).__name__}: {e}"
+        sys.stderr.write(f"diagnosis_shim_openai: {msg}\n")
+        return 1
+
+    # Per Codex 2026-05-11 [high] F2 + 2026-05-16 F1: build model_info
+    # the moment the API call returns. Used both for the success row
+    # AND, if parsing fails below, the partial provider_error envelope.
+    model_info = {
+        "provider_name": "openai",
+        "requested_model": model,
+        "resolved_model": wrapper.get("model"),
+        # Per Codex 2026-05-12 [medium]: sanitized base_url (no userinfo,
+        # no query) plus sha256 of the full URL for audit comparison.
+        "base_url": sanitize_base_url(base_url),
+        "base_url_sha256": base_url_sha256(base_url),
+        "max_completion_tokens": 4096,
+        "system_fingerprint": wrapper.get("system_fingerprint"),
+        "usage": wrapper.get("usage"),
+    }
+
+    try:
         choices = wrapper.get("choices") or []
         if not choices:
             raise RuntimeError(
@@ -286,37 +315,23 @@ def main() -> int:
             )
         diag_raw = parse_diagnosis_json(content)
         diag = normalize(diag_raw)
-        # Per Codex 2026-05-11 [high] F2: persist model identity so the
-        # benchmark artifact records which exact model produced the row.
-        # The shim previously took both model and base_url from env and
-        # neither was written to the diagnosis row — a run against
-        # gpt-5-mini, a dated snapshot, or a proxy would produce
-        # indistinguishable committed artifacts. The runner copies
-        # `_model_info` (underscored: not part of the M5 contract; runner
-        # treats as opt-in metadata) into row.metadata.model_info.
-        # Also persist what OpenAI's response says (model field is the
-        # snapshot ID the request actually hit; OpenAI may resolve an
-        # alias to a dated snapshot).
-        diag["_model_info"] = {
-            "provider_name": "openai",
-            "requested_model": model,
-            "resolved_model": wrapper.get("model"),
-            # Per Codex 2026-05-12 [medium]: persist a sanitized base_url
-            # (no userinfo, no query) plus a sha256 of the full URL. The
-            # hash lets an auditor distinguish a proxy/alt-endpoint run
-            # from a canonical run without leaking the secret-carrying
-            # parts of the URL.
-            "base_url": sanitize_base_url(base_url),
-            "base_url_sha256": base_url_sha256(base_url),
-            "max_completion_tokens": 4096,
-            "system_fingerprint": wrapper.get("system_fingerprint"),
-            "usage": wrapper.get("usage"),
-        }
+        diag["_model_info"] = model_info
         json.dump(diag, sys.stdout, ensure_ascii=False)
         sys.stdout.write("\n")
         return 0
     except Exception as e:
+        # The API call SUCCEEDED but post-processing (parse/empty-choices)
+        # failed. Per Codex 2026-05-16 F1 [high]: write a JSON envelope
+        # to stdout that carries model_info + a structured error string
+        # so the runner can lift model_info into the provider_error row
+        # via tools/run_diagnosis.py:_extract_shim_stdout_metadata.
         msg = f"{type(e).__name__}: {e}"
+        envelope = {
+            "_model_info": model_info,
+            "_provider_error": f"post_api_error: {msg}",
+        }
+        json.dump(envelope, sys.stdout, ensure_ascii=False)
+        sys.stdout.write("\n")
         sys.stderr.write(f"diagnosis_shim_openai: {msg}\n")
         return 1
 
