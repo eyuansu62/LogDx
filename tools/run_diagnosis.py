@@ -470,16 +470,23 @@ def build_row(
             "prompt_sha256": prompt_sha,
             "runtime_ms": round(runtime_ms, 3),
             "cache_key": cache_key,
-            # If the shim returned a provider_error hint AND the runner
-            # also recorded one, prefer the runner's (it's the higher-
-            # level signal — e.g. subprocess exit-1). Concatenate if both
-            # present and distinct.
+            # Per Codex 2026-05-17 F1 [high]: when the shim emits a
+            # structured `_provider_error` taxonomy (e.g. `post_api_error:
+            # JSONDecodeError ...` or `unsupported_context_too_large:
+            # ...`), that classification is the PRIMARY persisted value.
+            # The runner-wrapped subprocess message (e.g.
+            # `ShimCallError: diagnosis command exited 1 ...`) goes into
+            # `provider_error_detail` so downstream auditing can count
+            # error classes by stable prefix without false matches from
+            # the generic wrapper string. Previously this preferred the
+            # wrapper and only appended the shim taxonomy as a suffix,
+            # which made the model card's class counts unreliable.
             "provider_error": (
-                provider_error if provider_error and not shim_provider_error
-                else (shim_provider_error if shim_provider_error and not provider_error
-                       else (f"{provider_error}; shim_hint={shim_provider_error}"
-                              if provider_error and shim_provider_error
-                              else None))
+                shim_provider_error if shim_provider_error else provider_error
+            ),
+            "provider_error_detail": (
+                provider_error if shim_provider_error and provider_error
+                else None
             ),
             "command": command_str,
             "model_info": model_info,
@@ -587,19 +594,30 @@ def check_external_llm_opt_in(config: dict | None) -> str | None:
     )
 
 
-def cache_key_env_values(config: dict | None) -> dict[str, str] | None:
+def cache_key_env_values(
+    config: dict | None,
+    env_source: dict[str, str] | None = None,
+) -> dict[str, str] | None:
     """Collect env-var values declared in config.cache_key_env.
 
-    Returns None when no env vars are declared so legacy caches (written
-    before this field existed) keep matching their old keys for diagnosers
-    that don't opt in.
+    Per Codex 2026-05-17 F2: callers pass the SAME env that the shim
+    subprocess will see (post-`build_shim_env` injection of config
+    defaults). This makes "user did not set X" and "user set X to the
+    config default" produce IDENTICAL cache keys; previously the
+    pre-injection env left X="" while the shim ran with X=default.
+
+    `env_source` falls back to `os.environ` for legacy call sites
+    (mostly unit tests). Returns None when no env vars are declared so
+    legacy caches keep matching their old keys for diagnosers that
+    don't opt in.
     """
     if not isinstance(config, dict):
         return None
     keys = config.get("cache_key_env")
     if not isinstance(keys, list) or not keys:
         return None
-    return {k: os.environ.get(k, "") for k in sorted(keys)}
+    src = env_source if env_source is not None else os.environ
+    return {k: src.get(k, "") for k in sorted(keys)}
 
 
 def effective_requested_model(config: dict | None) -> str | None:
@@ -640,27 +658,57 @@ def effective_requested_model(config: dict | None) -> str | None:
 def build_shim_env(
     config: dict | None, parent_env: dict[str, str] | None = None
 ) -> dict[str, str]:
-    """Per Codex 2026-05-15 F1 [high]: when a diagnoser config declares
-    `model.env_var_name` (e.g. CILOGBENCH_CLAUDE_MODEL for v1/v2) and the
-    user has NOT set that var explicitly, inject the effective model into
-    the shim subprocess env. Without this, the Claude shim's hardcoded
-    default ("haiku") was used even for v2 (which expects "sonnet"),
-    producing cached rows whose own validator would later reject them
-    as `haiku != sonnet`.
+    """Per Codex 2026-05-15 F1 [high] + 2026-05-17 F2 [medium]: build the
+    env mapping the shim subprocess sees.
+
+    When the diagnoser config declares `model.env_var_name` (e.g.
+    CILOGBENCH_CLAUDE_MODEL for v1/v2; CILOGBENCH_OPENAI_MODEL for v3) and
+    the user has NOT set that var explicitly, inject the effective model
+    into the shim subprocess env. Same for `model.base_url_env_var_name`
+    + `model.base_url` (added 2026-05-17). Without these, the shim's
+    hardcoded defaults applied invisibly: v2 (config: sonnet) ran against
+    a Claude shim with default 'haiku'; v3 cache_key recorded an empty
+    base_url while the shim hit the default OpenAI endpoint.
 
     User-set env values are preserved — this only fills in the gap when
     the user hasn't overridden, so explicit experiments
-    (`CILOGBENCH_OPENAI_MODEL=gpt-4o`) still work.
+    (`CILOGBENCH_OPENAI_MODEL=gpt-4o`,
+    `CILOGBENCH_OPENAI_BASE_URL=https://proxy/v1`) still work.
     """
     env = dict(parent_env if parent_env is not None else os.environ)
     if not isinstance(config, dict):
         return env
     model = config.get("model") or {}
+    # Model alias injection (2026-05-15 F1).
     env_var = model.get("env_var_name")
     alias = model.get("requested_alias") or model.get("model_name")
     if env_var and alias and env.get(env_var) is None:
         env[env_var] = alias
+    # Base URL injection (2026-05-17 F2).
+    base_url_var = model.get("base_url_env_var_name")
+    base_url_default = model.get("base_url")
+    if base_url_var and base_url_default and env.get(base_url_var) is None:
+        env[base_url_var] = base_url_default
     return env
+
+
+def effective_base_url(config: dict | None) -> str | None:
+    """Return the endpoint URL we expect the current run's shim to hit,
+    used by `cache_hit_is_acceptable` to validate cached rows. Resolution
+    mirrors `effective_requested_model`:
+
+        1. env_var_name's value in os.environ (if both declared + non-empty)
+        2. config.model.base_url (the canonical default)
+    """
+    if not isinstance(config, dict):
+        return None
+    model_section = config.get("model") or {}
+    env_var = model_section.get("base_url_env_var_name")
+    if env_var:
+        val = os.environ.get(env_var)
+        if val:
+            return val
+    return model_section.get("base_url") or None
 
 
 def validate_fresh_row_model_identity(
@@ -702,31 +750,50 @@ def validate_fresh_row_model_identity(
 def cache_hit_is_acceptable(
     cached_row: dict, config: dict | None
 ) -> tuple[bool, str | None]:
-    """Per Codex 2026-05-12 F2: belt-and-suspenders. Even if the cache_key
-    matched, validate that the cached row's `metadata.model_info` matches
-    the *effective* expected model. Reject otherwise so the runner falls
-    through to a fresh call.
+    """Per Codex 2026-05-12 F2 + 2026-05-17 F2: belt-and-suspenders. Even
+    if the cache_key matched, validate that the cached row's
+    `metadata.model_info` matches the *effective* expected model AND
+    endpoint. Reject otherwise so the runner falls through to a fresh
+    call.
 
-    Returns (True, None) if no validation applies or it passes. Returns
-    (False, reason) on mismatch.
+    Returns (True, None) if no validation applies or all checks pass.
+    Returns (False, reason) on mismatch.
     """
     if not isinstance(config, dict):
         return True, None
-    expected_model = effective_requested_model(config)
-    if not expected_model:
-        return True, None
     cached_meta = cached_row.get("metadata") or {}
     cached_mi = cached_meta.get("model_info") or {}
-    cached_requested = cached_mi.get("requested_model")
-    if cached_requested is None:
-        # Legacy row predating model_info persistence — accept for
-        # back-compat with v1/v2 caches.
-        return True, None
-    if cached_requested != expected_model:
-        return False, (
-            f"cache row requested_model={cached_requested!r} != "
-            f"effective model={expected_model!r}"
-        )
+
+    expected_model = effective_requested_model(config)
+    if expected_model:
+        cached_requested = cached_mi.get("requested_model")
+        if cached_requested is None:
+            # Legacy row predating model_info persistence — accept for
+            # back-compat with v1/v2 caches.
+            pass
+        elif cached_requested != expected_model:
+            return False, (
+                f"cache row requested_model={cached_requested!r} != "
+                f"effective model={expected_model!r}"
+            )
+
+    # Per Codex 2026-05-17 F2 [medium]: also validate endpoint identity.
+    # The cache_key_env already incorporates base_url via the env var so
+    # a swap MISSES the cache, but the validator catches the
+    # belt-and-suspenders case where someone hand-poisons a cache file
+    # under a matching key with rows from a different endpoint.
+    expected_url = effective_base_url(config)
+    if expected_url:
+        cached_url = cached_mi.get("base_url")
+        if cached_url is None:
+            # Legacy v1/v2 rows have no base_url — accept (Claude shim
+            # doesn't expose one).
+            pass
+        elif cached_url != expected_url:
+            return False, (
+                f"cache row base_url={cached_url!r} != "
+                f"effective base_url={expected_url!r}"
+            )
     return True, None
 
 
@@ -784,8 +851,6 @@ def run(
     except DiagnoserConfigError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
-    key_env_values = cache_key_env_values(diagnoser_config)
-
     # Per Codex 2026-05-15 F1 [high]: when the diagnoser config declares
     # `model.env_var_name` (e.g. CILOGBENCH_CLAUDE_MODEL) and the user
     # has not set that env var, inject the config's effective requested
@@ -794,6 +859,13 @@ def run(
     # hardcoded default is "haiku" and produces rows whose own cache
     # validator later rejects them.
     shim_env = build_shim_env(diagnoser_config)
+
+    # Per Codex 2026-05-17 F2 [medium]: collect cache_key env contributions
+    # AFTER `build_shim_env` injects config defaults — otherwise the cache
+    # key uses the raw (often empty) env while the subprocess runs with
+    # the default, so "user did not set X" and "user set X to the config
+    # default" produced different keys for identical behaviour.
+    key_env_values = cache_key_env_values(diagnoser_config, env_source=shim_env)
 
     # Per Codex 2026-05-13 F1 [high]: the v3 config declared
     # `privacy.requires_explicit_external_llm_opt_in: true` but the runner

@@ -1552,42 +1552,124 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > test + 1 committed-artifact lock); `test_hybrid_router.py`
 > unchanged at 10. All 58 pass. v1/v2/v3 eval all zero-drift.
 
+> ⚠️ **Codex 2026-05-17 [high/medium] fixes applied — v2 rankings
+> stable; v1.3 ∩ shifts {hybrid-v1} → ∅.**
+>
+> **F1 [high] (Shim taxonomy as primary metadata.provider_error.)**
+> Pre-fix, `build_row` preferred the runner's wrapper string and
+> only suffixed the shim's taxonomy: row.metadata.provider_error
+> read `RuntimeError: diagnosis command exited 1:
+> diagnosis_shim_openai: post_api_error: JSONDecodeError ...`
+> while the model card claimed clean classes like
+> `post_api_error`. Downstream counting by prefix was unreliable.
+> Fix: `build_row` now uses the shim's `_provider_error`
+> (when present) as the PRIMARY `metadata.provider_error`; the
+> subprocess wrapper goes to a new `metadata.provider_error_detail`
+> field. 160 existing v3 + v1/v2 manifest rows + per-case JSONs
+> were backfilled to split the legacy combined string.
+>
+> **F2 [medium] (Cache_key uses post-injection env + endpoint
+> validation.)** `key_env_values` was captured before
+> `build_shim_env` injected config defaults. With env unset, v3
+> hashed `CILOGBENCH_OPENAI_BASE_URL=""` while the subprocess ran
+> against the default OpenAI endpoint — so "unset" and
+> "explicit-default" produced different cache keys for identical
+> behaviour. Fix:
+> - `cache_key_env_values()` now accepts `env_source=shim_env`
+>   so the cache key reflects effective backend identity, not raw
+>   env values.
+> - v3 config declares `model.base_url` + `model.base_url_env_var_name`;
+>   `build_shim_env` injects the canonical OpenAI URL into the
+>   subprocess env when CILOGBENCH_OPENAI_BASE_URL is unset, mirroring
+>   the existing model-alias injection.
+> - `cache_hit_is_acceptable` now also validates the cached row's
+>   `model_info.base_url` against `effective_base_url(config)` as
+>   belt-and-suspenders.
+> - 285 existing v3 cache files were RENAMED from their old
+>   (raw-env) keys to new (post-injection-env) keys; the cached
+>   row content is unchanged — only the file name (and the row's
+>   `metadata.cache_key` audit field) moved. End-to-end idempotency
+>   verified: re-running v3 against the migrated cache hits 285 of
+>   285 successful rows.
+>
+> **Cascade: v1.3 ∩ shifts back to ∅.** The cache-key migration
+> was supposed to be a pure rename, but the manifest-row count of
+> v3 provider_errors had drifted (a small subset of post-API
+> failures from 2026-05-13 had been cached at OLD keys we couldn't
+> reconstruct). The verification sweep ran fresh API calls for
+> those 52 cache misses — 21 previously-failed JSON parses
+> SUCCEEDED on the retry (gpt-5-mini is non-deterministic, exactly
+> the run-to-run-variance caveat from §3i 2026-05-12). The new v3
+> provider_error count is 44 (39 oversized + 5 JSONDecodeError;
+> the 2 RemoteDisconnected + 19 of 24 prior JSONDecodeError rows
+> are now real successful diagnoses with resolved_model populated).
+> 
+> **v2 ranking impact:** top-3 ∩ STILL = {hybrid-v2, hybrid-v3}
+> across all three debuggers. Within that set, gpt-5-mini now ranks
+> hybrid-v3 #1 (was hybrid-v2 #1) — a 1-position swap inside the
+> stable set. v2 son↔gpt Spearman shifted 0.988 → 0.976 (still very
+> tight); hai↔gpt shifted 0.939 → 0.964.
+>
+> **v1.3 ranking impact:** top-3 ∩ shifted **{hybrid-v1} → ∅**.
+> The 2026-05-13 finding that hybrid-v1 was in gpt's top-3 was
+> driven by a single gpt-5-mini run. The 2026-05-17 partial-rerun
+> moved hybrid-v1 to gpt's #4, and v1.3 reverts to the
+> original-§3i-commit state of having no method in all three
+> debuggers' top-3. This is empirically the same "v1.3 lacks
+> run-stable rankings" finding the §3i 2026-05-12 caveat already
+> documented; the new evidence reinforces it. v1.3 son↔gpt
+> Spearman shifted 0.867 → 0.721.
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 48 →
+> 48 (no new tests this round — the existing
+> `test_v3_committed_artifacts_have_model_info_on_post_api_failures`
+> already locks the backfill state and continues to pass).
+> `test_hybrid_router.py` unchanged at 10. All 58 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**
 
 ```text
-Cross-debugger ranking, v1.3 (Sonnet | Haiku | gpt-5-mini #):
+Cross-debugger ranking, v1.3 (Sonnet | Haiku | gpt-5-mini #) — post 2026-05-17:
 
 method                             son #   hai #   gpt #
 hybrid-grep-120k-tail-v2              1       3       5   ← Sonnet's winner; gpt drops to #5
-hybrid-grep-4k-rtk-err-cat-v1         2       1       2   ← in top-3 for ALL three debuggers ★
-grep                                  3       4       1   ← gpt's winner; Sonnet's #3
-hybrid-grep-120k-rtk-tail-v3          4       2       3
-tail                                  5       5       4
-rtk-err-cat                           6       6       6   ← unanimous #6
-rtk-read                              7       8       7
-llm-summary-v1-mock                   8       7       8
-raw                                   9       9       9   ← unanimous #9
+hybrid-grep-4k-rtk-err-cat-v1         2       1       4   ← Sonnet/Haiku top-3; gpt's #4 (changed from #2 pre-rerun)
+grep                                  3       4       2   ← Sonnet's #3; gpt's #2
+hybrid-grep-120k-rtk-tail-v3          4       2       1   ← gpt's winner; Haiku's #2
+tail                                  5       5       3
+rtk-err-cat                           6       6       7
+hybrid-grep-4k-rtk-err-cat-v1 already listed at #2/#1/#4 above
+rtk-read                              7       8       8
+llm-summary-v1-mock                   8       7       9
+raw                                   9       9       6
 rtk-log                              10      10      10   ← unanimous #10
 ```
 
-**v1.3 top-3 ∩ across all three debuggers: {hybrid-grep-4k-rtk-err-cat-v1}.**
+**v1.3 top-3 ∩ across all three debuggers: ∅ (empty set).**
 
-The earlier §3a v1.3 headline ("hybrid-grep-4k-rtk-err-cat-v1
-matched grep on quality at ⅓ token cost, ranked #1 by sv1.1
-under both tested debuggers") now **partly survives** cross-
-family validation: gpt-5-mini ranks hybrid-v1 #2 on v1.3
-(0.6389 vs grep's 0.6745, a 0.04 gap). It does NOT rank #1 under
-gpt-5-mini — grep wins — but it stays in the top-3 set, which is
-the looser version of the §3a claim. The "tied #1 with grep
-under both Anthropic debuggers" framing remains Anthropic-
-specific. The original §3i commit (`772520d`) reported gpt
-ranking hybrid-v1 at #5 on v1.3 (0.583) and claimed the §3a
-finding was "partially retracted"; the 2026-05-12 re-run (with
-the Codex F2 cache-key fix forcing fresh API calls) returned
-0.6389 instead, moving hybrid-v1 to #2 — see "Run-to-run
-variance" below for what this implies.
+The §3a v1.3 headline ("hybrid-grep-4k-rtk-err-cat-v1 matched
+grep on quality at ⅓ token cost, ranked #1 by sv1.1 under both
+tested debuggers") remains an **Anthropic-only** claim. The
+finding has gone through three states under cross-family
+validation:
+
+1. **Original §3i commit (`772520d`, 2026-05-11):** gpt-5-mini
+   ranked hybrid-v1 at #5 on v1.3 (0.583) → ∩ = ∅; §3a "partially
+   retracted".
+2. **Post Codex 2026-05-12 F2 re-run (2026-05-13):** gpt-5-mini
+   ranked hybrid-v1 #2 (0.6389) → ∩ = {hybrid-v1}; §3a "partly
+   survives".
+3. **Post Codex 2026-05-17 cache migration + partial-rerun
+   (2026-05-17):** gpt-5-mini ranks hybrid-v1 #4 (0.6916) → ∩ =
+   ∅ again; §3a is Anthropic-only.
+
+The three states span 5-position movement of hybrid-v1 on gpt-5-mini
+(#5 → #2 → #4). v1.3 is **not stable under gpt-5-mini run-to-run
+variance**, even though absolute hybrid-v1 scores cluster around
+0.58-0.69. By contrast, v2 has stayed at {hybrid-v2, hybrid-v3}
+top-3 ∩ across all three runs.
 
 **v2 (19 cases, 3 splits):**
 
@@ -1625,13 +1707,14 @@ rtk-read #7 and raw #8 (both ≈ 0.27/0.28 — adjacent scores).
 | Property | v1.3 | v2 |
 |---|---|---|
 | Cases | 16 | 19 (partial, target 34) |
-| Family-stable top-3 | ⚠ {hybrid-v1} (1 method) | ✅ {hybrid-v2, hybrid-v3} (2 methods) |
-| Family-stable bottom-4 set (pos 7-10) | ✅ {rtk-read, summary-mock, raw, rtk-log} as SET; summary↔rtk-read swap on Haiku | ✅ {rtk-read, raw, rtk-log, summary-mock} as SET; raw↔rtk-read swap on Sonnet |
-| Sonnet/gpt-5-mini #1-#3 agreement (positional) | 0/3 | 3/3 identical |
-| Spearman rank correlation Sonnet↔gpt | 0.867 | 0.988 |
+| Family-stable top-3 | ❌ ∅ (was {hybrid-v1} in 2026-05-13 mid-state — reverted 2026-05-17) | ✅ {hybrid-v2, hybrid-v3} stable across all 3 runs |
+| Family-stable bottom-4 set (pos 7-10) | ⚠ {rtk-read, rtk-log} stable; raw↔summary swap across debuggers | ✅ {rtk-read, raw, rtk-log, summary-mock} as SET; raw↔rtk-read swap on Sonnet |
+| Sonnet/gpt-5-mini #1-#3 agreement (positional) | 0/3 | 2/3 same SET (gpt #1=hybrid-v3, son #1=hybrid-v2 swap inside the ∩ set) |
+| Spearman rank correlation Sonnet↔gpt | 0.721 | 0.976 |
 | Spearman rank correlation Sonnet↔Haiku | 0.927 | 0.927 |
-| Spearman rank correlation Haiku↔gpt-5-mini | 0.891 | 0.939 |
-| gpt-5-mini run-to-run variance (max Δ across methods) | up to ±0.13 | up to ±0.06 |
+| Spearman rank correlation Haiku↔gpt-5-mini | 0.782 | 0.964 |
+| gpt-5-mini run-to-run variance (max Δ across methods) | up to ±0.13 (≥ 2 runs span hybrid-v1 #5→#2→#4) | up to ±0.06 (rankings stable in set) |
+| **Effective family-stability score** | LOW — top-3 ∩ moves between {} and {hybrid-v1} run to run | HIGH — top-3 ∩ unchanged across all 3 gpt-5-mini runs |
 
 v2's broader corpus produces benchmark rankings that are
 **robust to model family**, while v1.3's smaller (Sonnet-tuned)
@@ -1640,20 +1723,20 @@ right protocol to ship publicly — the "hybrid-v2 generalizes"
 claim from §3e–§3h holds up under a debugger from a different
 model family, even though it was never tuned on that debugger.
 
-### Per-debugger absolute scores on v2
+### Per-debugger absolute scores on v2 (post 2026-05-17)
 
 ```text
 method                          son v2   hai v2   gpt v2
-hybrid-grep-120k-tail-v2        0.6928   0.5554   0.6663   ★ best avg
-hybrid-grep-120k-rtk-tail-v3    0.6650   0.5764   0.6011
-grep                            0.6155   0.4954   0.5738
+hybrid-grep-120k-tail-v2        0.6928   0.5554   0.6663   ★ Sonnet+Haiku winner
+hybrid-grep-120k-rtk-tail-v3    0.6650   0.5764   0.6953   ★ gpt-5-mini winner
+grep                            0.6155   0.4954   0.6013
 tail                            0.6081   0.5559   0.5649
 rtk-err-cat                     0.4792   0.4379   0.5038
-hybrid-grep-4k-rtk-err-cat-v1   0.4527   0.4223   0.4476
+hybrid-grep-4k-rtk-err-cat-v1   0.4527   0.4223   0.4893
 rtk-read                        0.2713   0.2146   0.2933
 raw                             0.2865   0.2083   0.2898
 rtk-log                         0.2187   0.2044   0.2437
-llm-summary-v1-mock             0.1902   0.1938   0.1558
+llm-summary-v1-mock             0.1902   0.1938   0.1575
 ```
 
 gpt-5-mini's absolute scores sit between Sonnet and Haiku on

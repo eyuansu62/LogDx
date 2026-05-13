@@ -26,17 +26,22 @@
   carry `metadata.model_info.resolved_model = gpt-5-mini-2025-08-07`
   (zero alias rotation between original run and re-run).
 - **Resolved snapshot ID at run time:** `gpt-5-mini-2025-08-07`
-- **Provider-error taxonomy (the 65 non-successful rows):**
+- **Provider-error taxonomy (post 2026-05-17):**
   | error class | count | API call made? | resolved_model |
   |---|---|---|---|
   | `unsupported_context_too_large` (F1 oversized-context skip) | 39 | NO | absent (legitimate null) |
-  | `post_api_error: JSONDecodeError` (model returned malformed JSON) | 24 | YES | preserved via Codex 2026-05-16 F1 fix; backfilled to `gpt-5-mini-2025-08-07` for pre-fix rows |
-  | `post_api_error: RemoteDisconnected` (network interrupt after request) | 2 | YES (attempted) | same backfill |
+  | `JSONDecodeError` (model returned malformed JSON) | 5 | YES | populated; canonical-snapshot backfill for pre-2026-05-16 rows |
 
-  Earlier versions of this card claimed all 65 were the
-  oversized-context F1 path with no API call — this was a Codex
-  2026-05-16 [high] finding. The actual breakdown is shown above
-  and locked by
+  Total provider_errors: 44 (down from 65 pre-2026-05-17). The
+  decrease comes from the Codex 2026-05-17 cache-key migration
+  triggering a fresh-API partial-rerun for 52 cases (39 oversized
+  re-failed deterministically; 21 of 26 post-API errors succeeded
+  on retry — gpt-5-mini is non-deterministic at temperature-not-
+  sent). Earlier versions of this card claimed all 65 were
+  oversized-context with no API call (Codex 2026-05-16 [high]
+  finding) AND included combined "RuntimeError: ..." prefixes that
+  obscured the clean class names (Codex 2026-05-17 F1 [high]). The
+  taxonomy is now locked by
   `tools/tests/test_diagnosis_cache_key.py:test_v3_committed_artifacts_have_model_info_on_post_api_failures`.
 
 gpt-5-mini was chosen as the third debugger to test §3i's cross-family

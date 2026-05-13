@@ -3,40 +3,80 @@
   "context_method": "hybrid-grep-120k-rtk-tail-v3",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "Diagnoser failed. See metadata.provider_error.",
-  "root_cause_category": "unknown",
-  "root_cause": "unknown",
-  "confidence": 0.0,
-  "relevant_files": [],
-  "relevant_tests": [],
-  "evidence": [],
-  "suggested_fix": "",
+  "summary": "The parallel test test-debugger-exec failed because a test helper timed out waiting for the debugger's initial break message.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The test helper waitForInitialBreak timed out after 15000ms while waiting for the expected debugger output (/break (?:on start )?in/i), causing parallel/test-debugger-exec.js to fail.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "/Users/runner/work/node/node/node/test/parallel/test-debugger-exec.js",
+    "/Users/runner/work/node/node/node/test/common/debugger.js"
+  ],
+  "relevant_tests": [
+    "parallel/test-debugger-exec",
+    "out/Release/node /Users/runner/work/node/node/node/test/parallel/test-debugger-exec.js"
+  ],
+  "evidence": [
+    {
+      "quote": "Error: Timeout (15000) while waiting for /break (?:on start )?in/i",
+      "reason": "Shows the test helper threw a timeout error waiting for the specified regex, which is the immediate cause of the failure."
+    },
+    {
+      "quote": "at Object.waitForInitialBreak (/Users/runner/work/node/node/node/test/common/debugger.js:116:18)",
+      "reason": "Indicates the timeout occurred inside the waitForInitialBreak helper in test/common/debugger.js."
+    },
+    {
+      "quote": "at waitInitialBreak (/Users/runner/work/node/node/node/test/parallel/test-debugger-exec.js:15:15)",
+      "reason": "Shows the failing test is parallel/test-debugger-exec.js and that it invoked waitInitialBreak which triggered the timeout."
+    },
+    {
+      "quote": "'< Debugger listening on ws://127.0.0.1:49508/1fd32687-38b3-450e-96e5-4a28a88f601e\n' +",
+      "reason": "The debug output shows the inspector started and was attached, but the expected break message did not appear in the captured output."
+    },
+    {
+      "quote": "Command: out/Release/node /Users/runner/work/node/node/node/test/parallel/test-debugger-exec.js",
+      "reason": "Confirms the exact command used to run the failing test."
+    }
+  ],
+  "suggested_fix": "Run the failing test locally with the same command to reproduce: out/Release/node /Users/runner/work/node/node/node/test/parallel/test-debugger-exec.js. Investigate why the debugger did not emit the expected initial break message (check test timing, inspector behavior, or changes to output). As a short-term mitigation, consider increasing the timeout (currently 15000ms) in test/common/debugger.js or adjust the test to wait for the actual observed prompt (e.g. 'debug> ').",
   "input": {
     "context_path": "results/v2/stress/hybrid-grep-120k-rtk-tail-v3/nodejs-test-debugger-exec-timeout-v2-001.txt",
     "context_tokens_estimate": 3835
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 55
+    "output_tokens_estimate": 731
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 17550.479,
-    "cache_key": "ab8635a74725bf0866acfd826f339f5c12324bc0462f5c122befce0679a7895e",
-    "provider_error": "RuntimeError: diagnosis command exited 1: diagnosis_shim_openai: JSONDecodeError: Expecting value: line 28 column 16 (char 1414)\n",
+    "runtime_ms": 24671.664,
+    "cache_key": "cc626b8c3d92ee782a1ec8c054cadec03176f5a4262fc0ad9783e4ef1681b427",
+    "provider_error": null,
+    "provider_error_detail": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
       "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
-      "base_url_sha256": "d9617135d6fdd0a2cde722d6f5d36b5dac75eef4f3a3a98147c0e2bc9a4f3b6f",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-16 F1 fix: the OpenAI shim emitted _model_info ONLY on successful parse, so post-API failures (JSONDecodeError, RemoteDisconnected) landed in manifests with metadata.model_info=null. The shim now writes a JSON envelope with _model_info even on its error path; this row predates that fix. resolved_model is set to the snapshot ID the canonical 2026-05-13 re-run hit; the actual API call for THIS row may have hit a different snapshot if OpenAI rotated the alias during the run window. base_url_sha256 is the canonical-endpoint hash for documentation; the failing call's actual hash is not recoverable."
+      "usage": {
+        "prompt_tokens": 5792,
+        "completion_tokens": 1843,
+        "total_tokens": 7635,
+        "prompt_tokens_details": {
+          "cached_tokens": 4864,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1216,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

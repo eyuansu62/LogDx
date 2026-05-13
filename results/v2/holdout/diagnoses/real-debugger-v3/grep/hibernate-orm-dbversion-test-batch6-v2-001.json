@@ -3,40 +3,84 @@
   "context_method": "grep",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "Diagnoser failed. See metadata.provider_error.",
-  "root_cause_category": "unknown",
-  "root_cause": "unknown",
-  "confidence": 0.0,
-  "relevant_files": [],
-  "relevant_tests": [],
-  "evidence": [],
-  "suggested_fix": "",
+  "summary": "The build failed because a unit test failed: DbVersionTest.testCollectionVersion asserted that the owner version was not incremented but it was. This caused the :hibernate-core:test task to fail.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The JUnit test org.hibernate.orm.test.version.db.DbVersionTest.testCollectionVersion failed with an assertion: expected owner version not incremented (false) but was true.",
+  "confidence": 0.9,
+  "relevant_files": [
+    "file:///home/runner/work/hibernate-orm/hibernate-orm/hibernate-core/target/reports/tests/test/index.html",
+    "file:///home/runner/work/hibernate-orm/hibernate-orm/target/reports/problems/problems-report.html"
+  ],
+  "relevant_tests": [
+    "Gradle Test Executor 25 > DbVersionTest > testCollectionVersion(SessionFactoryScope) FAILED",
+    "org.hibernate.orm.test.version.db.DbVersionTest.testCollectionVersion(DbVersionTest.java:60)"
+  ],
+  "evidence": [
+    {
+      "quote": "Gradle Test Executor 25 > DbVersionTest > testCollectionVersion(SessionFactoryScope) FAILED",
+      "reason": "Shows which test failed and that it failed during the Gradle test execution."
+    },
+    {
+      "quote": "org.opentest4j.AssertionFailedError: owner version not incremented ==> expected: <false> but was: <true>",
+      "reason": "The assertion failure message explains the expectation and the actual value that caused the test to fail."
+    },
+    {
+      "quote": "at app//org.hibernate.orm.test.version.db.DbVersionTest.testCollectionVersion(DbVersionTest.java:60)",
+      "reason": "Stack trace points to the exact test method and source line where the assertion failed."
+    },
+    {
+      "quote": "16923 tests completed, 1 failed, 2596 skipped",
+      "reason": "Build-wide summary confirming there was exactly one failing test in the test run."
+    },
+    {
+      "quote": "Execution failed for task ':hibernate-core:test'.",
+      "reason": "Gradle task failed because of the failing tests, which caused the overall build to fail."
+    },
+    {
+      "quote": "There were failing tests. See the report at: file:///home/runner/work/hibernate-orm/hibernate-orm/hibernate-core/target/reports/tests/test/index.html",
+      "reason": "Points to the test report with details for debugging the failing test."
+    }
+  ],
+  "suggested_fix": "Open org.hibernate.orm.test.version.db.DbVersionTest (line 60) and inspect the assertion expecting the owner version not to be incremented. Reproduce the failure locally with Gradle and run only the failing test to iterate quickly: ./gradlew :hibernate-core:test --tests org.hibernate.orm.test.version.db.DbVersionTest.testCollectionVersion. Investigate why the owner version was incremented (fix the production code or adjust the test expectation) and re-run the test until it passes; consult the test report at hibernate-core/target/reports/tests/test/index.html for more details.",
   "input": {
     "context_path": "results/v2/holdout/grep/hibernate-orm-dbversion-test-batch6-v2-001.txt",
     "context_tokens_estimate": 65046
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 55
+    "output_tokens_estimate": 835
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 20731.14,
-    "cache_key": "a0f8d2127e7b367f60fc1ad39727f3fab179f5430e0c2e7d152088f66a1ee0b4",
-    "provider_error": "RuntimeError: diagnosis command exited 1: diagnosis_shim_openai: RemoteDisconnected: Remote end closed connection without response\n",
+    "runtime_ms": 23985.601,
+    "cache_key": "70461ddca97680227ab8ae3723039b2a8bd21bba19a7d361af7dc9015be2c6f6",
+    "provider_error": null,
+    "provider_error_detail": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
       "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
-      "base_url_sha256": "d9617135d6fdd0a2cde722d6f5d36b5dac75eef4f3a3a98147c0e2bc9a4f3b6f",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-16 F1 fix: the OpenAI shim emitted _model_info ONLY on successful parse, so post-API failures (JSONDecodeError, RemoteDisconnected) landed in manifests with metadata.model_info=null. The shim now writes a JSON envelope with _model_info even on its error path; this row predates that fix. resolved_model is set to the snapshot ID the canonical 2026-05-13 re-run hit; the actual API call for THIS row may have hit a different snapshot if OpenAI rotated the alias during the run window. base_url_sha256 is the canonical-endpoint hash for documentation; the failing call's actual hash is not recoverable."
+      "usage": {
+        "prompt_tokens": 92889,
+        "completion_tokens": 1696,
+        "total_tokens": 94585,
+        "prompt_tokens_details": {
+          "cached_tokens": 92032,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1024,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }
