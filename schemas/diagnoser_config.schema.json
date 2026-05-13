@@ -32,14 +32,27 @@
     },
     "model": {
       "type": "object",
-      "required": ["provider_name", "model_name", "temperature"],
+      "required": ["provider_name", "model_name"],
       "properties": {
         "provider_name":      {"type": "string"},
         "model_name":         {"type": "string"},
-        "model_version":      {"type": "string"},
-        "temperature":        {"type": "number", "minimum": 0},
-        "top_p":              {"type": "number", "minimum": 0, "maximum": 1},
-        "max_output_tokens":  {"type": "integer", "minimum": 1},
+        "env_var_name": {
+          "type": ["string", "null"],
+          "description": "Per Codex 2026-05-12 F2: optional env-var name whose value overrides model_name at run time. The runner uses this when validating cache hits so documented env overrides remain idempotent."
+        },
+        "model_version":      {"type": ["string", "null"]},
+        "temperature": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "May be null for reasoning-class models (e.g. gpt-5-mini) whose API ignores temperature. Use null when the shim does not send the value, not 0 (which is a valid setting the shim WOULD send to a non-reasoning provider)."
+        },
+        "top_p": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Null for reasoning models (see temperature)."
+        },
+        "max_output_tokens":  {"type": ["integer", "null"], "minimum": 1},
         "json_mode":          {"type": "boolean"},
         "deterministic":      {"type": "boolean",
           "description": "False when the provider does not support deterministic decoding; the M6 report should surface this."}
@@ -53,7 +66,8 @@
         "max_context_tokens":  {"type": ["integer", "null"], "minimum": 1},
         "on_context_too_large": {
           "type": "string",
-          "enum": ["mark_unsupported", "error"]
+          "enum": ["mark_unsupported", "error", "provider_error"],
+          "description": "provider_error: the shim exits non-zero and the runner records metadata.provider_error=unsupported_context_too_large. Added 2026-05-13 per Codex F3 (the v3 config used this since 2026-05-11 but the schema only allowed the legacy two values)."
         },
         "allow_truncation": {
           "type": "boolean",

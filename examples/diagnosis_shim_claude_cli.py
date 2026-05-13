@@ -220,6 +220,26 @@ def main() -> int:
         wrapper = invoke_claude(system_prompt, user_message, model, timeout_s)
         diag_raw = parse_diagnosis_json(wrapper.get("result", ""))
         diag = normalize(diag_raw)
+        # Per Codex 2026-05-14 F2 [high]: persist model identity for the
+        # Claude shim too (the OpenAI shim has done this since 2026-05-11).
+        # Until now, v1/v2 cached rows + manifests carried no
+        # `metadata.model_info`, so a future re-run with
+        # CILOGBENCH_CLAUDE_MODEL set to a non-default value (e.g. opus
+        # while v1 is meant to be haiku) could silently replay or
+        # mislabel rows. The runner now requires model_info for cache-hit
+        # validation when the diagnoser config declares a fixed model.
+        #
+        # `resolved_model` is best-effort — Claude Code's CLI envelope
+        # historically does not include a dated snapshot field for every
+        # provider mode; the field is present here for symmetry with the
+        # OpenAI shim and will be populated whenever the CLI exposes it.
+        diag["_model_info"] = {
+            "provider_name": "anthropic",
+            "requested_model": model,
+            "resolved_model": wrapper.get("model"),
+            "usage": wrapper.get("usage"),
+            "session_id": wrapper.get("session_id"),
+        }
         json.dump(diag, sys.stdout, ensure_ascii=False)
         sys.stdout.write("\n")
         return 0

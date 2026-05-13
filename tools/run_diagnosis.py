@@ -501,18 +501,25 @@ def cache_key_env_values(config: dict | None) -> dict[str, str] | None:
 
 
 def effective_requested_model(config: dict | None) -> str | None:
-    """Return the model name we expect the current run to use.
+    """Return the model identifier we expect the current run's shim to emit
+    as `metadata.model_info.requested_model`.
 
-    Per Codex 2026-05-13 F2: the v3 config declares `cache_key_env`
-    (cache_key folds in env-driven overrides) AND `model.env_var_name`
-    (explicit pointer to which env var overrides `model.model_name`).
-    For cache-hit validation we must compare against the effective model
-    (env override if set, else the config default) — otherwise a run with
-    `CILOGBENCH_OPENAI_MODEL=gpt-4o` writes a gpt-4o cache entry on the
-    first call and rejects it on every later identical run because the
-    cached `requested_model='gpt-4o'` mismatches the static
-    `model.model_name='gpt-5-mini'`. The fix: validate against
-    effective_requested_model(config), which honors the env override.
+    Resolution order:
+        1. env_var_name's value in os.environ (if both declared + non-empty)
+        2. config.model.requested_alias (the shim-level alias — e.g. v1
+           Claude uses 'haiku' for `claude -p --model haiku`, while
+           model.model_name is the dated identity 'claude-haiku-4-5')
+        3. config.model.model_name (the canonical / dated identity — what
+           the OpenAI shim emits when no env override is in play)
+
+    Codex history:
+        - 2026-05-12 F2: introduced env-aware lookup so env overrides
+          remain idempotent.
+        - 2026-05-13 F2: explicit env_var_name pointer added to v3 config.
+        - 2026-05-14 F2: requested_alias added so v1/v2 (whose shim sends
+          short Claude aliases) can validate against what the shim
+          actually persists, while keeping model_name as the canonical
+          dated identity used in reports.
     """
     if not isinstance(config, dict):
         return None
@@ -522,6 +529,9 @@ def effective_requested_model(config: dict | None) -> str | None:
         val = os.environ.get(env_var)
         if val:
             return val
+    alias = model_section.get("requested_alias")
+    if alias:
+        return alias
     return model_section.get("model_name") or None
 
 
@@ -858,7 +868,24 @@ def main(argv: list[str] | None = None) -> int:
                     help="Also cache provider errors (off by default).")
     ap.add_argument("--strict", action="store_true",
                     help="Abort on first provider or validation error.")
+    ap.add_argument(
+        "--allow-external-llm", action="store_true",
+        help=(
+            "Equivalent to setting CILOGBENCH_ALLOW_EXTERNAL_LLM=1 for the "
+            "lifetime of this invocation. Wrappers that already accept "
+            "--allow-external-llm propagate it here so a wrapper-level "
+            "opt-in doesn't get re-prompted at the runner level. "
+            "Per Codex 2026-05-14 F1."
+        ),
+    )
     args = ap.parse_args(argv)
+
+    # Per Codex 2026-05-14 F1: when a wrapper or operator opts in via the
+    # CLI flag, hoist that into the env so the gate + shims (which check
+    # the env var) see it. This is the documented "wrapper CLI flag"
+    # path; the env-var path continues to work unchanged.
+    if args.allow_external_llm:
+        os.environ["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
 
     diagnoser_name = args.diagnoser_name or (
         "debugger-v1-mock" if args.diagnoser == "mock"

@@ -9,6 +9,9 @@
     "provider_name": "anthropic",
     "model_name": "claude-haiku-4-5",
     "model_version": "2026-04-25",
+    "requested_alias": "haiku",
+    "requested_alias_note": "Per Codex 2026-05-14 F2 [high]: the Claude shim invokes `claude -p --model $CILOGBENCH_CLAUDE_MODEL` with default 'haiku'. tools/run_diagnosis.py validates cache hits against `requested_alias` (when present) instead of the dated `model_name`, so the validator agrees with what the shim actually persists in metadata.model_info.requested_model.",
+    "env_var_name": "CILOGBENCH_CLAUDE_MODEL",
     "temperature": 0,
     "top_p": 1.0,
     "max_output_tokens": 1200,
@@ -29,5 +32,10 @@
     "requires_explicit_external_llm_opt_in": true,
     "redaction_mode": "audit_only",
     "allow_secret_values_in_results": false
-  }
+  },
+
+  "cache_key_env": [
+    "CILOGBENCH_CLAUDE_MODEL"
+  ],
+  "cache_key_env_note": "Per Codex 2026-05-14 F2 [high]: CILOGBENCH_CLAUDE_MODEL overrides the alias the Claude shim sends to `claude -p --model`. The runner folds its value into the diagnosis cache_key so a re-run with the env set to a non-default value (e.g. 'opus' or a dated alias) does not silently replay a row computed against the default 'haiku' model. Adding this field invalidates existing v1 cache entries by design — on next re-run, cache misses will produce fresh rows with metadata.model_info populated by the updated Claude shim."
 }

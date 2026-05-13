@@ -572,6 +572,14 @@ def main(argv: list[str] | None = None) -> int:
                 diag_argv.append("--no-cache")
             if args.strict:
                 diag_argv.append("--strict")
+            # Per Codex 2026-05-14 F1: propagate the wrapper-level
+            # opt-in so the runner's gate + shim defense-in-depth see
+            # the explicit acknowledgement. Without this propagation
+            # the child run_diagnosis.py would fail closed even though
+            # the wrapper already accepted --allow-external-llm at its
+            # own gate.
+            if args.allow_external_llm:
+                diag_argv.append("--allow-external-llm")
             rc = run_step(diag_argv, label=f"run_diagnosis {s}/{method}")
             if rc != 0:
                 return rc

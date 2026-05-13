@@ -705,6 +705,10 @@ def main(argv: list[str] | None = None) -> int:
             diag_argv.append("--no-cache")
         if args.strict:
             diag_argv.append("--strict")
+        # Per Codex 2026-05-14 F1: propagate the wrapper-level opt-in
+        # so run_diagnosis.py's gate sees the explicit acknowledgement.
+        if args.allow_external_llm:
+            diag_argv.append("--allow-external-llm")
         run_step(diag_argv, label="run_diagnosis")
 
         run_step(

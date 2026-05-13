@@ -1378,6 +1378,76 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > grew from 11 → 22 tests (added 6 F2 cases + 5 F1 cases). All 22
 > pass alongside the 10 hybrid-router tests.
 
+> ⚠️ **Codex 2026-05-14 [high/high/medium] fixes applied — no scores
+> moved.** Codex re-reviewed and flagged three issues. All three are
+> fixed; no diagnosis scores changed because no v1/v2/v3 row content
+> was re-evaluated (the changes are at the config / cache-key /
+> metadata layer).
+>
+> **F1 [high] Runner gate ignored existing `--allow-external-llm`
+> wrapper opt-in.** Wrappers (`run_protocol_diagnosis_eval.py`,
+> `run_m6_experiment.py`, `run_m7_real_summary_experiment.py`) accept
+> `--allow-external-llm` at their own gate and then subprocess
+> `tools/run_diagnosis.py` without propagating the flag — so a
+> documented wrapper opt-in would fail closed at the runner. Fix:
+> `tools/run_diagnosis.py` now accepts `--allow-external-llm`; when
+> set, it hoists `CILOGBENCH_ALLOW_EXTERNAL_LLM=1` into the process
+> env so the runner gate + both shims see the explicit
+> acknowledgement. All three wrappers were updated to pass the flag
+> through. Both opt-in paths (direct env, wrapper CLI flag) now work
+> end-to-end and are covered by a regression test.
+>
+> **F2 [high] Cache_key + model_info for Claude (v1/v2).** v1/v2
+> configs did not opt into `cache_key_env`, and the Claude shim
+> emitted no `_model_info`. Result: a user changing
+> `CILOGBENCH_CLAUDE_MODEL` between runs would get the same cache key
+> and silently replay rows from a different model; cached rows
+> carried no `metadata.model_info` so an auditor couldn't even tell
+> which Claude alias produced them. Fix:
+> - v1 + v2 configs now declare `cache_key_env: ["CILOGBENCH_CLAUDE_MODEL"]`
+>   + `model.env_var_name: "CILOGBENCH_CLAUDE_MODEL"` +
+>   `model.requested_alias: "haiku"` (v1) / `"sonnet"` (v2). The
+>   alias field lets the cache validator compare against what the
+>   shim ACTUALLY emits (the short alias the Claude CLI accepts)
+>   while preserving the canonical dated `model_name` for reports
+>   and docs.
+> - The Claude shim now emits `_model_info` on every successful
+>   call (provider_name, requested_model, resolved_model from the
+>   CLI envelope when present, usage, session_id) — same contract
+>   as the OpenAI shim from 2026-05-11.
+> - 716 existing v1/v2 manifest rows + 716 per-case JSONs + 668
+>   cache entries were backfilled with `model_info` from the
+>   canonical alias for the diagnoser; the backfilled rows carry
+>   `_backfilled: true` so an auditor can tell them apart from
+>   future API-populated rows. (No Claude re-runs were triggered;
+>   the cache_key change will force fresh API calls only when
+>   someone actually re-runs v1/v2.)
+> - `effective_requested_model()` was extended to resolve via env
+>   override → `model.requested_alias` → `model.model_name`. v1/v2
+>   cache-hit validation now agrees with what the shim emits.
+> - 6 new regression tests in `tools/tests/test_diagnosis_cache_key.py`
+>   covering the alias path + Claude model-swap cache_key
+>   invalidation + cache-hit accept/reject for v1.
+>
+> **F3 [medium] v3 config violated the committed diagnoser schema.**
+> The schema required `model.temperature` to be a number and
+> required `model.top_p` / `model.model_version` non-null, plus only
+> allowed `context_policy.on_context_too_large` ∈ {mark_unsupported,
+> error}. v3 has been using null for the reasoning-model fields and
+> `provider_error` for context_too_large since 2026-05-11. Fix: the
+> schema now allows null for temperature/top_p/model_version (with
+> documentation that null is the reasoning-model contract) and
+> includes `provider_error` in the enum. A new test
+> (`test_all_real_debugger_configs_validate_against_schema`)
+> validates v1, v2, and v3 against the schema on every test run,
+> using `jsonschema` when available and falling back to a structural
+> check when it's not.
+>
+> **Test counts:** `test_diagnosis_cache_key.py` 22 → 30 tests
+> (Codex 2026-05-14 adds 1 F1 + 6 F2 + 1 F3); `test_hybrid_router.py`
+> unchanged at 10. All 40 pass. v1/v2 eval is zero-drift (backfill
+> only touched `metadata.model_info`).
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**
