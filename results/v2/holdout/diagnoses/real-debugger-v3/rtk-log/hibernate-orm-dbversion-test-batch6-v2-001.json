@@ -3,67 +3,86 @@
   "context_method": "rtk-log",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "Gradle test execution reported multiple failing tests (50 errors). Several distinct test classes failed across executors, indicating runtime test assertion or environment/setup failures rather than a compilation error.",
+  "summary": "The CI job failed due to multiple failing unit tests during the Gradle test run (50 errors reported).",
   "root_cause_category": "test_assertion",
-  "root_cause": "Multiple JUnit/Gradle tests failed during test execution (50 errors across test executors), e.g. failures in SchemaDatabaseFileGenerationFailureTest and SchemaUpdateTaskSettersTest, indicating runtime test failures/assertion errors.",
-  "confidence": 0.67,
+  "root_cause": "Multiple unit tests failed during Gradle test execution — the log reports \"[error] 50 errors (50 unique)\" and shows many individual failing test executors (e.g. SchemaDatabaseFileGenerationFailureTest, SchemaUpdateTaskSettersTest).",
+  "confidence": 0.9,
   "relevant_files": [
-    "/home/runner/work/hibernate-orm/hibernate-orm/hibernate-envers/src/t..."
+    "/home/runner/work/hibernate-orm/hibernate-orm/hibernate-envers/src/t...",
+    "/home/runner/work/hibernate-orm/hibernate-orm/hibernate-core/src/tes..."
   ],
   "relevant_tests": [
     "Gradle Test Executor 25 > SchemaDatabaseFileGenerationFailureTest > ...",
     "Gradle Test Executor 12 > SchemaUpdateTaskSettersTest > testHaltOnEr...",
     "Gradle Test Executor 24 > ToOneMultipleFetchesTest > testMultipleFet...",
-    "Gradle Test Executor 29 > ValidationTest > testError1() PASSED"
+    "Gradle Test Executor 12 > SchemaExportTaskSettersTest > testSetHalto...",
+    "Gradle Test Executor 25 > EventListenerDuplicationStrategyTest > tes...",
+    "Gradle Test Executor 15 > NotAuditedRelationTargetNotFoundActionTest...",
+    "Gradle Test Executor 12 > ExceptionUtilTest > testUnsupportedClassVe...",
+    "Gradle Test Executor 24 > SchemaScriptFileGenerationFailureTest > te...",
+    "Gradle Test Executor 24 > StructNestedComponentAssociationErrorTest ..."
   ],
   "evidence": [
     {
-      "quote": "   [error] 50 errors (50 unique)",
-      "reason": "Shows there were 50 test errors reported in the CI run."
+      "quote": "[error] 50 errors (50 unique)",
+      "reason": "Explicit summary line showing the test run reported 50 errors, indicating multiple test failures caused the job to fail."
     },
     {
       "quote": "Gradle Test Executor 25 > SchemaDatabaseFileGenerationFailureTest > ...",
-      "reason": "Example of a specific test class reported as failing during Gradle test execution."
+      "reason": "An individual Gradle test executor line indicating a failing test in the test run."
     },
     {
       "quote": "Gradle Test Executor 12 > SchemaUpdateTaskSettersTest > testHaltOnEr...",
-      "reason": "Another failing test class reported, indicating multiple distinct test failures."
+      "reason": "Another failing test line from the Gradle test executors, showing multiple distinct test failures."
     },
     {
-      "quote": "Gradle Test Executor 29 > ValidationTest > testError1() PASSED",
-      "reason": "Shows these are Gradle/JUnit test results (some tests may pass while others fail), supporting a test-run failure context."
+      "quote": "[warn] 816 warnings (403 unique)",
+      "reason": "Shows a large number of warnings were emitted during the run (not the primary failure, but part of the test output)."
     },
     {
       "quote": "/home/runner/work/hibernate-orm/hibernate-orm/hibernate-envers/src/t...",
-      "reason": "Paths in the log point to source/test files under the repository, confirming failures originate from project tests."
+      "reason": "Paths in the log point to project test/source files referenced during the failing test run."
     }
   ],
-  "suggested_fix": "Open the Gradle test reports (build/test-results) from the failing CI run to see specific assertion failures, then run the failing tests locally with Gradle (e.g., ./gradlew :module:test --tests \"*SchemaDatabaseFileGenerationFailureTest*\") to reproduce and fix the assertions or test setup/environment issues.",
+  "suggested_fix": "Run the failing tests locally to get full stack traces and assertion details, for example: ./gradlew test --tests <FullyQualifiedTestName> --stacktrace (replace <FullyQualifiedTestName> with one of the failing tests such as SchemaDatabaseFileGenerationFailureTest), inspect the test failures and fix the assertions or test fixtures; then re-run CI.",
   "input": {
     "context_path": "results/v2/holdout/rtk-log/hibernate-orm-dbversion-test-batch6-v2-001.txt",
     "context_tokens_estimate": 444
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 551
+    "output_tokens_estimate": 800
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 11448.114,
-    "cache_key": "5ea4aa72dbe05246b53e00793b3d868deebf4ed6ce655d7d44c5383d5be65d54",
+    "runtime_ms": 25002.469,
+    "cache_key": "2fdf00a09288ea74df00f36895770ed016c0d0784bf07e26d24e71be158904eb",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 1747,
+        "completion_tokens": 1958,
+        "total_tokens": 3705,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1280,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

@@ -3,58 +3,71 @@
   "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "The CI job failed because one test timed out, causing the test suite to report 1 failure and Make to exit non\u2011zero.",
-  "root_cause_category": "test_assertion",
-  "root_cause": "A test timed out: the test harness reported \"[FAILED] Timed out after 1.001s.\", resulting in 1 failed test and make exiting with an error.",
-  "confidence": 0.7,
+  "summary": "The test run failed because a spec timed out (test runner reported a timeout after ~1s), causing the CI make target to fail.",
+  "root_cause_category": "timeout_or_oom",
+  "root_cause": "A test/spec timed out during execution: the test runner reported \"[FAILED] Timed out after 1.001s.\", which led to the make target failing.",
+  "confidence": 0.75,
   "relevant_files": [
-    "Makefile:46"
+    "Makefile:46: test.ci"
   ],
   "relevant_tests": [],
   "evidence": [
     {
-      "quote": "  [FAILED] Timed out after 1.001s.",
-      "reason": "Explicit message from the test harness indicating a timeout that caused a failure."
+      "quote": "• [FAILED] [1.014 seconds]",
+      "reason": "Shows a failing spec from the test runner with a short run duration."
     },
     {
-      "quote": "\u2022 [FAILED] [1.014 seconds]",
-      "reason": "Shows a failing test run (ANSI-colored '[FAILED]' marker) immediately before the timeout message."
+      "quote": "[FAILED] Timed out after 1.001s.",
+      "reason": "Explicit message that a test timed out after ~1 second."
     },
     {
-      "quote": "FAIL! -- 1223 Passed | 1 Failed | 0 Pending | 50 Skipped",
-      "reason": "Summarizes that the test suite ended with 1 failed test, matching the timeout failure."
+      "quote": "Summarizing 1 Failure: FAIL! -- 1223 Passed | 1 Failed | 0 Pending | 50 Skipped",
+      "reason": "Summarizes that the overall test suite had exactly one failing test, consistent with the timeout."
     },
     {
       "quote": "make: *** [Makefile:46: test.ci] Error 1",
-      "reason": "Make returned a non-zero exit due to the failing test target, causing the CI job to fail."
+      "reason": "The make target test.ci returned a non-zero exit due to the test failure/timeout, causing the CI job to fail."
     }
   ],
-  "suggested_fix": "Re-run the tests with verbose output to capture which test timed out; increase the test timeout or fix the hung test. After identifying the failing test (enable more detailed logs or run subsets), either adjust the harness timeout or modify the test to complete within the expected time, then re-run CI.",
+  "suggested_fix": "Re-run the CI tests locally with the same target (make test.ci) to reproduce and capture the failing test name; if the test is timing-sensitive, increase the test/spec timeout in the test runner or add retries/controlled waits for the flakey operation. Also consider running the single failing spec in isolation to debug why it exceeds 1s.",
   "input": {
     "context_path": "results/v2/holdout/hybrid-grep-4k-rtk-err-cat-v1/go-redis-pubsub-channel-timeout-batch5-v2-001.txt",
     "context_tokens_estimate": 9625
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 343
+    "output_tokens_estimate": 505
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 21802.712,
-    "cache_key": "161a983cdf6b5deb2f67a04c6356d7b2c40bba666cc394396112f9b5f2e0d28a",
+    "runtime_ms": 20893.645,
+    "cache_key": "c1719d16f8e0f1fe9a257ce14aab329beeeac5d40ad65c6e5dff7b5530607fb6",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 15643,
+        "completion_tokens": 1883,
+        "total_tokens": 17526,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1472,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

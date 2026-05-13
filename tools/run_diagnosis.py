@@ -27,6 +27,7 @@ import argparse
 import hashlib
 import json
 import math
+import os
 import re
 import shlex
 import subprocess
@@ -430,9 +431,73 @@ def build_row(
     return row
 
 
+def load_diagnoser_config(diagnoser_name: str) -> dict | None:
+    """Best-effort load of `configs/diagnosers/<diagnoser>.json`.
+
+    Returns None if the file does not exist or is unreadable. Used to
+    discover (a) `cache_key_env` — env vars whose values affect output and
+    must therefore go into the cache key (Codex 2026-05-12 F2), and (b) a
+    canonical `model.model_name` for cache-hit validation.
+    """
+    cfg_path = ROOT / "configs" / "diagnosers" / f"{diagnoser_name}.json"
+    if not cfg_path.exists():
+        return None
+    try:
+        return json.loads(cfg_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def cache_key_env_values(config: dict | None) -> dict[str, str] | None:
+    """Collect env-var values declared in config.cache_key_env.
+
+    Returns None when no env vars are declared so legacy caches (written
+    before this field existed) keep matching their old keys for diagnosers
+    that don't opt in.
+    """
+    if not isinstance(config, dict):
+        return None
+    keys = config.get("cache_key_env")
+    if not isinstance(keys, list) or not keys:
+        return None
+    return {k: os.environ.get(k, "") for k in sorted(keys)}
+
+
+def cache_hit_is_acceptable(
+    cached_row: dict, config: dict | None
+) -> tuple[bool, str | None]:
+    """Per Codex 2026-05-12 F2: belt-and-suspenders. Even if the cache_key
+    matched, validate that the cached row's `metadata.model_info` matches
+    the expected diagnoser config. Reject otherwise so the runner falls
+    through to a fresh call.
+
+    Returns (True, None) if no validation applies or it passes. Returns
+    (False, reason) on mismatch.
+    """
+    if not isinstance(config, dict):
+        return True, None
+    expected_model = ((config.get("model") or {}).get("model_name")) or None
+    if not expected_model:
+        return True, None
+    cached_meta = cached_row.get("metadata") or {}
+    cached_mi = cached_meta.get("model_info") or {}
+    cached_requested = cached_mi.get("requested_model")
+    if cached_requested is None:
+        # Legacy row predating model_info persistence — accept for
+        # back-compat with v1/v2 caches.
+        return True, None
+    if cached_requested != expected_model:
+        return False, (
+            f"cache row requested_model={cached_requested!r} != "
+            f"config.model.model_name={expected_model!r}"
+        )
+    return True, None
+
+
 def cache_key_for(
     *, case_id: str, context_method: str, context_sha: str, prompt_sha: str,
     provider: str, diagnoser: str, command_str: str | None,
+    env_values: dict[str, str] | None = None,
 ) -> str:
     parts = {
         "case_id": case_id,
@@ -443,6 +508,13 @@ def cache_key_for(
         "diagnoser": diagnoser,
         "command": command_str or "",
     }
+    # Per Codex 2026-05-12 F2: when the diagnoser config opts in via
+    # `cache_key_env`, fold those env-var values into the key so changing
+    # CILOGBENCH_OPENAI_MODEL (or BASE_URL, etc.) does NOT replay a stale
+    # row from a different model/backend. Diagnosers without opt-in retain
+    # their legacy key for back-compat.
+    if env_values:
+        parts["env"] = env_values
     norm = json.dumps(parts, sort_keys=True, separators=(",", ":"),
                       ensure_ascii=False)
     return sha256_text(norm)
@@ -459,6 +531,12 @@ def run(
         return 1
     prompt_text = prompt_path.read_text(encoding="utf-8")
     prompt_sha = sha256_text(prompt_text)
+
+    # Per Codex 2026-05-12 F2: load the diagnoser config to discover (a)
+    # env-var-driven cache_key contributions, and (b) the canonical
+    # requested_model for cache-hit validation.
+    diagnoser_config = load_diagnoser_config(diagnoser_name)
+    key_env_values = cache_key_env_values(diagnoser_config)
 
     # Resolve the set of context methods to run against.
     if context_method == "all":
@@ -543,7 +621,7 @@ def run(
                 case_id=case_id, context_method=method,
                 context_sha=ctx_sha, prompt_sha=prompt_sha,
                 provider=diagnoser_provider, diagnoser=diagnoser_name,
-                command_str=command_str,
+                command_str=command_str, env_values=key_env_values,
             )
             cache_path = cache_dir / f"{key}.json"
             cached_row: dict | None = None
@@ -555,7 +633,25 @@ def run(
                     # the old layout as a miss so the new row gets built and
                     # re-cached.
                     if isinstance(cached, dict) and "row" in cached:
-                        cached_row = cached["row"]
+                        candidate = cached["row"]
+                        ok, reason = cache_hit_is_acceptable(
+                            candidate, diagnoser_config
+                        )
+                        if ok:
+                            cached_row = candidate
+                        else:
+                            # Per Codex 2026-05-12 F2: log and fall through
+                            # to a fresh provider call. The on-disk cache
+                            # file is left in place; the fresh row will
+                            # overwrite it under the SAME key (the env-var
+                            # change should already have produced a
+                            # different key — this branch handles the case
+                            # where env-driven keying isn't sufficient,
+                            # e.g. the config changed but the env did not).
+                            print(
+                                f"  cache_reject {method}/{case_id}: {reason}",
+                                file=sys.stderr,
+                            )
                 except json.JSONDecodeError:
                     cached_row = None
 

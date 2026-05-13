@@ -3,56 +3,77 @@
   "context_method": "rtk-log",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "Integration tests timed out during the job; Docker reported missing containers and an invalid filter which likely prevented test completion or cleanup.",
+  "summary": "The integration test run timed out; logs show the test runner reporting a timeout and Docker errors about missing containers and an invalid filter, causing the job to fail.",
   "root_cause_category": "timeout_or_oom",
-  "root_cause": "The integration test run timed out for the test runner ([dubbo-samples-test-11137]), while Docker reported container lookup failures and an invalid filter, preventing the tests from completing.",
-  "confidence": 0.78,
+  "root_cause": "The test runner timed out: \"[dubbo-samples-test-11137] :ErrorMsg: Run tests timeout\".",
+  "confidence": 0.72,
   "relevant_files": [
     "/home/runner/work/dubbo/dubbo/test/dubbo-test-runner/src/m..."
   ],
   "relevant_tests": [
-    "[dubbo-samples-test-11137]"
+    "[dubbo-samples-test-11137] :ErrorMsg: Run tests timeout"
   ],
   "evidence": [
     {
       "quote": "[dubbo-samples-test-11137] :ErrorMsg: Run tests timeout",
-      "reason": "Explicit error message indicating the test run timed out for the named test runner."
+      "reason": "Direct log message indicating the tests exceeded the allowed time and timed out."
     },
     {
       "quote": "Error response from daemon: No such container: dubbo-samples-test-11...",
-      "reason": "Docker reported that a referenced container could not be found, which can interrupt test execution or cleanup."
+      "reason": "Docker reported missing containers, which can cause test runs to fail or hang when they rely on those containers."
     },
     {
       "quote": "Error response from daemon: invalid filter 'reference'",
-      "reason": "A Docker command failed due to an invalid filter, suggesting CLI/daemon incompatibility or malformed command usage during CI."
+      "reason": "A Docker error about an invalid filter appears in the logs and may indicate a problem with Docker commands used by the test infrastructure."
+    },
+    {
+      "quote": " ^[[33m1 warning found (use docker --debug to expand):",
+      "reason": "Log suggests enabling Docker debug to get more details, supporting that Docker-level issues contributed to the failure."
+    },
+    {
+      "quote": "[error] 71 errors (21 unique)",
+      "reason": "The log shows many errors overall, consistent with a failing CI job; combined with the timeout message this points to the test timeout as the proximate failure."
     }
   ],
-  "suggested_fix": "Increase or investigate the integration test timeout for the dubbo test runner and re-run; inspect the test-runner Docker commands to fix the 'invalid filter \"reference\"' error and ensure referenced containers (e.g. dubbo-samples-test-11...) are created/available before operations.",
+  "suggested_fix": "Investigate and address the test timeout: increase the integration test timeout or optimize the tests. Also inspect Docker issues (containers reported as missing and the \"invalid filter 'reference'\" error). Re-run with Docker debug enabled (as the log suggests: \"use docker --debug\") to get detailed Docker logs and correct any invalid Docker filter usage.",
   "input": {
     "context_path": "results/v2/holdout/rtk-log/dubbo-samples-test-timeout-batch6-v2-001.txt",
     "context_tokens_estimate": 396
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 370
+    "output_tokens_estimate": 633
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 15825.984,
-    "cache_key": "26abf11e259f03b203f8c4a91dffadb3b43ad49d2732fabeba1fe1366ef0d0a0",
+    "runtime_ms": 19280.271,
+    "cache_key": "bb777ad04dc061edca74420d6b0bf6003c7a0e2ec67033c099b87f8098c17587",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 1772,
+        "completion_tokens": 1648,
+        "total_tokens": 3420,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1152,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

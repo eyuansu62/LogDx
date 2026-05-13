@@ -3,62 +3,79 @@
   "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "The test suite test_tcl failed (2 failures) during the test run; re-running the failed tests in verbose mode still produced a failure, causing the overall CI job to fail.",
+  "summary": "The test run failed because the test_tcl test module had two failing tests; the suite re-ran the failed tests but they failed again, causing the job to be marked as FAILURE.",
   "root_cause_category": "test_assertion",
-  "root_cause": "The test module test_tcl failed with two test failures; a re-run in verbose mode did not fix them (one test failed again), causing the test run to be marked FAILED.",
-  "confidence": 0.75,
-  "relevant_files": [],
+  "root_cause": "Two tests in the test_tcl test module failed (test_tcl failed (2 failures)), causing the overall test run to fail.",
+  "confidence": 0.65,
+  "relevant_files": [
+    "D:\\a\\cpython\\cpython\\PCbuild\\amd64\\python_d.exe",
+    "D:\\a\\cpython\\cpython\\Python\\generated_cases.c.h"
+  ],
   "relevant_tests": [
-    "test.test_tcl"
+    "test_tcl",
+    "test.test_tcl.TclTest.testCallException"
   ],
   "evidence": [
     {
-      "quote": "test_tcl failed (2 failures)",
-      "reason": "Shows the specific test module that failed and the number of failures."
+      "quote": "0:13:10 load avg: 7.29 [377/505/1] ^[[1;31m^[[1;31mtest_tcl failed (2 failures)^[[0m^[[0m -- running (3): test.test_concurrent_futures.test_shutdown (34.3 sec), test_compileall (1 min 33 sec), test_pickle (59.4 sec)",
+      "reason": "Shows the test_tcl module failed with 2 failures during the run."
     },
     {
-      "quote": "Re-running 1 failed tests in verbose mode in subprocesses",
-      "reason": "Indicates the test harness attempted to re-run the failing test(s) in verbose mode."
-    },
-    {
-      "quote": "1 test failed again:",
-      "reason": "Shows that the re-run did not resolve the failure and at least one test remained failing."
+      "quote": "FAILED (^[[1;31mfailures=2^[[0m, ^[[33mskipped=3^[[0m)",
+      "reason": "Indicates there were 2 failures (and some skips) reported for the failing test run."
     },
     {
       "quote": "+ 'D:\\a\\cpython\\cpython\\PCbuild\\amd64\\python_d.exe' -u -W error -bb -E -m test --fast-ci --fast-ci --dont-add-python-opts",
-      "reason": "Shows the command used to run the test suite, confirming this was a test-time runtime failure rather than a compile error."
+      "reason": "Shows the exact test command/executable that ran the test suite."
     },
     {
-      "quote": "Total tests: run=50,658 failures=4 skipped=3,535",
-      "reason": "Confirms the test run ended with failures and overall FAILED status."
+      "quote": "Re-running 1 failed tests in verbose mode in subprocesses",
+      "reason": "Shows the harness attempted to re-run the failing test(s) in verbose mode."
+    },
+    {
+      "quote": "Total tests: run=50,658 ^[[31mfailures=4^[[0m ^[[33mskipped=3,535^[[0m",
+      "reason": "Shows the overall test summary where failures are counted (the job ended with failures)."
     }
   ],
-  "suggested_fix": "Run the failing test module in verbose mode locally to capture the failing assertion and traceback (e.g. python -m test test_tcl -v or use the same python_d.exe invocation shown in the log), inspect the verbose output for the exact failing test and assertion, and fix the test or underlying code accordingly.",
+  "suggested_fix": "Run the failing test module in verbose mode to capture the full traceback and reproduce locally (for example, run D:\\a\\cpython\\cpython\\PCbuild\\amd64\\python_d.exe -m test test_tcl -v), inspect the failing test tracebacks to identify and fix the failing assertions or underlying Tcl-related implementation.",
   "input": {
     "context_path": "results/v2/stress/hybrid-grep-4k-rtk-err-cat-v1/cpython-tcl-windows-matrix-v2-001.txt",
     "context_tokens_estimate": 7516
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 422
+    "output_tokens_estimate": 644
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 15219.079,
-    "cache_key": "c4cd6989871ce5e7ecf455c07b6ffa279d7364894f081ea652f74762ebaf3133",
+    "runtime_ms": 29840.34,
+    "cache_key": "2a1fbbb54e442b7b8f6c4f994c7a7c620cc5b7f535b875bec86a8c1926442d02",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. Backfilled from known run-time env (CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096). resolved_model and system_fingerprint not recoverable from original API responses."
+      "usage": {
+        "prompt_tokens": 10736,
+        "completion_tokens": 2546,
+        "total_tokens": 13282,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1920,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

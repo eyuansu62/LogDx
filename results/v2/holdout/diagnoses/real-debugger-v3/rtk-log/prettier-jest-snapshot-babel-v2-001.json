@@ -3,61 +3,83 @@
   "context_method": "rtk-log",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "Jest tests failed: several tests that expected a rejected promise to match a snapshot did not, and a Babel parse SyntaxError was thrown during tests causing the job to exit with code 1.",
+  "summary": "Jest test run failed: many test assertions failed (snapshot/expect mismatches) and some tests raised a Babel SyntaxError while parsing, causing the job to exit with code 1.",
   "root_cause_category": "test_assertion",
-  "root_cause": "Jest assertion failures: tests used expect(...).rejects.toThrowErrorMatchingSnapshot() but the received errors did not match the expected snapshots; a Babel parser SyntaxError ('A parameter initializer is only allowed in a functi...') was produced during test execution.",
-  "confidence": 0.7,
+  "root_cause": "Jest test assertions failed (e.g. rejects.toThrowErrorMatchingSnapshot did not match) and a Babel parse SyntaxError occurred ('A parameter initializer is only allowed in a function') during tests, notably in tests/format/js/_errors_/import/format.test.js.",
+  "confidence": 0.64,
   "relevant_files": [
     "tests/format/js/_errors_/import/format.test.js",
     "tests/format/typescript/_errors_/modifiers/format.test.js"
   ],
   "relevant_tests": [
-    "tests/format/js/_errors_/import/format.test.js"
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/_errors_/modifiers/format.test.js"
   ],
   "evidence": [
     {
+      "quote": "[error] 141 errors (8 unique)",
+      "reason": "Shows the test run produced many errors, indicating widespread test failures."
+    },
+    {
       "quote": "Error: expect(received).rejects.toThrowErrorMatchingSnapshot()",
-      "reason": "Shows Jest assertion for rejects.toThrowErrorMatchingSnapshot failed."
+      "reason": "Directly shows a Jest assertion failure where an expected rejection/ snapshot match did not occur."
     },
     {
       "quote": "SyntaxError: A parameter initializer is only allowed in a functi...",
-      "reason": "A Babel parse SyntaxError was thrown during test execution, indicating the runtime produced a parsing error."
+      "reason": "Shows a Babel parse SyntaxError occurred during testing, which would cause test failure for code parsing/formatting cases."
     },
     {
       "quote": "FAIL tests/format/js/_errors_/import/format.test.js",
       "reason": "Identifies a specific test file that failed."
     },
     {
-      "quote": "at createBabelParseError (file:///home/runner/work/prettier/...",
-      "reason": "Shows the SyntaxError originated from Babel parsing code used by the tests."
+      "quote": "PASS tests/format/typescript/_errors_/modifiers/format.test.js",
+      "reason": "Shows other related tests ran and some passed; helps localize failures to specific test files."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the job failed due to the test run returning a non-zero exit code."
     }
   ],
-  "suggested_fix": "Run the failing tests locally (e.g. jest tests/format/js/_errors_/import/format.test.js), inspect the actual error output from createBabelParseError. If the error output changed, update the snapshot(s) with jest -u or fix the parser/code so the thrown error matches the expected snapshot.",
+  "suggested_fix": "Run the failing test(s) locally (start with tests/format/js/_errors_/import/format.test.js) to reproduce the failure, inspect the received output vs snapshot for the 'rejects.toThrowErrorMatchingSnapshot' mismatch, and examine the test fixture or parser input that triggered the Babel error 'A parameter initializer is only allowed in a function'. Then either fix the parser/fixture causing the SyntaxError or update the snapshot/expectation if the new behavior is correct.",
   "input": {
     "context_path": "results/v2/holdout/rtk-log/prettier-jest-snapshot-babel-v2-001.txt",
     "context_tokens_estimate": 362
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 432
+    "output_tokens_estimate": 722
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 12899.784,
-    "cache_key": "dc337cde99691a225bf798447c0d0b60cabb508012dcc9da5f3a228c47a98f7f",
+    "runtime_ms": 14254.04,
+    "cache_key": "14015ad7093150e72d4aa04528411392fa0cc8a880fb626806591917586f7fa4",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 1664,
+        "completion_tokens": 1616,
+        "total_tokens": 3280,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1024,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

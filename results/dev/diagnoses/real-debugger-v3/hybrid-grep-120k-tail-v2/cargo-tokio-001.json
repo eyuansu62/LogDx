@@ -3,17 +3,15 @@
   "context_method": "hybrid-grep-120k-tail-v2",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "A trybuild compile-fail test failed because the compiler diagnostics produced by the current build do not match the test's expected diagnostics for tests/fail/macros_type_mismatch.rs.",
+  "summary": "A trybuild compile-fail test failed because the actual compiler diagnostics for tests/fail/macros_type_mismatch.rs do not match the expected output, causing the tests-build::macros::compile_fail_full test to fail.",
   "root_cause_category": "test_assertion",
-  "root_cause": "The trybuild test 'compile_fail_full' failed because the expected compiler error output in the test did not match the actual compiler diagnostics (the EXPECTED diagnostics (e.g. E0308) differ from the ACTUAL output (e.g. E0271) for tests/fail/macros_type_mismatch.rs).",
-  "confidence": 0.85,
+  "root_cause": "The trybuild-based test 'compile_fail_full' failed because the expected stderr for tests/fail/macros_type_mismatch.rs did not match the compiler's actual diagnostics; trybuild panicked when checking expected vs actual output.",
+  "confidence": 0.86,
   "relevant_files": [
-    "/home/runner/work/tokio/tokio/tests-build",
     "tests/fail/macros_type_mismatch.rs"
   ],
   "relevant_tests": [
-    "tests-build::macros::compile_fail_full",
-    "compile_fail_full"
+    "tests-build::macros::compile_fail_full"
   ],
   "evidence": [
     {
@@ -21,60 +19,65 @@
       "reason": "Shows the specific test that failed."
     },
     {
-      "quote": "EXPECTED:",
-      "reason": "Indicates the test includes an expected compiler-diagnostic block that trybuild compares against actual output."
+      "quote": " --> tests/fail/macros_type_mismatch.rs:5:5",
+      "reason": "Indicates the failing compile-fail input file and the location referenced in the expected diagnostics."
     },
     {
-      "quote": "error[E0308]: mismatched types",
-      "reason": "An example of the diagnostics the test expected (E0308 mismatched types)."
+      "quote": "EXPECTED:",
+      "reason": "The log includes an EXPECTED block showing the diagnostics the test expected."
     },
     {
       "quote": "ACTUAL OUTPUT:",
-      "reason": "Marks the beginning of the compiler output that trybuild produced at test time."
+      "reason": "The log includes an ACTUAL OUTPUT block, showing trybuild compared expected vs actual diagnostics and found a mismatch."
     },
     {
-      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
-      "reason": "An example of the actual compiler diagnostic that differs from the expected output for tests/fail/macros_type_mismatch.rs."
+      "quote": "error: thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13",
+      "reason": "trybuild panicked during the test run, indicating its assertion (expected vs actual output) failed."
     },
     {
-      "quote": "thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13:",
-      "reason": "Shows trybuild detected the mismatch and panicked, causing the test to fail."
-    },
-    {
-      "quote": "Summary [   9.876s] 396 tests run: 395 passed, 1 failed, 1 skipped",
-      "reason": "Summarizes the test run and confirms there was exactly one failing test."
-    },
-    {
-      "quote": "##[error]Process completed with exit code 100.",
-      "reason": "The job exited non-zero due to the test failure."
+      "quote": "1 of 10 tests failed",
+      "reason": "Confirms that trybuild reported a failing test case among the checked compile-fail tests."
     }
   ],
-  "suggested_fix": "Update the trybuild test's expected diagnostics for tests/fail/macros_type_mismatch.rs to match the current compiler output (or update the test source so diagnostics match the expected output), then re-run the test suite. Re-run the failing trybuild test locally to capture the actual stderr and update the expected output accordingly.",
+  "suggested_fix": "Update the trybuild expected output for the failing case to match the current compiler diagnostics (re-run the failing trybuild test locally and accept/update the .stderr output), or modify the test/macro code so the produced diagnostics match the existing expected output. In practice: run the failing test locally (cargo test for tests-build), inspect the ACTUAL OUTPUT shown by trybuild, and commit the updated expected output files.",
   "input": {
     "context_path": "results/dev/hybrid-grep-120k-tail-v2/cargo-tokio-001.txt",
     "context_tokens_estimate": 43412
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 615
+    "output_tokens_estimate": 673
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 22585.571,
-    "cache_key": "f109b606b27e765ba23eb32afc50d707783a15df2483f762400fb574ed489758",
+    "runtime_ms": 23379.309,
+    "cache_key": "dba3f0d06cf972d8a6e144e3fdf022a84eb087221c5b78d55f15bde51190df4a",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 92725,
+        "completion_tokens": 1637,
+        "total_tokens": 94362,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1088,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

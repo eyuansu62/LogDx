@@ -3,60 +3,75 @@
   "context_method": "llm-summary-v1-mock",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "The test run ended with exit code 1 while many Jest assertions invoking toThrowErrorMatchingSnapshot and parser error creation (createBabelParseError) appear in the logs.",
+  "summary": "The CI run exited with code 1 after Jest assertions using toThrowErrorMatchingSnapshot encountered thrown errors that trace into the Babel parse error creation code.",
   "root_cause_category": "test_assertion",
-  "root_cause": "Jest snapshot-style assertions (toThrowErrorMatchingSnapshot) were executed alongside errors created by createBabelParseError, and the test run terminated with a non-zero exit code.",
-  "confidence": 0.46,
+  "root_cause": "Jest assertions using expect.toThrowErrorMatchingSnapshot failed because Babel parse errors were thrown (stack traces include createBabelParseError), leading to the test run exiting with code 1.",
+  "confidence": 0.6,
   "relevant_files": [
-    "/home/runner/work/prettier/prettier/node_modules/expect/build/index.js",
-    "file:///home/runner/work/prettier/prettier/src/common/parser-create-error.js",
-    "file:///home/runner/work/prettier/prettier/src/language-js/parse/utilities/create-babel-parse-error.js"
+    "src/common/parser-create-error.js",
+    "src/language-js/parse/utilities/create-babel-parse-error.js",
+    "/home/runner/work/prettier/prettier/node_modules/expect/build/index.js"
   ],
-  "relevant_tests": [],
+  "relevant_tests": [
+    "Object.toThrowErrorMatchingSnapshot"
+  ],
   "evidence": [
     {
       "quote": "at Object.toThrowErrorMatchingSnapshot (/home/runner/work/prettier/prettier/node_modules/expect/build/index.js:2155:20)",
-      "reason": "Shows Jest assertions using toThrowErrorMatchingSnapshot were invoked (snapshot-style assertion points)."
+      "reason": "Shows Jest assertions using toThrowErrorMatchingSnapshot are present in the failing stack traces, indicating a snapshot-based assertion was involved."
     },
     {
       "quote": "at createBabelParseError (file:///home/runner/work/prettier/prettier/src/language-js/parse/utilities/create-babel-parse-error.js:33:10)",
-      "reason": "Indicates parser errors were created by createBabelParseError during the test run, which are present in the stack traces."
+      "reason": "Indicates the thrown error originated from Babel parsing utilities, implicating a parse error during tests."
     },
     {
-      "quote": "YN0007: \u2502 esbuild@npm:0.28.0 must be built because it never has been before or the last one failed",
-      "reason": "Shows native/additional dependencies required build steps during installation, which may be relevant to test environment setup (present in logs)."
+      "quote": "at createError (file:///home/runner/work/prettier/prettier/src/common/parser-create-error.js:5:17)",
+      "reason": "Further shows parser error creation on the stack, supporting that parser/Babel errors triggered the test assertions."
     },
     {
       "quote": "##[error]Process completed with exit code 1.",
-      "reason": "Confirms the CI job failed with a non-zero exit code."
+      "reason": "Confirms the job failed (non-zero exit) after the test-related errors appeared in the logs."
     }
   ],
-  "suggested_fix": "Run the failing Jest tests locally to inspect snapshot diffs and the thrown errors; if snapshots are expected to change, update them (jest -u or equivalent). If the thrown parser errors are unexpected, investigate and fix the parser (create-babel-parse-error.js / parser-create-error.js) so the assertions pass.",
+  "suggested_fix": "Reproduce the failing tests locally (run the Jest suite) to see which toThrowErrorMatchingSnapshot assertions fail. Inspect the error produced by src/language-js/parse/utilities/create-babel-parse-error.js and src/common/parser-create-error.js. If the error output intentionally changed, update the snapshots with jest -u; otherwise fix the parser/Babel behavior so the thrown errors match the expected snapshots.",
   "input": {
     "context_path": "results/v2/holdout/llm-summary-v1-mock/prettier-jest-snapshot-babel-v2-001.txt",
     "context_tokens_estimate": 2665
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 507
+    "output_tokens_estimate": 682
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 20244.303,
-    "cache_key": "7d5a34d931540dcdefff2e9f7b17d1cd7758d5fc7de8dafcf196139325b4ab72",
+    "runtime_ms": 18841.703,
+    "cache_key": "54bda584a01ac2cf8bcb0c0cf4bdca47f88185195fca5f30079aaf8a5852350f",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 4899,
+        "completion_tokens": 1556,
+        "total_tokens": 6455,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1024,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

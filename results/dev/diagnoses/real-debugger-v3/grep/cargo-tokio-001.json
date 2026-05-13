@@ -3,16 +3,17 @@
   "context_method": "grep",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "A trybuild test (compile_fail_full) failed because the actual compiler diagnostics for tests/fail/macros_type_mismatch.rs do not match the expected output.",
+  "summary": "A trybuild-based compile-fail test failed because the actual compiler diagnostics for tests/fail/macros_type_mismatch.rs do not match the expected stderr; the test tests-build::macros::compile_fail_full failed.",
   "root_cause_category": "test_assertion",
-  "root_cause": "The trybuild test \"compile_fail_full\" failed because trybuild's expected compile-fail output differs from the compiler's actual diagnostics (an unexpected error E0271 about a future resolving to a different type appears in the ACTUAL OUTPUT for tests/fail/macros_type_mismatch.rs).",
-  "confidence": 0.9,
+  "root_cause": "The trybuild test 'compile_fail_full' failed because the actual compiler output (errors such as 'error[E0271]: expected ... found Result<(), _>') differs from the expected output (which lists 'error[E0308]: mismatched types' and related diagnostics) for tests/fail/macros_type_mismatch.rs.",
+  "confidence": 0.82,
   "relevant_files": [
-    "tests/fail/macros_type_mismatch.rs"
+    "tests/fail/macros_type_mismatch.rs",
+    "/home/runner/work/tokio/tokio/tests-build"
   ],
   "relevant_tests": [
     "compile_fail_full",
-    "tests-build::macros::compile_fail_full"
+    "tests-build::macros compile_fail_full"
   ],
   "evidence": [
     {
@@ -20,60 +21,61 @@
       "reason": "Shows the specific test that failed."
     },
     {
-      "quote": "EXPECTED:",
-      "reason": "Indicates trybuild has an expected diagnostics block that the test compares against."
+      "quote": "EXPECTED:\n    error[E0308]: mismatched types",
+      "reason": "The test's expected compiler diagnostics include E0308 mismatched types."
     },
     {
-      "quote": "ACTUAL OUTPUT:",
-      "reason": "Shows trybuild printed the actual compiler diagnostics, which are compared to the expected output."
-    },
-    {
-      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
-      "reason": "This diagnostic appears in the ACTUAL OUTPUT but is not part of the EXPECTED block, demonstrating the mismatch that caused trybuild to fail."
-    },
-    {
-      "quote": "1 of 10 tests failed",
-      "reason": "Confirms that one trybuild test failed overall."
+      "quote": "ACTUAL OUTPUT:\n    error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
+      "reason": "The actual compiler diagnostics differ (E0271 about async block output) from the expected output."
     },
     {
       "quote": "thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13:",
-      "reason": "trybuild panicked while verifying tests, indicating the assertion that expected and actual outputs match failed."
+      "reason": "trybuild panicked when comparing expected vs actual output, indicating a trybuild assertion failure."
     },
     {
-      "quote": "error: test run failed",
-      "reason": "Final summary indicating the test suite failed due to the mismatch."
-    },
-    {
-      "quote": "##[error]Process completed with exit code 100.",
-      "reason": "CI job exited with failure because of the failing test."
+      "quote": "Summary [   9.876s] 396 tests run: 395 passed, 1 failed, 1 skipped",
+      "reason": "Confirms that exactly one test failed and the rest passed."
     }
   ],
-  "suggested_fix": "Update the trybuild expected output to match the current compiler diagnostics, or adjust the test source so the produced diagnostics match the expected output. Concretely, regenerate or update the expected output used by trybuild for tests/fail/macros_type_mismatch.rs (or modify the test) so that the ACTUAL OUTPUT shown by the failure matches the EXPECTED output.",
+  "suggested_fix": "Either update the trybuild expected stderr snapshot for tests/fail/macros_type_mismatch.rs to match the current compiler diagnostics, or change the code/macro so the produced diagnostics match the existing expected output. Re-run the failing trybuild tests locally and commit the updated expected output (i.e. regenerate the trybuild .stderr expectations) if the new diagnostics are intended.",
   "input": {
     "context_path": "results/dev/grep/cargo-tokio-001.txt",
     "context_tokens_estimate": 43368
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 599
+    "output_tokens_estimate": 697
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 22256.994,
-    "cache_key": "28947e0da62774a41af69cac74b766b34a8bea7a3597a814329746d0b791ca82",
+    "runtime_ms": 44413.918,
+    "cache_key": "6088fbecc9e66e2d8269ba7f33f9e938bb9cc42cf14a98554e7e40a28aa241e9",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 92680,
+        "completion_tokens": 2138,
+        "total_tokens": 94818,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1536,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

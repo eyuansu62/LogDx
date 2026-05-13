@@ -3,56 +3,69 @@
   "context_method": "rtk-err-cat",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "The CI job failed after dependency resolution warnings and terminated with a non-zero exit code; the provided log ends with \"error Command failed with exit code 1.\" but no specific failing command or prettier error is shown.",
+  "summary": "The job failed with a non-zero exit code after many dependency/peer warnings; the logs do not show a specific error message or failing test to identify the cause.",
   "root_cause_category": "unknown",
   "root_cause": "unknown",
-  "confidence": 0.15,
+  "confidence": 0.18,
   "relevant_files": [],
   "relevant_tests": [],
   "evidence": [
     {
       "quote": "warning Resolution field \"jsdom@22.1.0\" is incompatible with requested version \"jsdom@^20.0.0\"",
-      "reason": "Shows dependency resolution warnings during install which may be related to the failure context."
+      "reason": "Shows dependency/peer-resolution warnings were emitted during the run."
     },
     {
       "quote": "warning \" > eslint-plugin-ft-flow@2.0.3\" has unmet peer dependency \"@babel/eslint-parser@^7.12.0\".",
-      "reason": "Additional peer dependency warnings indicate multiple dependency inconsistencies in the environment."
+      "reason": "Additional peer dependency warnings indicate package resolution issues but do not show a fatal error."
     },
     {
-      "quote": "warning \" > eslint-plugin-react@6.10.3\" has incorrect peer dependency \"eslint@^2.0.0 || ^3.0.0\".",
-      "reason": "More incorrect peer dependency warnings further demonstrate dependency mismatches during setup."
+      "quote": "warning \" > react-server-dom-webpack@19.3.0\" has unmet peer dependency \"webpack@^5.59.0\".",
+      "reason": "More unmet peer dependency warnings; the log contains many such warnings but no explicit failure reason."
     },
     {
       "quote": "error Command failed with exit code 1.",
-      "reason": "The log ends with a generic error showing a command exited with a non-zero status, but the context does not include which command or a stack trace to identify the root cause."
+      "reason": "Final line indicates the process exited with a non-zero status, but the context does not include the specific failing command or error details."
     }
   ],
-  "suggested_fix": "Re-run the failing job or the npm/yarn command with full/verbose logging to capture the specific failing command and error output (e.g., yarn --verbose or npm run <script> --loglevel verbose), then address the shown error; if dependency warnings are relevant, ensure peer dependencies and resolutions match expected versions.",
+  "suggested_fix": "",
   "input": {
     "context_path": "results/dev/rtk-err-cat/lint-react-001.txt",
     "context_tokens_estimate": 2217
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 411
+    "output_tokens_estimate": 449
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 10985.857,
-    "cache_key": "d093323fcff813d5cf3ec457717d047b94833d1fdfe0003879c5874211fdcc3f",
+    "runtime_ms": 12770.305,
+    "cache_key": "1ae4c10bf789e04ac9648792a562ddfad37c4da8df9334ddec7d6b4a005de2f5",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 4573,
+        "completion_tokens": 783,
+        "total_tokens": 5356,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 448,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

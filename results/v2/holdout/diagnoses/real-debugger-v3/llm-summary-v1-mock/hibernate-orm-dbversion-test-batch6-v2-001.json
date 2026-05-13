@@ -3,64 +3,82 @@
   "context_method": "llm-summary-v1-mock",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "The CI run failed because a JUnit assertion failed during tests (AssertFalse), causing Gradle to exit with code 1.",
+  "summary": "The Gradle job failed because a JUnit assertion failed during tests (a call to assertFalse triggered an AssertionFailure), causing the process to exit with code 1. There are also multiple deprecation/removal warnings about FailureExpected in test helper classes.",
   "root_cause_category": "test_assertion",
-  "root_cause": "A JUnit assertion failed: a call to AssertFalse.assertFalse triggered an AssertionFailure which caused the Gradle test run to fail and the job to exit with code 1.",
-  "confidence": 0.68,
+  "root_cause": "A JUnit assertion failed: org.junit.jupiter.api.AssertFalse.assertFalse was invoked and an AssertionFailure was built/thrown, causing the Gradle test run to fail and the process to exit with code 1.",
+  "confidence": 0.7,
   "relevant_files": [
-    "/home/runner/work/hibernate-orm/hibernate-orm/hibernate-testing/src/main/java/org/hibernate/testing/junit4/ExtendedFrameworkMethod.java",
-    "/home/runner/work/hibernate-orm/hibernate-orm/hibernate-testing/src/main/java/org/hibernate/testing/junit4/Helper.java",
-    "/home/runner/work/hibernate-orm/hibernate-orm/hibernate-testing/src/main/java/org/hibernate/testing/junit4/BaseNonConfigCoreFunctionalTestCase.java"
+    "/home/runner/work/hibernate-orm/hibernate-orm/hibernate-testing/src/main/java/org/hibernate/testing/junit4/ExtendedFrameworkMethod.java:23",
+    "/home/runner/work/hibernate-orm/hibernate-orm/hibernate-testing/src/main/java/org/hibernate/testing/junit4/BaseNonConfigCoreFunctionalTestCase.java:421",
+    "/home/runner/work/hibernate-orm/hibernate-orm/hibernate-testing/src/main/java/org/hibernate/testing/junit4/Helper.java:192",
+    "/home/runner/work/hibernate-orm/hibernate-orm/hibernate-testing/src/main/java/org/hibernate/testing/junit4/CustomRunner.java:187"
   ],
   "relevant_tests": [],
   "evidence": [
     {
       "quote": "at app//org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:158)",
-      "reason": "Shows a JUnit assertion failure was constructed (part of the failure stack)."
+      "reason": "Shows JUnit constructed an AssertionFailure (the test framework is throwing an assertion error)."
     },
     {
       "quote": "at app//org.junit.jupiter.api.AssertFalse.assertFalse(AssertFalse.java:41)",
-      "reason": "Directly indicates an AssertFalse assertion was invoked and failed."
+      "reason": "Direct reference to AssertFalse.assertFalse indicates a failing assertFalse call was involved in the failure."
+    },
+    {
+      "quote": "at app//org.junit.jupiter.api.Assertions.assertFalse(Assertions.java:255)",
+      "reason": "Confirms the assertion failure originates from JUnit's assertFalse assertion helper."
     },
     {
       "quote": "##[error]Process completed with exit code 1.",
-      "reason": "Confirms the CI job ended with a failure exit code following the test run."
+      "reason": "The CI job terminated with a non-zero exit code, consistent with a test failure causing the job to fail."
+    },
+    {
+      "quote": "/home/runner/work/hibernate-orm/hibernate-orm/hibernate-testing/src/main/java/org/hibernate/testing/junit4/ExtendedFrameworkMethod.java:23: warning: [removal] FailureExpec…",
+      "reason": "There are multiple compiler warnings about a removed/deprecated FailureExpected API in test support code; these are warnings rather than the direct failure but are relevant context."
     },
     {
       "quote": "Gradle Test Executor 12 > Hbm2DDLExporterTaskTest > testSetHaltonerror() PASSED",
-      "reason": "Shows the Gradle test executor was running tests (some tests passed), indicating the failure came from a test assertion rather than a global compile error."
-    },
-    {
-      "quote": "/home/runner/work/hibernate-orm/hibernate-orm/hibernate-testing/src/main/java/org/hibernate/testing/junit4/ExtendedFrameworkMethod.java:23: warning: [removal] FailureExpec\u2026",
-      "reason": "Compilation emitted removal/deprecation warnings for FailureExpected, but these are warnings (not errors); useful context that compilation proceeded to tests."
+      "reason": "Shows that tests were executed under Gradle and some tests passed, indicating the failure is a runtime test assertion (not a compile error)."
     }
   ],
-  "suggested_fix": "Re-run the Gradle tests with more verbose output to identify the failing test and full stack trace (for example: ./gradlew test --info --stacktrace or run the failing test pattern with --tests). Inspect the assertion that uses AssertFalse.assertFalse in the reported test and fix the test expectation or the code under test so the assertion no longer fails.",
+  "suggested_fix": "Locate the failing test by inspecting the full test output/stacktrace in the CI log or re-run the tests locally (Gradle) with full stacktrace/verbosity to identify which test triggered AssertFalse; then update the test expectation or fix the code so the asserted condition is false. Also review the FailureExpected deprecation warnings in the listed test helper files and address if needed.",
   "input": {
     "context_path": "results/v2/holdout/llm-summary-v1-mock/hibernate-orm-dbversion-test-batch6-v2-001.txt",
     "context_tokens_estimate": 3321
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 589
+    "output_tokens_estimate": 899
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 17118.128,
-    "cache_key": "4923bacc4012a2b6d09b0d0773d158ca45357681f4d447d909478b89a724e069",
+    "runtime_ms": 19228.635,
+    "cache_key": "bdf1ef6f7f0e044dfce1319aca52f211f4f9cd9224900c3a49c49bba054607dd",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 5504,
+        "completion_tokens": 1632,
+        "total_tokens": 7136,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 896,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

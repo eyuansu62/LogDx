@@ -3,55 +3,61 @@
   "context_method": "rtk-err-cat",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "CI ran many tests successfully, but the job failed late when the 'format' recipe exited with code 127, causing the 'gen-all' recipe to fail.",
-  "root_cause_category": "unknown",
-  "root_cause": "unknown",
-  "confidence": 0.18,
+  "summary": "The CI run failed because the build recipe 'format' exited with code 127, which then caused the 'gen-all' recipe to fail.",
+  "root_cause_category": "dependency_install",
+  "root_cause": "The recipe `format` failed with exit code 127, indicating the command invoked by that recipe was not found or not executable.",
+  "confidence": 0.6,
   "relevant_files": [],
-  "relevant_tests": [
-    "Recipe `format`",
-    "Recipe `gen-all`"
-  ],
+  "relevant_tests": [],
   "evidence": [
     {
-      "quote": "test result: ok. 2525 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.78s",
-      "reason": "Shows the test suite ran and many tests passed before the later failure."
-    },
-    {
       "quote": "error: Recipe `format` failed on line 221 with exit code 127",
-      "reason": "Directly reports the failing recipe and the exit code (127) that caused the job to fail."
+      "reason": "Shows the failing recipe name, the line number in the recipe, and the exit code 127 (commonly a missing command)."
     },
     {
       "quote": "error: Recipe `gen-all` failed on line 32 with exit code 127",
-      "reason": "Shows that the higher-level 'gen-all' recipe also failed as a consequence of the 'format' failure."
+      "reason": "Shows a downstream recipe ('gen-all') also failed with the same exit code after 'format' failed, indicating the overall CI job aborted due to the prior recipe failure."
     }
   ],
-  "suggested_fix": "Inspect the 'format' recipe (around line 221) to determine which command returned exit code 127 (127 commonly means 'command not found'). Ensure the formatter or required tool is installed and available in PATH in the CI job (or modify the workflow to install the tool before running the 'format' recipe).",
+  "suggested_fix": "Inspect the 'format' recipe around line 221 to see which command it runs, then ensure that command is installed and available in the CI environment (install the required formatter/dependency or add it to PATH). Re-run the workflow.",
   "input": {
     "context_path": "results/v2/holdout/rtk-err-cat/biome-pnpm-not-found-v2-001.txt",
     "context_tokens_estimate": 28979
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 304
+    "output_tokens_estimate": 428
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 21392.063,
-    "cache_key": "55d9d2138a71b080d80b8b881595878afd3c22b8d2cea4029faba853f40c583f",
+    "runtime_ms": 19380.323,
+    "cache_key": "3a8338579bad50aeb786bec435319e1f1f2ddc8657b39ea9e9a59e880246e766",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 45362,
+        "completion_tokens": 1578,
+        "total_tokens": 46940,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1280,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

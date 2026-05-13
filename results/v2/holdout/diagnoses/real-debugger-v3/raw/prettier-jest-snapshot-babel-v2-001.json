@@ -3,73 +3,93 @@
   "context_method": "raw",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "Jest snapshot tests failed because the received parser error messages differ from the stored snapshots (several import()/TypeScript error messages changed), causing test assertions to fail.",
+  "summary": "Jest snapshot tests failed because parser error messages changed (dynamic import / TypeScript parse errors), causing snapshot mismatches in multiple test suites.",
   "root_cause_category": "test_assertion",
-  "root_cause": "Snapshot assertions failed: tests expected specific error message text (e.g. \"Unexpected token ...\") but the parser produced different messages (e.g. \"`import()` requires exactly one or two arguments.\").",
-  "confidence": 0.77,
+  "root_cause": "Snapshot mismatches due to changed parser/parse error messages (e.g. for `import()` and TypeScript constructor/declare errors) — the received error text no longer matches stored snapshots.",
+  "confidence": 0.78,
   "relevant_files": [
     "tests/format/js/_errors_/import/format.test.js",
     "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
     "tests/format/typescript/_errors_/declare-function-with-body/format.test.js",
+    "src/language-js/parse/babel.js",
     "tests/config/format-test/test-format.js"
   ],
   "relevant_tests": [
-    "FAIL tests/format/js/_errors_/import/format.test.js",
-    "FAIL tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
-    "FAIL tests/format/typescript/_errors_/declare-function-with-body/format.test.js"
+    "snippet: #0 > format[babel]",
+    "snippet: #0 > format[babel-ts]",
+    "constructorOverloadsWithDefaultValues.ts > format[babel-ts]",
+    "snippet: #2 > format[babel]",
+    "snippet: #3 > format[babel]"
   ],
   "evidence": [
     {
-      "quote": "Error: expect(received).rejects.toThrowErrorMatchingSnapshot()",
-      "reason": "Shows the failing assertion type: tests expect an error to match a stored snapshot."
+      "quote": "FAIL tests/format/js/_errors_/import/format.test.js",
+      "reason": "Shows a failing test suite (snapshot tests under js/_errors_/import)."
     },
     {
       "quote": "- Unexpected token (1:8)",
-      "reason": "Part of the stored snapshot (expected parser message) that the tests compare against."
+      "reason": "The stored snapshot expected an \"Unexpected token\" message."
     },
     {
       "quote": "+ `import()` requires exactly one or two arguments. (1:1)",
-      "reason": "The actual received parser message differs from the expected snapshot, causing the mismatch."
+      "reason": "The actual received error message is different (`import()` requires exactly one or two arguments), which caused the snapshot mismatch."
     },
     {
       "quote": "SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)",
-      "reason": "An example of a parser error message produced during tests (used by a failing TypeScript test)."
+      "reason": "A TypeScript parsing error appears in the failing TypeScript test, indicating parser-produced error text that may differ from snapshot expectations."
     },
     {
-      "quote": "› 12 snapshots failed.",
-      "reason": "Indicates multiple snapshot failures were detected during the test run."
+      "quote": "at createBabelParseError (file:///home/runner/work/prettier/prettier/src/language-js/parse/utilities/create-babel-parse-error.js:33:10)",
+      "reason": "Stack shows the error originates from the Babel parse error creation path, implicating parser error-message output as the source of changed text."
     },
     {
-      "quote": "› 13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
-      "reason": "Jest's summary explicitly reports snapshot failures and suggests re-running with -u to update snapshots."
+      "quote": "Snapshot Summary\n › 13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "Jest reports snapshot failures and suggests re-running jest with -u to update snapshots, confirming the nature of the failure."
+    },
+    {
+      "quote": "Test Suites: 3 failed, 1500 passed, 1503 total\nTests:       14 failed, 5 skipped, 29634 passed, 29653 total\nSnapshots:   13 failed, 12086 passed, 12099 total",
+      "reason": "Quantifies the failure as multiple snapshot/test failures among many passing tests — indicating a localized but concrete regression in error text/output."
     }
   ],
-  "suggested_fix": "If the changed messages are intentional (due to parser or error-message changes), update the snapshots by re-running Jest with the update flag and committing the new snapshots (e.g. run `yarn test -u` or `jest -u` locally). If the changes are unintentional, revert or adjust the code that changed parser/error messages so tests produce the expected output.",
+  "suggested_fix": "If the changed error messages are intentional, update the snapshots (per the log suggestion) by re-running tests with snapshot update, e.g. `yarn test -u` or `jest -u`. If the change is not intentional, inspect recent changes to the JS/TS parser (see src/language-js/parse/babel.js and create-babel-parse-error.js in the stack) and revert or adjust the parser so error messages match the expected snapshots, then re-run tests.",
   "input": {
     "context_path": "results/v2/holdout/raw/prettier-jest-snapshot-babel-v2-001.txt",
     "context_tokens_estimate": 48106
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 633
+    "output_tokens_estimate": 936
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 19548.947,
-    "cache_key": "e1359c1185e745544909674718d26d41e98d72649a0c2c172a3bd8022b75f408",
+    "runtime_ms": 30894.379,
+    "cache_key": "40eaedab459419573d7005a19b70bcddaece29fe38c51dc485069384059feabe",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. Backfilled from known run-time env (CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096). resolved_model and system_fingerprint not recoverable from original API responses."
+      "usage": {
+        "prompt_tokens": 74717,
+        "completion_tokens": 1706,
+        "total_tokens": 76423,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 896,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

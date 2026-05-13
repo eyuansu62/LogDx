@@ -35,12 +35,14 @@ Optional env overrides:
                                  (default: https://api.openai.com/v1)
 """
 
+import hashlib
 import json
 import os
 import re
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 FORBIDDEN_KEYS = (
@@ -75,6 +77,31 @@ def verify_no_leakage(payload: dict) -> None:
 
 class _ContextTooLargeError(Exception):
     pass
+
+
+def sanitize_base_url(url: str) -> str:
+    """Strip userinfo and query string from a base_url for safe persistence.
+
+    Per Codex 2026-05-12 [medium]: an env-provided proxy URL can contain
+    userinfo (https://user:pass@host) or a signed-URL query token. The shim
+    persists base_url into the diagnosis row's metadata.model_info; without
+    sanitization those secrets land in committed result artifacts despite
+    the v3 config declaring `allow_secret_values_in_results=false`. Strip
+    userinfo and query before persisting; the full URL's sha256 is recorded
+    separately so a reviewer can still tell a proxy run apart from the
+    canonical run.
+    """
+    if not url:
+        return url
+    parts = urllib.parse.urlsplit(url)
+    netloc = parts.hostname or ""
+    if parts.port:
+        netloc = f"{netloc}:{parts.port}"
+    return urllib.parse.urlunsplit((parts.scheme, netloc, parts.path, "", ""))
+
+
+def base_url_sha256(url: str) -> str:
+    return hashlib.sha256((url or "").encode("utf-8")).hexdigest()
 
 
 def build_user_message(payload: dict) -> str:
@@ -261,7 +288,13 @@ def main() -> int:
             "provider_name": "openai",
             "requested_model": model,
             "resolved_model": wrapper.get("model"),
-            "base_url": base_url,
+            # Per Codex 2026-05-12 [medium]: persist a sanitized base_url
+            # (no userinfo, no query) plus a sha256 of the full URL. The
+            # hash lets an auditor distinguish a proxy/alt-endpoint run
+            # from a canonical run without leaking the secret-carrying
+            # parts of the URL.
+            "base_url": sanitize_base_url(base_url),
+            "base_url_sha256": base_url_sha256(base_url),
             "max_completion_tokens": 4096,
             "system_fingerprint": wrapper.get("system_fingerprint"),
             "usage": wrapper.get("usage"),

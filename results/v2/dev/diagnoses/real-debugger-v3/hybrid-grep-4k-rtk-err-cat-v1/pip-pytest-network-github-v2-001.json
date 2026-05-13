@@ -3,10 +3,10 @@
   "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "A functional test failed because pip could not download a test package from GitHub: repeated 502 responses caused an OSError and the installation script exited with a non-zero code.",
+  "summary": "A functional test failed because pip could not download a GitHub-hosted test package due to repeated 502 responses from github.com, causing the script to exit with code 1.",
   "root_cause_category": "network_or_flaky",
-  "root_cause": "tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub] failed because pip was unable to fetch https://github.com/pypa/pip-test-package/archive/refs/heads/master.zip from github.com due to repeated 502 responses (network error), causing an OSError and a script exit code 1.",
-  "confidence": 0.85,
+  "root_cause": "The test failed because pip was unable to download /pypa/pip-test-package from github.com: requests to https://github.com/.../master.zip hit repeated 502 error responses causing an OSError and non-zero exit.",
+  "confidence": 0.78,
   "relevant_files": [
     "tests/functional/test_truststore.py"
   ],
@@ -16,47 +16,60 @@
   "evidence": [
     {
       "quote": "[gw1]^[[36m [ 99%] ^[[0m^[[31mFAILED^[[0m tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]",
-      "reason": "Shows the exact test that failed."
+      "reason": "Shows which test failed."
+    },
+    {
+      "quote": "AssertionError: Script returned code: 1",
+      "reason": "The test failure was caused by the tested script exiting with a non-zero code."
     },
     {
       "quote": "ERROR: Could not install packages due to an OSError: HTTPSConnectionPool(host='github.com', port=443): Max retries exceeded with url: /pypa/pip-test-package/archive/refs/heads/master.zip (Caused by ResponseError('too many 502 error responses'))",
-      "reason": "Shows pip could not download the package from github.com due to repeated 502 responses (network error)."
-    },
-    {
-      "quote": "E       AssertionError: Script returned code: 1",
-      "reason": "Shows the test failed because the installation script exited with a non-zero exit code."
+      "reason": "Shows pip could not download the test package from GitHub due to repeated 502 responses (network/server error)."
     },
     {
       "quote": "nox > Command pytest tests/functional --verbose --numprocesses auto --showlocals --durations=15 failed with exit code 1",
-      "reason": "Demonstrates the test session failed and the job returned a non-zero exit code."
+      "reason": "Confirms the test session failed overall with exit code 1."
     }
   ],
-  "suggested_fix": "Retry the CI job (transient GitHub 502s often recover). If failures recur, make the test independent of external GitHub availability by hosting the test package locally or mocking the network request (or add retries/backoff in the test fixture) so the test does not fail on transient 502 responses.",
+  "suggested_fix": "Re-run the job (transient network/server error). If failures persist, make the test resilient to upstream network issues by mocking the GitHub-hosted package, using a local fixture or cached artifact, or add retry/backoff for downloads; alternatively skip the test when external network access to github.com is unavailable.",
   "input": {
     "context_path": "results/v2/dev/hybrid-grep-4k-rtk-err-cat-v1/pip-pytest-network-github-v2-001.txt",
     "context_tokens_estimate": 12488
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 502
+    "output_tokens_estimate": 624
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 19667.754,
-    "cache_key": "169fbb4b0d1f2d9abe00358dd11511527d15910af20fe8a8705db72544638b9b",
+    "runtime_ms": 22542.319,
+    "cache_key": "3f598a48d1870b31ec956fb08b8e536c5b638a51a3091217077bc5eb6f6ae6fc",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 19259,
+        "completion_tokens": 1088,
+        "total_tokens": 20347,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 576,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

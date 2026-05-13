@@ -3,9 +3,9 @@
   "context_method": "hybrid-grep-120k-tail-v2",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "The cleanup step attempted to delete artifacts for a run but the GitHub CLI returned an HTTP 403 'Resource not accessible by integration', causing the job to exit with code 1.",
+  "summary": "The cleanup job failed when the GitHub CLI attempted to delete artifacts and received a 403 Forbidden error indicating the integration lacks access.",
   "root_cause_category": "permission_or_secret",
-  "root_cause": "The GitHub CLI ('gh') failed with HTTP 403 'Resource not accessible by integration' while deleting artifacts for run ID 24823635328, indicating the workflow's token/integration lacked permission to perform the artifact deletion.",
+  "root_cause": "GitHub CLI returned HTTP 403 \"Resource not accessible by integration\" while attempting to delete artifacts for run ID 24823635328, causing the cleanup step to exit with code 1.",
   "confidence": 0.85,
   "relevant_files": [],
   "relevant_tests": [],
@@ -16,39 +16,52 @@
     },
     {
       "quote": "gh: Resource not accessible by integration (HTTP 403)",
-      "reason": "Explicit error from the GitHub CLI indicating an authorization/permission failure (HTTP 403)."
+      "reason": "Exact error from the GitHub CLI indicating the integration or token did not have permission to access the resource."
     },
     {
       "quote": "##[error]Process completed with exit code 1.",
-      "reason": "The permission error caused the process to fail and exit with a non-zero code."
+      "reason": "Demonstrates the permission error caused the step to fail and terminate the job."
     }
   ],
-  "suggested_fix": "Give the token or integration used by the cleanup step permission to manage/delete artifacts (for example, update the workflow's permissions or use a token with the needed scopes), then re-run the job. Ensure the 'gh' command runs with the intended credentials.",
+  "suggested_fix": "Give the workflow/GitHub integration a token with the necessary permissions to manage artifacts (or adjust workflow permissions). Ensure the token used by the cleanup step (gh) has access to delete artifacts for the repository/run, e.g., configure workflow permissions or use a PAT/GITHUB_TOKEN with appropriate scopes.",
   "input": {
     "context_path": "results/stress/hybrid-grep-120k-tail-v2/cleanup-tsc-stress-001.txt",
     "context_tokens_estimate": 127
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 327
+    "output_tokens_estimate": 478
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 8128.292,
-    "cache_key": "e9f29f1dbef8fde2332d8574479acc50d16754de7a920a058459fa6d384dd17f",
+    "runtime_ms": 10891.192,
+    "cache_key": "87669852adb6643b1b438b7cfcaa2557d284e3a17724e0d84be57e3b53bff40f",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 1277,
+        "completion_tokens": 966,
+        "total_tokens": 2243,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 640,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

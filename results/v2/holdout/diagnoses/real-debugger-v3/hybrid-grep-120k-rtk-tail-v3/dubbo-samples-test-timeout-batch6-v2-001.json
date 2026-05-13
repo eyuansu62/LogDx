@@ -3,74 +3,83 @@
   "context_method": "hybrid-grep-120k-rtk-tail-v3",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "One integration test (dubbo-samples-test-11137) failed because its test container did not start in time and the test run hit the 600s timeout; Docker reported errors while attempting to manage containers.",
+  "summary": "One integration test (dubbo-samples-test-11137) failed because it timed out while waiting for its test container to start.",
   "root_cause_category": "timeout_or_oom",
-  "root_cause": "The integration test dubbo-samples-test-11137 timed out waiting for its test container to become ready (timeout configured as 600s); Docker returned errors (HTTP 500 and missing-container responses) during container startup/cleanup.",
-  "confidence": 0.85,
+  "root_cause": "The test job dubbo-samples-test-11137 exceeded its startup/wait timeout (containers did not become ready) — wait for container timed out after 602 seconds.",
+  "confidence": 0.75,
   "relevant_files": [
     "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
     "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/docker-compose.yml"
   ],
   "relevant_tests": [
-    "dubbo-samples-test-11137",
-    "[2/23] [dubbo-samples-test-11137:1/1]"
+    "[2/23] [dubbo-samples-test-11137:1/1]",
+    "dubbo-samples-test-11137"
   ],
   "evidence": [
     {
       "quote": "wait for container is timeout: 602 s",
-      "reason": "Shows the test harness waited for a container and exceeded the allowed wait time."
+      "reason": "Shows the test runner waited for containers and hit a timeout."
     },
     {
       "quote": "[dubbo-samples-test-11137] :ErrorMsg: Run tests timeout",
-      "reason": "Explicit error message stating the test run timed out."
+      "reason": "Explicit message that the test run timed out."
+    },
+    {
+      "quote": "[2/23] [dubbo-samples-test-11137:1/1] TEST FAILURE: Run tests timeout, version: -Ddubbo.version=3.3.7-SNAPSHOT -Dspring.version=5.3.24 -Djava.version=21, please check logs: /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
+      "reason": "Concrete failure line linking the timeout to the specific test and pointing to the logs directory."
     },
     {
       "quote": "[dubbo-samples-test-11137] timeout: 600",
-      "reason": "Displays the configured timeout value (600s) used for the test run."
+      "reason": "Shows the configured timeout for this test (600 seconds), indicating why a 602s wait exceeded it."
     },
     {
-      "quote": "Error response from daemon: received unexpected HTTP status: 500 Internal Server Error",
-      "reason": "Docker daemon returned an HTTP 500 while pulling/starting containers, indicating container management failures during startup/cleanup."
+      "quote": "zookeeper Error received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "Indicates a docker/registry error occurred while handling container images which could have prevented successful container startup."
     },
     {
       "quote": "Error response from daemon: No such container: dubbo-samples-test-11137--zookeeper-1",
-      "reason": "Docker could not find containers that the test expected to inspect/stop, indicating failed or incomplete container creation."
-    },
-    {
-      "quote": "please check logs: /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
-      "reason": "Points to the logs directory for the failing test, supporting investigation of the container start/timeout."
-    },
-    {
-      "quote": "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion",
-      "reason": "Shows the docker-compose file used and a warning that may affect compose behavior; relevant to container startup issues."
+      "reason": "During cleanup the expected containers were not present, consistent with containers never reaching a running state."
     }
   ],
-  "suggested_fix": "Inspect the logs at /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs for container startup errors; address the Docker daemon 500 errors (check daemon health and registry/network access); consider increasing the test timeout (>600s) or fixing the container startup (docker-compose.yml) so the test container can become ready within the timeout.",
+  "suggested_fix": "Inspect the logs at /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs to determine why containers failed to start. If startup is slow, increase the test timeout (currently \"timeout: 600\") or optimize container startup. Also investigate the docker error (\"Error received unexpected HTTP status: 500 Internal Server Error\") and ensure the runner can pull required images or that the Docker daemon is healthy, then retry the CI run.",
   "input": {
     "context_path": "results/v2/holdout/hybrid-grep-120k-rtk-tail-v3/dubbo-samples-test-timeout-batch6-v2-001.txt",
     "context_tokens_estimate": 17018
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 681
+    "output_tokens_estimate": 757
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 30599.601,
-    "cache_key": "472167dbef5915874a83249697aabc809c8b0043940b3e64297d502c2d3eb107",
+    "runtime_ms": 23121.542,
+    "cache_key": "ce4bcb5a6943eca7e2ea81105b97499312671b4bad9170b004fb63e218dd9ee5",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 30140,
+        "completion_tokens": 2028,
+        "total_tokens": 32168,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1344,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

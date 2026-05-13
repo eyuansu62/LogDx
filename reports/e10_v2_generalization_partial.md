@@ -1273,16 +1273,72 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > (manifests + per-case files + cache entries) were backfilled
 > with model_info from the same snapshot ID OpenAI returns today.
 >
-> **Post-fix vs pre-fix headline numbers.** Spot-check across all
-> 30 cells of the v2 macro table (10 methods × 3 debuggers): 29 of
-> 30 cells match pre-fix exactly; one cell shifts — gpt-5-mini v2
-> raw, 0.2725 → 0.2878 (Δ +0.015). The v1.3 macro table is
-> byte-identical pre/post fix. **All rankings preserved**: v2 top-3
-> ∩ = {hybrid-v2, hybrid-v3}; v1.3 top-3 ∩ = ∅; Sonnet and
-> gpt-5-mini still produce IDENTICAL 1-2-3 on v2. §3i's headline
-> findings survive the fix.
+> **Post-2026-05-11-fix vs pre-fix headline numbers.** v2 macro
+> shifted on one cell (gpt-5-mini v2 raw, 0.2725 → 0.2878). v1.3
+> byte-identical. Rankings preserved. The numbers in this block
+> are now SUPERSEDED by the 2026-05-12 re-run below; the 2026-05-11
+> block remains as documentation of the F1/F2 code-level issues.
 
-### Headline finding: cross-family agreement reverses between v1.3 and v2
+> ⚠️ **Codex 2026-05-12 [high/medium] fixes applied — §3i numbers
+> below are post-re-run.** Codex challenged the 2026-05-11 commit
+> on three issues (`b3be580` → `b3be580 + this commit`). All three
+> are fixed; the v3 run was repeated end-to-end so the §3i numbers
+> below reflect the corrected, audit-clean state.
+>
+> **F1 (resolved_model not populated for 290 of 293 successful
+> rows).** The 2026-05-11 fix added `_model_info` propagation but
+> only re-ran the 117 oversized-context rows; the 290 successful v3
+> rows were backfilled programmatically with `resolved_model: null`
+> because the original API responses weren't captured. The
+> auditability claim therefore failed for almost the entire
+> committed run. Fix: clear v3 cache (forced by the F2 cache-key
+> change below) and re-run all 350 v3 rows. **Result:** 285 of 285
+> successful rows now carry `resolved_model: gpt-5-mini-2025-08-07`
+> from the live API response; the remaining 65 rows are
+> provider_error (oversized-context cases that hit the F1 path —
+> no API call, no resolved_model possible).
+>
+> **F2 (cache_key ignored model identity).** Pre-fix,
+> `tools/run_diagnosis.py:cache_key_for` hashed
+> `{case, context, prompt, provider, diagnoser, command}` but
+> NOT the env-driven model name or base_url. A re-run with
+> `CILOGBENCH_OPENAI_MODEL=gpt-4o` (or a proxy URL) would silently
+> replay rows from a different backend without any provider call.
+> Fix: diagnoser configs may opt in via a new `cache_key_env` field
+> listing env vars whose values must be folded into the key. v3
+> opts into `CILOGBENCH_OPENAI_MODEL` and `CILOGBENCH_OPENAI_BASE_URL`.
+> The runner also revalidates cache hits against
+> `config.model.model_name` and rejects mismatches as belt-and-
+> suspenders. v1/v2 configs do not opt in (their caches keep
+> matching the legacy keys; no Anthropic re-run needed). New
+> regression test: `tools/tests/test_diagnosis_cache_key.py`
+> (11 tests, all pass).
+>
+> **F3 (base_url could leak proxy credentials).** The shim
+> persisted `metadata.model_info.base_url` verbatim. A user
+> pointing `CILOGBENCH_OPENAI_BASE_URL` at a proxy with userinfo
+> (`https://user:pass@proxy/v1`) or a signed-URL query token
+> would land that secret in committed result artifacts despite the
+> v3 config declaring `allow_secret_values_in_results=false`. Fix:
+> `sanitize_base_url()` strips userinfo + query before persistence;
+> `base_url_sha256` of the full URL is recorded separately so an
+> auditor can still tell a proxy run apart from canonical without
+> the secret in the row.
+>
+> **Post-2026-05-12 vs post-2026-05-11 headline.** v2 rankings
+> unchanged across all 30 (method × debugger) cells; max gpt v2
+> cell shift is hybrid-v3 −0.057, no rank reorderings. v2 top-3 ∩
+> = {hybrid-v2, hybrid-v3} preserved; Sonnet/gpt-5-mini 1-2-3
+> identical preserved. **v1.3 ranking SHIFTED** materially: the
+> re-run gave gpt-5-mini a different output distribution on the
+> v1.3 corpus, moving hybrid-v1 from #5 (0.583, pre-rerun) → #2
+> (0.6389, post-rerun). v1.3 top-3 ∩ moved ∅ → {hybrid-v1}, so the
+> §3a "hybrid-v1 #1" finding is no longer fully retracted under
+> cross-family validation (see updated text below). The shift is
+> consistent with gpt-5-mini being non-deterministic at temperature
+> not set (reasoning class). See "Run-to-run variance" caveat.
+
+### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**
 
@@ -1290,28 +1346,34 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 Cross-debugger ranking, v1.3 (Sonnet | Haiku | gpt-5-mini #):
 
 method                             son #   hai #   gpt #
-hybrid-grep-120k-tail-v2 (Sonnet#1)   1       3       4   ← Sonnet's winner is gpt's #4
-hybrid-grep-4k-rtk-err-cat-v1         2       1       5   ← Sonnet/Haiku top-2, gpt's #5
-grep                                  3       4       1   ← gpt's winner is Sonnet's #3
-hybrid-grep-120k-rtk-tail-v3          4       2       2
-tail                                  5       5       3
-rtk-err-cat                           6       6       8
-rtk-read                              7       8       6
-llm-summary-v1-mock                   8       7       9
-raw                                   9       9       7
-rtk-log                              10      10      10   ← only unanimous agreement
+hybrid-grep-120k-tail-v2              1       3       5   ← Sonnet's winner; gpt drops to #5
+hybrid-grep-4k-rtk-err-cat-v1         2       1       2   ← in top-3 for ALL three debuggers ★
+grep                                  3       4       1   ← gpt's winner; Sonnet's #3
+hybrid-grep-120k-rtk-tail-v3          4       2       3
+tail                                  5       5       4
+rtk-err-cat                           6       6       6   ← unanimous #6
+rtk-read                              7       8       7
+llm-summary-v1-mock                   8       7       8
+raw                                   9       9       9   ← unanimous #9
+rtk-log                              10      10      10   ← unanimous #10
 ```
 
-**v1.3 top-3 ∩ across all three debuggers: {} (empty set).**
+**v1.3 top-3 ∩ across all three debuggers: {hybrid-grep-4k-rtk-err-cat-v1}.**
 
 The earlier §3a v1.3 headline ("hybrid-grep-4k-rtk-err-cat-v1
 matched grep on quality at ⅓ token cost, ranked #1 by sv1.1
-under both tested debuggers") is now **partially retracted** —
-the "ranked #1" framing only holds under the two Anthropic
-models it was originally measured on. A third model from a
-different family (gpt-5-mini) puts hybrid-v1 at #5 on v1.3
-(0.583 vs grep's 0.682). The dataset itself is unchanged; only
-the cross-family claim is downgraded.
+under both tested debuggers") now **partly survives** cross-
+family validation: gpt-5-mini ranks hybrid-v1 #2 on v1.3
+(0.6389 vs grep's 0.6745, a 0.04 gap). It does NOT rank #1 under
+gpt-5-mini — grep wins — but it stays in the top-3 set, which is
+the looser version of the §3a claim. The "tied #1 with grep
+under both Anthropic debuggers" framing remains Anthropic-
+specific. The original §3i commit (`772520d`) reported gpt
+ranking hybrid-v1 at #5 on v1.3 (0.583) and claimed the §3a
+finding was "partially retracted"; the 2026-05-12 re-run (with
+the Codex F2 cache-key fix forcing fresh API calls) returned
+0.6389 instead, moving hybrid-v1 to #2 — see "Run-to-run
+variance" below for what this implies.
 
 **v2 (19 cases, 3 splits):**
 
@@ -1349,12 +1411,13 @@ rtk-read #7 and raw #8 (both ≈ 0.27/0.28 — adjacent scores).
 | Property | v1.3 | v2 |
 |---|---|---|
 | Cases | 16 | 19 (partial, target 34) |
-| Family-stable top-3 | ❌ ∅ | ✅ {hybrid-v2, hybrid-v3} |
-| Family-stable bottom-4 set (pos 7-10) | ⚠ {rtk-log} only | ✅ {rtk-read, raw, rtk-log, summary-mock} as SET; raw↔rtk-read swap on Sonnet |
-| Sonnet/gpt-5-mini #1-#3 agreement | 0/3 | 3/3 identical |
-| Spearman rank correlation Sonnet↔gpt | 0.758 | 0.988 |
+| Family-stable top-3 | ⚠ {hybrid-v1} (1 method) | ✅ {hybrid-v2, hybrid-v3} (2 methods) |
+| Family-stable bottom-4 set (pos 7-10) | ✅ {rtk-read, summary-mock, raw, rtk-log} as SET; summary↔rtk-read swap on Haiku | ✅ {rtk-read, raw, rtk-log, summary-mock} as SET; raw↔rtk-read swap on Sonnet |
+| Sonnet/gpt-5-mini #1-#3 agreement (positional) | 0/3 | 3/3 identical |
+| Spearman rank correlation Sonnet↔gpt | 0.867 | 0.988 |
 | Spearman rank correlation Sonnet↔Haiku | 0.927 | 0.927 |
-| Spearman rank correlation Haiku↔gpt-5-mini | 0.721 | 0.939 |
+| Spearman rank correlation Haiku↔gpt-5-mini | 0.891 | 0.939 |
+| gpt-5-mini run-to-run variance (max Δ across methods) | up to ±0.13 | up to ±0.06 |
 
 v2's broader corpus produces benchmark rankings that are
 **robust to model family**, while v1.3's smaller (Sonnet-tuned)
@@ -1367,16 +1430,16 @@ model family, even though it was never tuned on that debugger.
 
 ```text
 method                          son v2   hai v2   gpt v2
-hybrid-grep-120k-tail-v2        0.6928   0.5554   0.6703   ★ best avg
-hybrid-grep-120k-rtk-tail-v3    0.6650   0.5764   0.6580
-grep                            0.6155   0.4954   0.5835
-tail                            0.6081   0.5559   0.5391
-rtk-err-cat                     0.4792   0.4379   0.4811
-hybrid-grep-4k-rtk-err-cat-v1   0.4527   0.4223   0.4495
-rtk-read                        0.2713   0.2146   0.2899
-raw                             0.2865   0.2083   0.2878
-rtk-log                         0.2187   0.2044   0.2219
-llm-summary-v1-mock             0.1902   0.1938   0.1394
+hybrid-grep-120k-tail-v2        0.6928   0.5554   0.6663   ★ best avg
+hybrid-grep-120k-rtk-tail-v3    0.6650   0.5764   0.6011
+grep                            0.6155   0.4954   0.5738
+tail                            0.6081   0.5559   0.5649
+rtk-err-cat                     0.4792   0.4379   0.5038
+hybrid-grep-4k-rtk-err-cat-v1   0.4527   0.4223   0.4476
+rtk-read                        0.2713   0.2146   0.2933
+raw                             0.2865   0.2083   0.2898
+rtk-log                         0.2187   0.2044   0.2437
+llm-summary-v1-mock             0.1902   0.1938   0.1558
 ```
 
 gpt-5-mini's absolute scores sit between Sonnet and Haiku on
@@ -1388,7 +1451,22 @@ slightly different rank order).
 
 ### Caveats
 
-1. **gpt-5-mini was NOT in the cilogbench-v2-checkpoint-19 lock
+1. **Run-to-run variance is itself a finding (Codex 2026-05-12
+   F1 re-run).** gpt-5-mini is a reasoning-class model with
+   `temperature` not sent; OpenAI documents that reasoning runs
+   are non-deterministic at fixed sampling settings. The single
+   re-run on 2026-05-12 (forced by the F2 cache-key fix
+   invalidating all v3 cache entries) produced a different
+   distribution of scores on v1.3 (max method-wise Δ +0.056 on
+   hybrid-v1, −0.13 on rtk-read/raw) but a much smaller shift on
+   v2 (max Δ −0.057 on hybrid-v3, all other Δ ≤ 0.03 absolute).
+   No v2 rank reorderings occurred; v1.3 rank reorderings did.
+   This is independent evidence that **v2 is more robust to
+   single-debugger stochasticity than v1.3**, on top of being
+   more robust to cross-family stochasticity. Future v3 protocols
+   should consider N=3-5 re-runs with median aggregation;
+   single-run v3 reports cover the worst-case ranking instability.
+2. **gpt-5-mini was NOT in the cilogbench-v2-checkpoint-19 lock
    at the time of its run.** The lock pre-dates the
    `examples/diagnosis_shim_openai.py` file. We add the shim,
    `configs/diagnosers/real-debugger-v3.json`, and
@@ -1397,26 +1475,30 @@ slightly different rank order).
    to a primary protocol baseline — the reproducer is "checkout
    this commit + set `OPENAI_API_KEY` +
    `CILOGBENCH_OPENAI_MODEL=gpt-5-mini`", not "validate the lock
-   and run". The Codex 2026-05-11 F2 fix makes future re-runs
-   detectable: each diagnosis row now records
+   and run". The Codex 2026-05-11 F2 + 2026-05-12 F1/F2/F3 fixes
+   make future re-runs detectable: each diagnosis row records
    `metadata.model_info.resolved_model` (the dated snapshot ID
-   OpenAI's API returned for the `gpt-5-mini` alias), so a
-   re-run against a rotated alias is auditable. A future v3
-   protocol could formalize this with multiple-debugger SHA
-   pinning.
-2. **One gpt-5-mini-class model tested.** "Generalizes across
+   OpenAI's API returned for the `gpt-5-mini` alias, populated
+   from 285/285 successful API calls after the 2026-05-12
+   re-run); `base_url_sha256` records the full endpoint URL
+   so a re-run against a rotated alias OR a proxy is auditable
+   without leaking proxy credentials. A future v3 protocol could
+   formalize this with multiple-debugger SHA pinning.
+3. **One gpt-5-mini-class model tested.** "Generalizes across
    families" with sample size 1 family + 1 model is weak.
    GPT-4o, Gemini, Llama variants are all valid follow-ups.
-3. **gpt-5-mini's calibration could differ from Sonnet/Haiku's.**
+4. **gpt-5-mini's calibration could differ from Sonnet/Haiku's.**
    sv1.1 was calibrated against an expert-Anthropic-model
    reviewer (E2b). The v3 numbers are computed with the same
    evaluator on the same ground truths, but the rank-correlation
    finding holds independently of absolute calibration.
-4. **The §3i ∅ vs {v2, v3} agreement-set finding is robust to
-   small sample noise** at the top-3 level — a single case
-   swap couldn't move methods across the rank #3 boundary on
-   most positions. The Spearman correlations and the unanimous
-   bottom-6 ordering on v2 also reinforce this.
+5. **The §3i {hybrid-v1} on v1.3 and {hybrid-v2, hybrid-v3} on
+   v2 agreement sets are robust to small sample noise** at the
+   top-3 level — a single case swap could not move methods
+   across the rank #3 boundary on most positions. The Spearman
+   correlations and the unanimous bottom-2 ordering on v1.3 (raw
+   #9, rtk-log #10 on every debugger) plus the bottom-4 set
+   stability on v2 also reinforce this.
 
 ### What §3i means for publication
 
@@ -1424,10 +1506,10 @@ The §0 caveat that publication was blocked partly by "only
 Anthropic debuggers" can be downgraded to "two Anthropic
 debuggers + one OpenAI debugger; recommend additional families
 in v3". The cross-family validation result is now itself a
-headline finding ("v2 produces cross-family-stable benchmark
-rankings; v1.3 does not"), which strengthens rather than
-weakens the case for shipping v2 as-is or as a clearly-marked
-v2-partial preprint.
+headline finding ("**v2 produces cross-family-stable AND
+cross-run-stable benchmark rankings; v1.3's stability is more
+limited**"), which strengthens rather than weakens the case for
+shipping v2 as-is or as a clearly-marked v2-partial preprint.
 
 ### Caveats
 

@@ -3,70 +3,83 @@
   "context_method": "hybrid-grep-120k-tail-v2",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "One unit test failed during the hibernate-core test task: DbVersionTest.testCollectionVersion failed an assertion about owner version incrementing.",
+  "summary": "A single unit test failed: DbVersionTest.testCollectionVersion asserted that the owner version was not incremented but it was.",
   "root_cause_category": "test_assertion",
-  "root_cause": "The test org.hibernate.orm.test.version.db.DbVersionTest.testCollectionVersion failed with an assertion: it expected the owner version not to be incremented but the owner version was incremented (assertFalse expected false but was true).",
-  "confidence": 0.85,
+  "root_cause": "The test org.hibernate.orm.test.version.db.DbVersionTest.testCollectionVersion failed with an assertion: 'owner version not incremented ==> expected: <false> but was: <true>'.",
+  "confidence": 0.86,
   "relevant_files": [
     "file:///home/runner/work/hibernate-orm/hibernate-orm/hibernate-core/target/reports/tests/test/index.html",
     "file:///home/runner/work/hibernate-orm/hibernate-orm/target/reports/problems/problems-report.html"
   ],
   "relevant_tests": [
-    "Gradle Test Executor 25 > DbVersionTest > testCollectionVersion(SessionFactoryScope)",
-    "org.hibernate.orm.test.version.db.DbVersionTest.testCollectionVersion(DbVersionTest.java:60)"
+    "org.hibernate.orm.test.version.db.DbVersionTest.testCollectionVersion(DbVersionTest.java:60)",
+    "Gradle Test Executor 25 > DbVersionTest > testCollectionVersion(SessionFactoryScope) FAILED"
   ],
   "evidence": [
     {
       "quote": "Gradle Test Executor 25 > DbVersionTest > testCollectionVersion(SessionFactoryScope) FAILED",
-      "reason": "Shows which test failed and that it failed during the Gradle test run."
+      "reason": "Shows the specific test that failed and its test executor."
     },
     {
       "quote": "org.opentest4j.AssertionFailedError: owner version not incremented ==> expected: <false> but was: <true>",
-      "reason": "The exact assertion failure message indicates the test expected false (no increment) but observed true (version incremented)."
+      "reason": "Exact assertion failure message that explains why the test failed."
     },
     {
       "quote": "at app//org.hibernate.orm.test.version.db.DbVersionTest.testCollectionVersion(DbVersionTest.java:60)",
-      "reason": "Stack trace points to the failing test method and the source line number where the assertion failed."
+      "reason": "Stack trace line pointing to the failing test method and source location."
     },
     {
       "quote": "16923 tests completed, 1 failed, 2596 skipped",
-      "reason": "Confirms there was a single failing test in the whole test run."
+      "reason": "Summary confirming there was exactly one failing test in the run."
     },
     {
       "quote": "Execution failed for task ':hibernate-core:test'.",
-      "reason": "Build failure was caused by failing tests in the hibernate-core test task."
+      "reason": "Build task failed due to the failing tests."
     },
     {
       "quote": "There were failing tests. See the report at: file:///home/runner/work/hibernate-orm/hibernate-orm/hibernate-core/target/reports/tests/test/index.html",
-      "reason": "Indicates where the full test report is available for investigation."
+      "reason": "Indicates where to find the detailed test report for investigation."
     }
   ],
-  "suggested_fix": "Open the test report at 'hibernate-core/target/reports/tests/test/index.html' and inspect org.hibernate.orm.test.version.db.DbVersionTest (line 60) to reproduce the failure. Run only that test locally (or via Gradle) to debug why the owner version is being incremented (verify the setup and the code path that updates versioning). Based on findings, either fix the production code that unexpectedly increments the owner version, or adjust the test expectations if the behavior has legitimately changed.",
+  "suggested_fix": "Investigate the failing test org.hibernate.orm.test.version.db.DbVersionTest.testCollectionVersion (see the report at hibernate-core/target/reports/tests/test/index.html). Reproduce locally with Gradle: ./gradlew :hibernate-core:test --tests \"org.hibernate.orm.test.version.db.DbVersionTest.testCollectionVersion\" and inspect why the owner version is incrementing (update test expectation or fix the code that affects version increments).",
   "input": {
     "context_path": "results/v2/holdout/hybrid-grep-120k-tail-v2/hibernate-orm-dbversion-test-batch6-v2-001.txt",
     "context_tokens_estimate": 65090
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 665
+    "output_tokens_estimate": 749
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 37912.957,
-    "cache_key": "64b0b07ae5238442927b68407270b5ffdd01c4b22ff1a83282aafbb5d7fd1d27",
+    "runtime_ms": 29742.816,
+    "cache_key": "14d8dd0c28ac6217008bb55c65760bc2cc5e66b04390a9da6c518da813f7e6b6",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 92934,
+        "completion_tokens": 1564,
+        "total_tokens": 94498,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 960,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

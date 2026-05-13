@@ -3,71 +3,80 @@
   "context_method": "raw",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "Prettier check failed: the CI detected unformatted files and exited non‑zero during the 'yarn prettier-check' step.",
+  "summary": "The Prettier formatting check failed: the CI detected unformatted files and exited with a non-zero status, causing the job to fail.",
   "root_cause_category": "formatting_failure",
-  "root_cause": "Prettier reported unformatted files and the prettier-check script exited with a non-zero status.",
-  "confidence": 0.86,
+  "root_cause": "Prettier reported that files are not formatted and the prettier-check script exited with code 1; specifically the files listed are packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js and compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts.",
+  "confidence": 0.9,
   "relevant_files": [
     "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
     "compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts"
   ],
-  "relevant_tests": [
-    "yarn prettier-check",
-    "$ node ./scripts/prettier/index.js",
-    "Run prettier"
-  ],
+  "relevant_tests": [],
   "evidence": [
     {
-      "quote": "This project uses prettier to format all JavaScript code.\n    Please run yarn prettier-all and add changes to files listed below to your commit:",
-      "reason": "Indicates the CI runs a Prettier check and instructs to run yarn prettier-all to fix formatting."
+      "quote": "This project uses prettier to format all JavaScript code.",
+      "reason": "Shows the job is running a Prettier formatting check."
+    },
+    {
+      "quote": "Please run yarn prettier-all and add changes to files listed below to your commit:",
+      "reason": "Contains the explicit remediation instruction produced by the Prettier check."
     },
     {
       "quote": "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
-      "reason": "Listed file that Prettier found unformatted."
+      "reason": "Prettier output listing this file as needing formatting."
     },
     {
       "quote": "compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts",
-      "reason": "Listed file that Prettier found unformatted."
+      "reason": "Prettier output listing this file as needing formatting."
     },
     {
       "quote": "error Command failed with exit code 1.",
-      "reason": "Shows the prettier-check command exited with a failure code, causing the job to fail."
-    },
-    {
-      "quote": "yarn prettier-check",
-      "reason": "Shows the CI step that executed the Prettier check."
+      "reason": "The prettier-check command exited non-zero, causing the CI job to fail."
     },
     {
       "quote": "$ node ./scripts/prettier/index.js",
-      "reason": "Shows the script invoked by yarn which performed the Prettier validation."
+      "reason": "Shows which script was executed to run the Prettier check."
     }
   ],
-  "suggested_fix": "Run the formatter and commit the changes: run `yarn prettier-all` (or the repository's specified prettier-all script) and add the formatted files (including the listed paths) to your commit, then push.",
+  "suggested_fix": "Run yarn prettier-all locally (or run the project’s prettier script), commit the formatting changes — including updates to packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js and compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts — and push the commit to re-run CI.",
   "input": {
     "context_path": "results/stress/raw/prettier-react-stress-001.txt",
     "context_tokens_estimate": 4470
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 445
+    "output_tokens_estimate": 644
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 21900.396,
-    "cache_key": "1c31da82796c334f2934e34dc5901c37e40a60b1cb73e640037f912fe48e13bf",
+    "runtime_ms": 11432.04,
+    "cache_key": "b222a3a710e4167fd91541657a09c4401f2c8a0bfe02c83a298484fbf30c77b4",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. Backfilled from known run-time env (CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096). resolved_model and system_fingerprint not recoverable from original API responses."
+      "usage": {
+        "prompt_tokens": 8462,
+        "completion_tokens": 1011,
+        "total_tokens": 9473,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 512,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

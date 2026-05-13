@@ -3,64 +3,78 @@
   "context_method": "rtk-read",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "A unit test in package github.com/cli/cli/v2/internal/prompter failed because form.Run() did not complete before the test's timeout, causing the test job to exit non‑zero.",
+  "summary": "A unit test in the internal/prompter package timed out: TestHuhPrompterMultiSelectWithSearchPersistence (the subtest selections_persist_after_changing_search_query) failed because form.Run() did not complete within the test's time limit.",
   "root_cause_category": "test_assertion",
-  "root_cause": "The test TestHuhPrompterMultiSelectWithSearchPersistence (subtest selections_persist_after_changing_search_query) timed out: 'form.Run() did not complete in time', causing the package github.com/cli/cli/v2/internal/prompter to fail.",
-  "confidence": 0.85,
+  "root_cause": "The test TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query failed because form.Run() did not complete in time (test timeout).",
+  "confidence": 0.86,
   "relevant_files": [
-    "huh_prompter_test.go:478"
+    "huh_prompter_test.go",
+    "github.com/cli/cli/v2/internal/prompter"
   ],
   "relevant_tests": [
     "TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query"
   ],
   "evidence": [
     {
-      "quote": " --- FAIL: TestHuhPrompterMultiSelectWithSearchPersistence (5.19s)",
-      "reason": "Shows the top-level test that failed and its elapsed time."
+      "quote": "2026-05-06T06:56:30.9507580Z --- FAIL: TestHuhPrompterMultiSelectWithSearchPersistence (5.19s)",
+      "reason": "Shows the top-level test that failed and that it ran for ~5s before failing."
     },
     {
-      "quote": " --- FAIL: TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query (5.13s)",
-      "reason": "Shows the specific subtest that failed and its elapsed time."
+      "quote": "2026-05-06T06:56:30.9612160Z     --- FAIL: TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query (5.13s)",
+      "reason": "Identifies the specific failing subtest (selections_persist_after_changing_search_query)."
     },
     {
-      "quote": "huh_prompter_test.go:478: form.Run() did not complete in time",
-      "reason": "The failure message from the test indicating that form.Run blocked/timeout'd and is the direct cause of the test failure."
+      "quote": "2026-05-06T06:56:30.9716210Z         huh_prompter_test.go:478: form.Run() did not complete in time",
+      "reason": "Concrete failure message from the test: form.Run() timed out (the immediate cause of the test failure)."
     },
     {
-      "quote": "FAIL\tgithub.com/cli/cli/v2/internal/prompter\t8.475s",
-      "reason": "Indicates the package that failed its tests and that the test run returned a non-zero exit status."
+      "quote": "2026-05-06T06:54:37.3735410Z ##[group]Run go test -race -tags=integration ./...",
+      "reason": "Shows how the tests were invoked (useful to reproduce locally with same flags)."
     },
     {
-      "quote": "##[error]Process completed with exit code 1.",
-      "reason": "Confirms the CI job failed because of the test failure."
+      "quote": "2026-05-06T06:58:51.8476860Z ##[error]Process completed with exit code 1.",
+      "reason": "Indicates the job failed because of the failing test (non-zero exit code)."
     }
   ],
-  "suggested_fix": "Reproduce and debug the failing test locally: run the package tests for the prompter package and the single failing test (for example, `go test ./internal/prompter -run TestHuhPrompterMultiSelectWithSearchPersistence -v`) and inspect huh_prompter_test.go at line 478. If form.Run is legitimately slow or blocked, either ensure the test provides the necessary input/events to allow form.Run to complete, or increase/adjust the test timeout around form.Run so the test does not fail spuriously.",
+  "suggested_fix": "Investigate why form.Run() blocks in huh_prompter_test.go at line 478: reproduce the failing subtest locally using the same command (go test -race -tags=integration ./...), add logging or assertions around form.Run to see where it stalls, and either fix the blocking behavior or increase the test timeout/adjust synchronization so form.Run() can complete reliably.",
   "input": {
     "context_path": "results/v2/holdout/rtk-read/gh-cli-go-test-prompter-v2-001.txt",
     "context_tokens_estimate": 11367
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 516
+    "output_tokens_estimate": 691
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 19155.458,
-    "cache_key": "b8637cd911a50786aef8d049ad1ebd3273fb4c94278179b83c14699f3ae9f7bd",
+    "runtime_ms": 22583.146,
+    "cache_key": "c4bff68c46b4411ab6e42763c2715660704d6552db10fc986501ce69b9981128",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. Backfilled from known run-time env (CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096). resolved_model and system_fingerprint not recoverable from original API responses."
+      "usage": {
+        "prompt_tokens": 21213,
+        "completion_tokens": 1913,
+        "total_tokens": 23126,
+        "prompt_tokens_details": {
+          "cached_tokens": 21120,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1280,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

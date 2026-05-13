@@ -3,58 +3,73 @@
   "context_method": "hybrid-grep-120k-tail-v2",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "The CI prettier job failed: yarn exited with code 1 while processing packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js, indicating a formatting failure.",
+  "summary": "The CI 'Run prettier' job exited with a non-zero status while mentioning packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js, causing the workflow to fail.",
   "root_cause_category": "formatting_failure",
-  "root_cause": "Prettier (invoked via yarn) exited with status 1 while handling packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js, causing the job to fail.",
-  "confidence": 0.67,
+  "root_cause": "Prettier (invoked via yarn) returned a non-zero exit code while processing packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js.",
+  "confidence": 0.66,
   "relevant_files": [
     "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js"
   ],
-  "relevant_tests": [],
+  "relevant_tests": [
+    "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js"
+  ],
   "evidence": [
     {
-      "quote": "\"job_name\": \"Run prettier\"",
-      "reason": "Shows the failing CI job is the Prettier/formatting step."
-    },
-    {
       "quote": "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
-      "reason": "Identifies the file referenced in the log output, likely the file that triggered the failure."
+      "reason": "File path mentioned in the log, indicating which file was touched/checked when the job failed."
     },
     {
       "quote": "error Command failed with exit code 1.",
-      "reason": "Indicates the yarn command (which runs the formatting check) failed and returned a non-zero exit code, causing the job to fail."
+      "reason": "Shows the command (yarn/prettier) exited with a non-zero status, causing the job failure."
     },
     {
       "quote": "info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.",
-      "reason": "Shows the command was run via yarn, implying the formatting check was invoked through a yarn script."
+      "reason": "Indicates the failing command was run via yarn (typical for running prettier in this repo)."
+    },
+    {
+      "quote": "Run prettier",
+      "reason": "Identifies the CI job that failed, tying the exit code to a Prettier run."
     }
   ],
-  "suggested_fix": "Run the project's prettier/format script locally (e.g., via yarn) and format the failing file, for example: yarn prettier --write packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js, then commit the formatted changes and re-run CI.",
+  "suggested_fix": "Run the Prettier check locally and fix formatting: e.g. run `yarn prettier --check packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` to see issues, then `yarn prettier --write packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` and commit the formatted changes.",
   "input": {
     "context_path": "results/dev/hybrid-grep-120k-tail-v2/lint-react-001.txt",
     "context_tokens_estimate": 361
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 376
+    "output_tokens_estimate": 537
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 21470.092,
-    "cache_key": "21fed76232e9e089b8b7ec84b985b8f06be604d9fa85b58bfcce8f32e53ae427",
+    "runtime_ms": 24411.038,
+    "cache_key": "9380b5a7f6373fb3278b9ab198c3bf8f223b86f05183cb1feb8a944c7d498487",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 1602,
+        "completion_tokens": 1766,
+        "total_tokens": 3368,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1344,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

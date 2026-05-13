@@ -3,68 +3,77 @@
   "context_method": "hybrid-grep-120k-tail-v2",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "A fourslash unit test failed due to an assertion mismatch in a code fix message related to generic return type annotation.",
+  "summary": "A fourslash unit test failed due to an assertion mismatch in a code-fix description during the runtests-parallel step, causing the coverage job to exit with code 1.",
   "root_cause_category": "test_assertion",
-  "root_cause": "A fourslash test assertion failed: the test expected the code-fix description 'Add return type 'Foo<string>'' but the actual description began with 'Add return type 'Foo<string, string[\u2026'.",
-  "confidence": 0.85,
+  "root_cause": "A fourslash test failed because the expected code-fix description did not match the actual output: the assertion shows an expected/actual mismatch for the 'Add return type' message.",
+  "confidence": 0.82,
   "relevant_files": [
     "tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts",
     "src/harness/fourslashImpl.ts",
     "src/harness/fourslashInterfaceImpl.ts",
-    "codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.js",
-    "src/testRunner/fourslashRunner.ts"
+    "src/testRunner/fourslashRunner.ts",
+    "codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.js"
   ],
   "relevant_tests": [
-    "tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts"
+    "fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts runs correctly:"
   ],
   "evidence": [
     {
-      "quote": "tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts",
-      "reason": "Shows the specific fourslash test file that was executed and failed."
-    },
-    {
       "quote": "fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts runs correctly:",
-      "reason": "Indicates the particular fourslash test that was being verified when the failure occurred."
+      "reason": "Identifies the specific fourslash test that was running when the failure occurred."
     },
     {
-      "quote": "AssertionError: expected 'Add return type \\'Foo<string>\\'' to equal 'Add return type \\'Foo<string, string[\u2026'",
-      "reason": "The test framework raised an assertion error showing the expected and actual code-fix description strings \u2014 direct evidence of an assertion mismatch causing the failure."
+      "quote": "AssertionError: expected 'Add return type \\'Foo<string>\\'' to equal 'Add return type \\'Foo<string, string[…'",
+      "reason": "Shows the exact assertion mismatch: the test expected one code-fix description but the actual description differed."
     },
     {
-      "quote": "at _TestState.verifyCodeFix (src/harness/fourslashImpl.ts:3435:20)",
-      "reason": "Stack trace points to the fourslash test verification code where the assertion failed."
+      "quote": "Failed tasks: do-runtests-parallel",
+      "reason": "Indicates the runtests-parallel task failed as a result of the test failure."
     },
     {
       "quote": "Error: Process exited with code: 1",
-      "reason": "The overall test runner exited with a non-zero code due to the test failure."
+      "reason": "Demonstrates the job terminated with a non-zero exit code due to the test failure."
     }
   ],
-  "suggested_fix": "Update the test expectation to match the actual code-fix text (e.g., change the expected description in tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts or its generated .js to include the full generic parameters), or adjust the code-fix output to produce the originally expected string, then re-run the tests.",
+  "suggested_fix": "Either update the test expectation in tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts to match the actual 'Add return type' description, or change the code-fix output generation to produce the expected description. Re-run the fourslash test locally (run ./built/local/run.js for the test) to verify the fix.",
   "input": {
     "context_path": "results/holdout/hybrid-grep-120k-tail-v2/tsc-typescript-001.txt",
     "context_tokens_estimate": 952
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 562
+    "output_tokens_estimate": 650
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 28158.461,
-    "cache_key": "0642ea3cd1c31f49e63fb86c1e57b3c0e6c06f891956bf4ccb4a066077acf0e8",
+    "runtime_ms": 26244.612,
+    "cache_key": "eb7148cd0c1b0a7c4a80fdc92396d9676fa3fb9b87b6dbbe9d19750fa9722425",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 2551,
+        "completion_tokens": 1737,
+        "total_tokens": 4288,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1216,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

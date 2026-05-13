@@ -3,10 +3,10 @@
   "context_method": "tail",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "One assembly test failed: tests/assembly-llvm/wasm_exceptions.rs produced unexpected assembly output causing the compiletest suite to fail for target wasm32-wasip1.",
+  "summary": "An assembly test failed: tests/assembly-llvm/wasm_exceptions.rs produced output that did not match the expected assembly.",
   "root_cause_category": "test_assertion",
-  "root_cause": "The assembly test tests/assembly-llvm/wasm_exceptions.rs failed because the produced assembly did not match the expected output in the compiletest assembly-llvm suite for target wasm32-wasip1.",
-  "confidence": 0.82,
+  "root_cause": "The assembly test tests/assembly-llvm/wasm_exceptions.rs failed due to a mismatch between expected and generated assembly output (compiletest assembly check failed).",
+  "confidence": 0.75,
   "relevant_files": [
     "tests/assembly-llvm/wasm_exceptions.rs"
   ],
@@ -16,51 +16,68 @@
   "evidence": [
     {
       "quote": "---- [assembly] tests/assembly-llvm/wasm_exceptions.rs stdout end ----",
-      "reason": "Shows the specific assembly test that ended and is associated with the failure."
+      "reason": "Shows that the failing item is the assembly test file tests/assembly-llvm/wasm_exceptions.rs."
     },
     {
       "quote": "failures:\n    [assembly] tests/assembly-llvm/wasm_exceptions.rs",
-      "reason": "Explicitly lists the failing test in the output."
+      "reason": "Explicitly lists the failing test as the assembly test for wasm_exceptions.rs."
     },
     {
       "quote": "test result: FAILED. 550 passed; 1 failed; 103 ignored; 0 measured; 0 filtered out; finished in 15.38s",
-      "reason": "Confirms there was exactly one failing test in the test run."
+      "reason": "Confirms the test run had one failing test (indicating a test assertion/expectation failure)."
     },
     {
-      "quote": "Some tests failed in compiletest suite=assembly-llvm mode=assembly host=x86_64-unknown-linux-gnu target=wasm32-wasip1",
-      "reason": "Indicates the failure occurred in the assembly-llvm compiletest suite for the wasm32-wasip1 target."
+      "quote": "check:62'0",
+      "reason": "Multiple 'check' markers in the assembly output indicate compiletest compared expected vs actual assembly and found differences."
     },
     {
-      "quote": ".ascii \"exception-handling\"",
-      "reason": "Part of the assembly output shown in the log, indicating the test output (assembly content) that was compared; supports that the failure is an assembly output mismatch."
+      "quote": ">>>>>>",
+      "reason": "The '>>>>>>' marker in the assembly diff output indicates a mismatch region in the test's assembly comparison."
+    },
+    {
+      "quote": "Bootstrap failed while executing `--stage 2 test --host= --target wasm32-wasip1 tests/run-make tests/run-make-cargo tests/ui tests/mir-opt tests/codegen-units tests/codegen-llvm tests/assembly-llvm library/core`",
+      "reason": "Shows the overall test bootstrap failed because the assembly-llvm suite (which includes the failing test) did not pass."
     }
   ],
-  "suggested_fix": "Re-run the failing assembly-llvm test for tests/assembly-llvm/wasm_exceptions.rs on the wasm32-wasip1 target to reproduce the mismatch, inspect the produced assembly vs the expected file, and either update the expected assembly for the test or fix the codegen that produced the unexpected output. (The CI run invoked the compiletest assembly-llvm suite for target wasm32-wasip1.)",
+  "suggested_fix": "Reproduce the failure locally and inspect the assembly diff for tests/assembly-llvm/wasm_exceptions.rs; either fix the codegen that produced the changed assembly or update the test's expected assembly. You can reproduce using the same bootstrap test invocation shown in the log: `--stage 2 test --target wasm32-wasip1 tests/assembly-llvm`.",
   "input": {
     "context_path": "results/v2/stress/tail/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
     "context_tokens_estimate": 3914
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 493
+    "output_tokens_estimate": 684
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 25997.809,
-    "cache_key": "e7d71d88f21c51bd584696be9ac6b301b9bc4eedcab9afafaa7b092a414fa3e0",
+    "runtime_ms": 22698.909,
+    "cache_key": "70c5f2e45be4cbcd02639575943ed8814ecc7a8c9c058f6b39f0e7b8367f2c0b",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 7561,
+        "completion_tokens": 1996,
+        "total_tokens": 9557,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1408,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

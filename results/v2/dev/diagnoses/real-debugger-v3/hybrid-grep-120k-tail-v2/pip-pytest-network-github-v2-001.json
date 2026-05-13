@@ -3,64 +3,78 @@
   "context_method": "hybrid-grep-120k-tail-v2",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "A functional test failed when pip attempted to download a package from GitHub and received repeated 502 responses, causing a network-related test failure.",
+  "summary": "A functional test failed because pip could not download a test package from GitHub due to repeated HTTP 502 errors, causing the install command to exit with code 1.",
   "root_cause_category": "network_or_flaky",
-  "root_cause": "The test tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub] failed because pip could not download https://github.com/pypa/pip-test-package/archive/refs/heads/master.zip due to repeated 502 responses from github.com, causing an OSError and non-zero exit code.",
-  "confidence": 0.8,
+  "root_cause": "The test tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub] failed because pip could not fetch https://github.com/pypa/pip-test-package/archive/refs/heads/master.zip (ResponseError: 'too many 502 error responses'), resulting in an OSError and non-zero exit.",
+  "confidence": 0.85,
   "relevant_files": [
-    "tests/functional/test_truststore.py"
+    "tests/functional/test_truststore.py",
+    "tests/lib/__init__.py"
   ],
   "relevant_tests": [
     "tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]"
   ],
   "evidence": [
     {
-      "quote": "[gw1]^[[36m [ 99%] ^[[0m^[[33mRERUN^[[0m tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]",
-      "reason": "Shows the failing test was rerun (indicates a flaky/network-involving test)."
-    },
-    {
-      "quote": "[gw1]^[[36m [ 99%] ^[[0m^[[31mFAILED^[[0m tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]",
-      "reason": "Identifies the specific test that failed."
+      "quote": "tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]",
+      "reason": "Identifies the exact test that failed (appears in the failure lines)."
     },
     {
       "quote": "ERROR: Could not install packages due to an OSError: HTTPSConnectionPool(host='github.com', port=443): Max retries exceeded with url: /pypa/pip-test-package/archive/refs/heads/master.zip (Caused by ResponseError('too many 502 error responses'))",
-      "reason": "The pip command failed with an OSError caused by repeated 502 responses from GitHub while attempting to download the test package."
+      "reason": "Shows pip failed to download the package from GitHub due to repeated 502 error responses, which is a network/transient error."
     },
     {
-      "quote": "AssertionError: Script returned code: 1",
-      "reason": "The test harness recorded a non-zero exit code from the pip install command, causing the test to fail."
+      "quote": "Script result: python -m pip install https://github.com/pypa/pip-test-package/archive/refs/heads/master.zip --use-deprecated=legacy-certs",
+      "reason": "Shows the exact command the test ran that encountered the network error."
     },
     {
-      "quote": "1 failed, 1080 passed, 44 skipped, 21 xfailed",
-      "reason": "Summary confirming a single failing test among many passing tests, consistent with an isolated/flaky/network issue."
+      "quote": "FAILED tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub] - AssertionError: Script returned code: 1",
+      "reason": "Demonstrates the test failed because the script/command exited with a non-zero return code."
+    },
+    {
+      "quote": "@pytest.mark.network",
+      "reason": "The test is network-marked (the log shows the network marker), indicating it depends on external network access and is therefore susceptible to network failures."
     }
   ],
-  "suggested_fix": "Rerun the failing job (the failure is caused by transient 502 responses from github.com). If failures recur, avoid depending on GitHub for this test by mocking the network call or hosting the test package on a reliable local test server / fixture so tests do not fail due to external HTTP 502 errors.",
+  "suggested_fix": "Rerun the CI job (this appears to be a transient network/502 error). If failures recur, make the test more resilient to external network errors by mocking or using a local test package server instead of downloading directly from GitHub, or add retry/backoff for the network fetch in the test harness.",
   "input": {
     "context_path": "results/v2/dev/hybrid-grep-120k-tail-v2/pip-pytest-network-github-v2-001.txt",
     "context_tokens_estimate": 50906
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 549
+    "output_tokens_estimate": 731
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 21749.872,
-    "cache_key": "c98f6edac25b9472a6efd05268a6f6273fcd4ba9645ca9a2a7e1d01df6f10da2",
+    "runtime_ms": 32483.92,
+    "cache_key": "3dcb61fb84110e563be371b95987354069465cb208962dc67d3149ae57e485f6",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 78291,
+        "completion_tokens": 1952,
+        "total_tokens": 80243,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1344,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

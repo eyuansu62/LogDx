@@ -3,48 +3,61 @@
   "context_method": "rtk-err-cat",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "A unit test timed out: form.Run() in huh_prompter_test.go did not complete within the test timeout.",
+  "summary": "A unit test timed out: form.Run() did not complete before the test's deadline.",
   "root_cause_category": "test_assertion",
-  "root_cause": "Test timeout: form.Run() in huh_prompter_test.go did not complete in time, causing the test to fail.",
-  "confidence": 0.8,
+  "root_cause": "The test in huh_prompter_test.go (line 478) failed because form.Run() did not complete in time, causing a test timeout.",
+  "confidence": 0.82,
   "relevant_files": [
     "huh_prompter_test.go:478"
   ],
   "relevant_tests": [
-    "huh_prompter_test.go:478"
+    "huh_prompter_test.go:478: form.Run() did not complete in time"
   ],
   "evidence": [
     {
-      "quote": "huh_prompter_test.go:478: form.Run() did not complete in time",
-      "reason": "Direct test output indicating the test at that file/line failed because form.Run() exceeded the allowed runtime."
+      "quote": "2026-05-06T06:56:30.9716210Z         huh_prompter_test.go:478: form.Run() did not complete in time",
+      "reason": "This log line shows the exact test failure: the test in huh_prompter_test.go at line 478 timed out because form.Run() did not finish."
     }
   ],
-  "suggested_fix": "Reproduce the failure locally by running the test in huh_prompter_test.go, instrument form.Run() to see why it blocks, and either fix the blocking behavior or increase the test timeout. Add logging or timeouts within form.Run() to ensure it completes within test time limits.",
+  "suggested_fix": "Inspect huh_prompter_test.go at line 478 to determine why form.Run() blocks; add logging or mocks to isolate the blocking call, and either make form.Run() return deterministically in the test or increase the test timeout as appropriate.",
   "input": {
     "context_path": "results/v2/holdout/rtk-err-cat/gh-cli-go-test-prompter-v2-001.txt",
     "context_tokens_estimate": 25
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 225
+    "output_tokens_estimate": 388
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 10500.844,
-    "cache_key": "265d96e9e79f32b639d7681d0326d9c3004404593f3a1e66e27807c57a2389ed",
+    "runtime_ms": 17045.99,
+    "cache_key": "47f4cf0157658019c91cb56f2a917b7713b6f11cb3beb39cb4d9873bfa2443a0",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 1145,
+        "completion_tokens": 1050,
+        "total_tokens": 2195,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 768,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

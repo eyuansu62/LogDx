@@ -3,39 +3,87 @@
   "context_method": "tail",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "Diagnoser failed. See metadata.provider_error.",
-  "root_cause_category": "unknown",
-  "root_cause": "unknown",
-  "confidence": 0.0,
-  "relevant_files": [],
-  "relevant_tests": [],
-  "evidence": [],
-  "suggested_fix": "",
+  "summary": "Prettier check failed because some source files are not formatted according to the project's Prettier rules. The CI step 'yarn prettier-check' exited with a nonzero status and listed unformatted files.",
+  "root_cause_category": "formatting_failure",
+  "root_cause": "Prettier check failed: files are not formatted (prettier reported unformatted files and exited with code 1).",
+  "confidence": 0.9,
+  "relevant_files": [
+    "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+    "compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts"
+  ],
+  "relevant_tests": [
+    "yarn prettier-check",
+    "$ node ./scripts/prettier/index.js"
+  ],
+  "evidence": [
+    {
+      "quote": "This project uses prettier to format all JavaScript code.",
+      "reason": "Shows the CI step is enforcing Prettier formatting."
+    },
+    {
+      "quote": "Please run yarn prettier-all and add changes to files listed below to your commit:",
+      "reason": "Indicates the remediation action and that files were listed as needing formatting changes."
+    },
+    {
+      "quote": "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+      "reason": "One of the files that Prettier reported as needing formatting (listed by the script)."
+    },
+    {
+      "quote": "compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts",
+      "reason": "Another file that Prettier reported as needing formatting (listed by the script)."
+    },
+    {
+      "quote": "error Command failed with exit code 1.",
+      "reason": "Shows the prettier-check script exited with a failure status, causing the job to fail."
+    },
+    {
+      "quote": "yarn prettier-check",
+      "reason": "The failing CI step that invoked the Prettier check."
+    },
+    {
+      "quote": "$ node ./scripts/prettier/index.js",
+      "reason": "The underlying script that ran the Prettier check."
+    }
+  ],
+  "suggested_fix": "Run yarn prettier-all locally (or run node ./scripts/prettier/index.js as appropriate), commit the formatted changes (including the listed files), and push the commit to trigger CI again.",
   "input": {
     "context_path": "results/stress/tail/prettier-react-stress-001.txt",
     "context_tokens_estimate": 4042
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 55
+    "output_tokens_estimate": 642
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 23331.368,
-    "cache_key": "c8af84f088b8446113b1c5c0025bce5d5625eb31dbbc47de708704676a96ff9e",
-    "provider_error": "RuntimeError: diagnosis command exited 1: diagnosis_shim_openai: JSONDecodeError: Expecting value: line 24 column 16 (char 1126)\n",
+    "runtime_ms": 12579.304,
+    "cache_key": "03c053113122ae4f32a8e668dc6e234577e5b50fa6d8fc090858326525d03e8b",
+    "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 7675,
+        "completion_tokens": 905,
+        "total_tokens": 8580,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 384,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

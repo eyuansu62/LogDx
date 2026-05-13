@@ -3,62 +3,78 @@
   "context_method": "rtk-err-cat",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "The UI TypeScript compilation step failed: the TypeScript compiler (tsc) exited with a non-zero status during the ts-compile-lint-ui step.",
+  "summary": "The UI TypeScript compilation step failed: the TypeScript compiler (pnpm tsc) exited with a non-zero status while checking the UI sources.",
   "root_cause_category": "compile_error",
-  "root_cause": "The TypeScript compiler invocation failed: 'pnpm tsc' returned a non-zero exit status (2) when run with the generated tsconfig file '/home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json'.",
-  "confidence": 0.8,
+  "root_cause": "The TypeScript compiler (invoked via pnpm tsc) returned a non-zero exit status (2) when compiling the UI TypeScript project, causing the 'Compile / format / lint UI' step to fail.",
+  "confidence": 0.78,
   "relevant_files": [
-    "src/airflow/ui",
     "/home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json",
-    "src/airflow/ui/tsconfig.app.json"
+    "src/airflow/ui",
+    "src/airflow/ui/tsconfig.app.json",
+    "tsconfig.app.json",
+    "tsconfig.node.json"
   ],
   "relevant_tests": [
+    "Compile / format / lint UI................................................................................Failed",
     "ts-compile-lint-ui"
   ],
   "evidence": [
     {
-      "quote": "Compile / format / lint UI................................................................................\\x1b[41mFailed\\x1b[49m",
+      "quote": "Compile / format / lint UI................................................................................^[[41mFailed^[[49m",
       "reason": "Shows the UI compile/format/lint step failed."
     },
     {
       "quote": "subprocess.CalledProcessError: Command '['pnpm', 'tsc', '--p', '/home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json']' returned non-zero exit status 2.",
-      "reason": "Direct error from the TypeScript compiler invocation indicating tsc returned a failure exit code."
+      "reason": "Direct error message indicating the pnpm tsc command failed with a non-zero exit code."
     },
     {
-      "quote": "Running command: `pnpm eslint --fix ...` in directory: `/home/runner/work/airflow/airflow/airflow-core/src/airflow/ui`",
-      "reason": "Shows the commands were being run in the UI package directory prior to the tsc invocation (context for where the compilation ran)."
+      "quote": "in directory: `/home/runner/work/airflow/airflow/airflow-core/src/airflow/ui`",
+      "reason": "Indicates where the TypeScript compilation was executed (the UI package directory)."
     },
     {
-      "quote": "\"ts-compile-lint-ui\"",
-      "reason": "The hook name present in the hooks list corresponds to the TypeScript compile/lint step that failed."
+      "quote": "All TypeScript files:",
+      "reason": "Shows the TypeScript compiler was run over the listed UI TypeScript files (the compilation target)."
     }
   ],
-  "suggested_fix": "Run the TypeScript compiler locally to see the full errors and fix the reported TS issues. For example, from the repo root run: pnpm tsc --p /home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json (or run pnpm --filter ./src/airflow/ui tsc) to reproduce the errors, then fix the TypeScript errors shown and re-run the CI.",
+  "suggested_fix": "Run the same TypeScript compilation command locally to see the compiler diagnostics and fix the reported errors: pnpm tsc --p /home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json. Address the TypeScript errors in the UI sources (or adjust tsconfig/source files) and re-run the CI checks.",
   "input": {
     "context_path": "results/v2/stress/rtk-err-cat/airflow-precommit-tsc-middle-v2-001.txt",
     "context_tokens_estimate": 69040
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 489
+    "output_tokens_estimate": 636
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 34049.398,
-    "cache_key": "a5f08c230964a56437a9b65ad5b497d799829c2864d6caa20425f03fbb34403d",
+    "runtime_ms": 35439.482,
+    "cache_key": "3a3105e1ff634d3d1310f2d134a0c0158c7b98882ed5ce869bbe48ffc6ba0a0f",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. Backfilled from known run-time env (CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096). resolved_model and system_fingerprint not recoverable from original API responses."
+      "usage": {
+        "prompt_tokens": 77298,
+        "completion_tokens": 2006,
+        "total_tokens": 79304,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1472,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

@@ -3,10 +3,10 @@
   "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "Gradle build failed when running the ':platform-base:projectHealth' task; the log does not include the underlying exception or error details.",
+  "summary": "The Gradle project health check task ':platform-base:projectHealth' failed, causing the build to fail; the logs shown do not include the underlying error message.",
   "root_cause_category": "unknown",
   "root_cause": "unknown",
-  "confidence": 0.15,
+  "confidence": 0.2,
   "relevant_files": [],
   "relevant_tests": [
     ":platform-base:projectHealth"
@@ -14,47 +14,64 @@
   "evidence": [
     {
       "quote": "> Task :platform-base:projectHealth FAILED",
-      "reason": "Shows the specific Gradle task that failed."
+      "reason": "Directly shows which Gradle task failed."
     },
     {
       "quote": "Execution failed for task ':platform-base:projectHealth'.",
-      "reason": "Explicit runtime message indicating the task execution failed."
-    },
-    {
-      "quote": "FAILURE: Build failed with an exception.",
-      "reason": "High-level Gradle failure message; no exception details are present in the provided context."
+      "reason": "Confirms the task execution failure reported by Gradle."
     },
     {
       "quote": "BUILD FAILED in 7m 41s",
-      "reason": "Confirms the build terminated with failure, but does not provide the root cause."
+      "reason": "Indicates the overall build failed and stopped."
+    },
+    {
+      "quote": "(node:2093) [DEP0005] DeprecationWarning: Buffer() is deprecated due to security and usability issues. Please use the Buffer.alloc(), Buffer.allocUnsafe(), or Buffer.from() methods instead.",
+      "reason": "Shows a Node.js deprecation warning present in the logs, but it does not indicate the cause of the Gradle task failure."
+    },
+    {
+      "quote": "warning: The code being documented uses packages in the unnamed module, but the packages defined in https://docs.oracle.com/en/java/javase/17/docs/api/ are in named modules.",
+      "reason": "Shows a Javadoc/module warning present in the logs, but it does not show the error that caused the task to fail."
     }
   ],
-  "suggested_fix": "Re-run the failing Gradle task with more verbose output (for example: ./gradlew :platform-base:projectHealth --stacktrace --info) and inspect the reported exception and stack trace to identify the underlying cause.",
+  "suggested_fix": "Re-run the failing Gradle task with diagnostic flags to capture the underlying error, for example: ./gradlew :platform-base:projectHealth --stacktrace --info (or --debug) and inspect the full logs to identify and fix the root cause.",
   "input": {
     "context_path": "results/v2/holdout/hybrid-grep-4k-rtk-err-cat-v1/gradle-projecthealth-batch5-v2-001.txt",
     "context_tokens_estimate": 284
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 278
+    "output_tokens_estimate": 549
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 11684.794,
-    "cache_key": "70736bd041f9b55c6e37e3497a9a3e311e2e131d67bf04d340629ea1b6763ea3",
+    "runtime_ms": 12158.977,
+    "cache_key": "cba624dfdd94b78990b0de91e5462614f1218cb54a6d907435f97421e4a05e07",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 1476,
+        "completion_tokens": 1000,
+        "total_tokens": 2476,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 576,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

@@ -3,14 +3,14 @@
   "context_method": "hybrid-grep-120k-rtk-tail-v3",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "CI job failed because Git refused to operate due to 'dubious ownership' of the repository directory (/work), which prevented git status operations and appears to have caused the test runner to not produce results files (ENOENT).",
+  "summary": "Git refused to operate because of 'dubious ownership' for the workspace (/work), and the test-runner failed to find per-test results files (ENOENT) for many example tests.",
   "root_cause_category": "permission_or_secret",
-  "root_cause": "Git reported 'detected dubious ownership in repository at \"/work\"', causing git operations (shown by turbo/git status warnings) to fail and resulting in tests not producing results files (ENOENT).",
-  "confidence": 0.8,
+  "root_cause": "Git operations failed due to repository ownership being considered 'dubious' at '/work' (git refused to operate), which prevented/affected the test run and resulted in missing test results files (ENOENT) read errors.",
+  "confidence": 0.65,
   "relevant_files": [
     "/work/run-tests.js",
     "examples/with-jest/__tests__/index.test.tsx",
-    "examples/with-vitest/__tests__/Home.test.tsx"
+    "examples/with-jest-babel/__tests__/index.test.tsx"
   ],
   "relevant_tests": [
     "examples/with-jest/__tests__/index.test.tsx",
@@ -20,55 +20,60 @@
   "evidence": [
     {
       "quote": "fatal: detected dubious ownership in repository at '/work'",
-      "reason": "Shows Git refused to operate on the repository path due to ownership/security concerns."
-    },
-    {
-      "quote": "git config --global --add safe.directory /work",
-      "reason": "The log itself suggests adding /work to Git's safe.directory, indicating Git ownership checks are the immediate issue."
+      "reason": "Shows git refused to operate because it detected dubious ownership of the workspace directory."
     },
     {
       "quote": "WARNING  failed to get git status for dirty hash: Git error: fatal: detected dubious ownership in repository at '/work'",
-      "reason": "Turbo (and tooling that relies on git) failed to get git status because of the same dubious ownership error, showing downstream tooling was affected."
-    },
-    {
-      "quote": "Pattern: examples/with-jest/__tests__/index.test.tsx - 0 matches",
-      "reason": "Test runner reported zero matches for the test pattern, indicating tests did not run as expected (consistent with earlier git/tooling failures)."
+      "reason": "Turborepo (or tooling) reports it couldn't get git status due to the same 'dubious ownership' git error."
     },
     {
       "quote": "Failed to load test output Error: ENOENT: no such file or directory, open 'examples/with-jest/__tests__/index.test.tsx.results.json'",
-      "reason": "The test harness attempted to read a results file that was not created, showing tests did not produce expected output files."
+      "reason": "The test harness tried to read per-test results but the results file did not exist, causing the test to be reported as failed."
     },
     {
-      "quote": "Some tests failed\nexiting with code 1",
-      "reason": "The overall script exited non-zero after failing to find/produce test outputs, leading to job failure."
+      "quote": "at async runTest (/work/run-tests.js:927:29)",
+      "reason": "Points to the run-tests.js script attempting to read the missing results file (the script that reports ENOENT)."
     }
   ],
-  "suggested_fix": "Ensure the CI working directory is marked safe for Git or adjust ownership before running tests. For example, add a step before build/tests: git config --global --add safe.directory /work (or the CI repo path) or run commands to set correct ownership of the working directory so Git operations succeed and tests can produce their results files.",
+  "suggested_fix": "Add the workspace directory to Git safe directories before running the build/tests (for example run: git config --global --add safe.directory /work), or ensure the CI run uses a workspace path/ownership that Git considers safe so git status and related operations succeed and tests can produce their results files.",
   "input": {
     "context_path": "results/dev/hybrid-grep-120k-rtk-tail-v3/jest-nextjs-001.txt",
     "context_tokens_estimate": 60314
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 641
+    "output_tokens_estimate": 663
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 22709.75,
-    "cache_key": "d5c502fd0d431f4c8a1e195e4eff403720cd369580bc61ad803d4553fda3f83e",
+    "runtime_ms": 19678.469,
+    "cache_key": "fd5bdc89f6397e3560d6b4405a3e9943c0403808cc343974e4766eb7fd8fae80",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 85427,
+        "completion_tokens": 1559,
+        "total_tokens": 86986,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1024,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

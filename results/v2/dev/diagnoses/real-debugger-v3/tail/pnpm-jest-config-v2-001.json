@@ -3,10 +3,10 @@
   "context_method": "tail",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "A single Jest test failed because the registry URL returned by the code includes a trailing slash while the test expects the URL without a trailing slash.",
+  "summary": "One Jest test failed because the expected registry URL string did not match the actual output: the actual value included a trailing slash.",
   "root_cause_category": "test_assertion",
-  "root_cause": "The test 'pnpm config get reads npm options but ignores other settings from .npmrc' expected \"https://my-org.registry.example.com\" but the actual output was \"https://my-org.registry.example.com/\", causing an equality assertion to fail.",
-  "confidence": 0.78,
+  "root_cause": "A test assertion in test/config/get.ts expected \"https://my-org.registry.example.com\" but received \"https://my-org.registry.example.com/\", causing an equality failure.",
+  "confidence": 0.8,
   "relevant_files": [
     "test/config/get.ts"
   ],
@@ -19,44 +19,61 @@
       "reason": "Shows which test file failed."
     },
     {
+      "quote": "● pnpm config get reads npm options but ignores other settings from .npmrc",
+      "reason": "Shows the exact failing test name."
+    },
+    {
       "quote": "Expected: \"https://my-org.registry.example.com\"",
-      "reason": "Shows the value the test expected."
+      "reason": "The test's expected value (no trailing slash)."
     },
     {
       "quote": "Received: \"https://my-org.registry.example.com/\"",
-      "reason": "Shows the actual value returned by the code (includes trailing slash)."
+      "reason": "The actual output has a trailing slash, causing the equality mismatch."
     },
     {
       "quote": "at Object.<anonymous> (test/config/get.ts:32:38)",
-      "reason": "Points to the exact test file and line where the failing assertion is located."
+      "reason": "Pinpoints the assertion location in the test file."
     }
   ],
-  "suggested_fix": "Make the output/logic normalize registry URLs (e.g., remove a trailing slash before returning/printing) or update the test to accept an optional trailing slash (for example, trim trailing slashes before comparing or adjust the expected value).",
+  "suggested_fix": "Either update the test to accept or normalize a trailing slash (for example trim a trailing '/' from stdout before comparing), or change the command/code that prints the registry URL so it consistently omits the trailing slash.",
   "input": {
     "context_path": "results/v2/dev/tail/pnpm-jest-config-v2-001.txt",
     "context_tokens_estimate": 4323
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 353
+    "output_tokens_estimate": 507
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 13494.904,
-    "cache_key": "a250fe647ebdf5fef1f20e75257c9b1a2c5916bdf5bfe321188d6fad3247bcdd",
+    "runtime_ms": 10058.087,
+    "cache_key": "a060b35e26fe10d2c4ca8caa8d576084303b6a6c28f71584f4eced7e8a926178",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 8126,
+        "completion_tokens": 773,
+        "total_tokens": 8899,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 384,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

@@ -3,60 +3,81 @@
   "context_method": "llm-summary-v1-mock",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "The build failed due to Rust compiler type-mismatch errors in test sources: async blocks in tests/fail/macros_type_mismatch.rs return types that don't match expected futures.",
+  "summary": "The Rust compiler emitted multiple type-mismatch errors (E0271) in tests/fail/macros_type_mismatch.rs causing the build to fail and the job to exit with code 100.",
   "root_cause_category": "compile_error",
-  "root_cause": "Rust compiler emitted E0271 type-mismatch errors in $DIR/tests/fail/macros_type_mismatch.rs: async blocks resolve to the wrong types (e.g., Result vs () and integer vs ()), causing the job to fail with exit code 100.",
-  "confidence": 0.85,
+  "root_cause": "rustc reported multiple E0271 type-mismatch errors in $DIR/tests/fail/macros_type_mismatch.rs: async blocks resolve to types that do not match the expected return types (e.g., expected () but got Result<(), _>; expected Result<(), ()> but got (); expected Option<()> but got (); expected () but got an integer), causing cargo to fail.",
+  "confidence": 0.9,
   "relevant_files": [
-    "$DIR/tests/fail/macros_type_mismatch.rs"
+    "$DIR/tests/fail/macros_type_mismatch.rs",
+    "/rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/panicking.rs:689:5",
+    "/rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/core/src/panicking.rs:80:14"
   ],
-  "relevant_tests": [
-    "$DIR/tests/fail/macros_type_mismatch.rs"
-  ],
+  "relevant_tests": [],
   "evidence": [
     {
       "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
-      "reason": "Shows a compile-time type mismatch where an async block yields Result but () was expected."
+      "reason": "Shows a concrete rustc E0271 type-mismatch error in the macros_type_mismatch test (expected () but got Result)"
+    },
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:8:1: 8:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
+      "reason": "Additional E0271 error showing multiple mismatches in the same test file"
     },
     {
       "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:13:1: 13:15}` to be a future that resolves to `Result<(), ()>`, but it resolves to `()`",
-      "reason": "Another compile-time mismatch: async block returns () but Result<(), ()> was expected."
+      "reason": "Another E0271 error indicating an async block returns () while a Result was expected"
+    },
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:38:1: 38:15}` to be a future that resolves to `Option<()>`, but it resolves to `()`",
+      "reason": "Shows a mismatch where Option<()> was expected but () was returned"
     },
     {
       "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:63:1: 63:15}` to be a future that resolves to `()`, but it resolves to `{integer}`",
-      "reason": "Shows a different kind of mismatch where an integer is returned instead of the expected ()."
+      "reason": "Shows a mismatch where an integer was returned but () was expected"
     },
     {
       "quote": "##[error]Process completed with exit code 100.",
-      "reason": "Indicates the CI job terminated with a non-zero exit code after the compiler errors."
+      "reason": "Indicates the job failed due to the compilation errors"
     }
   ],
-  "suggested_fix": "Edit $DIR/tests/fail/macros_type_mismatch.rs to make the async blocks return the expected types (e.g., return () where () is expected, or return Result where a Result is expected). Re-run the build/tests (cargo test) to verify the compile errors are resolved.",
+  "suggested_fix": "Update the async blocks in $DIR/tests/fail/macros_type_mismatch.rs to return the types expected by the tests (e.g., return () where () is expected, wrap values in Ok(()) when Result<(), ()> is expected, return Some(...) for Option<()>, or adjust the expected types). Then re-run the build/tests.",
   "input": {
     "context_path": "results/dev/llm-summary-v1-mock/cargo-tokio-001.txt",
     "context_tokens_estimate": 2264
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 475
+    "output_tokens_estimate": 813
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 14530.127,
-    "cache_key": "1533f91b1657b4561214e44f95cfb869522a482a5bc58b8299c7aee813831b62",
+    "runtime_ms": 26060.984,
+    "cache_key": "790716576f3d11fc6a08c3ba4fe8134ce51aad30cb5263719462065b21473e50",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 5598,
+        "completion_tokens": 2068,
+        "total_tokens": 7666,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1280,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

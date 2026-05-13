@@ -3,62 +3,80 @@
   "context_method": "rtk-log",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "The test run produced a failing assertion comparing two Unicode string representations (indicating an encoding/representation mismatch) among many logged errors during the Windows build/test job.",
+  "summary": "Multiple tests failed; several assertion failures indicate Unicode/encoding mismatches in test output (emoji displayed as mojibake). The job shows many errors during the Windows build-and-test run.",
   "root_cause_category": "test_assertion",
-  "root_cause": "A pytest assertion failed: expected '<\\ud83d\\udcbb>' but got '<\u00f0\u0178\u2019\u00bb>' indicating a Unicode/encoding/representation mismatch in test output.",
-  "confidence": 0.75,
+  "root_cause": "A test assertion failed due to a Unicode/encoding mismatch: the expected escaped emoji sequence '<\\ud83d\\udcbb>' does not match the actual mojibake output '<ðŸ’»>'.",
+  "confidence": 0.7,
   "relevant_files": [
     "pegen_errors.c",
     "errors.c",
-    "D:\\a\\cpython\\cpython\\Python\\generated_cases.c.h(7948,46)"
+    "D:\\a\\cpython\\cpython\\Python\\generated_cases.c.h(7948,46): w...",
+    "D:\\a\\cpython\\cpython\\Modules\\_testinternalcapi\\test_cases.c..."
   ],
   "relevant_tests": [
-    "^[[1;35mAssertionError^[[0m: ^[[35m'<\\ud83d\\udcbb>' != '<\u00f0\u0178\u2019\u00bb>'"
+    "^[[1;35mAssertionError^[[0m: ^[[35m'<\\ud83d\\udcbb>' != '<ðŸ’»>'"
   ],
   "evidence": [
     {
-      "quote": "   [error] 184 errors (129 unique)",
-      "reason": "Shows many errors were logged during the build/test run, indicating test failures occurred within a larger failure set."
+      "quote": "184 errors (129 unique)",
+      "reason": "Indicates many test failures occurred in this run."
     },
     {
-      "quote": "^[[1;35mAssertionError^[[0m: ^[[35m'<\\ud83d\\udcbb>' != '<\u00f0\u0178\u2019\u00bb>'",
-      "reason": "An explicit AssertionError comparing the two string representations demonstrates a failing test due to a Unicode/encoding mismatch."
+      "quote": "^[[1;35mAssertionError^[[0m: ^[[35m'<\\ud83d\\udcbb>' != '<ðŸ’»>'",
+      "reason": "Shows a specific assertion failure where the expected escaped Unicode differs from the actual mojibake string, pointing to an encoding issue."
     },
     {
       "quote": "pegen_errors.c",
-      "reason": "A C source file name appears in the error list, indicating the failures occurred during building/running C components of the project."
+      "reason": "One of the files listed among errors; indicates failures surfaced during C sources/tests generation or compilation step."
     },
     {
       "quote": "errors.c",
-      "reason": "Another C source file listed among errors, supporting that the build/test run involved compiled components and tests exercising them."
+      "reason": "Another file listed among errors; relevant to the failure context in the test/build output."
+    },
+    {
+      "quote": "D:\\a\\cpython\\cpython\\Python\\generated_cases.c.h(7948,46): w...",
+      "reason": "A generated C header is mentioned in warnings, suggesting test inputs or generated code that may include Unicode data."
     }
   ],
-  "suggested_fix": "Run the failing test locally on Windows to reproduce the assertion and inspect encoding/locale settings; ensure test output and expected string use the same Unicode encoding (e.g., UTF-8) or update the test to compare normalized/escaped forms. If the mismatch is from build-generated C sources, regenerate or fix encoding handling in the generation step.",
+  "suggested_fix": "Investigate and make the test output encoding consistent on Windows (ensure the test environment uses UTF-8 or normalize Unicode before comparison). Possible actions: run the test with UTF-8 enabled (e.g., set PYTHONUTF8=1 or ensure console code page is UTF-8), or update the test to compare normalized Unicode representations (e.g., compare escaped sequences or use unicodedata.normalize) so the emoji is compared reliably across platforms.",
   "input": {
     "context_path": "results/v2/stress/rtk-log/cpython-tcl-windows-matrix-v2-001.txt",
     "context_tokens_estimate": 410
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 444
+    "output_tokens_estimate": 664
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 32924.022,
-    "cache_key": "455f75d56a55b1e11f68bec2112acd4331efda3a98ef6cabbaf94854db5b32f7",
+    "runtime_ms": 30434.749,
+    "cache_key": "6082824a74bacfccf0a0b6c83f18ab268d27069d13a1cf45fb94475658dc683a",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 1761,
+        "completion_tokens": 1732,
+        "total_tokens": 3493,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1152,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

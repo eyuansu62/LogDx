@@ -3,52 +3,65 @@
   "context_method": "llm-summary-v1-mock",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "A build recipe failed near the end of the job: the `format` recipe (and then `gen-all`) exited with code 127, causing the workflow to end with exit code 127.",
+  "summary": "The CI job completed tests successfully but a Make recipe failed near the end: the `format` and `gen-all` recipes exited with code 127, causing the job to fail.",
   "root_cause_category": "other",
-  "root_cause": "A recipe failed with exit code 127: the `format` recipe on line 221 failed (then `gen-all` failed), indicating a command invoked by the recipe was not found or could not be executed.",
-  "confidence": 0.56,
+  "root_cause": "A command invoked by the Makefile recipes `format` and `gen-all` exited with status 127 (command not found or executable not available), causing the Make recipes to fail and the job to exit with code 127.",
+  "confidence": 0.65,
   "relevant_files": [],
   "relevant_tests": [],
   "evidence": [
     {
       "quote": "error: Recipe `format` failed on line 221 with exit code 127",
-      "reason": "Shows the specific recipe ('format') failed and reports exit code 127."
+      "reason": "Shows the `format` Make recipe failed and reports exit code 127."
     },
     {
       "quote": "error: Recipe `gen-all` failed on line 32 with exit code 127",
-      "reason": "Shows the subsequent recipe ('gen-all') also failed with the same exit code, indicating a recurring problem in the recipe execution chain."
+      "reason": "Shows the `gen-all` Make recipe also failed with the same exit code, indicating the failure occurred while running recipe commands."
     },
     {
       "quote": "##[error]Process completed with exit code 127.",
-      "reason": "The GitHub Actions job ended with exit code 127, matching the recipe failures and confirming the job-level failure cause."
+      "reason": "Confirms the overall CI job ended with exit code 127."
     }
   ],
-  "suggested_fix": "Inspect the recipe referenced (the command at line 221 of the recipe that implements `format`) to see which external command it invokes and ensure that command is installed and available in PATH on the runner; add installation steps to the workflow if necessary, then re-run the job.",
+  "suggested_fix": "Identify which command(s) the Makefile recipes `format` (line 221) and `gen-all` (line 32) invoke and ensure those executables are installed/available in the CI environment (add installation steps to the workflow or the runner image). Re-run the workflow after adding the missing tool(s).",
   "input": {
     "context_path": "results/v2/holdout/llm-summary-v1-mock/biome-pnpm-not-found-v2-001.txt",
     "context_tokens_estimate": 1379
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 342
+    "output_tokens_estimate": 479
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 18891.44,
-    "cache_key": "80172ec281e97bb73b9e85eb901a0d5f666f96f1841fb81ca7f38f9162c2c1c5",
+    "runtime_ms": 11176.607,
+    "cache_key": "738c59d853ab933b19d99b2fae8de9971484ce98d6e06fdb5a741e6568fce276",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 3375,
+        "completion_tokens": 1129,
+        "total_tokens": 4504,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 768,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

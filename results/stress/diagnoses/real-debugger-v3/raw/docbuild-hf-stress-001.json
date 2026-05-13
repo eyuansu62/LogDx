@@ -3,60 +3,29 @@
   "context_method": "raw",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "A workflow step ran a shell conditional that evaluated to false and executed 'exit 1', causing the job to fail.",
-  "root_cause_category": "github_actions_config",
-  "root_cause": "The step's shell conditional evaluated to false and the script executed 'exit 1', causing the job to exit with code 1.",
-  "confidence": 0.8,
+  "summary": "Diagnoser failed. See metadata.provider_error.",
+  "root_cause_category": "unknown",
+  "root_cause": "unknown",
+  "confidence": 0.0,
   "relevant_files": [],
   "relevant_tests": [],
-  "evidence": [
-    {
-      "quote": "Complete job name: doc_build_status_check",
-      "reason": "Identifies the failing job so the failure is tied to this workflow step."
-    },
-    {
-      "quote": "if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\",
-      "reason": "Shows the shell conditional being evaluated; the literal strings indicate the condition was checking for mismatched statuses."
-    },
-    {
-      "quote": "echo \"OK\"",
-      "reason": "Shows the branch that would run if the condition were true (not reached)."
-    },
-    {
-      "quote": "else\\n  exit 1\\nfi",
-      "reason": "Shows the script explicitly exits with status 1 when the condition is false, which causes the job failure."
-    },
-    {
-      "quote": "##[error]Process completed with exit code 1.",
-      "reason": "Confirms the job failed due to the script exiting with code 1."
-    }
-  ],
-  "suggested_fix": "Update the workflow step's shell conditional so it matches the actual statuses you intend to accept (or remove the explicit 'exit 1' branch). For example, edit the conditional comparing \"failure\"/\"skipped\"/\"success\" to the correct values or change the logic so the step prints OK when expected, then re-run the workflow.",
+  "evidence": [],
+  "suggested_fix": "",
   "input": {
     "context_path": "results/stress/raw/docbuild-hf-stress-001.txt",
     "context_tokens_estimate": 606
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 376
+    "output_tokens_estimate": 55
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 16335.4,
-    "cache_key": "f850c674dcccf697c84acaf55fdc26c2437d6e2b556eff9c7e35f884f05a564d",
-    "provider_error": null,
+    "runtime_ms": 23858.842,
+    "cache_key": "233937c77fae3cf900421008d32ed0ab4e9d029f5b7d4a2afc3414eeda4dc1a4",
+    "provider_error": "RuntimeError: diagnosis command exited 1: diagnosis_shim_openai: JSONDecodeError: Invalid control character at: line 16 column 17 (char 832)\n",
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
-    "model_info": {
-      "provider_name": "openai",
-      "requested_model": "gpt-5-mini",
-      "resolved_model": null,
-      "base_url": "https://api.openai.com/v1",
-      "max_completion_tokens": 4096,
-      "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. Backfilled from known run-time env (CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096). resolved_model and system_fingerprint not recoverable from original API responses."
-    }
+    "model_info": null
   }
 }

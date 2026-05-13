@@ -3,10 +3,10 @@
   "context_method": "grep",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "The CI failed because one Jest test suite failed: a test in test/config/get.ts failed, with logs showing a warning about an environment-variable replacement (${ENV_VAR_123}).",
+  "summary": "A Jest test suite failed: one test suite in test/config/get.ts threw an error during the run, causing the test job to exit with status 1.",
   "root_cause_category": "test_assertion",
-  "root_cause": "A Jest test in test/config/get.ts failed (at test/config/get.ts:32:38); the logs show a warning '[WARN] Failed to replace env in config: ${ENV_VAR_123}', indicating an environment-variable replacement issue surfaced during that test.",
-  "confidence": 0.63,
+  "root_cause": "A test in test/config/get.ts failed at runtime (see stack trace at test/config/get.ts:32:38), causing Jest to exit with a non-zero status.",
+  "confidence": 0.62,
   "relevant_files": [
     "test/config/get.ts"
   ],
@@ -16,47 +16,56 @@
   "evidence": [
     {
       "quote": "Test Suites: 1 failed, 3 skipped, 61 passed, 62 of 65 total",
-      "reason": "Shows that one test suite failed overall in the Jest run."
+      "reason": "Shows that at least one test suite failed in the Jest run."
     },
     {
       "quote": "at Object.<anonymous> (test/config/get.ts:32:38)",
-      "reason": "Stack trace pinpoints the failing test location to test/config/get.ts line 32."
+      "reason": "Provides the stack trace location of the failing test (file and line)."
     },
     {
       "quote": "[WARN] Failed to replace env in config: ${ENV_VAR_123}",
-      "reason": "Log message indicates an environment variable replacement failure that occurred during the test run."
-    },
-    {
-      "quote": "Exit status 1",
-      "reason": "The test run exited with a non-zero status, consistent with a failing test suite."
+      "reason": "Shows a warning about an environment variable replacement failure that may be related to the failing test in test/config/get.ts."
     }
   ],
-  "suggested_fix": "Ensure the environment variable used by the config is provided or mocked for the test: set ENV_VAR_123 in the CI job environment before running tests, or update test/config/get.ts to supply or mock the variable (or to tolerate/suppress missing env-var warnings).",
+  "suggested_fix": "Inspect test/config/get.ts at the indicated line (line 32) to see why it throws; ensure required environment variables (for example ENV_VAR_123) are set in the CI environment or modify the test/config code to handle missing env vars. Re-run the tests after fixing the expectation or setting the env var.",
   "input": {
     "context_path": "results/v2/dev/grep/pnpm-jest-config-v2-001.txt",
     "context_tokens_estimate": 15281
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 372
+    "output_tokens_estimate": 474
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 17201.321,
-    "cache_key": "4dfcd2ef684c769a38ed71e27a72e28eec867708f77274ed3533a0715107489d",
+    "runtime_ms": 14623.402,
+    "cache_key": "647efcc8af16e77e9f6c753f6943ec578b31fcfa6b6c125dffef315080d52cbc",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 22726,
+        "completion_tokens": 1134,
+        "total_tokens": 23860,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 768,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

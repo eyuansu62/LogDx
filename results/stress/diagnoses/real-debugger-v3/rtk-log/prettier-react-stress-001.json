@@ -3,52 +3,71 @@
   "context_method": "rtk-log",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "The CI job running Prettier failed with a non-zero exit code, causing the workflow to fail.",
+  "summary": "The CI job 'Run prettier' failed because the formatting step exited with a non-zero status, causing the workflow to stop.",
   "root_cause_category": "formatting_failure",
-  "root_cause": "The Prettier formatting step exited with a non-zero status (exit code 1), indicating files do not match the expected formatting.",
+  "root_cause": "The Prettier formatting step exited with a non-zero status (exit code 1), causing the 'Run prettier' job to fail.",
   "confidence": 0.6,
   "relevant_files": [],
-  "relevant_tests": [],
+  "relevant_tests": [
+    "Run prettier"
+  ],
   "evidence": [
     {
-      "quote": "job_name\": \"Run prettier\"",
-      "reason": "Identifies the failing job as the Prettier run."
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Shows the job finished with a non-zero exit code, indicating failure."
     },
     {
       "quote": "error Command failed with exit code 1.",
-      "reason": "Shows the command (Prettier) returned a non-zero exit code indicating failure."
+      "reason": "The command run by the job returned a failing exit status."
     },
     {
-      "quote": "##[error]Process completed with exit code 1.",
-      "reason": "CI reported the process completed with a non-zero exit code, causing the job to fail."
+      "quote": "[error] 2 errors (2 unique)",
+      "reason": "The log summary reports errors were produced during the run."
+    },
+    {
+      "quote": "Node.js 20 actions are deprecated. The following actions ...",
+      "reason": "A warning in the job output; indicates the environment/logs but is not the primary failure."
     }
   ],
-  "suggested_fix": "Run Prettier locally to find and fix formatting issues (e.g., run the repository's prettier check command and then reformat with --write), commit the formatted files, and re-run the CI job.",
+  "suggested_fix": "Run the repository's Prettier formatting step locally (or run the project's formatter command), apply the suggested formatting fixes (or run the formatter with --write), commit the formatted files, and re-run the CI.",
   "input": {
     "context_path": "results/stress/rtk-log/prettier-react-stress-001.txt",
     "context_tokens_estimate": 146
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 248
+    "output_tokens_estimate": 451
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 19324.069,
-    "cache_key": "bf4fb03927a95aab8d6e91755bf0f38129832adfe326ae448085928e05e9d810",
+    "runtime_ms": 12685.534,
+    "cache_key": "1a88d1f0dc0045a2a231dce53c002cf2cc08e83cc053b4ed8967a7b0112378e7",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 1311,
+        "completion_tokens": 1355,
+        "total_tokens": 2666,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1024,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

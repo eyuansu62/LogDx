@@ -3,13 +3,12 @@
   "context_method": "rtk-err-cat",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "The Gradle build failed because one unit test failed: DbVersionTest.testCollectionVersion asserted that the owner version should not be incremented but it was.",
+  "summary": "A unit test failed during the ':hibernate-core:test' Gradle task: DbVersionTest.testCollectionVersion failed with an assertion that the owner version was incremented unexpectedly.",
   "root_cause_category": "test_assertion",
-  "root_cause": "Test 'DbVersionTest > testCollectionVersion(SessionFactoryScope)' failed with an assertion: 'owner version not incremented ==> expected: <false> but was: <true>'.",
-  "confidence": 0.85,
+  "root_cause": "The test DbVersionTest.testCollectionVersion failed with an assertion: \"owner version not incremented ==> expected: <false> but was: <true>\", causing the ':hibernate-core:test' task to fail.",
+  "confidence": 0.9,
   "relevant_files": [
-    "/home/runner/work/hibernate-orm/hibernate-orm/hibernate-core/target/reports/tests/test/index.html",
-    "/home/runner/work/hibernate-orm/hibernate-orm/hibernate-core"
+    "file:///home/runner/work/hibernate-orm/hibernate-orm/hibernate-core/target/reports/tests/test/index.html"
   ],
   "relevant_tests": [
     "Gradle Test Executor 25 > DbVersionTest > testCollectionVersion(SessionFactoryScope) FAILED"
@@ -17,51 +16,64 @@
   "evidence": [
     {
       "quote": "Gradle Test Executor 25 > DbVersionTest > testCollectionVersion(SessionFactoryScope) FAILED",
-      "reason": "Shows which test failed and that it failed during Gradle test execution."
+      "reason": "Identifies the exact test that failed."
     },
     {
       "quote": "org.opentest4j.AssertionFailedError: owner version not incremented ==> expected: <false> but was: <true>",
-      "reason": "The assertion message and mismatch indicate the test expectation (owner version not incremented) did not match actual behavior."
-    },
-    {
-      "quote": "16923 tests completed, 1 failed, 2596 skipped",
-      "reason": "Confirms only a single test failure caused the build to fail."
+      "reason": "Shows the assertion error and the expected vs actual values that caused the test to fail."
     },
     {
       "quote": "Execution failed for task ':hibernate-core:test'.",
-      "reason": "Gradle task for running hibernate-core tests failed as a result of the failing test."
+      "reason": "Indicates the Gradle task that failed because of the test failure."
     },
     {
       "quote": "There were failing tests. See the report at: file:///home/runner/work/hibernate-orm/hibernate-orm/hibernate-core/target/reports/tests/test/index.html",
-      "reason": "Points to the test report containing details of the failure for investigation."
+      "reason": "Points to the test report with details for the failing test."
+    },
+    {
+      "quote": "BUILD FAILED in 17m 39s",
+      "reason": "Confirms the overall build failed as a result of the test failure."
     }
   ],
-  "suggested_fix": "Run the failing test locally and inspect the test and related versioning code: reproduce with Gradle (e.g. run the specific test in :hibernate-core), open the report at /home/runner/work/hibernate-orm/hibernate-orm/hibernate-core/target/reports/tests/test/index.html, and either fix the code so the owner version is not incremented or update the test expectation if the behavior change is intentional.",
+  "suggested_fix": "Open the test report at file:///home/runner/work/hibernate-orm/hibernate-orm/hibernate-core/target/reports/tests/test/index.html to see the full failure details, then run the failing test locally (for example: gradle :hibernate-core:test --tests \"DbVersionTest.testCollectionVersion\") to reproduce. Investigate why the owner version was incremented (compare expected vs actual state changes) and either fix the code that increments the owner version or update the test expectation if the new behavior is correct.",
   "input": {
     "context_path": "results/v2/holdout/rtk-err-cat/hibernate-orm-dbversion-test-batch6-v2-001.txt",
     "context_tokens_estimate": 65705
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 539
+    "output_tokens_estimate": 684
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 22448.89,
-    "cache_key": "c9963fd79774c2f313cc9116eba3d7bfd7839526ae83f019735620198b8159f5",
+    "runtime_ms": 15950.719,
+    "cache_key": "982133551e6736109905a0975aa75ed9e84d787fa52ce9792eb309c1df1ca437",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 73475,
+        "completion_tokens": 1315,
+        "total_tokens": 74790,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 768,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

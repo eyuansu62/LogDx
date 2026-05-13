@@ -3,69 +3,82 @@
   "context_method": "hybrid-grep-120k-rtk-tail-v3",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "A single test in the PubSub suite timed out waiting to receive a channel message, causing the CI test target to fail.",
+  "summary": "A PubSub integration test timed out waiting to receive a message from a channel, causing the test suite to fail.",
   "root_cause_category": "test_assertion",
-  "root_cause": "The test 'PubSub [It] should ChannelMessage' in pubsub_test.go timed out while waiting for a message on a channel (the test expected a receive but none arrived within the timeout).",
-  "confidence": 0.86,
+  "root_cause": "The PubSub test 'should ChannelMessage' timed out waiting to receive from a channel: the test expected a message on a channel but nothing was received within the 1.001s timeout.",
+  "confidence": 0.78,
   "relevant_files": [
     "/home/runner/work/go-redis/go-redis/pubsub_test.go:645",
     "/home/runner/work/go-redis/go-redis/pubsub_test.go:661"
   ],
   "relevant_tests": [
-    "PubSub ^[[38;5;9m^[[1m[It] should ChannelMessage^[[0m"
+    "PubSub [It] should ChannelMessage"
   ],
   "evidence": [
     {
-      "quote": "^[[38;5;9m\u2022 [FAILED] [1.014 seconds]^[[0m\n^[[0mPubSub ^[[38;5;9m^[[1m[It] should ChannelMessage^[[0m",
-      "reason": "Shows the failing test name and that it failed."
+      "quote": "PubSub \\u001b[38;5;9m\\u001b[1m[It] should ChannelMessage\\u001b[0m",
+      "reason": "Identifies the failing Ginkgo spec by name."
     },
     {
-      "quote": "^[[38;5;243m/home/runner/work/go-redis/go-redis/pubsub_test.go:645^[[0m",
-      "reason": "Identifies the test file and line associated with the failure."
+      "quote": "/home/runner/work/go-redis/go-redis/pubsub_test.go:645",
+      "reason": "Shows the test file and location associated with the failure."
     },
     {
-      "quote": "[FAILED] Timed out after 1.001s.",
-      "reason": "Indicates the test failed due to a timeout (did not observe expected event in time)."
+      "quote": "Timed out after 1.001s.",
+      "reason": "Indicates the test failure was due to a timeout."
     },
     {
-      "quote": "Expected\n        <<-chan *redis.Message | len:0, cap:10>: 0xc0012d96c0\n    to receive something.",
-      "reason": "The assertion that something should have been received from the channel failed (no message arrived)."
+      "quote": "Expected\n      <<-chan *redis.Message | len:0, cap:10>: 0xc0012d96c0\n  to receive something.",
+      "reason": "Shows the test expectation — that a channel should have received a message — which did not occur."
     },
     {
-      "quote": "Ran 1224 of 1274 Specs in 179.248 seconds\nFAIL! -- 1223 Passed | 1 Failed",
-      "reason": "Summarizes that one test failed among many, confirming this was the cause of the overall test suite failure."
+      "quote": "FAIL! -- 1223 Passed | 1 Failed | 0 Pending | 50 Skipped",
+      "reason": "Confirms the overall job failed due to this single test failure."
     },
     {
       "quote": "make: *** [Makefile:46: test.ci] Error 1",
-      "reason": "The failing test caused the CI make target to exit with an error."
+      "reason": "Shows the CI job exited with an error because the test suite failed."
     }
   ],
-  "suggested_fix": "Run the failing test locally and inspect pubsub_test.go around lines 645\u2013661 to determine why no message was received; ensure the publisher path in the test actually publishes before the receive or extend the test timeout / make the test more robust (e.g., retry or synchronize publisher and subscriber). Re-run CI after addressing timing or synchronization issues.",
+  "suggested_fix": "Investigate /home/runner/work/go-redis/go-redis/pubsub_test.go around the failing lines (645–661): ensure the test actually publishes a message before waiting on the channel or increase the receive timeout. Reproduce the failing spec locally (run the single Ginkgo spec or the test file) with additional logging to confirm whether the publisher runs and the subscriber is subscribed when the message is sent.",
   "input": {
     "context_path": "results/v2/holdout/hybrid-grep-120k-rtk-tail-v3/go-redis-pubsub-channel-timeout-batch5-v2-001.txt",
     "context_tokens_estimate": 22395
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 515
+    "output_tokens_estimate": 627
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 36673.866,
-    "cache_key": "3cd2d4d07cefb971b37565bb13a5128ab1617f613fb588b2a294b7d841c4ab3b",
+    "runtime_ms": 16893.192,
+    "cache_key": "686d7f834a18186109033aead8bc1bfd98194417f199681a54ed4a3ccdc7fd01",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 35333,
+        "completion_tokens": 1267,
+        "total_tokens": 36600,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 704,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

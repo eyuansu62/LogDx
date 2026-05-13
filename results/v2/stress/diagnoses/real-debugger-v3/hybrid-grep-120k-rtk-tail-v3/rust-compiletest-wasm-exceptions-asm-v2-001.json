@@ -3,74 +3,82 @@
   "context_method": "hybrid-grep-120k-rtk-tail-v3",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "An assembly test failed because FileCheck did not find expected patterns in the generated assembly for the wasm_exceptions test.",
+  "summary": "An assembly test failed because FileCheck did not find expected CHECK patterns in the generated assembly for wasm_exceptions.",
   "root_cause_category": "test_assertion",
-  "root_cause": "The FileCheck checks in /checkout/tests/assembly-llvm/wasm_exceptions.rs expected strings that were not present in the generated assembly file /checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s, causing the test to fail.",
-  "confidence": 0.84,
+  "root_cause": "The assembly test /checkout/tests/assembly-llvm/wasm_exceptions.rs failed because FileCheck reported \"expected string not found in input\" when scanning the generated assembly file /checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s, causing the test to fail.",
+  "confidence": 0.9,
   "relevant_files": [
     "/checkout/tests/assembly-llvm/wasm_exceptions.rs",
     "/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s"
   ],
   "relevant_tests": [
-    "test [assembly] tests/assembly-llvm/wasm_exceptions.rs ... FAILED",
     "tests/assembly-llvm/wasm_exceptions.rs"
   ],
   "evidence": [
     {
       "quote": "test [assembly] tests/assembly-llvm/wasm_exceptions.rs ... FAILED",
-      "reason": "Shows which test failed."
+      "reason": "Shows which test failed in the suite."
     },
     {
       "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:38:12: error: CHECK: expected string not found in input",
-      "reason": "FileCheck reported that an expected CHECK pattern (line 38) was not found in the input."
+      "reason": "FileCheck reported an expected pattern at line 38 of the test file was not found in the assembly output."
     },
     {
       "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:62:12: error: CHECK: expected string not found in input",
-      "reason": "FileCheck reported another expected CHECK pattern (line 62) was not found."
+      "reason": "FileCheck reported another expected pattern at line 62 of the test file was not found."
     },
     {
       "quote": "Input file: /checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s",
-      "reason": "Identifies the generated assembly file that was checked."
-    },
-    {
-      "quote": "Check file: /checkout/tests/assembly-llvm/wasm_exceptions.rs",
-      "reason": "Identifies the test file containing the FileCheck patterns."
-    },
-    {
-      "quote": "call may_panic",
-      "reason": "Shows the nearby assembly content in the input file where FileCheck scanned but did not find the expected pattern."
+      "reason": "Identifies the generated assembly file that was checked and did not contain the expected patterns."
     },
     {
       "quote": "error: verification with 'FileCheck' failed",
-      "reason": "Confirms failure was due to FileCheck verification failing."
+      "reason": "Indicates that FileCheck verification (the test assertion) failed, causing the test to fail."
+    },
+    {
+      "quote": "33:  call may_panic",
+      "reason": "Shows part of the assembly around where FileCheck scanned; useful to compare against expected CHECK patterns mentioned in the test."
     }
   ],
-  "suggested_fix": "Inspect the generated assembly at /checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s, compare it with the CHECK patterns in /checkout/tests/assembly-llvm/wasm_exceptions.rs, and either (a) update the CHECK lines to match the current assembly output or (b) adjust the codegen so the assembly matches the test expectations. Re-run the assembly test (FileCheck) locally to verify the fix.",
+  "suggested_fix": "Open /checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s, compare it to the CHECK lines in /checkout/tests/assembly-llvm/wasm_exceptions.rs, and either update the CHECK expectations to match the actual assembly or adjust the codegen that emits the assembly so it produces the expected patterns. Re-run the assembly test locally (FileCheck) to verify the fix.",
   "input": {
     "context_path": "results/v2/stress/hybrid-grep-120k-rtk-tail-v3/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
     "context_tokens_estimate": 18151
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 609
+    "output_tokens_estimate": 741
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 22914.341,
-    "cache_key": "718f1d4982022c228954110f16d95a5d87f298f632dd495548367d8e09b63b47",
+    "runtime_ms": 15093.887,
+    "cache_key": "211505ecb2291cfeaca461432930810b98c53f918815c2b2917417e9f111b058",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 27486,
+        "completion_tokens": 1284,
+        "total_tokens": 28770,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 640,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

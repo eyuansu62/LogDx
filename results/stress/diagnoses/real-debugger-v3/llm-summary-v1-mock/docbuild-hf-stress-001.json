@@ -3,39 +3,65 @@
   "context_method": "llm-summary-v1-mock",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "Diagnoser failed. See metadata.provider_error.",
-  "root_cause_category": "unknown",
-  "root_cause": "unknown",
-  "confidence": 0.0,
+  "summary": "A shell conditional in the workflow was executed literally (checking if \"failure\" == \"success\" || \"failure\" == \"skipped\") and the job exited with code 1.",
+  "root_cause_category": "github_actions_config",
+  "root_cause": "A workflow step used a shell inline conditional `if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && ...` which evaluated false for the current status \"failure\" and caused the shell run to exit with code 1.",
+  "confidence": 0.67,
   "relevant_files": [],
   "relevant_tests": [],
-  "evidence": [],
-  "suggested_fix": "",
+  "evidence": [
+    {
+      "quote": "Run if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\",
+      "reason": "Shows the workflow executed a shell conditional comparing the string \"failure\" against \"success\" and \"skipped\"."
+    },
+    {
+      "quote": "if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\",
+      "reason": "Reinforces that the literal shell conditional was run (the runner echoed the command)."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Shows the job ended with a non-zero exit code, consistent with the shell conditional evaluating false under default 'set -e' behavior."
+    }
+  ],
+  "suggested_fix": "Avoid using a shell inline conditional that can exit the step when false. Use GitHub Actions' step-level `if:` condition to skip the step (for example `if: ${{ job.status == 'success' || job.status == 'skipped' }}`), or restructure the shell script to handle a false condition without exiting (e.g., wrap condition in `if ...; then ...; fi` or disable `set -e` for that command).",
   "input": {
     "context_path": "results/stress/llm-summary-v1-mock/docbuild-hf-stress-001.txt",
     "context_tokens_estimate": 169
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 55
+    "output_tokens_estimate": 539
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 9109.093,
-    "cache_key": "d633efd59f09a64df27ed37f885b749ff9f479142a470c0db7512e2d8ffa7372",
-    "provider_error": "RuntimeError: diagnosis command exited 1: diagnosis_shim_openai: JSONDecodeError: Invalid control character at: line 14 column 46 (char 736)\n",
+    "runtime_ms": 15182.791,
+    "cache_key": "5191feaa67de09c26f4a55e99b031dff814f7c46fea060a87a960b6add334ea5",
+    "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 1332,
+        "completion_tokens": 1256,
+        "total_tokens": 2588,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 832,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

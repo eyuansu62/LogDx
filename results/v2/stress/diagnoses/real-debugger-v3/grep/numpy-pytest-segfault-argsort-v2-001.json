@@ -3,13 +3,13 @@
   "context_method": "grep",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "The test run crashed with a segmentation fault while running numpy.argsort from the datetime tests; the failure occurred during test_datetime_nat_argsort_stability.",
+  "summary": "Pytest run crashed with a segmentation fault while running numpy/_core/tests/test_datetime.py::test_datetime_nat_argsort_stability; the crash occurred inside numpy.fromnumeric.argsort.",
   "root_cause_category": "test_assertion",
-  "root_cause": "Fatal Python segmentation fault occurred in numpy._core.fromnumeric.argsort invoked by numpy/_core/tests/test_datetime.py::test_datetime_nat_argsort_stability.",
-  "confidence": 0.82,
+  "root_cause": "A segmentation fault occurred during test_datetime_nat_argsort_stability when calling numpy._core.fromnumeric.argsort, causing the test run to abort.",
+  "confidence": 0.78,
   "relevant_files": [
     "numpy/_core/tests/test_datetime.py",
-    "numpy/_core/fromnumeric.py"
+    "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py"
   ],
   "relevant_tests": [
     "test_datetime_nat_argsort_stability"
@@ -17,51 +17,64 @@
   "evidence": [
     {
       "quote": "Fatal Python error: Segmentation fault",
-      "reason": "Shows the process crashed with a native segmentation fault during test execution."
+      "reason": "Shows the process terminated due to a native segmentation fault."
     },
     {
       "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 54 in _wrapfunc",
-      "reason": "Indicates the crash occurred while executing code in numpy's fromnumeric wrapper."
+      "reason": "Indicates the crash happened while executing a wrapper in numpy.fromnumeric."
     },
     {
       "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 1231 in argsort",
-      "reason": "Shows the native crash happened during an argsort call."
+      "reason": "Shows that numpy.argsort was on the call stack at the time of the crash."
     },
     {
       "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
-      "reason": "Identifies the specific test that triggered the argsort call which led to the segmentation fault."
+      "reason": "Identifies the specific test that triggered the call into argsort which crashed."
     },
     {
       "quote": "##[error]Process completed with exit code 245.",
-      "reason": "Confirms the job ended due to the crash (non-zero exit code from the Python process)."
+      "reason": "Confirms the CI job ended due to the crash (non-zero exit status)."
     }
   ],
-  "suggested_fix": "Reproduce the failure locally and capture a native backtrace: run the single test (pytest -k test_datetime_nat_argsort_stability) and, if it crashes, run the same test under gdb or enable Python faulthandler to obtain a C-extension backtrace. Build a debug/verbose numpy build (with debug symbols) if needed to get a full native stack trace for diagnosing the C-extension code invoked by argsort.",
+  "suggested_fix": "Reproduce the failure locally and capture a native backtrace (e.g. run the single test under gdb or use Python's faulthandler). Example: run pytest numpy/_core/tests/test_datetime.py::test_datetime_nat_argsort_stability locally and, if it crashes, run the test under a debugger (gdb --args python -m pytest ...) to get a C-level backtrace and inspect the argsort implementation in the C extension.",
   "input": {
     "context_path": "results/v2/stress/grep/numpy-pytest-segfault-argsort-v2-001.txt",
     "context_tokens_estimate": 28011
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 515
+    "output_tokens_estimate": 677
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 24207.393,
-    "cache_key": "0c86dff5396e288d059c4055ccb03f48adbd555d5456a0c6ef17893f14d5eb05",
+    "runtime_ms": 21586.622,
+    "cache_key": "8655282addf8d5b51e4c166cd0017973c946eca039eb67fd61a9df70a2f05fb6",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. Backfilled from known run-time env (CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096). resolved_model and system_fingerprint not recoverable from original API responses."
+      "usage": {
+        "prompt_tokens": 50302,
+        "completion_tokens": 1845,
+        "total_tokens": 52147,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1280,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

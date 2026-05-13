@@ -3,19 +3,17 @@
   "context_method": "llm-summary-v1-mock",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "The test run failed: the test suite reported --- FAIL: TestGinkgoSuite and the process exited with code 2. Multiple test failures and runtime errors are shown (invalid state transitions, many failures in tests, nil pointer dereference, parsing errors, dial/EOF errors).",
+  "summary": "The Go test suite failed: TestGinkgoSuite reported a failure. Multiple unit tests produced runtime assertion failures (invalid state transitions, many failures in double_freeturn_test, push notification parsing errors, and a nil pointer dereference), causing the job to exit with a non‑zero code.",
   "root_cause_category": "test_assertion",
-  "root_cause": "The Go test suite failed at runtime: TestGinkgoSuite failed (exit code 2) and multiple tests reported runtime/assertion failures such as invalid state transitions in conn_state_test.go and a nil pointer dereference in push_test.go.",
-  "confidence": 0.66,
+  "root_cause": "Multiple unit tests failed at runtime (invalid state transition assertions, numerous failures in double_freeturn_test.go, push notification parsing errors, and a nil pointer dereference), leading to TestGinkgoSuite failing and the process exiting with code 2.",
+  "confidence": 0.68,
   "relevant_files": [
     "conn_state_test.go",
     "double_freeturn_test.go",
     "peek_push_notification_test.go",
     "push_test.go",
     "pool_hook_test.go",
-    "digest_test.go",
-    "handoff_worker.go",
-    "processor.go"
+    "handoff_worker.go"
   ],
   "relevant_tests": [
     "TestGinkgoSuite"
@@ -23,59 +21,72 @@
   "evidence": [
     {
       "quote": "--- FAIL: TestGinkgoSuite (179.28s)",
-      "reason": "This shows the overall test suite failed and gives the failing test identifier and that it ran for 179s."
+      "reason": "Shows the overall test run failed and which test/suite reported failure."
     },
     {
-      "quote": "Process completed with exit code 2.",
-      "reason": "The job exited with a non-zero exit code indicating failure."
-    },
-    {
-      "quote": "conn_state_test.go:314: Goroutine 3: failed to enter INITIALIZING - invalid state transition: cannot transition from INITIALIZING to INITIALIZING (valid from: [IDLE])",
-      "reason": "Concrete runtime test failure showing an invalid state transition reported by a test file and line number."
+      "quote": "Goroutine 3: failed to enter INITIALIZING - invalid state transition: cannot transition from INITIALIZING to INITIALIZING (valid from: [IDLE])",
+      "reason": "Concrete assertion failure about invalid state transition from conn_state_test.go indicating a runtime test assertion."
     },
     {
       "quote": "double_freeturn_test.go:217: Failures: 93",
-      "reason": "Another test file reports a large number of failures, indicating multiple assertions failed."
+      "reason": "Indicates a large number of failures in double_freeturn_test.go (runtime/test failures)."
+    },
+    {
+      "quote": "peek_push_notification_test.go:219: PeekPushNotificationName errored for corrupted data CorruptedLength: redis: can't parse push notification: \"abc\\r\\n$6\\r\\nMOVING\\r\\n…",
+      "reason": "Shows parsing errors for corrupted push notification data reported by a test."
     },
     {
       "quote": "push_test.go:782: Expected panic when accessing nil registry: runtime error: invalid memory address or nil pointer dereference",
-      "reason": "Shows a runtime panic / nil pointer dereference observed during a test."
+      "reason": "Shows a nil pointer dereference occurred in a test, a runtime crash/assertion."
     },
     {
       "quote": "redis: 2026/05/07 17:27:17 handoff_worker.go:421: conn[4] failed to dial new endpoint new-endpoint:6379: dial failed",
-      "reason": "Shows connection/dial failure during test runs, another runtime error observed in the logs."
+      "reason": "Log entry showing a dial failure during tests (context of connection/hand-off related failures)."
     },
     {
-      "quote": "redis: 2026/05/07 17:27:20 processor.go:86: push: error reading push notification: EOF",
-      "reason": "Shows EOF errors while reading push notifications during tests, indicating I/O/runtime issues in the suite."
+      "quote": "##[error]Process completed with exit code 2.",
+      "reason": "CI job exited with a non-zero exit code due to test failures."
     }
   ],
-  "suggested_fix": "Reproduce and isolate the failures locally: run the failing suite (e.g. focus on TestGinkgoSuite or the specific failing files) to get full stack traces and failure context. Start by running the tests that report failures (conn_state_test.go at line 314, double_freeturn_test.go, push_test.go:782, peek_push_notification_test.go) to inspect why invalid state transitions, nil pointer dereference, parsing errors, and dial/EOF errors are occurring. If failures are intermittent, re-run CI to check for flakiness or environment issues.",
+  "suggested_fix": "Run the failing tests locally to reproduce (e.g. go test ./... -run TestGinkgoSuite or specific failing files), inspect and fix the reported runtime issues: correct the invalid state transitions in conn_state_test.go logic, address the many failures in double_freeturn_test.go (possible double-free or resource management bug), harden push notification parsing for corrupted inputs, and prevent nil pointer dereference in push_test.go. Re-run the suite until tests pass.",
   "input": {
     "context_path": "results/v2/holdout/llm-summary-v1-mock/go-redis-pubsub-channel-timeout-batch5-v2-001.txt",
     "context_tokens_estimate": 2399
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 709
+    "output_tokens_estimate": 856
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 27747.202,
-    "cache_key": "fe131e4e73a2599e7bf6a85b355091149b57e98cfc7793266d5073721b10f449",
+    "runtime_ms": 38311.505,
+    "cache_key": "bd46e09f241067edc9acf9b65835d51c1d826358db70a5ad6d7a48577d921066",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 4510,
+        "completion_tokens": 1757,
+        "total_tokens": 6267,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1024,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

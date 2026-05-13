@@ -16,13 +16,25 @@
 - **Config:** `configs/diagnosers/real-debugger-v3.json`
 - **Prompt:** `prompts/debugger_v1.md` (same prompt as v1 and v2;
   SHA recorded in every diagnosis row)
-- **Run date:** 2026-05-11
+- **Original run date:** 2026-05-11
+- **Re-run date (Codex 2026-05-12 F1 fix):** 2026-05-13
+  — the 2026-05-12 cache-key fix invalidated all v3 cache
+  entries by design (see §3i 2026-05-12 disclosure block); the
+  v3 sweep was repeated end-to-end so `resolved_model` and the
+  full `usage` block are populated from live API responses
+  rather than env-time backfill. 285 of 285 successful rows
+  carry `metadata.model_info.resolved_model = gpt-5-mini-2025-08-07`
+  (zero alias rotation between original run and re-run);
+  the remaining 65 rows are provider_error (oversized-context
+  F1 path — no API call, no resolved_model possible).
+- **Resolved snapshot ID at run time:** `gpt-5-mini-2025-08-07`
 
 gpt-5-mini was chosen as the third debugger to test §3i's cross-family
 generalization question: do hybrid-v2/v3 rankings on v2 survive a
 debugger from a different model family? It was selected over the
 larger gpt-5 / gpt-4o family for cost: the full 6-split × 10-baseline
-× 35-case pass cost ~$3-5 and ran in ~75 minutes.
+× 35-case pass cost ~$3-5 and ran in ~75 minutes. The 2026-05-13
+re-run cost roughly the same (350 cache misses, ~80 min).
 
 ## Intended use for §3i
 
@@ -87,6 +99,17 @@ a new timestamp.
   documented for `real-debugger-v1` (Haiku) in §3e caveat 2.**
   The flake appears to be Claude-CLI-specific, not a property of
   wrapped contexts in general.
+- **Run-to-run variance.** Reasoning-class APIs are non-
+  deterministic at the sampling settings the shim uses
+  (temperature not sent). The 2026-05-13 re-run produced
+  per-method score deltas of up to ±0.13 on v1.3 (max on
+  rtk-read/raw — large logs where the model has many places to
+  pick differently each run) and up to ±0.057 on v2. v1.3
+  rankings moved (hybrid-v1 #5 → #2 on gpt-5-mini); v2 rankings
+  did NOT move. This is itself a §3i finding: v2 produces more
+  run-stable rankings than v1.3. Single-run v3 numbers should
+  be treated as worst-case ranking instability; future v3
+  protocols should consider N=3-5 re-runs + median aggregation.
 
 ## Reproducing the §3i run
 
@@ -120,9 +143,35 @@ Cost estimate: ~$3-5 if all rows are cache misses. Cache hits cost $0.
 ## Auditability
 
 Each diagnosis row contains `metadata.model_info.resolved_model` —
-the exact snapshot ID OpenAI returned. If a future re-run produces
-a different `resolved_model` value despite the same `requested_model`,
-that's the audit signal that OpenAI rotated the alias underneath us.
+the exact snapshot ID OpenAI returned. After the Codex 2026-05-12 F1
+re-run, **all 285 successful v3 rows carry
+`resolved_model: gpt-5-mini-2025-08-07`** populated from live API
+responses; the remaining 65 rows are provider_error (oversized-
+context cases that never reached the API). If a future re-run
+produces a different `resolved_model` value despite the same
+`requested_model`, that's the audit signal that OpenAI rotated the
+alias underneath us.
+
+The row also carries `metadata.model_info.base_url` (sanitized —
+userinfo and query string stripped) and `metadata.model_info.base_url_sha256`
+(sha256 of the FULL env-provided URL, including any proxy
+credentials). The sanitized URL is what readers see; the hash lets
+an auditor confirm that a re-run hit the same endpoint as the
+canonical run without storing the secret. See Codex 2026-05-12 F3
+in §3i for context.
+
+## Cache-key safety (Codex 2026-05-12 F2)
+
+This config opts into `cache_key_env`, listing
+`CILOGBENCH_OPENAI_MODEL` and `CILOGBENCH_OPENAI_BASE_URL`.
+`tools/run_diagnosis.py` folds these env values into the diagnosis
+cache key, so a re-run with a different alias or proxy will MISS
+the cache instead of silently replaying a row from a different
+backend. The runner additionally validates each cache hit's
+`metadata.model_info.requested_model` against `config.model.model_name`
+as belt-and-suspenders. See
+`tools/tests/test_diagnosis_cache_key.py` for the regression
+suite.
 
 ## Limitations carried over to §3i
 

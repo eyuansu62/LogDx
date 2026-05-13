@@ -38,5 +38,11 @@
     "allow_secret_values_in_results": false
   },
 
+  "cache_key_env": [
+    "CILOGBENCH_OPENAI_BASE_URL",
+    "CILOGBENCH_OPENAI_MODEL"
+  ],
+  "cache_key_env_note": "Per Codex 2026-05-12 F2 [high]: these env vars override the shim's resolved model and endpoint. tools/run_diagnosis.py folds their values into the diagnosis cache_key so a re-run with a different CILOGBENCH_OPENAI_MODEL or CILOGBENCH_OPENAI_BASE_URL does not silently replay a stale row from a different backend. Adding/removing entries invalidates all existing v3 cache entries by design — the original §3i run pre-dates this opt-in and was re-run on 2026-05-13 to populate resolved_model from live API responses.",
+
   "_doc": "Added 2026-05-11 per Codex adversarial review on commit 772520d. The §3i cross-family validation run committed before this file existed used the same effective settings — see model card and §3i for the run-time invariants. This config is what FUTURE re-runs must match for the §3i numbers to remain reproducible. The shim records actual model_info into each row so any divergence between this config and a future run is detectable."
 }

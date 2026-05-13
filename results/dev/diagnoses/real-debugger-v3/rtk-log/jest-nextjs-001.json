@@ -3,62 +3,76 @@
   "context_method": "rtk-log",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "The Jest example tests failed because the test runner could not load expected test output files (ENOENT), causing multiple tests under examples/with-jest to fail.",
+  "summary": "Jest tests failed because test output files were missing (ENOENT) while loading test results; several example tests (with-jest) reported failures due to this missing output.",
   "root_cause_category": "test_assertion",
-  "root_cause": "The test run failed at runtime because the test runner attempted to load test output files that did not exist (ENOENT), causing tests like examples/with-jest/__tests__/index.test.tsx and examples/with-jest/app/blog/[slug]/page.test.tsx to fail.",
-  "confidence": 0.7,
+  "root_cause": "Tests failed at runtime while trying to load test output files due to ENOENT: no such file or directory, causing example tests (examples/with-jest) to fail.",
+  "confidence": 0.62,
   "relevant_files": [
     "examples/with-jest/__tests__/index.test.tsx",
-    "examples/with-jest/app/blog/[slug]/page.test.tsx"
+    "examples/with-jest/app/blog/[slug]/page.test.tsx",
+    "dist/api/error.d.ts"
   ],
   "relevant_tests": [
-    "examples/with-jest/__tests__/index.test.tsx failed due to Error: fai...",
-    "examples/with-jest/app/blog/[slug]/page.test.tsx failed due to Error..."
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest/app/blog/[slug]/page.test.tsx"
   ],
   "evidence": [
     {
       "quote": "Failed to load test output Error: ENOENT: no such file or directory,...",
-      "reason": "Shows the test runner failed because it couldn't find a required file (ENOENT)."
+      "reason": "Shows the immediate error encountered when attempting to load test output — a missing file (ENOENT) caused test loading to fail."
     },
     {
       "quote": "examples/with-jest/__tests__/index.test.tsx failed due to Error: fai...",
-      "reason": "Identifies a specific test that failed due to the loading error."
+      "reason": "Identifies a concrete test file that failed as a result of the error while loading test output."
     },
     {
       "quote": "examples/with-jest/app/blog/[slug]/page.test.tsx failed due to Error...",
-      "reason": "Another specific test failure tied to the same error condition."
+      "reason": "Shows another example test that failed due to the same error, indicating a broader problem affecting multiple tests."
     },
     {
       "quote": "next:pack-for-isolated-tests: dist/api/error.d.ts",
-      "reason": "Shows packaging/build steps related to producing dist files, suggesting tests expect build artifacts that may be missing."
+      "reason": "Indicates packaging/pack-for-isolated-tests is expected to produce files under dist/, suggesting tests depend on those build artifacts which may be missing."
     }
   ],
-  "suggested_fix": "Ensure the build/packaging step that produces the test output files runs successfully before tests. Verify the expected output files exist (fix paths or generation), e.g. run the packaging/build command that creates the dist files or adjust tests to reference the correct generated file locations, then re-run the tests.",
+  "suggested_fix": "Ensure the build/pack step that produces test artifacts runs and succeeds before Jest runs (e.g., run the 'pack-for-isolated-tests' / build step so files like dist/api/error.d.ts exist), and verify the CI job produces the expected output paths or adjust tests to reference the correct files.",
   "input": {
     "context_path": "results/dev/rtk-log/jest-nextjs-001.txt",
     "context_tokens_estimate": 401
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 462
+    "output_tokens_estimate": 620
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 13992.994,
-    "cache_key": "781575fd030702e702c17f564c1f25fd2d1c4ca78e33290ec89c9a9cf463be91",
+    "runtime_ms": 16788.993,
+    "cache_key": "ae288f48d6d0348ef32fbf8d0d48cabe63b9d6d00c01acb03944f742e38468fd",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 1729,
+        "completion_tokens": 1140,
+        "total_tokens": 2869,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 640,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

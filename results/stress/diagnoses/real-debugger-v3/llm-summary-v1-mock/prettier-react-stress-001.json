@@ -3,48 +3,65 @@
   "context_method": "llm-summary-v1-mock",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "The CI job exited with a non-zero status (exit code 1), but the provided context contains no further logs or test failures to identify the underlying cause.",
+  "summary": "The 'Run prettier' CI job exited with a non-zero status, but the provided logs do not contain the specific prettier or command error message to determine the exact failure.",
   "root_cause_category": "unknown",
   "root_cause": "unknown",
-  "confidence": 0.12,
+  "confidence": 0.15,
   "relevant_files": [],
   "relevant_tests": [],
   "evidence": [
     {
-      "quote": "2026-04-23T10:42:45.0308857Z error Command failed with exit code 1.",
-      "reason": "Shows the run produced a non-zero exit code indicating failure, but gives no additional detail about what failed."
+      "quote": "Run prettier",
+      "reason": "Identifies the job name, indicating this failure occurred while running a Prettier-related CI step."
     },
     {
-      "quote": "2026-04-23T10:42:45.0394351Z ##[error]Process completed with exit code 1.",
-      "reason": "Confirms the CI process ended with exit code 1, but the context contains no logs, stack traces, or test names to diagnose the root cause."
+      "quote": "error Command failed with exit code 1.",
+      "reason": "Shows that a command failed with a non-zero exit code, which is the proximate cause of the job failure."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the CI process terminated with exit code 1 and the job failed."
     }
   ],
-  "suggested_fix": "",
+  "suggested_fix": "Re-run the 'Run prettier' job or examine the full CI log around the quoted error lines to capture the specific prettier output. Enable verbose/debug logging for the prettier step (or run the same prettier command locally) to obtain the precise error for a targeted fix.",
   "input": {
     "context_path": "results/stress/llm-summary-v1-mock/prettier-react-stress-001.txt",
     "context_tokens_estimate": 134
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 195
+    "output_tokens_estimate": 417
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 7619.838,
-    "cache_key": "ffe82706d366e210bd108521c2b274f23fae2047058fe9695510b8caaffa37be",
+    "runtime_ms": 16143.04,
+    "cache_key": "4de47ab650dea24cf212335325a79e1abcd577ed4a9f2ca54aa517d0806a3eb2",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 1253,
+        "completion_tokens": 1309,
+        "total_tokens": 2562,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1024,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

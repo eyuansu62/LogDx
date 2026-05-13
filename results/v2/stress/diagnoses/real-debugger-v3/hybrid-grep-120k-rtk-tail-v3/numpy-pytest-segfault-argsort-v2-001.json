@@ -3,13 +3,13 @@
   "context_method": "hybrid-grep-120k-rtk-tail-v3",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "A segmentation fault occurred during the test run: pytest crashed while executing numpy/_core/tests/test_datetime.py::test_datetime_nat_argsort_stability; the Python-level stack shows the crash happened during numpy.argsort.",
+  "summary": "The test run crashed with a native segmentation fault during numpy.argsort called from a datetime test (test_datetime_nat_argsort_stability).",
   "root_cause_category": "test_assertion",
-  "root_cause": "Process crashed with 'Segmentation fault' while running numpy/_core/tests/test_datetime.py::test_datetime_nat_argsort_stability; the traceback shows the crash occurred inside numpy._core.fromnumeric.argsort (C extension code).",
-  "confidence": 0.8,
+  "root_cause": "A segmentation fault occurred inside numpy.argsort (via numpy._core.fromnumeric._wrapfunc -> argsort) while running numpy/_core/tests/test_datetime.py::test_datetime_nat_argsort_stability, causing the pytest job to abort.",
+  "confidence": 0.85,
   "relevant_files": [
-    "numpy/_core/tests/test_datetime.py",
-    "numpy/_core/fromnumeric.py"
+    "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py",
+    "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py"
   ],
   "relevant_tests": [
     "test_datetime_nat_argsort_stability"
@@ -17,51 +17,64 @@
   "evidence": [
     {
       "quote": "Fatal Python error: Segmentation fault",
-      "reason": "Shows the job terminated due to a native segmentation fault."
+      "reason": "Shows the run terminated due to a native segmentation fault."
     },
     {
       "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 54 in _wrapfunc",
-      "reason": "Indicates the crash occurred while executing numpy's fromnumeric wrapper function."
+      "reason": "Stack frame indicates the crash happened while executing numpy._core.fromnumeric._wrapfunc."
     },
     {
       "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 1231 in argsort",
-      "reason": "Shows argsort was on the Python call stack at the time of the crash."
+      "reason": "Stack frame shows numpy.argsort was on the call stack at the time of the crash."
     },
     {
       "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
-      "reason": "Identifies the specific test that triggered the crash."
+      "reason": "Identifies the specific test that triggered the call to argsort which crashed."
     },
     {
-      "quote": "Extension modules: numpy._core._multiarray_umath, numpy.linalg._umath_linalg, numpy._core._multiarray_tests, numpy._core._rational_tests, numpy._core._umath_tests",
-      "reason": "Indicates native extension modules are loaded, consistent with a native crash inside C extension code."
+      "quote": "##[error]Process completed with exit code 245.",
+      "reason": "CI runner exit code confirms abnormal termination due to the segmentation fault."
     }
   ],
-  "suggested_fix": "Reproduce the failure locally by running the single test under a native debugger / fault handler (e.g. pytest numpy/_core/tests/test_datetime.py::test_datetime_nat_argsort_stability with Python's faulthandler enabled or running Python under gdb/ASAN/valgrind) to capture a C-level backtrace. If reproducible, bisect recent changes to argsort/related C code and inspect handling of datetime/NaT code paths in the argsort implementation.",
+  "suggested_fix": "Reproduce the failure locally by running the single test: pytest -q numpy/_core/tests/test_datetime.py::test_datetime_nat_argsort_stability. Run under a native debugger or sanitizer (e.g. build with debug symbols and ASAN or run under gdb/valgrind) to get a C-level backtrace. Investigate the implementation of argsort / the C extension code invoked by _wrapfunc for handling datetime/NaT values and recent changes to that code; if the crash only occurs with the built extensions in this CI environment, verify the extension build flags and rebuild with sanitizers enabled to pinpoint the invalid memory access.",
   "input": {
     "context_path": "results/v2/stress/hybrid-grep-120k-rtk-tail-v3/numpy-pytest-segfault-argsort-v2-001.txt",
     "context_tokens_estimate": 28056
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 577
+    "output_tokens_estimate": 765
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 17349.713,
-    "cache_key": "24787422910d3f588821276ca33344d26bde364352d3ef8cb28b585cfab5a89e",
+    "runtime_ms": 23600.493,
+    "cache_key": "3ef72db92cbde3fc68b7e0cd3e96222c28a34e2c2c411eaf60ee946aa375804c",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 50350,
+        "completion_tokens": 1913,
+        "total_tokens": 52263,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1280,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

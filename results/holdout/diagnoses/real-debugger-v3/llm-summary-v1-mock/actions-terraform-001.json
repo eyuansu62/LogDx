@@ -3,50 +3,65 @@
   "context_method": "llm-summary-v1-mock",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "The 'Check Changelog Entry' CI job failed because the PR is missing a changelog entry for the targeted v1.16 release, causing the action to mark the job as failed.",
-  "root_cause_category": "other",
-  "root_cause": "The CI check detected that the pull request targets v1.16 but does not include a changelog entry in the .changes/v1.16 folder, and the action called core.setFailed to fail the job.",
-  "confidence": 0.85,
-  "relevant_files": [],
+  "summary": "The 'Check Changelog Entry' CI job failed because the PR targets v1.16 but does not include a changelog entry in the .changes/v1.16 folder.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The workflow marked the run as failed because the PR would target v1.16 and no changelog entry was found in .changes/v1.16.",
+  "confidence": 0.78,
+  "relevant_files": [
+    ".changes/v1.16"
+  ],
   "relevant_tests": [
     "Check Changelog Entry"
   ],
   "evidence": [
     {
-      "quote": "core.setFailed(commentDetails);",
-      "reason": "Shows the GitHub Action explicitly marks the workflow as failed."
+      "quote": "##[error]Currently this PR would target a v1.16 release. Please add a changelog entry for in the .changes/v1.16 folder, or discuss which release you'd like to target with …",
+      "reason": "Explicit CI error message stating the PR targets v1.16 and instructing to add a changelog entry in .changes/v1.16."
     },
     {
-      "quote": "2026-04-23T09:06:25.3001661Z ##[error]Currently this PR would target a v1.16 release. Please add a changelog entry for in the .changes/v1.16 folder, or discuss which release you'd like to target with \u2026",
-      "reason": "Explicit error message indicating the PR is missing the required changelog entry for the v1.16 release."
+      "quote": "core.setFailed(commentDetails);",
+      "reason": "Shows the action explicitly set the job as failed (the failure was reported by the check logic)."
     }
   ],
-  "suggested_fix": "Add a changelog entry for the PR in the .changes/v1.16 folder (or update/discuss the intended target release) so the 'Check Changelog Entry' job passes.",
+  "suggested_fix": "Add a changelog entry for this PR in the .changes/v1.16 folder, or update/discuss the intended target release for the PR so the check is satisfied.",
   "input": {
     "context_path": "results/holdout/llm-summary-v1-mock/actions-terraform-001.txt",
     "context_tokens_estimate": 152
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 285
+    "output_tokens_estimate": 423
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 17797.059,
-    "cache_key": "886c64747066636ecfc6a95e1934d06f7dec83cafd87f4d8be621b15abb9de66",
+    "runtime_ms": 18232.785,
+    "cache_key": "b2410c931fee135af6f8c532443d98918c0ae7d197523c2d0b8755c1c742aedc",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 1262,
+        "completion_tokens": 1346,
+        "total_tokens": 2608,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1024,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

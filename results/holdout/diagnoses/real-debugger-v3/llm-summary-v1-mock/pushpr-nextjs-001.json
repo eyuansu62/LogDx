@@ -3,58 +3,67 @@
   "context_method": "llm-summary-v1-mock",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "The job failed when attempting to push a branch to the repository: git push returned HTTP 403 and the push command exited with code 128, causing the workflow to fail.",
+  "summary": "The CI failed when attempting to push a branch to GitHub: the git push command exited with code 128 after GitHub returned an HTTP 403 error, causing the job to fail.",
   "root_cause_category": "permission_or_secret",
-  "root_cause": "git push to https://github.com/vercel/next.js/ failed with HTTP 403, indicating an authentication or permission failure when attempting to push the branch; the git push command exited with code 128.",
-  "confidence": 0.78,
+  "root_cause": "git push failed because GitHub returned HTTP 403 (access denied) when attempting to access https://github.com/vercel/next.js/, causing the git command to exit with code 128.",
+  "confidence": 0.85,
   "relevant_files": [
     "/home/runner/work/next.js/next.js/node_modules/.pnpm/execa@2.0.3/node_modules/execa/lib/error.js:58:11"
   ],
   "relevant_tests": [],
   "evidence": [
     {
-      "quote": "fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403",
-      "reason": "Shows the remote returned HTTP 403 when trying to access the repository, indicating an auth/permission problem."
-    },
-    {
       "quote": "Error: Command failed with exit code 128 (Unknown system error -128): git push origin update/react/19.3.0-canary-142cfde8-20260422",
-      "reason": "Shows the failing command was 'git push' for the branch and that it exited with code 128."
+      "reason": "Shows the failing command was git push and it exited with code 128."
     },
     {
-      "quote": "exitCodeName: 'Unknown system error -128',",
-      "reason": "Additional metadata confirming the process exited with an error related to the git push failure."
+      "quote": "\"fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403\"",
+      "reason": "Demonstrates GitHub returned an HTTP 403 (permission/authorization) error when accessing the repository URL."
     },
     {
-      "quote": "##[error]Process completed with exit code 1.",
-      "reason": "Indicates the workflow failed as a result of the error."
+      "quote": "exitCodeName: 'Unknown system error -128'",
+      "reason": "Corroborates the git command failure and the reported exit code name associated with the push failure."
     }
   ],
-  "suggested_fix": "Verify and fix repository push authentication for the CI runner: ensure the workflow uses credentials with write permission (for example configure GITHUB_TOKEN or a deploy key with repo write access and enable repo permissions in the workflow), or adjust the git remote to use an authenticated URL. Then re-run the job.",
+  "suggested_fix": "Ensure the CI has valid credentials with push/write permission for the repository (e.g., configure GITHUB_TOKEN or a personal access token with repo access and make sure it's available to the job), verify the remote URL is correct and authenticated, and re-run the workflow.",
   "input": {
     "context_path": "results/holdout/llm-summary-v1-mock/pushpr-nextjs-001.txt",
     "context_tokens_estimate": 535
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 437
+    "output_tokens_estimate": 533
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 21158.64,
-    "cache_key": "1ad19c6604e3fef76f5695356c65cc08adfd818e5f1a53cfa0b6b034a7330459",
+    "runtime_ms": 14644.935,
+    "cache_key": "a7bebe7e065a3bcd0db2b7b95a0917297dec9ceda651f7a701a1a52658af2249",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 1909,
+        "completion_tokens": 1122,
+        "total_tokens": 3031,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 704,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

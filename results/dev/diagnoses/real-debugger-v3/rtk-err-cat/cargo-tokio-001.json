@@ -3,10 +3,10 @@
   "context_method": "rtk-err-cat",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "A trybuild compile-fail test (compile_fail_full) failed because compilation produced unexpected type-mismatch errors originating from the tokio::main attribute, causing the test harness to panic.",
-  "root_cause_category": "compile_error",
-  "root_cause": "A compile-fail test produced compiler errors (multiple E0308/E0271/E0277 mismatched-type errors) \u2014 the actual compiler diagnostics (originating in the `tokio::main` attribute) did not match the expected trybuild output, causing trybuild's test `compile_fail_full` to fail.",
-  "confidence": 0.78,
+  "summary": "A trybuild compile-fail test (compile_fail_full) failed because Rust type-checking produced unexpected/mismatched type errors in tests under tests/fail/macros_type_mismatch.rs, causing the trybuild runner to panic and the test job to fail.",
+  "root_cause_category": "type_error",
+  "root_cause": "The trybuild test 'compile_fail_full' encountered multiple Rust type-checking errors (e.g. mismatched types and async-block return-type mismatches) in tests under tests/fail/macros_type_mismatch.rs, causing the trybuild run to fail.",
+  "confidence": 0.85,
   "relevant_files": [
     "$DIR/tests/fail/macros_type_mismatch.rs",
     "/home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13"
@@ -17,55 +17,68 @@
   "evidence": [
     {
       "quote": "test compile_fail_full ... FAILED",
-      "reason": "Shows which test failed in the test run."
+      "reason": "Shows the trybuild test that failed."
     },
     {
       "quote": "error[E0308]: mismatched types",
-      "reason": "Compiler emitted type-mismatch errors (E0308) which caused compilation to fail."
+      "reason": "Indicates Rust type-checker reported mismatched type errors."
     },
     {
       "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
-      "reason": "Indicates the specific mismatch in return type from an async block in the failing test file."
-    },
-    {
-      "quote": "note: this error originates in the attribute macro `tokio::main`",
-      "reason": "Shows that the diagnostics are produced by the tokio attribute macro, pointing to the source of the compile errors."
+      "reason": "Shows an async-return-type mismatch originating from the test file macros_type_mismatch.rs."
     },
     {
       "quote": "thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13",
-      "reason": "trybuild panicked because a compile-fail test did not produce the expected output."
+      "reason": "Shows the trybuild runner panicked when the compile-fail expectations were not met."
     },
     {
       "quote": "1 of 10 tests failed",
-      "reason": "Confirms the overall test suite failure count and that this was a single failing trybuild test among multiple."
+      "reason": "Confirms that a test failure caused the overall test run to fail."
+    },
+    {
+      "quote": "Summary [   9.876s] 396 tests run: 395 passed, 1 failed, 1 skipped",
+      "reason": "Indicates the CI job aborted due to the single failing test."
     }
   ],
-  "suggested_fix": "Inspect tests/fail/macros_type_mismatch.rs and fix the async function return types to match the expected types for #[tokio::main] (e.g., return () or change to Result and unwrap/expect as suggested by the compiler). If compiler diagnostics changed intentionally, update the trybuild expected stderr files by re-running the trybuild-approved update procedure so the compile-fail test expectations match current compiler output.",
+  "suggested_fix": "Either update the failing compile-fail test source ($DIR/tests/fail/macros_type_mismatch.rs) so its async functions return the expected types (e.g. make functions that use `?` return Result/Option as appropriate or remove `?`), or update the trybuild expected output for the compile-fail test to match the current compiler diagnostics so the trybuild test passes.",
   "input": {
     "context_path": "results/dev/rtk-err-cat/cargo-tokio-001.txt",
     "context_tokens_estimate": 7313
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 594
+    "output_tokens_estimate": 699
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 21470.204,
-    "cache_key": "74a86276eabfde0aeaef2ad34fee15b5c498cba4ff1f9dbd0fc272c63716de5b",
+    "runtime_ms": 23312.099,
+    "cache_key": "36399690ccd535d95e200999b721b6a7335083206d5ea5e1b7921e26fdb5c80a",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 15847,
+        "completion_tokens": 1791,
+        "total_tokens": 17638,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1152,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

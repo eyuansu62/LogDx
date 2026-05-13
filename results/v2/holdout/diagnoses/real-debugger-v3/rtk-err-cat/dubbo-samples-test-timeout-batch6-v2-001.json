@@ -3,72 +3,86 @@
   "context_method": "rtk-err-cat",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "Integration tests for dubbo-samples-test-11137 timed out; Docker/compose errors (daemon 500, invalid filter, missing network/containers) appear in the log and likely prevented the test containers from starting.",
+  "summary": "The integration test job failed because the test run timed out. Docker daemon errors and missing containers/networks are present in the logs and should be investigated via the test logs.",
   "root_cause_category": "timeout_or_oom",
-  "root_cause": "The integration test run timed out: the test harness reported a run timeout and multiple Docker errors (daemon 500, 'invalid filter', missing network and containers) occurred while bringing up or tearing down containers.",
-  "confidence": 0.7,
+  "root_cause": "Integration tests exceeded the allotted time and were marked as a timeout: 'TEST FAILURE: Run tests timeout'.",
+  "confidence": 0.85,
   "relevant_files": [
-    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs"
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/docker-compose.yml"
   ],
   "relevant_tests": [
-    "[2/23] [dubbo-samples-test-11137:1/1]"
+    "dubbo-samples-test-11137:1/1"
   ],
   "evidence": [
     {
       "quote": "[2/23] [dubbo-samples-test-11137:1/1] TEST FAILURE: Run tests timeout, version: -Ddubbo.version=3.3.7-SNAPSHOT -Dspring.version=5.3.24 -Djava.version=21, please check logs: /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
-      "reason": "Explicit message that the test run timed out and points to logs for the failing integration test run."
+      "reason": "Explicit message stating the test run timed out and points to logs."
     },
     {
       "quote": "Error response from daemon: invalid filter 'reference'",
-      "reason": "Repeated Docker daemon error indicating a problem interacting with the Docker API/filters while running tests."
+      "reason": "Repeated docker daemon error messages appear in the log, indicating docker operations failed."
     },
     {
       "quote": "Error response from daemon: No such container: dubbo-samples-test-11137--zookeeper-1",
-      "reason": "Shows expected test containers (zookeeper) were not present, suggesting container startup or teardown failed."
+      "reason": "The expected test containers (zookeeper) were reported as missing, suggesting services did not start or were removed."
     },
     {
       "quote": "zookeeper Error received unexpected HTTP status: 500 Internal Server Error",
-      "reason": "A Docker/compose-related 500 error occurred for the zookeeper service, indicating the daemon or compose operation failed."
+      "reason": "Docker reported a 500 error for the zookeeper service, indicating a daemon or service error during test setup."
     },
     {
       "quote": "Error response from daemon: network dubbo-samples-test-11137-21 not found",
-      "reason": "Docker network required for the integration test was not found, which would prevent services from communicating and the tests from running."
+      "reason": "The test-specific Docker network was not found, which can prevent containers from connecting and lead to timeouts."
     },
     {
       "quote": "Failed tests count: 1",
-      "reason": "Confirms that at least one test ultimately failed in the suite (consistent with the overall test failure outcome)."
+      "reason": "Shows that at least one test ultimately failed in this run (consistent with the overall failure outcome)."
     },
     {
       "quote": "Total: 23, Success: 18, Failures: 1, Ignored: 4",
-      "reason": "Summarizes the test run results and corroborates that the job ended with failures after the timeout."
+      "reason": "Summary confirming the test run encountered a failure and did not complete successfully."
     }
   ],
-  "suggested_fix": "Inspect the integration test logs at /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs to see detailed failures; address the Docker/compose errors (investigate Docker daemon 500 responses and the 'invalid filter \"reference\"' messages), ensure the docker network and expected containers (e.g., zookeeper) can be created, and remove the obsolete 'version' attribute from the generated docker-compose.yml as suggested by the warning before re-running the tests.",
+  "suggested_fix": "Inspect the integration test logs at /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs for the timed-out tests. Investigate the Docker daemon errors shown in the logs (e.g. \"invalid filter 'reference'\", 500 responses, missing containers and network). Ensure Docker is healthy, required containers/networks can be created by docker-compose.yml, then re-run the integration tests.",
   "input": {
     "context_path": "results/v2/holdout/rtk-err-cat/dubbo-samples-test-timeout-batch6-v2-001.txt",
     "context_tokens_estimate": 1834
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 705
+    "output_tokens_estimate": 799
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 17585.501,
-    "cache_key": "57ddccb745779407ef3545b2c797b963b757814fadf5373e7dfacffcde3b8832",
+    "runtime_ms": 24072.019,
+    "cache_key": "0ccf65f338cf6d213456d6c9d6771097c7a0205465e3b032ec7f98205ae0fb02",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 3874,
+        "completion_tokens": 1994,
+        "total_tokens": 5868,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1280,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

@@ -3,10 +3,10 @@
   "context_method": "rtk-err-cat",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "A functional test failed because pip could not download a GitHub archive: repeated 502 responses caused the install step to error and the test to exit with code 1.",
+  "summary": "A functional test failed because pip could not download a GitHub-hosted zip due to repeated 502 responses from github.com, causing the test script to exit with code 1.",
   "root_cause_category": "network_or_flaky",
-  "root_cause": "The test tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub] failed because pip was unable to fetch the GitHub-hosted package: HTTPSConnectionPool to host='github.com' returned repeated 502 errors and max retries were exceeded, causing the install command to exit with code 1.",
-  "confidence": 0.82,
+  "root_cause": "The test failed because pip could not fetch https://github.com/pypa/pip-test-package/archive/refs/heads/master.zip: \"Max retries exceeded\" due to \"too many 502 error responses\", causing the install subprocess to return exit code 1.",
+  "confidence": 0.78,
   "relevant_files": [
     "tests/functional/test_truststore.py"
   ],
@@ -16,47 +16,60 @@
   "evidence": [
     {
       "quote": "[gw1]^[[36m [ 99%] ^[[0m^[[31mFAILED^[[0m tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]",
-      "reason": "This is the failing test identifier reported by pytest."
-    },
-    {
-      "quote": "ERROR: Could not install packages due to an OSError: HTTPSConnectionPool(host='github.com', port=443): Max retries exceeded with url: /pypa/pip-test-package/archive/refs/heads/master.zip (Caused by ResponseError('too many 502 error responses'))",
-      "reason": "Shows pip failed to download from GitHub due to repeated 502 responses, which explains the install failure."
+      "reason": "Shows which test failed."
     },
     {
       "quote": "E       AssertionError: Script returned code: 1",
-      "reason": "The test harness reports the script exited with a non-zero status, consistent with the failed download/installation."
+      "reason": "The test failed because a subprocess/script exited with a non-zero code."
     },
     {
-      "quote": "^[[36mnox > ^[[31mCommand pytest tests/functional --verbose --numprocesses auto --showlocals --durations=15 failed with exit code 1^[[0m",
-      "reason": "The overall functional test session failed as a result of the test error."
+      "quote": "ERROR: Could not install packages due to an OSError: HTTPSConnectionPool(host='github.com', port=443): Max retries exceeded with url: /pypa/pip-test-package/archive/refs/heads/master.zip (Caused by ResponseError('too many 502 error responses'))",
+      "reason": "Explicit pip/network error indicating repeated 502 responses from github.com when attempting to download the test package."
+    },
+    {
+      "quote": "nox > ^[[31mCommand pytest tests/functional --verbose --numprocesses auto --showlocals --durations=15 failed with exit code 1^[[0m",
+      "reason": "Shows the test session failed and exited with code 1."
     }
   ],
-  "suggested_fix": "Treat this as a transient network failure: re-run the CI job. If failures recur, make the test independent of live GitHub (mock the download or use a local test server/fixture), or add handling/increased retries in test setup to avoid flaky external network dependencies.",
+  "suggested_fix": "Rerun the job (transient network/GitHub 502s are common). If failures persist, make the test hermetic by mocking or serving the test package locally, add retry/backoff for network fetches, or adjust CI networking to allow stable access to github.com.",
   "input": {
     "context_path": "results/v2/dev/rtk-err-cat/pip-pytest-network-github-v2-001.txt",
     "context_tokens_estimate": 12439
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 509
+    "output_tokens_estimate": 617
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 13367.015,
-    "cache_key": "c11e55ec5f4846ebc65c17906beaadf2e2ebf0945a47ed2bf804b11f98a62498",
+    "runtime_ms": 18218.371,
+    "cache_key": "0e049b4eb1fa45e86eb548731d24822455a67cab706e10c56e0b5120f5ef391e",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 19202,
+        "completion_tokens": 1350,
+        "total_tokens": 20552,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 832,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

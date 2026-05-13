@@ -3,10 +3,10 @@
   "context_method": "hybrid-grep-120k-tail-v2",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "One Jest test suite failed: a test in test/config/get.ts emitted an unexpected warning about an environment variable replacement and the test run exited with status 1.",
+  "summary": "The CI job failed because one Jest test suite failed (test/config/get.ts), causing the pnpm test script to exit with a non-zero status.",
   "root_cause_category": "test_assertion",
-  "root_cause": "A test in test/config/get.ts failed due to an unexpected warning: \"[WARN] Failed to replace env in config: ${ENV_VAR_123}\" which is reported from test/config/get.ts (line 32), causing the Jest run to exit with status 1.",
-  "confidence": 0.7,
+  "root_cause": "A test suite failed during Jest run: test/config/get.ts contains a failing test (error at test/config/get.ts:32:38) which caused the overall test command to exit with status 1.",
+  "confidence": 0.66,
   "relevant_files": [
     "test/config/get.ts"
   ],
@@ -16,47 +16,64 @@
   "evidence": [
     {
       "quote": "Test Suites: 1 failed, 3 skipped, 61 passed, 62 of 65 total",
-      "reason": "Shows that one test suite failed while most others passed."
-    },
-    {
-      "quote": "[WARN] Failed to replace env in config: ${ENV_VAR_123}",
-      "reason": "The unexpected warning message that likely triggered the failing assertion or indicates missing environment variable substitution."
+      "reason": "Shows that one test suite failed while others passed."
     },
     {
       "quote": "at Object.<anonymous> (test/config/get.ts:32:38)",
-      "reason": "Stack trace points to the failing test location inside test/config/get.ts at line 32."
+      "reason": "Stack location points to the failing test file and line number."
     },
     {
-      "quote": "[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] pnpm@11.0.6 .test: `cross-env NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules --disable-warning=ExperimentalWarning --disable-warning=DEP0169\" jest`",
-      "reason": "Shows the test run exited with a non-zero status, confirming the CI job failed because Jest returned exit code 1."
+      "quote": "console.warn\n      [WARN] Failed to replace env in config: ${ENV_VAR_123}",
+      "reason": "A warning about missing environment variable substitution was emitted during tests, likely related to the failing config test."
+    },
+    {
+      "quote": "[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] pnpm@11.0.6 .test: `cross-env NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules --disable-warning=ExperimentalWarning --disable-warning=DEP0169\" jest`\nExit status 1",
+      "reason": "The test script exited with status 1 indicating the failing test caused the process to return non-zero."
+    },
+    {
+      "quote": "Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?",
+      "reason": "Jest forced exit after tests completed, indicating the run ended with a failure that terminated the job."
     }
   ],
-  "suggested_fix": "Provide the expected environment variable before running tests (e.g. set ENV_VAR_123 in the CI environment) or update the test/config/get.ts test to mock or handle missing environment variables so it does not emit the warning/trigger a failure.",
+  "suggested_fix": "Run the failing test locally (e.g. run the same jest command or run jest on test/config/get.ts) and inspect line 32 of test/config/get.ts. If the failure is due to missing environment replacement, ensure the test provides or mocks ENV_VAR_123 (or add the variable in the CI environment), or update the test to not rely on that environment variable.",
   "input": {
     "context_path": "results/v2/dev/hybrid-grep-120k-tail-v2/pnpm-jest-config-v2-001.txt",
     "context_tokens_estimate": 15325
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 425
+    "output_tokens_estimate": 648
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 14590.707,
-    "cache_key": "4e57271c4a0672f40417156d9d4f1aa2079d66b684b219c0a006677c9d96db22",
+    "runtime_ms": 20456.643,
+    "cache_key": "103b73286a4aa2dbc4f2a5357c556944811c30e85326e0b8fe2c9cc36d48df19",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 22771,
+        "completion_tokens": 1492,
+        "total_tokens": 24263,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 960,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

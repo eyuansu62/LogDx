@@ -3,68 +3,92 @@
   "context_method": "tail",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "Jest snapshot tests failed because the actual parser/error messages produced by the formatter differ from the stored snapshots (13 snapshot failures across 2 test suites), causing multiple expect(...).rejects.toThrowErrorMatchingSnapshot() assertions to fail.",
+  "summary": "Jest snapshot tests failed because the actual error messages/locations produced during parsing differ from the stored snapshots, causing multiple toThrowErrorMatchingSnapshot assertions to fail.",
   "root_cause_category": "test_assertion",
-  "root_cause": "Snapshot mismatches: the error messages/positions produced during parsing have changed (e.g. \"Cannot use new with import().\" vs expected \"Cannot use new with import(...).\"), so tests that assert error messages against snapshots failed.",
-  "confidence": 0.78,
+  "root_cause": "Snapshot assertion failures: the test expectations (snapshots) do not match the received parser error messages and positions (message text and column positions differ).",
+  "confidence": 0.8,
   "relevant_files": [
     "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
-    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js"
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js",
+    "tests/config/format-test/test-format.js"
   ],
   "relevant_tests": [
-    "constructorOverloadsWithDefaultValues.ts > format[babel-ts]",
     "snippet: #2 > format[babel]",
-    "snippet: #3 > format[babel-ts]",
+    "snippet: #2 > format[babel-flow]",
+    "snippet: #2 > format[babel-ts]",
+    "snippet: #3 > format[babel]",
+    "constructorOverloadsWithDefaultValues.ts > format[babel-ts]",
     "snippet: #0 > format[babel-ts]"
   ],
   "evidence": [
     {
-      "quote": "Snapshot Summary\n \u203a 13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
-      "reason": "Explicitly shows snapshot failures and suggests updating snapshots with jest -u."
+      "quote": "Error: expect(received).rejects.toThrowErrorMatchingSnapshot()",
+      "reason": "Shows the test assertion that expects a thrown error to match a stored snapshot is failing."
     },
     {
-      "quote": "- Cannot use new with import(...). (1:5)\n+ Cannot use new with import(). (1:5)",
-      "reason": "Example of a snapshot diff where the received error message differs from the snapshot (ellipses vs empty parentheses)."
+      "quote": "Cannot use new with import(...). (1:5)",
+      "reason": "This is the text from the stored snapshot (the expected error message/format) shown in the diff."
     },
     {
-      "quote": "- Unexpected token (1:12)\n+ `import()` requires exactly one or two arguments. (1:5)\n  > 1 | new import();",
-      "reason": "Another snapshot diff showing the error text changed from 'Unexpected token' to a different message about import() arguments."
+      "quote": "Cannot use new with import(). (1:5)",
+      "reason": "This is the actual received error message that differs from the snapshot, causing the mismatch."
     },
     {
-      "quote": "FAIL tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js\nconstructorOverloadsWithDefaultValues.ts > format[babel-ts]\n    SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)\n      1 | class C {\n      2 |     foo: string;\n    > 3 |     constructor(x = 1);\n          |                 ^",
-      "reason": "Shows a concrete syntax error produced during a test run, including file, test name, and the parser error that likely contributed to snapshot mismatch or test failure."
+      "quote": "`import()` requires exactly one or two arguments. (1:5)",
+      "reason": "Another example of an actual received error message that differs from expected snapshot content."
     },
     {
-      "quote": "Error: expect(received).rejects.toThrowErrorMatchingSnapshot()\n\nSnapshot name: `snippet: #2 format[babel] 1`",
-      "reason": "Indicates the failing assertion type: a promise rejection was expected to match a snapshot but did not."
+      "quote": "FAIL tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+      "reason": "Indicates a specific test suite file that failed due to these assertion/snapshot mismatches."
+    },
+    {
+      "quote": "SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)",
+      "reason": "Parser produced a SyntaxError with a specific message/location for a TypeScript test, which is part of the failing output."
+    },
+    {
+      "quote": "Snapshot Summary\n › 13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "Summary explicitly states that snapshots failed and suggests updating snapshots, confirming the root cause is snapshot mismatches."
     }
   ],
-  "suggested_fix": "If the changed error messages are intentional, update the snapshots by re-running the tests with Jest's update flag (e.g., run jest -u or your project's test script with -u). If the change is unintentional, revert or adjust the change that modified the parser/error-message output so it matches existing snapshots.",
+  "suggested_fix": "Inspect the parser or test changes that altered error message text/positions. If the message changes are intentional, update the snapshots by re-running jest with -u (e.g., run the tests and accept updated snapshots). If unintentional, revert or adjust the code that changed the parser error output so it matches the expected snapshots.",
   "input": {
     "context_path": "results/v2/holdout/tail/prettier-jest-snapshot-babel-v2-001.txt",
     "context_tokens_estimate": 4265
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 722
+    "output_tokens_estimate": 845
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 20169.863,
-    "cache_key": "668cadbdfd1fc9c717cf8531a845494bbd12b5fd642026c77845cf1f3279b4aa",
+    "runtime_ms": 24625.422,
+    "cache_key": "318a5489cc2008b56dfbfea0832ea13bbcbcf057c8f1d7eece8069d0b6e44960",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 7678,
+        "completion_tokens": 1963,
+        "total_tokens": 9641,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1280,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

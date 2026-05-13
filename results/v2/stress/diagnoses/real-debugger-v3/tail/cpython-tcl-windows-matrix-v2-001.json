@@ -3,70 +3,82 @@
   "context_method": "tail",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "A Tcl-related test file failed: two tests in test_tcl expected a surrogate-escaped Unicode result but got a mojibake string ('<\u00f0\u0178\u2019\u00bb>') instead of the expected '<\\ud83d\\udcbb>' / '<\\U0001f4bb>'.",
+  "summary": "A runtime test failure in the Tcl tests: two tests in test.test_tcl failed because the Tcl result contained mojibake (UTF-8 bytes mis-decoded) instead of the expected Unicode surrogate escape representation.",
   "root_cause_category": "test_assertion",
-  "root_cause": "The tests test_eval_surrogates_in_result and test_evalfile_surrogates_in_result failed because the Tcl result was decoded incorrectly on Windows: the returned string '<\u00f0\u0178\u2019\u00bb>' does not match the expected surrogate-escaped representation '<\\ud83d\\udcbb>' (U+1F4BB).",
-  "confidence": 0.85,
+  "root_cause": "test.test_tcl.TclTest tests failed asserting that Tcl results preserve surrogate escapes; the test expected '<\\U0001f4bb>' but got '<ðŸ’»>', indicating the Tcl result was decoded incorrectly (mojibake) on Windows.",
+  "confidence": 0.7,
   "relevant_files": [
     "D:\\a\\cpython\\cpython\\Lib\\test\\test_tcl.py"
   ],
   "relevant_tests": [
-    "test.test_tcl.TclTest.test_eval_surrogates_in_result",
-    "test.test_tcl.TclTest.test_evalfile_surrogates_in_result",
-    "test_tcl"
+    "test_eval_surrogates_in_result (test.test_tcl.TclTest.test_eval_surrogates_in_result)",
+    "test_evalfile_surrogates_in_result (test.test_tcl.TclTest.test_evalfile_surrogates_in_result)"
   ],
   "evidence": [
     {
-      "quote": "test_eval_surrogates_in_result (test.test_tcl.TclTest.test_eval_surrogates_in_result) ... ^[[31mFAIL^[[0m^[[0m",
-      "reason": "Shows the specific test that failed (test_eval_surrogates_in_result) and that it failed."
+      "quote": "1 test failed:\n    test_tcl",
+      "reason": "Shows that the failing test file is test_tcl."
     },
     {
-      "quote": "test_evalfile_surrogates_in_result (test.test_tcl.TclTest.test_evalfile_surrogates_in_result) ... ^[[31mFAIL^[[0m",
-      "reason": "Shows the second specific test that failed (test_evalfile_surrogates_in_result)."
+      "quote": "test_eval_surrogates_in_result (test.test_tcl.TclTest.test_eval_surrogates_in_result) ... FAIL",
+      "reason": "Identifies the specific failing test name and that it failed."
     },
     {
-      "quote": "AssertionError^[[0m: ^[[35m'<\\ud83d\\udcbb>' != '<\u00f0\u0178\u2019\u00bb>'",
-      "reason": "The assertion shows the expected value '<\\ud83d\\udcbb>' differs from the actual '<\u00f0\u0178\u2019\u00bb>', indicating a decoding/encoding mismatch."
+      "quote": "test_evalfile_surrogates_in_result (test.test_tcl.TclTest.test_evalfile_surrogates_in_result) ... FAIL",
+      "reason": "Identifies the second failing test name and that it failed."
     },
     {
-      "quote": "- <\\ud83d\\udcbb>",
-      "reason": "Diff output showing the expected surrogate-escaped string."
+      "quote": "File \"D:\\a\\cpython\\cpython\\Lib\\test\\test_tcl.py\", line 57, in test_eval_surrogates_in_result",
+      "reason": "Points to the test file and the failing test location."
     },
     {
-      "quote": "+ <\u00f0\u0178\u2019\u00bb>",
-      "reason": "Diff output showing the actual mojibake string returned by Tcl."
+      "quote": "AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ’»>'",
+      "reason": "Shows the exact assertion failure: expected surrogate-escaped Unicode '<\\U0001f4bb>' but got mojibake '<ðŸ’»>'."
     },
     {
-      "quote": "File ^[[35m\"D:\\a\\cpython\\cpython\\Lib\\test\\test_tcl.py\"^[[0m, line ^[[35m57^[[0m, in ^[[35mtest_eval_surrogates_in_result^[[0m",
-      "reason": "Identifies the test file and location where the failing assertion occurred."
+      "quote": "patchlevel = 9.0.3",
+      "reason": "Shows the Tcl version involved, which may be relevant to encoding/decoding behavior."
     }
   ],
-  "suggested_fix": "Investigate and fix Tcl result decoding on Windows: ensure values returned from Tcl (tcl.eval / tcl.evalfile) are decoded as Unicode preserving surrogate escapes (or decoded as UTF-8 with surrogateescape) so the returned string is '<\\U0001f4bb>' / '<\\ud83d\\udcbb>' rather than mojibake. Re-run the failing tests: test.test_tcl.TclTest.test_eval_surrogates_in_result and test.test_tcl.TclTest.test_evalfile_surrogates_in_result.",
+  "suggested_fix": "Investigate Tcl-to-Python decoding on Windows: reproduce the failures by running the two tests in Lib\\test\\test_tcl.py and inspect the raw bytes returned by tcl.eval/tcl.evalfile. Verify that the Tcl library (patchlevel 9.0.3) and the Python Tcl wrapper decode results with UTF-8 (or use surrogate escapes) instead of producing mojibake; adjust the Tcl build/encoding settings or the Python wrapper's decoding logic so the tests receive '<\\U0001f4bb>' as expected.",
   "input": {
     "context_path": "results/v2/stress/tail/cpython-tcl-windows-matrix-v2-001.txt",
     "context_tokens_estimate": 5443
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 587
+    "output_tokens_estimate": 717
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 54583.074,
-    "cache_key": "9ab8690c4f46ca0db0d47875a5bfa0bf8c0b479b1eedbb4868835f9cb8ea4223",
+    "runtime_ms": 19689.052,
+    "cache_key": "64e654087abb0e9d57d633c319b824b49e9e6634559d5febfc43777a69e91945",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 9708,
+        "completion_tokens": 1625,
+        "total_tokens": 11333,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 960,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }

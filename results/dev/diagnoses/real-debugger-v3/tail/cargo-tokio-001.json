@@ -3,74 +3,78 @@
   "context_method": "tail",
   "diagnoser": "real-debugger-v3",
   "mode": "root_cause_diagnosis",
-  "summary": "A trybuild compile-fail test failed: tests/fail/macros_type_mismatch.rs produced compile-time type-mismatch errors (functions annotated with #[tokio::main] returning different types than their bodies), causing trybuild to panic and the test task 'compile_fail_full' to fail.",
+  "summary": "A trybuild compile-fail test failed because the compiler error output for tests/fail/macros_type_mismatch.rs did not match the expected output, causing trybuild to panic and the test job to fail.",
   "root_cause_category": "compile_error",
-  "root_cause": "The trybuild compile-fail test for macros (tests/fail/macros_type_mismatch.rs) produced mismatched-type compiler errors (e.g., expected Result/Option but found (), expected () but found integer), which caused trybuild to detect a failing case and panic.",
+  "root_cause": "trybuild detected a mismatch between the actual compiler errors produced for tests/fail/macros_type_mismatch.rs and the expected test output, causing trybuild to panic and the compile_fail_full test to fail.",
   "confidence": 0.85,
   "relevant_files": [
     "tests/fail/macros_type_mismatch.rs",
     "./tests/macros.rs"
   ],
   "relevant_tests": [
-    "tests-build::macros",
     "compile_fail_full"
   ],
   "evidence": [
     {
       "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:13:1: 13:15}` to be a future that resolves to `Result<(), ()>`, but it resolves to `()`",
-      "reason": "Shows a compile-time type mismatch occurring in tests/fail/macros_type_mismatch.rs where an async block under #[tokio::main] resolves to () but the expected output is Result<(), ()>."
+      "reason": "Shows compiler produced errors for tests/fail/macros_type_mismatch.rs (type mismatches)."
     },
     {
-      "quote": "error[E0308]: mismatched types\n  --> tests/fail/macros_type_mismatch.rs:23:5",
-      "reason": "Indicates another mismatched-types compiler error located in tests/fail/macros_type_mismatch.rs."
-    },
-    {
-      "quote": "Ok(());",
-      "reason": "An example of a returned unit value in the failing test code that the compiler reports as the wrong type for the function's declared return type."
-    },
-    {
-      "quote": "note: If the actual output is the correct output you can bless it by rerunning\nyour test with the environment variable TRYBUILD=overwrite",
-      "reason": "trybuild itself suggests rerunning with TRYBUILD=overwrite to update the expected compile-fail output, indicating the failure is due to mismatched expected diagnostics."
+      "quote": "note: If the actual output is the correct output you can bless it by rerunning your test with the environment variable TRYBUILD=overwrite",
+      "reason": "Indicates trybuild observed a difference between actual and expected compiler output and suggests overwriting expected outputs."
     },
     {
       "quote": "thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13:",
-      "reason": "Shows trybuild panicked during the compile-fail test run, causing the test suite to fail."
+      "reason": "Shows trybuild panicked during the compile_fail_full test run (the test harness failure)."
     },
     {
       "quote": "1 of 10 tests failed",
-      "reason": "Confirms that a single test failure (the trybuild compile-fail case) caused the job to fail."
+      "reason": "Confirms a failing test in the test suite."
     },
     {
-      "quote": "FAIL [   9.875s] (396/396)  tests-build::macros  compile_fail_full",
-      "reason": "Identifies the failing test group and test name reported by the test runner."
+      "quote": "FAIL [   9.875s] (396/396) tests-build::macros  compile_fail_full",
+      "reason": "Identifies the failing test target as the compile_fail_full test under tests-build::macros."
     }
   ],
-  "suggested_fix": "If the new compiler diagnostics are intended, update the trybuild expectations by rerunning the failing test with TRYBUILD=overwrite (as trybuild suggests). Otherwise, fix tests/fail/macros_type_mismatch.rs so the async functions' declared return types match their returned expressions (or adjust usage of #[tokio::main]) so the compile-fail output matches the expected output.",
+  "suggested_fix": "If the new compiler output is correct, re-run the failing trybuild test locally with TRYBUILD=overwrite (e.g. TRYBUILD=overwrite cargo test -p <package>) to update the expected .stderr files and commit the changes; otherwise, adjust tests/fail/macros_type_mismatch.rs or the code under test so the produced compiler errors match the expected outputs.",
   "input": {
     "context_path": "results/dev/tail/cargo-tokio-001.txt",
     "context_tokens_estimate": 4374
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 712
+    "output_tokens_estimate": 679
   },
   "metadata": {
     "provider": "command",
     "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 23303.575,
-    "cache_key": "597315ccf56b41a20a28cf0861089ec70ebd8a09e8b5c31906f61467e794427f",
+    "runtime_ms": 24730.971,
+    "cache_key": "95cdf5dca24320cef3c2664b3d22f5cbb8dcfe1eebe84bbcf29c73f42d335764",
     "provider_error": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
     "model_info": {
       "provider_name": "openai",
       "requested_model": "gpt-5-mini",
-      "resolved_model": null,
+      "resolved_model": "gpt-5-mini-2025-08-07",
       "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
       "max_completion_tokens": 4096,
       "system_fingerprint": null,
-      "usage": null,
-      "_backfilled": true,
-      "_backfill_note": "Pre-Codex-2026-05-11 F2 fix the shim didn't persist model_info into rows. This entry was backfilled from known run-time env: CILOGBENCH_OPENAI_MODEL=gpt-5-mini, default base_url, default max_completion_tokens=4096. resolved_model and system_fingerprint are not recoverable from the original API responses."
+      "usage": {
+        "prompt_tokens": 8116,
+        "completion_tokens": 1861,
+        "total_tokens": 9977,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1280,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
     }
   }
 }
