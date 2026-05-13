@@ -1448,6 +1448,61 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > unchanged at 10. All 40 pass. v1/v2 eval is zero-drift (backfill
 > only touched `metadata.model_info`).
 
+> ⚠️ **Codex 2026-05-15 [high/high] fixes applied — no scores moved.**
+> Codex re-reviewed and flagged two issues that the 2026-05-14 work
+> left open:
+>
+> **F1 [high] Fresh rows were written before model identity was
+> checked.** The cache validator only ran on cache HITS. After a live
+> provider call, the runner built and wrote the row without checking
+> that `metadata.model_info.requested_model` matches the diagnoser
+> config's effective model. The exact reachable failure Codex flagged:
+> a v2 run (config expects `requested_alias: sonnet`) against the
+> Claude shim (hardcoded default `CILOGBENCH_CLAUDE_MODEL: haiku`)
+> would produce + cache HAIKU rows under `real-debugger-v2`; the next
+> run's cache validator would then reject those same rows as
+> `haiku != sonnet`. Fix:
+> - `build_shim_env()` injects the diagnoser-config-declared alias
+>   into the shim subprocess env when the user has NOT explicitly set
+>   the env var. User-set values are preserved (cache_key already
+>   incorporates them). Default-path runs now use sonnet for v2 and
+>   haiku for v1, agreeing with the config.
+> - `validate_fresh_row_model_identity()` is called BEFORE the
+>   per-case JSON / cache entry is written. On mismatch, the row
+>   becomes a `provider_error` row (not a polluted diagnosis).
+> - 6 new regression tests covering env injection (alias injected
+>   when unset; user override preserved; no-opt-in is a no-op) +
+>   fresh-row validation (matching passes; v2/haiku mismatch is
+>   rejected; legacy shims with no `_model_info` get back-compat).
+>
+> **F2 [high] Child diagnosis runs could ignore the validated
+> config.** Wrappers (`run_protocol_diagnosis_eval.py`,
+> `run_m6_experiment.py`, `run_m7_real_summary_experiment.py`)
+> accept `--diagnoser-config <path>` and SHA-hash that exact file
+> into the manifest, but they passed only `--diagnoser-name` to the
+> child `run_diagnosis.py`. The child then re-discovered the config
+> via `configs/diagnosers/<name>.json` — which could be a different
+> file or no file at all when the wrapper's path is outside the
+> canonical directory. Manifest could claim one config while runner
+> behaviour came from another. Fix:
+> - New `--diagnoser-config <path>` flag in `run_diagnosis.py`. When
+>   set, the runner loads from exactly that path; `cache_key_env`,
+>   `model.requested_alias`, `privacy.requires_explicit_external_llm_opt_in`,
+>   etc. derive from the canonical file.
+> - New `DiagnoserConfigError` raised when the loaded config's
+>   `diagnoser_name` disagrees with `--diagnoser-name`. End-to-end
+>   verified: passing v1.json with `--diagnoser-name real-debugger-v3`
+>   exits 1 with a clear message.
+> - All three wrappers updated to append `--diagnoser-config <path>`
+>   to the child argv.
+> - 5 new tests covering explicit-path matches, mismatch raises,
+>   missing-file raises, legacy auto-discovery still works, and
+>   legacy missing returns None.
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 30 →
+> 41 (Codex 2026-05-15 adds 6 F1 + 5 F2); `test_hybrid_router.py`
+> unchanged at 10. All 51 pass. v1/v2/v3 eval all zero-drift.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

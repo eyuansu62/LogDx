@@ -337,6 +337,133 @@ def test_v1_cache_hit_rejects_wrong_model():
             os.environ["CILOGBENCH_CLAUDE_MODEL"] = saved
 
 
+# === Codex 2026-05-15 F1: fresh-row model identity + env injection ===
+
+def test_build_shim_env_injects_alias_when_env_unset():
+    """v2 (config: sonnet) running against a Claude shim whose hardcoded
+    default is 'haiku' would write Haiku rows under real-debugger-v2.
+    build_shim_env injects the config-declared alias when the user
+    hasn't set the env var, so the shim's default path agrees with the
+    config's expectation."""
+    cfg = rd.load_diagnoser_config("real-debugger-v2")
+    parent = {"PATH": "/usr/bin"}  # no CILOGBENCH_CLAUDE_MODEL
+    env = rd.build_shim_env(cfg, parent_env=parent)
+    assert env["CILOGBENCH_CLAUDE_MODEL"] == "sonnet", (
+        f"v2 should inject sonnet; got {env.get('CILOGBENCH_CLAUDE_MODEL')!r}"
+    )
+    # PATH and other parent vars are preserved.
+    assert env["PATH"] == "/usr/bin"
+
+
+def test_build_shim_env_preserves_user_override():
+    """If the user has explicitly set CILOGBENCH_CLAUDE_MODEL=opus to do
+    an experiment, build_shim_env must NOT clobber it with the config
+    default. The cache_key already incorporates the user's value via
+    cache_key_env, so the combination is self-consistent."""
+    cfg = rd.load_diagnoser_config("real-debugger-v1")
+    parent = {"CILOGBENCH_CLAUDE_MODEL": "opus", "PATH": "/usr/bin"}
+    env = rd.build_shim_env(cfg, parent_env=parent)
+    assert env["CILOGBENCH_CLAUDE_MODEL"] == "opus", (
+        f"explicit env should win; got {env.get('CILOGBENCH_CLAUDE_MODEL')!r}"
+    )
+
+
+def test_build_shim_env_no_optin_means_no_injection():
+    """A diagnoser config without env_var_name (e.g. a hypothetical
+    static-shim config) should leave the env unchanged."""
+    cfg = {"model": {"model_name": "static-model"}}
+    parent = {"PATH": "/usr/bin"}
+    env = rd.build_shim_env(cfg, parent_env=parent)
+    assert env == parent
+
+
+def test_validate_fresh_row_passes_when_shim_matches_config():
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    diag = {"_model_info": {"requested_model": "gpt-5-mini"}}
+    err = rd.validate_fresh_row_model_identity(diag, cfg)
+    assert err is None, f"v3 fresh row with matching alias should pass: {err}"
+
+
+def test_validate_fresh_row_rejects_haiku_under_v2():
+    """The exact Codex 2026-05-15 F1 scenario: a Claude shim using its
+    hardcoded 'haiku' default emits requested_model='haiku', but v2's
+    config expects 'sonnet'. validate_fresh_row_model_identity catches
+    this BEFORE the row is written under the v2 diagnoser name."""
+    cfg = rd.load_diagnoser_config("real-debugger-v2")
+    saved = os.environ.pop("CILOGBENCH_CLAUDE_MODEL", None)
+    try:
+        diag = {"_model_info": {"requested_model": "haiku"}}
+        err = rd.validate_fresh_row_model_identity(diag, cfg)
+        assert err is not None, "haiku-under-v2 should be rejected"
+        assert "haiku" in err and "sonnet" in err, err
+    finally:
+        if saved is not None:
+            os.environ["CILOGBENCH_CLAUDE_MODEL"] = saved
+
+
+def test_validate_fresh_row_back_compat_when_shim_emits_no_model_info():
+    """Legacy shims that don't emit `_model_info` get a free pass — the
+    cache_key_env mechanism is the primary defense. This keeps the
+    runner usable for diagnoser configs whose shim hasn't been upgraded
+    to the post-2026-05-11 model_info contract."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    diag = {"summary": "anything"}  # no _model_info at all
+    assert rd.validate_fresh_row_model_identity(diag, cfg) is None
+
+
+# === Codex 2026-05-15 F2: --diagnoser-config path validation ===
+
+def test_load_diagnoser_config_explicit_path_matches_name():
+    cfg = rd.load_diagnoser_config(
+        "real-debugger-v3",
+        explicit_path=Path(__file__).resolve().parent.parent.parent
+        / "configs" / "diagnosers" / "real-debugger-v3.json",
+    )
+    assert cfg is not None
+    assert cfg.get("diagnoser_name") == "real-debugger-v3"
+
+
+def test_load_diagnoser_config_explicit_path_mismatch_raises():
+    """v1.json declares diagnoser_name='real-debugger-v1'. Passing it as
+    --diagnoser-config with --diagnoser-name=real-debugger-v3 must fail
+    fast so the manifest can't claim one config while the runner derived
+    behaviour from another."""
+    v1_path = (Path(__file__).resolve().parent.parent.parent
+                / "configs" / "diagnosers" / "real-debugger-v1.json")
+    try:
+        rd.load_diagnoser_config("real-debugger-v3", explicit_path=v1_path)
+    except rd.DiagnoserConfigError as e:
+        msg = str(e)
+        assert "real-debugger-v1" in msg and "real-debugger-v3" in msg, msg
+        return
+    raise AssertionError("expected DiagnoserConfigError on mismatch")
+
+
+def test_load_diagnoser_config_explicit_missing_path_raises():
+    bad_path = Path("/tmp/does-not-exist-zzzz.json")
+    try:
+        rd.load_diagnoser_config("real-debugger-v3", explicit_path=bad_path)
+    except rd.DiagnoserConfigError as e:
+        assert "does not exist" in str(e), str(e)
+        return
+    raise AssertionError("expected DiagnoserConfigError on missing file")
+
+
+def test_load_diagnoser_config_legacy_path_unchanged():
+    """No explicit path → auto-discover by name → returns config, no
+    exception. Back-compat with v1/v2 caches written before --diagnoser-config
+    existed."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    assert cfg is not None
+    assert cfg.get("diagnoser_name") == "real-debugger-v3"
+
+
+def test_load_diagnoser_config_legacy_missing_returns_none():
+    """No explicit path AND no file → None (not an exception). This keeps
+    mock-diagnoser paths working when no config exists."""
+    assert rd.load_diagnoser_config("nonexistent-diagnoser-xyz") is None
+
+
 # === Codex 2026-05-13 F1: external-LLM opt-in gate ===
 
 def test_opt_in_gate_blocks_when_env_unset():
@@ -550,6 +677,19 @@ def main() -> int:
         test_claude_model_swap_changes_cache_key,
         test_v1_cache_hit_accepts_haiku_alias,
         test_v1_cache_hit_rejects_wrong_model,
+        # Codex 2026-05-15 F1 (env injection + fresh-row validation)
+        test_build_shim_env_injects_alias_when_env_unset,
+        test_build_shim_env_preserves_user_override,
+        test_build_shim_env_no_optin_means_no_injection,
+        test_validate_fresh_row_passes_when_shim_matches_config,
+        test_validate_fresh_row_rejects_haiku_under_v2,
+        test_validate_fresh_row_back_compat_when_shim_emits_no_model_info,
+        # Codex 2026-05-15 F2 (--diagnoser-config path validation)
+        test_load_diagnoser_config_explicit_path_matches_name,
+        test_load_diagnoser_config_explicit_path_mismatch_raises,
+        test_load_diagnoser_config_explicit_missing_path_raises,
+        test_load_diagnoser_config_legacy_path_unchanged,
+        test_load_diagnoser_config_legacy_missing_returns_none,
         # Codex 2026-05-13 F1
         test_opt_in_gate_blocks_when_env_unset,
         test_opt_in_gate_passes_when_env_set_to_truthy,

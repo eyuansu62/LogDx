@@ -580,6 +580,13 @@ def main(argv: list[str] | None = None) -> int:
             # own gate.
             if args.allow_external_llm:
                 diag_argv.append("--allow-external-llm")
+            # Per Codex 2026-05-15 F2: thread the exact validated
+            # config path so the child doesn't re-discover by name
+            # (which could resolve to a different file when the
+            # wrapper's --diagnoser-config sits outside configs/diagnosers/
+            # or when --diagnoser-name is overridden). run_diagnosis.py
+            # fails fast if config.diagnoser_name disagrees.
+            diag_argv += ["--diagnoser-config", str(d_config_path)]
             rc = run_step(diag_argv, label=f"run_diagnosis {s}/{method}")
             if rc != 0:
                 return rc

@@ -494,6 +494,10 @@ def main(argv: list[str] | None = None) -> int:
     # so run_diagnosis.py's gate sees the explicit acknowledgement.
     if args.allow_external_llm:
         diag_argv.append("--allow-external-llm")
+    # Per Codex 2026-05-15 F2: thread the validated config path so
+    # the child uses the same file the wrapper hashed (rather than
+    # re-discovering by name).
+    diag_argv += ["--diagnoser-config", str(config_path)]
     run_step(diag_argv, label="run_diagnosis")
 
     # 4. evaluate_diagnosis

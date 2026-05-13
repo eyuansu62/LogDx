@@ -303,6 +303,7 @@ def diagnose_mock(
 def diagnose_command(
     *, context_text: str, safe_metadata: dict, case_id: str,
     context_method: str, command: str, prompt_text: str,
+    env: dict[str, str] | None = None,
 ) -> dict:
     payload = {
         "case_id": case_id,
@@ -318,6 +319,11 @@ def diagnose_command(
         input=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
         capture_output=True,
         timeout=180,
+        # Per Codex 2026-05-15 F1: when the caller computes an env
+        # mapping (typically to inject the diagnoser-config's
+        # requested_alias into the shim env var when the user hasn't),
+        # use it. Falls back to inherited parent env otherwise.
+        env=env,
     )
     if res.returncode != 0:
         raise RuntimeError(
@@ -431,21 +437,66 @@ def build_row(
     return row
 
 
-def load_diagnoser_config(diagnoser_name: str) -> dict | None:
-    """Best-effort load of `configs/diagnosers/<diagnoser>.json`.
+class DiagnoserConfigError(Exception):
+    """Raised when a caller-supplied diagnoser config disagrees with
+    --diagnoser-name. Fail fast rather than silently dropping the
+    config + degrading to legacy auto-discovery behaviour."""
 
-    Returns None if the file does not exist or is unreadable. Used to
-    discover (a) `cache_key_env` — env vars whose values affect output and
-    must therefore go into the cache key (Codex 2026-05-12 F2), and (b) a
-    canonical `model.model_name` for cache-hit validation.
+
+def load_diagnoser_config(
+    diagnoser_name: str, explicit_path: Path | None = None
+) -> dict | None:
+    """Load the diagnoser config from an explicit path or by auto-discovery.
+
+    Per Codex 2026-05-15 F2: wrappers can load configs from arbitrary paths
+    (`run_protocol_diagnosis_eval.py --diagnoser-config <path>`,
+    `run_m6_experiment.py --config <path>`, etc.) but historically only
+    `--diagnoser-name` was propagated to this runner. The child then
+    re-discovered the config by name, which could mean (a) a different
+    file altogether, or (b) no file at all when the wrapper's path is
+    outside `configs/diagnosers/`. The validated `cache_key_env` /
+    `model.requested_alias` / `privacy.requires_explicit_external_llm_opt_in`
+    settings could quietly fail to apply to the actual run.
+
+    When `explicit_path` is provided, this function loads from there and
+    additionally validates that `config.diagnoser_name` matches
+    `diagnoser_name` (otherwise the manifest would claim one config while
+    the runner derived behaviour from another); on mismatch it raises
+    DiagnoserConfigError. When `explicit_path` is None, this falls back
+    to the legacy `configs/diagnosers/<name>.json` auto-discovery for
+    back-compat. Returns None when no file exists at the resolved path —
+    legacy call sites treat that as "no config available".
     """
-    cfg_path = ROOT / "configs" / "diagnosers" / f"{diagnoser_name}.json"
+    cfg_path = (
+        explicit_path
+        if explicit_path is not None
+        else ROOT / "configs" / "diagnosers" / f"{diagnoser_name}.json"
+    )
     if not cfg_path.exists():
+        if explicit_path is not None:
+            raise DiagnoserConfigError(
+                f"--diagnoser-config {cfg_path} does not exist"
+            )
         return None
     try:
-        return json.loads(cfg_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
+        cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        if explicit_path is not None:
+            raise DiagnoserConfigError(
+                f"--diagnoser-config {cfg_path} is unreadable: {exc}"
+            ) from exc
         return None
+    if explicit_path is not None:
+        declared = cfg.get("diagnoser_name")
+        if declared and declared != diagnoser_name:
+            raise DiagnoserConfigError(
+                f"--diagnoser-config {cfg_path} declares "
+                f"diagnoser_name={declared!r} but --diagnoser-name is "
+                f"{diagnoser_name!r}. Manifest would claim one config "
+                f"while the runner derived behaviour from another. "
+                f"Pass the correct config or override --diagnoser-name."
+            )
+    return cfg
 
 
 _TRUTHY_OPT_IN_VALUES = {"1", "true", "yes", "on"}
@@ -535,6 +586,68 @@ def effective_requested_model(config: dict | None) -> str | None:
     return model_section.get("model_name") or None
 
 
+def build_shim_env(
+    config: dict | None, parent_env: dict[str, str] | None = None
+) -> dict[str, str]:
+    """Per Codex 2026-05-15 F1 [high]: when a diagnoser config declares
+    `model.env_var_name` (e.g. CILOGBENCH_CLAUDE_MODEL for v1/v2) and the
+    user has NOT set that var explicitly, inject the effective model into
+    the shim subprocess env. Without this, the Claude shim's hardcoded
+    default ("haiku") was used even for v2 (which expects "sonnet"),
+    producing cached rows whose own validator would later reject them
+    as `haiku != sonnet`.
+
+    User-set env values are preserved — this only fills in the gap when
+    the user hasn't overridden, so explicit experiments
+    (`CILOGBENCH_OPENAI_MODEL=gpt-4o`) still work.
+    """
+    env = dict(parent_env if parent_env is not None else os.environ)
+    if not isinstance(config, dict):
+        return env
+    model = config.get("model") or {}
+    env_var = model.get("env_var_name")
+    alias = model.get("requested_alias") or model.get("model_name")
+    if env_var and alias and env.get(env_var) is None:
+        env[env_var] = alias
+    return env
+
+
+def validate_fresh_row_model_identity(
+    diag_body: dict, config: dict | None
+) -> str | None:
+    """Per Codex 2026-05-15 F1 [high]: belt-and-suspenders for fresh rows.
+
+    The cache validator only fires on cache hits; fresh rows had no
+    such check. If the shim somehow returns a row whose
+    `_model_info.requested_model` disagrees with the diagnoser config's
+    effective model (because of a stale shim, a wrapper bug, or a
+    misaligned env), the row should NOT be written under the diagnoser's
+    name. Returns None when validation passes (or doesn't apply),
+    otherwise a reason string the caller turns into a provider_error.
+    """
+    if not isinstance(config, dict):
+        return None
+    expected = effective_requested_model(config)
+    if not expected:
+        return None
+    mi = diag_body.get("_model_info") or {}
+    actual = mi.get("requested_model")
+    if actual is None:
+        # Pre-2026-05-11 shims don't emit _model_info. Don't reject the
+        # row on that ground alone — back-compat for diagnosers/shims
+        # that have not yet been upgraded. The cache_key_env mechanism
+        # is the primary defense; this check is the secondary one for
+        # diagnosers whose shim DOES emit but emits the wrong value.
+        return None
+    if actual != expected:
+        return (
+            f"shim returned requested_model={actual!r} but diagnoser "
+            f"config expects {expected!r}; refusing to write a row "
+            f"under the wrong model identity"
+        )
+    return None
+
+
 def cache_hit_is_acceptable(
     cached_row: dict, config: dict | None
 ) -> tuple[bool, str | None]:
@@ -597,6 +710,7 @@ def run(
     context_method: str, results_dir: Path, cases_dir: Path,
     prompt_path: Path, command_str: str | None,
     strict: bool, no_cache: bool, cache_errors: bool,
+    diagnoser_config_path: Path | None = None,
 ) -> int:
     if not prompt_path.exists():
         print(f"ERROR: prompt not found: {prompt_path}", file=sys.stderr)
@@ -604,11 +718,31 @@ def run(
     prompt_text = prompt_path.read_text(encoding="utf-8")
     prompt_sha = sha256_text(prompt_text)
 
-    # Per Codex 2026-05-12 F2: load the diagnoser config to discover (a)
-    # env-var-driven cache_key contributions, and (b) the canonical
-    # requested_model for cache-hit validation.
-    diagnoser_config = load_diagnoser_config(diagnoser_name)
+    # Per Codex 2026-05-12 F2 + 2026-05-15 F2: load the diagnoser config
+    # to discover (a) env-var-driven cache_key contributions, (b) the
+    # canonical requested_model / requested_alias for cache-hit
+    # validation, and (c) the external-LLM opt-in gate. When the caller
+    # supplies an explicit --diagnoser-config path (the wrappers do this
+    # now), the loader fails fast on diagnoser_name mismatch so a
+    # manifest can never claim one config while the runner derived its
+    # behaviour from another.
+    try:
+        diagnoser_config = load_diagnoser_config(
+            diagnoser_name, explicit_path=diagnoser_config_path
+        )
+    except DiagnoserConfigError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
     key_env_values = cache_key_env_values(diagnoser_config)
+
+    # Per Codex 2026-05-15 F1 [high]: when the diagnoser config declares
+    # `model.env_var_name` (e.g. CILOGBENCH_CLAUDE_MODEL) and the user
+    # has not set that env var, inject the config's effective requested
+    # model into the shim subprocess env. Prevents the failure mode
+    # where v2 (config: sonnet) runs against a Claude shim whose
+    # hardcoded default is "haiku" and produces rows whose own cache
+    # validator later rejects them.
+    shim_env = build_shim_env(diagnoser_config)
 
     # Per Codex 2026-05-13 F1 [high]: the v3 config declared
     # `privacy.requires_explicit_external_llm_opt_in: true` but the runner
@@ -761,7 +895,26 @@ def run(
                             context_text=ctx_text, safe_metadata=safe_meta,
                             case_id=case_id, context_method=method,
                             command=command_str, prompt_text=prompt_text,
+                            env=shim_env,
                         )
+                        # Per Codex 2026-05-15 F1 [high]: validate the
+                        # fresh row's model identity BEFORE writing the
+                        # cache entry or per-case JSON. Without this,
+                        # a misconfigured shim/config pair could write
+                        # a row under the diagnoser's name whose actual
+                        # model differs (e.g. v2 expects 'sonnet' but
+                        # the Claude shim's default 'haiku' was used).
+                        # On mismatch, raise so the normal exception
+                        # path turns this into a provider_error row
+                        # (no cache write thanks to the `cache_errors`
+                        # default being off).
+                        mismatch = validate_fresh_row_model_identity(
+                            diag_body, diagnoser_config
+                        )
+                        if mismatch:
+                            raise RuntimeError(
+                                f"fresh_row_model_identity_mismatch: {mismatch}"
+                            )
                     else:
                         raise ValueError(
                             f"unknown diagnoser provider: {diagnoser_provider}"
@@ -878,6 +1031,18 @@ def main(argv: list[str] | None = None) -> int:
             "Per Codex 2026-05-14 F1."
         ),
     )
+    ap.add_argument(
+        "--diagnoser-config", type=Path, default=None,
+        help=(
+            "Path to the validated diagnoser config (a *.json under "
+            "configs/diagnosers/ or a wrapper-resolved location). When "
+            "supplied, the runner loads cache_key_env / privacy / model "
+            "settings from this exact file and fails fast if its "
+            "`diagnoser_name` does not match --diagnoser-name. Falls "
+            "back to legacy auto-discovery by name when omitted. Per "
+            "Codex 2026-05-15 F2."
+        ),
+    )
     args = ap.parse_args(argv)
 
     # Per Codex 2026-05-14 F1: when a wrapper or operator opts in via the
@@ -899,6 +1064,7 @@ def main(argv: list[str] | None = None) -> int:
         prompt_path=args.prompt, command_str=args.command,
         strict=args.strict, no_cache=args.no_cache,
         cache_errors=args.cache_errors,
+        diagnoser_config_path=args.diagnoser_config,
     )
 
 
