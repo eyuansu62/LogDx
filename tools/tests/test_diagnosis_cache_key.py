@@ -747,6 +747,140 @@ def test_base_url_validation_falls_back_to_sanitized_compare():
             os.environ["CILOGBENCH_OPENAI_MODEL"] = saved_model
 
 
+def test_fresh_row_rejects_wrong_endpoint():
+    """Per Codex 2026-05-19 F1 [high]: a stale shim that ignores
+    CILOGBENCH_OPENAI_BASE_URL could send context to the default OpenAI
+    endpoint and emit `requested_model: gpt-5-mini`. Pre-fix, the
+    fresh-row validator only compared `requested_model` — that row
+    would have been written under a proxy-backed v3 config silently.
+    """
+    cfg = {
+        "model": {
+            "model_name": "gpt-5-mini",
+            "env_var_name": "CILOGBENCH_OPENAI_MODEL",
+            "base_url": "https://api.openai.com/v1",
+            "base_url_env_var_name": "CILOGBENCH_OPENAI_BASE_URL",
+        },
+        "cache_key_env": ["CILOGBENCH_OPENAI_MODEL", "CILOGBENCH_OPENAI_BASE_URL"],
+    }
+    # User points config at a proxy; stale shim hits default OpenAI.
+    saved_url = os.environ.get("CILOGBENCH_OPENAI_BASE_URL")
+    saved_model = os.environ.get("CILOGBENCH_OPENAI_MODEL")
+    try:
+        os.environ["CILOGBENCH_OPENAI_BASE_URL"] = "https://my-proxy.example.com/v1"
+        os.environ["CILOGBENCH_OPENAI_MODEL"] = "gpt-5-mini"
+        # Shim emits canonical OpenAI URL (it ignored the env override).
+        diag = {"_model_info": {
+            "requested_model": "gpt-5-mini",
+            "base_url": "https://api.openai.com/v1",
+            "base_url_sha256": rd._base_url_sha256_for_compare(
+                "https://api.openai.com/v1"
+            ),
+        }}
+        err = rd.validate_fresh_row_model_identity(diag, cfg)
+        assert err is not None, "wrong-endpoint fresh row should reject"
+        assert "endpoint mismatch" in err.lower() or "base_url" in err
+    finally:
+        if saved_url is None:
+            os.environ.pop("CILOGBENCH_OPENAI_BASE_URL", None)
+        else:
+            os.environ["CILOGBENCH_OPENAI_BASE_URL"] = saved_url
+        if saved_model is None:
+            os.environ.pop("CILOGBENCH_OPENAI_MODEL", None)
+        else:
+            os.environ["CILOGBENCH_OPENAI_MODEL"] = saved_model
+
+
+def test_fresh_row_accepts_matching_endpoint():
+    """Sanity: a shim emitting model + endpoint that match the config
+    passes the fresh-row gate."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    diag = {"_model_info": {
+        "requested_model": "gpt-5-mini",
+        "base_url": "https://api.openai.com/v1",
+        "base_url_sha256": rd._base_url_sha256_for_compare(
+            "https://api.openai.com/v1"
+        ),
+    }}
+    err = rd.validate_fresh_row_model_identity(diag, cfg)
+    assert err is None, f"canonical row should pass: {err}"
+
+
+def test_openai_shim_oversized_context_emits_structured_provider_error():
+    """Per Codex 2026-05-19 F2 [medium]: the shim's pre-API skip path
+    (context exceeds 480000 chars) must write a JSON envelope to stdout
+    so `metadata.provider_error` lands as `unsupported_context_too_large:
+    ...` instead of the runner's wrapper string. Verified end-to-end via
+    a real subprocess invocation with an oversized payload."""
+    import subprocess as _sub
+    import json as _json
+
+    payload = _json.dumps({
+        "case_id": "t", "context_method": "raw", "prompt": "x",
+        "context": "X" * 600_000,  # exceeds 480000 cap
+        "safe_case_metadata": {},
+        "expected_output_schema": "schemas/diagnosis.schema.json",
+    })
+    repo = str(Path(__file__).resolve().parent.parent.parent)
+    env = dict(os.environ)
+    env["OPENAI_API_KEY"] = "sk-test"
+    env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+    res = _sub.run(
+        ["python3", f"{repo}/examples/diagnosis_shim_openai.py"],
+        input=payload.encode("utf-8"),
+        capture_output=True, timeout=20, env=env,
+    )
+    assert res.returncode == 1, (
+        f"expected exit 1; got {res.returncode}. stderr={res.stderr!r}"
+    )
+    # stdout has a JSON envelope with _provider_error
+    body = _json.loads(res.stdout.decode("utf-8"))
+    err_str = body.get("_provider_error", "")
+    assert err_str.startswith("unsupported_context_too_large:"), (
+        f"expected unsupported_context_too_large prefix; got {err_str!r}"
+    )
+
+
+def test_v3_committed_artifacts_provider_error_starts_with_class():
+    """Per Codex 2026-05-19 F2 [medium]: lock the taxonomy contract.
+    Every committed v3 provider_error must start with one of the
+    known stable classes — model card / report claims rely on
+    by-prefix counting."""
+    import json as _json
+    repo = Path(__file__).resolve().parent.parent.parent
+    valid_prefixes = (
+        "unsupported_context_too_large:",
+        "post_api_error:",
+        "post_cli_error:",
+        # Legacy patterns that pre-date the taxonomy contract; the
+        # 2026-05-17 backfill normalized v3 to one of the above, but
+        # historical v1/v2 rows can still match these.
+        "JSONDecodeError:",
+        "RemoteDisconnected:",
+        "RuntimeError:",  # legacy v1 claude-CLI-exit rows
+    )
+    failures = []
+    for sp in ["dev", "holdout", "stress", "v2/dev", "v2/holdout", "v2/stress"]:
+        diag_dir = repo / "results" / sp / "diagnoses" / "real-debugger-v3"
+        if not diag_dir.exists():
+            continue
+        for mf in diag_dir.glob("*.jsonl"):
+            for line in mf.open():
+                row = _json.loads(line)
+                md = row.get("metadata") or {}
+                pe = md.get("provider_error") or ""
+                if not pe:
+                    continue
+                if not pe.startswith(valid_prefixes):
+                    failures.append(
+                        f"{sp}/{mf.stem}/{row.get('case_id')}: {pe[:80]!r}"
+                    )
+    assert not failures, (
+        "v3 provider_error values must start with a known taxonomy "
+        "prefix:\n  " + "\n  ".join(failures[:10])
+    )
+
+
 def test_v3_committed_artifacts_have_model_info_on_post_api_failures():
     """Lock the backfill: every committed v3 row whose provider_error is
     a POST-API failure must carry metadata.model_info. Pre-2026-05-16
@@ -1052,6 +1186,12 @@ def main() -> int:
         test_base_url_validation_uses_sha256_when_available,
         test_base_url_validation_credentialed_proxy_accepts_own_row,
         test_base_url_validation_falls_back_to_sanitized_compare,
+        # Codex 2026-05-19 F1 (fresh-row endpoint validation)
+        test_fresh_row_rejects_wrong_endpoint,
+        test_fresh_row_accepts_matching_endpoint,
+        # Codex 2026-05-19 F2 (oversized-context taxonomy class)
+        test_openai_shim_oversized_context_emits_structured_provider_error,
+        test_v3_committed_artifacts_provider_error_starts_with_class,
         test_v3_committed_artifacts_have_model_info_on_post_api_failures,
         # Codex 2026-05-13 F1
         test_opt_in_gate_blocks_when_env_unset,

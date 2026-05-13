@@ -260,10 +260,20 @@ def main() -> int:
     except _ContextTooLargeError as e:
         # Per Codex 2026-05-11 [high]: exit non-zero so run_diagnosis
         # records this as a real provider_error in row metadata.
-        # Previously this path returned 0 with `_provider_error` set,
-        # but run_diagnosis drops underscored keys when normalizing
-        # the shim output, so the row ended up looking like a valid
-        # model abstention (confidence=0, unknown category).
+        # Per Codex 2026-05-19 F2 [medium]: also write a JSON envelope
+        # to stdout containing the STRUCTURED taxonomy class so the
+        # runner stores `metadata.provider_error =
+        # "unsupported_context_too_large: ..."` instead of the
+        # subprocess wrapper string (which would prefix
+        # "ShimCallError: diagnosis command exited 1: ..." and break
+        # downstream by-prefix counting that the model card relies on).
+        # No `_model_info` envelope on this path because no API call
+        # was made — the row legitimately has model_info: null.
+        envelope = {
+            "_provider_error": f"unsupported_context_too_large: {e}",
+        }
+        json.dump(envelope, sys.stdout, ensure_ascii=False)
+        sys.stdout.write("\n")
         sys.stderr.write(
             f"diagnosis_shim_openai: unsupported_context_too_large: {e}\n"
         )

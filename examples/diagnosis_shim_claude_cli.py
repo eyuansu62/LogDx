@@ -207,10 +207,15 @@ def main() -> int:
     try:
         user_message = build_user_message(payload)
     except _ContextTooLargeError as e:
-        # Per Codex 2026-05-11 [high]: exit non-zero so run_diagnosis
-        # records this as a real provider_error. Previously returned 0
-        # with `_provider_error` set, but run_diagnosis dropped the
-        # underscored key, making it look like a valid model abstention.
+        # Per Codex 2026-05-11 [high] + 2026-05-19 F2 [medium]: exit 1
+        # AND emit a structured _provider_error envelope so the runner
+        # stores the taxonomy class as primary metadata.provider_error
+        # (instead of the wrapper "ShimCallError: ..." string).
+        envelope = {
+            "_provider_error": f"unsupported_context_too_large: {e}",
+        }
+        json.dump(envelope, sys.stdout, ensure_ascii=False)
+        sys.stdout.write("\n")
         sys.stderr.write(
             f"diagnosis_shim_claude_cli: unsupported_context_too_large: {e}\n"
         )

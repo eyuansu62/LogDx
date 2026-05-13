@@ -26,23 +26,26 @@
   carry `metadata.model_info.resolved_model = gpt-5-mini-2025-08-07`
   (zero alias rotation between original run and re-run).
 - **Resolved snapshot ID at run time:** `gpt-5-mini-2025-08-07`
-- **Provider-error taxonomy (post 2026-05-17):**
-  | error class | count | API call made? | resolved_model |
+- **Provider-error taxonomy (post 2026-05-19):**
+  | error class (primary `metadata.provider_error` prefix) | count | API call made? | resolved_model |
   |---|---|---|---|
-  | `unsupported_context_too_large` (F1 oversized-context skip) | 39 | NO | absent (legitimate null) |
-  | `JSONDecodeError` (model returned malformed JSON) | 5 | YES | populated; canonical-snapshot backfill for pre-2026-05-16 rows |
+  | `unsupported_context_too_large:` (pre-API oversized skip) | 39 | NO | absent (legitimate null) |
+  | `post_api_error:` (API returned but parsing failed) | 5 | YES | populated |
 
-  Total provider_errors: 44 (down from 65 pre-2026-05-17). The
-  decrease comes from the Codex 2026-05-17 cache-key migration
-  triggering a fresh-API partial-rerun for 52 cases (39 oversized
-  re-failed deterministically; 21 of 26 post-API errors succeeded
-  on retry — gpt-5-mini is non-deterministic at temperature-not-
-  sent). Earlier versions of this card claimed all 65 were
-  oversized-context with no API call (Codex 2026-05-16 [high]
-  finding) AND included combined "RuntimeError: ..." prefixes that
-  obscured the clean class names (Codex 2026-05-17 F1 [high]). The
-  taxonomy is now locked by
-  `tools/tests/test_diagnosis_cache_key.py:test_v3_committed_artifacts_have_model_info_on_post_api_failures`.
+  Total provider_errors: 44 (down from 65 pre-2026-05-17, down
+  from wrapped-prefix format pre-2026-05-19). Each row's
+  `metadata.provider_error` is now guaranteed to start with one
+  of the stable class prefixes shown above; the subprocess wrapper
+  string (`ShimCallError: diagnosis command exited 1: ...`)
+  goes to `metadata.provider_error_detail` for forensics. The
+  taxonomy is locked by:
+  - `test_v3_committed_artifacts_have_model_info_on_post_api_failures` —
+    requires `model_info` on every post-API failure
+  - `test_v3_committed_artifacts_provider_error_starts_with_class` —
+    requires every provider_error to start with a known prefix
+  - `test_openai_shim_oversized_context_emits_structured_provider_error` —
+    end-to-end shim verification that the pre-API skip emits the
+    structured envelope
 
 gpt-5-mini was chosen as the third debugger to test §3i's cross-family
 generalization question: do hybrid-v2/v3 rankings on v2 survive a

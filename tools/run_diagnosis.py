@@ -797,25 +797,71 @@ def _config_requires_model_info(config: dict | None) -> bool:
     return bool(config.get("cache_key_env")) or bool(model.get("model_name"))
 
 
+def _validate_base_url_identity(
+    cached_mi: dict, config: dict | None
+) -> str | None:
+    """Shared base_url validation logic used by both fresh-row and
+    cache-hit validators. Returns None when validation passes or
+    doesn't apply; an error string otherwise.
+
+    Codex 2026-05-19 F1 [high]: previously this only ran on cache hits.
+    A stale shim that ignored CILOGBENCH_OPENAI_BASE_URL could write
+    rows to the manifest under a proxy-backed config; the cache
+    validator's later rejection wouldn't undo the polluted manifest
+    or stop --no-cache repeats. Now also called by
+    `validate_fresh_row_model_identity` so the wrong-endpoint row
+    never lands.
+    """
+    if not isinstance(config, dict):
+        return None
+    expected_url = effective_base_url(config)
+    if not expected_url:
+        return None
+    cached_hash = cached_mi.get("base_url_sha256")
+    if cached_hash is not None:
+        if cached_hash != _base_url_sha256_for_compare(expected_url):
+            return (
+                f"shim returned base_url_sha256={cached_hash[:16]}… "
+                f"but config expects "
+                f"{_base_url_sha256_for_compare(expected_url)[:16]}…"
+            )
+        return None
+    cached_url = cached_mi.get("base_url")
+    if cached_url is None:
+        return None
+    expected_sanitized = _sanitize_base_url_for_compare(expected_url)
+    cached_sanitized = _sanitize_base_url_for_compare(cached_url)
+    if cached_sanitized != expected_sanitized:
+        return (
+            f"shim returned base_url (sanitized)={cached_sanitized!r} "
+            f"but config expects {expected_sanitized!r}"
+        )
+    return None
+
+
 def validate_fresh_row_model_identity(
     diag_body: dict, config: dict | None
 ) -> str | None:
-    """Per Codex 2026-05-15 F1 + 2026-05-18 F2 [high]: belt-and-suspenders
-    for fresh rows.
+    """Per Codex 2026-05-15 F1 + 2026-05-18 F2 + 2026-05-19 F1 [high]:
+    belt-and-suspenders for fresh rows.
 
     The cache validator only fires on cache hits; fresh rows had no
-    such check. If the shim returns a row whose
-    `_model_info.requested_model` disagrees with the diagnoser config's
-    effective model (stale shim, wrapper bug, misaligned env), the row
+    such check until 2026-05-15. If the shim returns a row whose
+    `_model_info.requested_model` OR `_model_info.base_url` /
+    `base_url_sha256` disagrees with the diagnoser config, the row
     should NOT be written under the diagnoser's name. Codex 2026-05-18
     additionally requires that configs declaring a model identity get
-    a row WITH `_model_info` — missing provenance under a real diagnoser
-    is the same trust violation as wrong provenance.
+    a row WITH `_model_info`; 2026-05-19 closes the corresponding gap
+    for endpoint identity (a stale shim that ignored
+    CILOGBENCH_OPENAI_BASE_URL could otherwise hit the default OpenAI
+    endpoint while the config pointed at a proxy).
     """
     if not isinstance(config, dict):
         return None
     expected = effective_requested_model(config)
     if not expected:
+        # No model identity declared — also skip endpoint checks since
+        # the config evidently doesn't ground identity.
         return None
     mi = diag_body.get("_model_info") or {}
     actual = mi.get("requested_model")
@@ -837,6 +883,10 @@ def validate_fresh_row_model_identity(
             f"config expects {expected!r}; refusing to write a row "
             f"under the wrong model identity"
         )
+    # Endpoint identity (Codex 2026-05-19 F1).
+    url_err = _validate_base_url_identity(mi, config)
+    if url_err:
+        return f"endpoint mismatch under diagnoser config: {url_err}"
     return None
 
 
@@ -878,40 +928,12 @@ def cache_hit_is_acceptable(
                 f"effective model={expected_model!r}"
             )
 
-    # Per Codex 2026-05-17 F2 + 2026-05-18 F3 [medium]: validate endpoint
-    # identity using the sha256 of the FULL URL when both sides have it
-    # (the OpenAI shim stores `base_url_sha256` alongside the sanitized
-    # `base_url`). If only the sanitized URL is available, compare both
-    # sides AFTER sanitizing — otherwise a sanitized-shim-side vs
-    # raw-config-side comparison rejects proxy users' own freshly-
-    # written rows on every cache hit, forcing repeated paid calls.
-    expected_url = effective_base_url(config)
-    if expected_url:
-        cached_hash = cached_mi.get("base_url_sha256")
-        if cached_hash is not None:
-            if cached_hash != _base_url_sha256_for_compare(expected_url):
-                return False, (
-                    f"cache row base_url_sha256={cached_hash[:16]}… != "
-                    f"effective sha256={_base_url_sha256_for_compare(expected_url)[:16]}…"
-                )
-        else:
-            cached_url = cached_mi.get("base_url")
-            if cached_url is None:
-                # Legacy v1/v2 rows have no base_url — accept (Claude
-                # shim doesn't expose one).
-                pass
-            else:
-                # Compare with both sides sanitized so a proxy URL's
-                # userinfo/query (only present on the config-effective
-                # side) doesn't false-mismatch the shim's already-
-                # sanitized cached value.
-                expected_sanitized = _sanitize_base_url_for_compare(expected_url)
-                cached_sanitized = _sanitize_base_url_for_compare(cached_url)
-                if cached_sanitized != expected_sanitized:
-                    return False, (
-                        f"cache row base_url (sanitized)={cached_sanitized!r} "
-                        f"!= effective (sanitized)={expected_sanitized!r}"
-                    )
+    # Per Codex 2026-05-17 F2 + 2026-05-18 F3 + 2026-05-19 F1:
+    # delegate endpoint validation to the shared helper so cache-hit
+    # and fresh-row paths use identical logic.
+    url_err = _validate_base_url_identity(cached_mi, config)
+    if url_err:
+        return False, f"cache row endpoint mismatch: {url_err}"
     return True, None
 
 

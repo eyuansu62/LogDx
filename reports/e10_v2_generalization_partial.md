@@ -1680,6 +1680,60 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > `test_hybrid_router.py` unchanged at 10. All 67 pass. v1/v2/v3
 > eval all zero-drift.
 
+> ⚠️ **Codex 2026-05-19 [high/medium] fixes applied — no scores
+> moved.** Codex re-reviewed the validator + shim error paths and
+> flagged two remaining gaps:
+>
+> **F1 [high] (Fresh rows didn't validate endpoint identity).**
+> `validate_fresh_row_model_identity` only compared
+> `_model_info.requested_model` with the config; it never checked
+> `base_url` / `base_url_sha256`. A stale or custom shim could
+> ignore CILOGBENCH_OPENAI_BASE_URL, send context to the default
+> OpenAI endpoint, return `requested_model: gpt-5-mini`, and the
+> runner would write/cache a row under a proxy-backed config.
+> Later cache rejection wouldn't undo the polluted manifest.
+> Fix:
+> - New shared helper `_validate_base_url_identity()` extracted
+>   from `cache_hit_is_acceptable`; both validators delegate to
+>   it. Endpoint identity now matches in BOTH directions
+>   (fresh-row writes + cache-hit reads) using the same
+>   sha256-or-sanitized-URL rules
+> - End-to-end test: stale-shim row claiming the default OpenAI
+>   URL gets rejected when the config points at a proxy
+>
+> **F2 [medium] (Oversized-context lost taxonomy class).** Both
+> shims wrote stderr only and exited 1 on `_ContextTooLargeError`,
+> so the runner's wrapper `ShimCallError: diagnosis command exited
+> 1: ...` became `metadata.provider_error` — wrapped, not the
+> clean `unsupported_context_too_large:` prefix the model card
+> claims for downstream by-prefix counting.
+> Fix:
+> - Both shims (OpenAI + Claude) now write a JSON envelope to
+>   stdout on the oversized-context path:
+>   `{"_provider_error": "unsupported_context_too_large: ..."}`.
+>   The runner's existing `_extract_shim_stdout_metadata` picks
+>   it up and `build_row` lifts it to primary
+>   `metadata.provider_error`
+> - 78 existing manifest + per-case rows backfilled from
+>   `ShimCallError: ...` wrapper format to the clean prefix
+> - New committed-artifact test
+>   (`test_v3_committed_artifacts_provider_error_starts_with_class`)
+>   walks every v3 row and asserts the provider_error starts with
+>   a known stable class
+> - New shim-subprocess test verifies the oversized envelope
+>   emit end-to-end
+>
+> **Final v3 provider_error taxonomy (locked by test):** 39
+> `unsupported_context_too_large:` + 5 `post_api_error:` =
+> 44 total. (Pre-2026-05-19 had wrapper-prefixed strings polluting
+> ~78 of these rows; same logical classification but the prefix
+> didn't match the contract.)
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 57 →
+> 61 (+4: F1 fresh-row endpoint reject/accept, F2 shim envelope
+> emit, F2 committed-artifact prefix lock). `test_hybrid_router.py`
+> unchanged at 10. All 71 pass. v1/v2/v3 eval all zero-drift.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**
