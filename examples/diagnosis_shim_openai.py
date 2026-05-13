@@ -242,6 +242,19 @@ def main() -> int:
         )
         return 1
 
+    # Per Codex 2026-05-13 F1 [high]: the runner enforces this gate via
+    # `tools/run_diagnosis.py:check_external_llm_opt_in`, but mirror it
+    # here so an off-runner invocation (smoke-tests, ad-hoc DIAGNOSIS_COMMAND
+    # calls from another harness) still requires the explicit opt-in
+    # before shipping CI log context to OpenAI.
+    if (os.environ.get("CILOGBENCH_ALLOW_EXTERNAL_LLM") or "").strip().lower() \
+            not in {"1", "true", "yes", "on"}:
+        sys.stderr.write(
+            "diagnosis_shim_openai: CILOGBENCH_ALLOW_EXTERNAL_LLM=1 required "
+            "to send CI log context to OpenAI. Set it explicitly to opt in.\n"
+        )
+        return 1
+
     try:
         user_message = build_user_message(payload)
     except _ContextTooLargeError as e:

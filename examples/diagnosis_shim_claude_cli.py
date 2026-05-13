@@ -186,6 +186,20 @@ def main() -> int:
     payload = json.load(sys.stdin)
     verify_no_leakage(payload)
 
+    # Per Codex 2026-05-13 F1 [high]: defense-in-depth opt-in gate. The
+    # v1 and v2 configs declare requires_explicit_external_llm_opt_in and
+    # the runner enforces it; mirror here so an off-runner DIAGNOSIS_COMMAND
+    # invocation still cannot ship CI log context to Anthropic without
+    # the explicit opt-in.
+    if (os.environ.get("CILOGBENCH_ALLOW_EXTERNAL_LLM") or "").strip().lower() \
+            not in {"1", "true", "yes", "on"}:
+        sys.stderr.write(
+            "diagnosis_shim_claude_cli: CILOGBENCH_ALLOW_EXTERNAL_LLM=1 "
+            "required to invoke an external LLM via the claude CLI. Set "
+            "it explicitly to opt in.\n"
+        )
+        return 1
+
     system_prompt = payload.get("prompt", "")
     model = os.environ.get("CILOGBENCH_CLAUDE_MODEL", "haiku")
     timeout_s = int(os.environ.get("CILOGBENCH_CLAUDE_TIMEOUT", "180"))

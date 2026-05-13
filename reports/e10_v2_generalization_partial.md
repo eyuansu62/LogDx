@@ -1338,6 +1338,46 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > consistent with gpt-5-mini being non-deterministic at temperature
 > not set (reasoning class). See "Run-to-run variance" caveat.
 
+> ⚠️ **Codex 2026-05-13 [high/medium] fixes applied — no numbers
+> moved.** Codex challenged the 2026-05-12 commit on two issues
+> that the 2026-05-12 work introduced or left unaddressed:
+>
+> **F1 [high] External-LLM opt-in declared but not enforced.**
+> All three real-debugger configs declared
+> `privacy.requires_explicit_external_llm_opt_in: true` with
+> `CILOGBENCH_ALLOW_EXTERNAL_LLM` as the gate, but nothing in
+> `tools/run_diagnosis.py` or the shims actually checked it. A
+> harness or operator forgetting to set the env var could send CI
+> log context to OpenAI/Anthropic with no opt-in confirmation —
+> exactly the trust-boundary control the config promises. Fix:
+> `check_external_llm_opt_in()` in `tools/run_diagnosis.py` fails
+> closed before any provider call when the config requires the
+> gate; both shims (OpenAI + Claude) mirror the same check inside
+> `main()` so off-runner invocations (smoke-tests, ad-hoc
+> DIAGNOSIS_COMMAND from other harnesses) can't bypass it either.
+> End-to-end verified: `python3 tools/run_diagnosis.py ...
+> real-debugger-v3 ...` without `CILOGBENCH_ALLOW_EXTERNAL_LLM=1`
+> now exits 1 with a clear error pointing at the env var.
+>
+> **F2 [medium] Cache validation broke env-overridden runs.**
+> `cache_hit_is_acceptable` compared cached `requested_model`
+> against the static `config.model.model_name`. A user running
+> with `CILOGBENCH_OPENAI_MODEL=gpt-4o` (an intended-and-documented
+> env override) would write a `gpt-4o` cache entry on the first
+> run, then have every later identical run reject that same
+> entry — non-idempotent, repeated paid API calls. Fix: new
+> `effective_requested_model()` helper reads
+> `config.model.env_var_name` (added to v3 config) and prefers the
+> env value when set, falling back to `config.model.model_name`
+> otherwise. The belt-and-suspenders still rejects cache rows from
+> a model genuinely different from the effective expected one.
+> Idempotency verified: re-running dev/grep against the existing
+> v3 cache produces 5 cache hits / 0 misses / 0 rejections.
+>
+> **Test coverage.** `tools/tests/test_diagnosis_cache_key.py`
+> grew from 11 → 22 tests (added 6 F2 cases + 5 F1 cases). All 22
+> pass alongside the 10 hybrid-router tests.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

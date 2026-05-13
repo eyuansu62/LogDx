@@ -448,6 +448,43 @@ def load_diagnoser_config(diagnoser_name: str) -> dict | None:
         return None
 
 
+_TRUTHY_OPT_IN_VALUES = {"1", "true", "yes", "on"}
+
+
+def check_external_llm_opt_in(config: dict | None) -> str | None:
+    """Per Codex 2026-05-13 F1: enforce the privacy gate the v3 config
+    declares.
+
+    If the diagnoser config sets `privacy.requires_explicit_external_llm_opt_in:
+    true`, the runner must refuse to invoke the diagnoser unless the
+    declared env var (default `CILOGBENCH_ALLOW_EXTERNAL_LLM`) is set to a
+    truthy value. Returns None when the gate passes (or doesn't apply);
+    returns a human-readable error string otherwise so callers can print +
+    fail closed.
+
+    The same gate is mirrored inside the shim binaries so an off-runner
+    invocation (e.g. someone calling DIAGNOSIS_COMMAND directly for a
+    smoke-test) cannot send CI log context to an external API without the
+    explicit opt-in.
+    """
+    if not isinstance(config, dict):
+        return None
+    privacy = config.get("privacy") or {}
+    if not privacy.get("requires_explicit_external_llm_opt_in"):
+        return None
+    var = privacy.get("explicit_opt_in_env_var") or "CILOGBENCH_ALLOW_EXTERNAL_LLM"
+    val = (os.environ.get(var) or "").strip().lower()
+    if val in _TRUTHY_OPT_IN_VALUES:
+        return None
+    return (
+        f"diagnoser {config.get('diagnoser_name', '<unknown>')} requires "
+        f"explicit opt-in via env var {var}=1 to invoke an external LLM "
+        f"(see privacy.requires_explicit_external_llm_opt_in in the "
+        f"diagnoser config). Set {var}=1 to acknowledge the data egress "
+        f"and re-run."
+    )
+
+
 def cache_key_env_values(config: dict | None) -> dict[str, str] | None:
     """Collect env-var values declared in config.cache_key_env.
 
@@ -463,12 +500,37 @@ def cache_key_env_values(config: dict | None) -> dict[str, str] | None:
     return {k: os.environ.get(k, "") for k in sorted(keys)}
 
 
+def effective_requested_model(config: dict | None) -> str | None:
+    """Return the model name we expect the current run to use.
+
+    Per Codex 2026-05-13 F2: the v3 config declares `cache_key_env`
+    (cache_key folds in env-driven overrides) AND `model.env_var_name`
+    (explicit pointer to which env var overrides `model.model_name`).
+    For cache-hit validation we must compare against the effective model
+    (env override if set, else the config default) — otherwise a run with
+    `CILOGBENCH_OPENAI_MODEL=gpt-4o` writes a gpt-4o cache entry on the
+    first call and rejects it on every later identical run because the
+    cached `requested_model='gpt-4o'` mismatches the static
+    `model.model_name='gpt-5-mini'`. The fix: validate against
+    effective_requested_model(config), which honors the env override.
+    """
+    if not isinstance(config, dict):
+        return None
+    model_section = config.get("model") or {}
+    env_var = model_section.get("env_var_name")
+    if env_var:
+        val = os.environ.get(env_var)
+        if val:
+            return val
+    return model_section.get("model_name") or None
+
+
 def cache_hit_is_acceptable(
     cached_row: dict, config: dict | None
 ) -> tuple[bool, str | None]:
     """Per Codex 2026-05-12 F2: belt-and-suspenders. Even if the cache_key
     matched, validate that the cached row's `metadata.model_info` matches
-    the expected diagnoser config. Reject otherwise so the runner falls
+    the *effective* expected model. Reject otherwise so the runner falls
     through to a fresh call.
 
     Returns (True, None) if no validation applies or it passes. Returns
@@ -476,7 +538,7 @@ def cache_hit_is_acceptable(
     """
     if not isinstance(config, dict):
         return True, None
-    expected_model = ((config.get("model") or {}).get("model_name")) or None
+    expected_model = effective_requested_model(config)
     if not expected_model:
         return True, None
     cached_meta = cached_row.get("metadata") or {}
@@ -489,7 +551,7 @@ def cache_hit_is_acceptable(
     if cached_requested != expected_model:
         return False, (
             f"cache row requested_model={cached_requested!r} != "
-            f"config.model.model_name={expected_model!r}"
+            f"effective model={expected_model!r}"
         )
     return True, None
 
@@ -537,6 +599,19 @@ def run(
     # requested_model for cache-hit validation.
     diagnoser_config = load_diagnoser_config(diagnoser_name)
     key_env_values = cache_key_env_values(diagnoser_config)
+
+    # Per Codex 2026-05-13 F1 [high]: the v3 config declared
+    # `privacy.requires_explicit_external_llm_opt_in: true` but the runner
+    # never enforced it. The opt-in is the trust-boundary control that
+    # prevents accidentally shipping CI log context to an external API on
+    # an unrelated diagnoser invocation. Fail closed at the runner BEFORE
+    # any provider work happens. The shims also re-check this as
+    # belt-and-suspenders so a stale DIAGNOSIS_COMMAND invocation from a
+    # different harness cannot bypass the gate.
+    gate_err = check_external_llm_opt_in(diagnoser_config)
+    if gate_err is not None:
+        print(f"ERROR: {gate_err}", file=sys.stderr)
+        return 1
 
     # Resolve the set of context methods to run against.
     if context_method == "all":
