@@ -1129,6 +1129,114 @@ def test_cache_hit_rejects_provider_error_row_by_default():
     assert "provider_error" in reason and "cache-errors" in reason
 
 
+def test_cache_hit_rejects_resolved_model_drift():
+    """Per Codex 2026-05-25 F1 [high]: v3 pins
+    model.expected_resolved_model. A cache hit whose resolved_model
+    differs from the pinned snapshot is rejected — closes the silent
+    alias-rotation replay risk."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    expected_url = rd.effective_base_url(cfg)
+    base_mi = {
+        "requested_model": "gpt-5-mini",
+        "base_url": rd._sanitize_base_url_for_compare(expected_url),
+        "base_url_sha256": rd._base_url_sha256_for_compare(expected_url),
+    }
+    # Canonical run-time snapshot — accept.
+    row_ok = {"metadata": {"model_info": dict(
+        base_mi, resolved_model="gpt-5-mini-2025-08-07"
+    )}}
+    ok, reason = rd.cache_hit_is_acceptable(row_ok, cfg)
+    assert ok, f"canonical resolved_model should accept: {reason}"
+    # Different snapshot (alias retargeted) — reject.
+    row_bad = {"metadata": {"model_info": dict(
+        base_mi, resolved_model="gpt-5-mini-2026-01-15"
+    )}}
+    ok2, reason2 = rd.cache_hit_is_acceptable(row_bad, cfg)
+    assert not ok2
+    assert "resolved_model" in reason2 and "2026-01-15" in reason2
+
+
+def test_cache_hit_back_compat_null_resolved_model():
+    """Legacy/backfilled rows with resolved_model=null pass through
+    even when the config pins a snapshot — these are pre-2026-05-13
+    state we don't have evidence to reject."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    expected_url = rd.effective_base_url(cfg)
+    row = {"metadata": {"model_info": {
+        "requested_model": "gpt-5-mini",
+        "resolved_model": None,
+        "base_url": rd._sanitize_base_url_for_compare(expected_url),
+        "base_url_sha256": rd._base_url_sha256_for_compare(expected_url),
+    }}}
+    ok, reason = rd.cache_hit_is_acceptable(row, cfg)
+    assert ok, f"null resolved_model should pass legacy back-compat: {reason}"
+
+
+def test_v3_config_pins_expected_resolved_model():
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    pinned = (cfg.get("model") or {}).get("expected_resolved_model")
+    assert pinned == "gpt-5-mini-2025-08-07", (
+        f"v3 must pin the canonical snapshot; got {pinned!r}"
+    )
+
+
+def test_sanitize_base_url_strips_deep_path_segments():
+    """Per Codex 2026-05-25 F2 [medium]: a proxy URL with path-embedded
+    secrets (e.g. https://proxy/v1/private/<token>) used to be
+    persisted verbatim in metadata.model_info.base_url. The
+    sanitizer now keeps at most the first path segment."""
+    import importlib.util
+    repo = Path(__file__).resolve().parent.parent.parent
+    spec = importlib.util.spec_from_file_location(
+        "_shim_openai", repo / "examples" / "diagnosis_shim_openai.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    f = mod.sanitize_base_url
+
+    # Canonical OpenAI URL preserved (single path segment).
+    assert f("https://api.openai.com/v1") == "https://api.openai.com/v1"
+    # Userinfo + query already stripped (2026-05-12), now path too.
+    assert f("https://user:pass@proxy.example.com/v1?token=xyz") \
+        == "https://proxy.example.com/v1"
+    # Deep path segments stripped.
+    assert f("https://proxy.example.com/v1/private/secret-route") \
+        == "https://proxy.example.com/v1"
+    assert f("https://proxy/api/internal/v2/path/with/token") \
+        == "https://proxy/api"
+    # Trailing-slash URL untouched.
+    assert f("https://api.openai.com/") == "https://api.openai.com/"
+    # No-path URL untouched.
+    assert f("https://api.openai.com") == "https://api.openai.com"
+    # Port preserved.
+    assert f("http://localhost:11434/v1") == "http://localhost:11434/v1"
+
+
+def test_runner_sanitize_matches_shim_sanitize():
+    """The runner's _sanitize_base_url_for_compare must produce the
+    same output as the shim's sanitize_base_url for cache-hit
+    validation to work. Mirror both sides identically."""
+    import importlib.util
+    repo = Path(__file__).resolve().parent.parent.parent
+    spec = importlib.util.spec_from_file_location(
+        "_shim_openai", repo / "examples" / "diagnosis_shim_openai.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    shim_san = mod.sanitize_base_url
+
+    for url in [
+        "https://api.openai.com/v1",
+        "https://user:pass@proxy.example.com/v1?token=xyz",
+        "https://proxy/v1/private/secret",
+        "https://api.openai.com",
+        "http://localhost:11434/v1",
+    ]:
+        assert shim_san(url) == rd._sanitize_base_url_for_compare(url), (
+            f"shim+runner sanitize disagree for {url!r}"
+        )
+
+
 def test_cache_hit_accepts_provider_error_row_when_cache_errors_opted_in():
     """When the operator passes --cache-errors, replaying a cached
     provider_error row is the explicit intent (e.g. running the
@@ -1597,6 +1705,13 @@ def main() -> int:
         # Codex 2026-05-24 (cache-hit gate for provider_error rows)
         test_cache_hit_rejects_provider_error_row_by_default,
         test_cache_hit_accepts_provider_error_row_when_cache_errors_opted_in,
+        # Codex 2026-05-25 F1 (resolved_model pinning)
+        test_cache_hit_rejects_resolved_model_drift,
+        test_cache_hit_back_compat_null_resolved_model,
+        test_v3_config_pins_expected_resolved_model,
+        # Codex 2026-05-25 F2 (sanitize_base_url strips deep paths)
+        test_sanitize_base_url_strips_deep_path_segments,
+        test_runner_sanitize_matches_shim_sanitize,
         # Codex 2026-05-22 F2 (cache gate uses row metadata)
         test_cache_gate_respects_row_metadata_provider_error,
         # Codex 2026-05-21 F1 (provider/config consistency)

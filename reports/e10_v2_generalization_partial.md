@@ -1898,6 +1898,49 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > never-accepts). `test_hybrid_router.py` unchanged at 10. All 89
 > pass. v1/v2/v3 canonical eval still cache-hits 5/5.
 
+> ⚠️ **Codex 2026-05-25 [high/medium] fixes applied — no scores
+> moved.** Codex flagged two remaining provenance/sanitization
+> gaps:
+>
+> **F1 [high] (Cache validation ignored resolved_model.)** v3's
+> alias `gpt-5-mini` could be retargeted by OpenAI silently; pre-fix
+> the validator only compared `requested_model` (the alias),
+> never `resolved_model` (the dated snapshot). Cache hits with the
+> prior snapshot would replay under the new alias mapping without
+> detection. Fix:
+> - v3 config now pins `model.expected_resolved_model:
+>   "gpt-5-mini-2025-08-07"` (the snapshot the canonical 2026-05-13
+>   re-run hit and that the 2026-05-16 backfill propagated to the
+>   26 post-API failure rows)
+> - `cache_hit_is_acceptable` rejects rows whose
+>   `resolved_model` differs from the pinned value (when both
+>   present). Legacy back-compat: rows with `resolved_model: null`
+>   pass through (the 39 oversized-context rows that never made an
+>   API call legitimately have no resolved_model)
+> - End-to-end: v3 canonical still 5/5 cache hits (existing rows
+>   all match `gpt-5-mini-2025-08-07`)
+>
+> **F2 [medium] (Sanitized base_url preserved deep path segments.)**
+> The 2026-05-12 F3 sanitizer stripped userinfo + query but kept
+> the FULL path. A proxy URL like
+> `https://proxy/v1/private/<token>/...` would land the token in
+> `metadata.model_info.base_url`. Fix:
+> - `sanitize_base_url()` (shim) + `_sanitize_base_url_for_compare()`
+>   (runner) now keep AT MOST the first path segment. Canonical
+>   `/v1` is preserved; deeper routes drop.
+> - Examples:
+>   - `https://api.openai.com/v1` → `https://api.openai.com/v1` (unchanged)
+>   - `https://user:pass@proxy/v1?token=xyz` → `https://proxy/v1`
+>   - `https://proxy/v1/private/secret-route` → `https://proxy/v1`
+> - `base_url_sha256` still hashes the FULL URL so the auditor can
+>   distinguish a proxy run from canonical without leaking the
+>   secret-carrying segments
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 79 →
+> 84 (+5: resolved_model drift reject, null back-compat, v3 pin
+> lock, sanitize-deep-paths, runner-shim-sanitize-parity).
+> `test_hybrid_router.py` unchanged at 10. All 94 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

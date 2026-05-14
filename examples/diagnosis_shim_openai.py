@@ -80,16 +80,31 @@ class _ContextTooLargeError(Exception):
 
 
 def sanitize_base_url(url: str) -> str:
-    """Strip userinfo and query string from a base_url for safe persistence.
+    """Strip userinfo, query, AND deep path segments from a base_url for
+    safe persistence.
 
-    Per Codex 2026-05-12 [medium]: an env-provided proxy URL can contain
-    userinfo (https://user:pass@host) or a signed-URL query token. The shim
-    persists base_url into the diagnosis row's metadata.model_info; without
-    sanitization those secrets land in committed result artifacts despite
-    the v3 config declaring `allow_secret_values_in_results=false`. Strip
-    userinfo and query before persisting; the full URL's sha256 is recorded
-    separately so a reviewer can still tell a proxy run apart from the
-    canonical run.
+    Per Codex 2026-05-12 + 2026-05-25 F2 [medium]: an env-provided proxy
+    URL can carry secrets in (a) userinfo (https://user:pass@host),
+    (b) query string (?token=...), AND (c) deep path segments
+    (/v1/private/<token>/...). The 2026-05-12 fix stripped (a) and (b)
+    but kept the full path; a path-embedded token still leaked into
+    `metadata.model_info.base_url` despite
+    `privacy.allow_secret_values_in_results=false`. This update keeps
+    AT MOST the first path segment — the canonical API-version route
+    (e.g. `/v1`) is preserved for readability; deeper segments are
+    dropped. The full URL's sha256 is recorded alongside as
+    `base_url_sha256` so a reviewer can still distinguish a proxy run
+    from the canonical run without leaking the secret-carrying parts.
+
+    Examples:
+        https://user:pass@api.openai.com/v1?token=xyz
+            -> https://api.openai.com/v1
+        https://proxy.example.com/v1/private/secret-route
+            -> https://proxy.example.com/v1
+        http://localhost:11434/v1
+            -> http://localhost:11434/v1
+        https://api.openai.com
+            -> https://api.openai.com
     """
     if not url:
         return url
@@ -97,7 +112,17 @@ def sanitize_base_url(url: str) -> str:
     netloc = parts.hostname or ""
     if parts.port:
         netloc = f"{netloc}:{parts.port}"
-    return urllib.parse.urlunsplit((parts.scheme, netloc, parts.path, "", ""))
+    # Keep at most the FIRST path segment so canonical API-version
+    # routes like "/v1" survive while secret-bearing deeper paths
+    # ("/v1/private/<token>") are dropped.
+    path = parts.path or ""
+    if path and path != "/":
+        segments = [s for s in path.split("/") if s]
+        if segments:
+            path = "/" + segments[0]
+        else:
+            path = "/"
+    return urllib.parse.urlunsplit((parts.scheme, netloc, path, "", ""))
 
 
 def base_url_sha256(url: str) -> str:

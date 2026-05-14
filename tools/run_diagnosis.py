@@ -757,16 +757,18 @@ def build_shim_env(
 
 
 def _sanitize_base_url_for_compare(url: str) -> str:
-    """Per Codex 2026-05-18 F3 [medium]: the OpenAI shim persists a
-    sanitized base_url (userinfo + query stripped) in
-    `metadata.model_info.base_url`. The runner's `effective_base_url`
-    returns the env value verbatim. Comparing sanitized-vs-raw caused
-    cache_hit_is_acceptable to reject the very row it had just
-    written when the user pointed CILOGBENCH_OPENAI_BASE_URL at a
-    credentialed proxy URL.
+    """Per Codex 2026-05-18 F3 + 2026-05-25 F2 [medium]: the OpenAI
+    shim persists a sanitized base_url (userinfo + query + deep
+    path segments stripped) in `metadata.model_info.base_url`. The
+    runner's `effective_base_url` returns the env value verbatim.
+    Comparing sanitized-vs-raw caused cache_hit_is_acceptable to
+    reject the very row it had just written when the user pointed
+    CILOGBENCH_OPENAI_BASE_URL at a credentialed-proxy URL.
 
     Same shape as `examples/diagnosis_shim_openai.py:sanitize_base_url`
     — duplicated here so the runner has no shim-import dependency.
+    Keep AT MOST the first path segment (canonical API-version
+    routes survive; secret-bearing deeper paths drop).
     """
     if not url:
         return url
@@ -774,7 +776,14 @@ def _sanitize_base_url_for_compare(url: str) -> str:
     netloc = parts.hostname or ""
     if parts.port:
         netloc = f"{netloc}:{parts.port}"
-    return urllib.parse.urlunsplit((parts.scheme, netloc, parts.path, "", ""))
+    path = parts.path or ""
+    if path and path != "/":
+        segments = [s for s in path.split("/") if s]
+        if segments:
+            path = "/" + segments[0]
+        else:
+            path = "/"
+    return urllib.parse.urlunsplit((parts.scheme, netloc, path, "", ""))
 
 
 def _base_url_sha256_for_compare(url: str) -> str:
@@ -1021,6 +1030,24 @@ def cache_hit_is_acceptable(
             return False, (
                 f"cache row requested_model={cached_requested!r} != "
                 f"effective model={expected_model!r}"
+            )
+
+    # Per Codex 2026-05-25 F1 [high]: when the config pins a specific
+    # snapshot (`model.expected_resolved_model`), validate the cached
+    # row's `resolved_model` matches. OpenAI aliases can be retargeted
+    # silently; without this check, post-rotation cache hits would
+    # replay old-snapshot diagnoses under the same alias name. Legacy
+    # back-compat: rows with cached_resolved is None (pre-2026-05-13
+    # backfill that never captured resolved_model) pass through.
+    expected_resolved = (config.get("model") or {}).get(
+        "expected_resolved_model"
+    )
+    if expected_resolved:
+        cached_resolved = cached_mi.get("resolved_model")
+        if cached_resolved is not None and cached_resolved != expected_resolved:
+            return False, (
+                f"cache row resolved_model={cached_resolved!r} != "
+                f"config-pinned expected_resolved_model={expected_resolved!r}"
             )
 
     # Per Codex 2026-05-17 F2 + 2026-05-18 F3 + 2026-05-19 F1:
