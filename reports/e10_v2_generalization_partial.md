@@ -1941,6 +1941,26 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > lock, sanitize-deep-paths, runner-shim-sanitize-parity).
 > `test_hybrid_router.py` unchanged at 10. All 94 pass.
 
+> ⚠️ **Codex 2026-05-26 [high] fix applied — no scores moved.**
+> Codex flagged that the 2026-05-25 F1 pinning only fired on cache
+> READS, not fresh-row writes:
+>
+> **F1 [high] (Fresh-row path missed resolved_model check.)** The
+> cache-hit validator rejected drifted resolved_model values, but
+> `validate_fresh_row_model_identity` only checked
+> requested_model + endpoint. On an alias rotation or `--no-cache`
+> run, a row from a different snapshot could be written to manifest
+> + cache under real-debugger-v3 before the next cache read noticed.
+> Fix:
+> - Extracted `_validate_resolved_model_identity()` shared helper
+> - Both `validate_fresh_row_model_identity` AND `cache_hit_is_acceptable`
+>   now route through it — identical rules for fresh + cached
+> - 4 new tests: fresh-row drift reject, fresh-row canonical accept,
+>   fresh-row null back-compat, shared-helper unit test
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 84 →
+> 88 (+4). `test_hybrid_router.py` unchanged at 10. All 98 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

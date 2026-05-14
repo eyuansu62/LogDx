@@ -1129,6 +1129,78 @@ def test_cache_hit_rejects_provider_error_row_by_default():
     assert "provider_error" in reason and "cache-errors" in reason
 
 
+def test_fresh_row_rejects_resolved_model_drift():
+    """Per Codex 2026-05-26 F1 [high]: the fresh-row path now enforces
+    the same resolved_model check as cache-hit. Pre-fix, a stale shim
+    or alias-rotation event could write rows from a different snapshot
+    under real-debugger-v3 before any cache read noticed."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    expected_url = rd.effective_base_url(cfg)
+    # Diagnosis body emits resolved_model from a future-rotated snapshot.
+    diag = {"_model_info": {
+        "requested_model": "gpt-5-mini",
+        "resolved_model": "gpt-5-mini-2099-01-01",
+        "base_url": rd._sanitize_base_url_for_compare(expected_url),
+        "base_url_sha256": rd._base_url_sha256_for_compare(expected_url),
+    }}
+    err = rd.validate_fresh_row_model_identity(diag, cfg)
+    assert err is not None, "rotated resolved_model fresh row should reject"
+    assert "resolved_model" in err and "2099-01-01" in err
+
+
+def test_fresh_row_accepts_canonical_resolved_model():
+    """Canonical snapshot — fresh row passes."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    expected_url = rd.effective_base_url(cfg)
+    diag = {"_model_info": {
+        "requested_model": "gpt-5-mini",
+        "resolved_model": "gpt-5-mini-2025-08-07",
+        "base_url": rd._sanitize_base_url_for_compare(expected_url),
+        "base_url_sha256": rd._base_url_sha256_for_compare(expected_url),
+    }}
+    err = rd.validate_fresh_row_model_identity(diag, cfg)
+    assert err is None, f"canonical fresh row should pass: {err}"
+
+
+def test_fresh_row_back_compat_null_resolved_model():
+    """Legacy/backfilled rows with resolved_model=null pass through —
+    pre-2026-05-13 state we don't have evidence to reject."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    expected_url = rd.effective_base_url(cfg)
+    diag = {"_model_info": {
+        "requested_model": "gpt-5-mini",
+        "resolved_model": None,
+        "base_url": rd._sanitize_base_url_for_compare(expected_url),
+        "base_url_sha256": rd._base_url_sha256_for_compare(expected_url),
+    }}
+    err = rd.validate_fresh_row_model_identity(diag, cfg)
+    assert err is None, f"null resolved_model fresh row should pass: {err}"
+
+
+def test_resolved_model_shared_helper_returns_consistent_results():
+    """The fresh-row and cache-hit paths now route through the same
+    `_validate_resolved_model_identity` helper. Sanity-check that the
+    helper itself behaves consistently."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    # Match → None
+    assert rd._validate_resolved_model_identity(
+        {"resolved_model": "gpt-5-mini-2025-08-07"}, cfg
+    ) is None
+    # Mismatch → error
+    err = rd._validate_resolved_model_identity(
+        {"resolved_model": "gpt-4o-2025-01-01"}, cfg
+    )
+    assert err is not None and "gpt-4o" in err
+    # Null/missing → None (legacy back-compat)
+    assert rd._validate_resolved_model_identity({"resolved_model": None}, cfg) is None
+    assert rd._validate_resolved_model_identity({}, cfg) is None
+    # No pin in config → None
+    cfg_no_pin = {"model": {"model_name": "x"}}
+    assert rd._validate_resolved_model_identity(
+        {"resolved_model": "anything"}, cfg_no_pin
+    ) is None
+
+
 def test_cache_hit_rejects_resolved_model_drift():
     """Per Codex 2026-05-25 F1 [high]: v3 pins
     model.expected_resolved_model. A cache hit whose resolved_model
@@ -1705,10 +1777,15 @@ def main() -> int:
         # Codex 2026-05-24 (cache-hit gate for provider_error rows)
         test_cache_hit_rejects_provider_error_row_by_default,
         test_cache_hit_accepts_provider_error_row_when_cache_errors_opted_in,
-        # Codex 2026-05-25 F1 (resolved_model pinning)
+        # Codex 2026-05-25 F1 (resolved_model pinning, cache-hit path)
         test_cache_hit_rejects_resolved_model_drift,
         test_cache_hit_back_compat_null_resolved_model,
         test_v3_config_pins_expected_resolved_model,
+        # Codex 2026-05-26 F1 (resolved_model check applies to fresh-row)
+        test_fresh_row_rejects_resolved_model_drift,
+        test_fresh_row_accepts_canonical_resolved_model,
+        test_fresh_row_back_compat_null_resolved_model,
+        test_resolved_model_shared_helper_returns_consistent_results,
         # Codex 2026-05-25 F2 (sanitize_base_url strips deep paths)
         test_sanitize_base_url_strips_deep_path_segments,
         test_runner_sanitize_matches_shim_sanitize,

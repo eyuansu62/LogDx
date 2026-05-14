@@ -847,6 +847,43 @@ def _config_requires_model_info(config: dict | None) -> bool:
     return bool(config.get("cache_key_env")) or bool(model.get("model_name"))
 
 
+def _validate_resolved_model_identity(
+    mi: dict, config: dict | None
+) -> str | None:
+    """Shared resolved-model validation used by both fresh-row and
+    cache-hit paths.
+
+    Codex 2026-05-25 F1 [high] added the cache-hit check.
+    Codex 2026-05-26 F1 [high]: extracted to a shared helper because
+    the fresh-row path did NOT perform the same check, so an alias
+    rotation or `--no-cache` run could write rows from a different
+    snapshot under real-debugger-v3, contaminating committed
+    benchmark results before any cache read noticed.
+
+    Returns None when validation passes or doesn't apply; an error
+    string otherwise.
+    """
+    if not isinstance(config, dict):
+        return None
+    expected_resolved = (config.get("model") or {}).get(
+        "expected_resolved_model"
+    )
+    if not expected_resolved:
+        return None
+    actual_resolved = mi.get("resolved_model") if isinstance(mi, dict) else None
+    if actual_resolved is None:
+        # Legacy back-compat: pre-2026-05-13 backfilled rows + rows
+        # whose API call never happened (oversized-context skips) have
+        # resolved_model=null. We have no evidence to reject.
+        return None
+    if actual_resolved != expected_resolved:
+        return (
+            f"resolved_model={actual_resolved!r} != "
+            f"config-pinned expected_resolved_model={expected_resolved!r}"
+        )
+    return None
+
+
 def _validate_base_url_identity(
     cached_mi: dict, config: dict | None
 ) -> str | None:
@@ -959,6 +996,13 @@ def validate_fresh_row_model_identity(
     url_err = _validate_base_url_identity(mi, config)
     if url_err:
         return f"endpoint mismatch under diagnoser config: {url_err}"
+    # Resolved-snapshot identity (Codex 2026-05-26 F1): the cache-hit
+    # path was already enforcing this; the fresh-row path used to skip
+    # it, so an alias rotation could write rows from a different
+    # snapshot before any cache read noticed.
+    resolved_err = _validate_resolved_model_identity(mi, config)
+    if resolved_err:
+        return f"resolved_model mismatch under diagnoser config: {resolved_err}"
     return None
 
 
@@ -1032,23 +1076,12 @@ def cache_hit_is_acceptable(
                 f"effective model={expected_model!r}"
             )
 
-    # Per Codex 2026-05-25 F1 [high]: when the config pins a specific
-    # snapshot (`model.expected_resolved_model`), validate the cached
-    # row's `resolved_model` matches. OpenAI aliases can be retargeted
-    # silently; without this check, post-rotation cache hits would
-    # replay old-snapshot diagnoses under the same alias name. Legacy
-    # back-compat: rows with cached_resolved is None (pre-2026-05-13
-    # backfill that never captured resolved_model) pass through.
-    expected_resolved = (config.get("model") or {}).get(
-        "expected_resolved_model"
-    )
-    if expected_resolved:
-        cached_resolved = cached_mi.get("resolved_model")
-        if cached_resolved is not None and cached_resolved != expected_resolved:
-            return False, (
-                f"cache row resolved_model={cached_resolved!r} != "
-                f"config-pinned expected_resolved_model={expected_resolved!r}"
-            )
+    # Per Codex 2026-05-25 F1 + 2026-05-26 F1 [high]: snapshot-identity
+    # validation via the shared helper, so cache-hit AND fresh-row
+    # paths enforce IDENTICAL rules.
+    resolved_err = _validate_resolved_model_identity(cached_mi, config)
+    if resolved_err:
+        return False, f"cache row {resolved_err}"
 
     # Per Codex 2026-05-17 F2 + 2026-05-18 F3 + 2026-05-19 F1:
     # delegate endpoint validation to the shared helper so cache-hit
