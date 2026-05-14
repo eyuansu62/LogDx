@@ -1317,6 +1317,103 @@ print(json.dumps({
             ), "manifest got polluted with forged resolved_model"
 
 
+def test_provenance_failure_preserves_existing_manifest_and_per_case():
+    """Per Codex 2026-05-28 F1 [high]: when a fresh-row provenance
+    check fails for ANY case in a method, the runner must preserve
+    the existing manifest + per-case JSON files intact. Pre-fix, the
+    loop-end manifest write would truncate the prior valid manifest
+    to a shortened (skipped-case) version, and earlier successful
+    cases' per-case JSONs would already have been overwritten.
+
+    Setup: forge a wrong-resolved_model shim; seed a snapshot of the
+    existing manifest + per-case JSONs; run; assert byte-identical
+    after the failed run.
+    """
+    import subprocess as _sub
+    import json
+    import tempfile
+    repo = Path(__file__).resolve().parent.parent.parent
+
+    # Capture pre-state.
+    diag_dir = repo / "results" / "dev" / "diagnoses" / "real-debugger-v3"
+    manifest = diag_dir / "grep.jsonl"
+    method_dir = diag_dir / "grep"
+    pre_manifest = manifest.read_text("utf-8") if manifest.exists() else None
+    pre_per_case = {}
+    if method_dir.exists():
+        for p in method_dir.glob("*.json"):
+            pre_per_case[p.name] = p.read_text("utf-8")
+
+    # Forge a shim that emits a wrong resolved_model.
+    forge_src = '''
+import json, sys
+data = json.load(sys.stdin)
+print(json.dumps({
+    "summary": "fake",
+    "root_cause_category": "test_assertion",
+    "root_cause": "synthetic",
+    "confidence": 0.5,
+    "relevant_files": [], "relevant_tests": [],
+    "evidence": [], "suggested_fix": "",
+    "_model_info": {
+        "provider_name": "openai",
+        "requested_model": "gpt-5-mini",
+        "resolved_model": "gpt-5-mini-2099-01-01",
+        "base_url": "https://api.openai.com/v1",
+        "base_url_sha256": "''' + rd._base_url_sha256_for_compare(
+            "https://api.openai.com/v1"
+        ) + '''",
+    },
+}))
+'''
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as fp:
+        fp.write(forge_src)
+        fp.flush()
+        forge_path = fp.name
+
+    env = dict(os.environ)
+    env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+    env["DIAGNOSIS_COMMAND"] = f"python3 {forge_path}"
+
+    res = _sub.run(
+        ["python3", f"{repo}/tools/run_diagnosis.py",
+         "--split", "dev",
+         "--diagnoser", "command",
+         "--diagnoser-name", "real-debugger-v3",
+         "--command", env["DIAGNOSIS_COMMAND"],
+         "--context-method", "grep",
+         "--diagnoser-config",
+         f"{repo}/configs/diagnosers/real-debugger-v3.json",
+         "--no-cache"],
+        cwd=repo, capture_output=True, timeout=60, env=env,
+    )
+    # Should have exited non-zero (had_failure set) and logged
+    # FAIL_PROVENANCE for every case.
+    err_text = res.stderr.decode("utf-8")
+    assert res.returncode != 0
+    assert "FAIL_PROVENANCE" in err_text
+    # The "preserved existing manifest" message should appear in stdout.
+    out_text = res.stdout.decode("utf-8")
+    assert "PROVENANCE-FAILED" in out_text or "preserved" in out_text, (
+        f"runner did not log preservation; stdout={out_text[:400]!r}"
+    )
+
+    # Verify pre-state is byte-identical to post-state.
+    if pre_manifest is not None:
+        post_manifest = manifest.read_text("utf-8")
+        assert post_manifest == pre_manifest, (
+            "manifest was modified despite provenance failure"
+        )
+    post_per_case = {}
+    if method_dir.exists():
+        for p in method_dir.glob("*.json"):
+            post_per_case[p.name] = p.read_text("utf-8")
+    assert post_per_case == pre_per_case, (
+        f"per-case JSONs changed despite provenance failure: "
+        f"pre keys={sorted(pre_per_case)} post keys={sorted(post_per_case)}"
+    )
+
+
 def test_resolved_model_shared_helper_returns_consistent_results():
     """The fresh-row and cache-hit paths now route through the same
     `_validate_resolved_model_identity` helper. Sanity-check that the
@@ -1929,6 +2026,8 @@ def main() -> int:
         test_resolved_model_shared_helper_returns_consistent_results,
         # Codex 2026-05-27 F1 (provenance mismatches skip writes)
         test_provenance_mismatch_skips_manifest_write,
+        # Codex 2026-05-28 F1 (provenance failure preserves manifest)
+        test_provenance_failure_preserves_existing_manifest_and_per_case,
         # Codex 2026-05-27 F2 (fresh-row strict resolved_model)
         test_fresh_row_rejects_null_resolved_model_under_pin,
         test_cache_hit_accepts_null_resolved_model_under_pin,

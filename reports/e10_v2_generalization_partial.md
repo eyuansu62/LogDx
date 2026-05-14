@@ -2007,6 +2007,35 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > superseded by F2). `test_hybrid_router.py` unchanged at 10. All
 > 100 pass.
 
+> ⚠️ **Codex 2026-05-28 [high] fix applied — no scores moved.**
+> Codex flagged that the 2026-05-27 F1 skip-write logic still let a
+> provenance failure CORRUPT existing artifacts:
+>
+> **F1 [high] (Provenance failures truncated existing manifests.)**
+> When fresh-row provenance failed mid-method, the runner logged
+> `FAIL_PROVENANCE` and `continue`d. But earlier successful cases
+> in the same method had ALREADY written new per-case JSONs to
+> disk, AND the loop-end manifest write unconditionally opened
+> the file in `'w'` mode and wrote the (shortened) `out_rows`. In
+> default non-strict mode, all cases failing provenance would
+> truncate a prior valid manifest to zero rows; a partial failure
+> would leave the manifest shortened with stale per-case JSONs
+> alongside. Fix:
+> - Per-case writes are now BUFFERED in `pending_per_case` during
+>   the loop, not flushed immediately
+> - A new `method_had_provenance_failure` flag tracks whether ANY
+>   case in the method tripped `ProvenanceMismatchError`
+> - At end of method: if the flag is set, BOTH the buffered
+>   per-case writes AND the manifest replacement are SKIPPED. The
+>   existing on-disk artifacts for the method remain canonical
+> - 1 new test seeds a snapshot of the existing manifest +
+>   per-case JSONs, runs with a forged wrong-resolved_model shim,
+>   and asserts pre-state == post-state byte-for-byte
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 90 →
+> 91 (+1: pre-state preservation regression).
+> `test_hybrid_router.py` unchanged at 10. All 101 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

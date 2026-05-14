@@ -1286,6 +1286,17 @@ def run(
         out_rows: list[dict] = []
         method_cache_hits = 0
         method_cache_misses = 0
+        # Per Codex 2026-05-28 F1 [high]: buffer per-case writes in
+        # memory; flush only if the method completes without ANY
+        # provenance failure. Pre-fix, a provenance failure mid-loop
+        # would let earlier successful cases overwrite their per-case
+        # JSONs, then the loop-end manifest write would truncate the
+        # manifest to the shortened (no-skipped-case) set — leaving
+        # stale per-case JSONs for the skipped cases alongside a
+        # manifest that doesn't reference them. Buffering preserves
+        # the prior method's artifacts intact when any case fails.
+        pending_per_case: list[tuple[Path, str]] = []
+        method_had_provenance_failure = False
         for m_row in rows:
             case_id = m_row["case_id"]
             ctx_path = ROOT / m_row["context_path"]
@@ -1445,12 +1456,21 @@ def run(
                     # mismatches do NOT produce a stub provider_error
                     # row — writing under the canonical diagnoser_name
                     # IS the violation. Skip the case entirely, mark
-                    # the run as failed, and continue to the next.
+                    # the run as failed.
+                    # Per Codex 2026-05-28 F1 [high]: also mark the
+                    # ENTIRE method as provenance-failed so the
+                    # loop-end flush leaves existing manifest +
+                    # per-case JSONs intact. Otherwise the buffered
+                    # writes from earlier successful cases would
+                    # overwrite their per-case files and the
+                    # shortened manifest would truncate the prior
+                    # canonical state.
                     print(
                         f"FAIL_PROVENANCE {method}/{case_id}: {e}",
                         file=sys.stderr,
                     )
                     had_failure = True
+                    method_had_provenance_failure = True
                     if strict:
                         return 1
                     continue
@@ -1530,13 +1550,43 @@ def run(
                     return 1
                 continue
 
-            # Per-case JSON beside the JSONL manifest.
+            # Per Codex 2026-05-28 F1 [high]: BUFFER per-case writes
+            # instead of flushing immediately. They get flushed at
+            # the end of the method ONLY IF no provenance failure
+            # occurred. Otherwise the existing on-disk per-case JSON
+            # for this case_id stays as the canonical version (since
+            # the new row was built from valid identity, that's fine;
+            # the corruption Codex flagged was about OTHER cases'
+            # writes happening while a different case failed).
             per_case_path = method_dir / f"{case_id}.json"
-            per_case_path.write_text(
-                json.dumps(row, ensure_ascii=False, indent=2) + "\n",
-                encoding="utf-8",
+            pending_per_case.append(
+                (per_case_path,
+                 json.dumps(row, ensure_ascii=False, indent=2) + "\n")
             )
             out_rows.append(row)
+
+        # Per Codex 2026-05-28 F1 [high]: when ANY case in the method
+        # provenance-failed, skip BOTH the per-case writes AND the
+        # manifest replacement. The existing on-disk artifacts for
+        # this method remain the canonical state. Without this, a
+        # rotated alias or stale shim could truncate a prior valid
+        # manifest to a shortened (skipped-case) version while
+        # leaving stale per-case JSONs alongside it.
+        if method_had_provenance_failure:
+            try:
+                display_path = str(manifest_path.relative_to(ROOT))
+            except ValueError:
+                display_path = str(manifest_path)
+            print(
+                f"  {method}: PROVENANCE-FAILED — preserved existing "
+                f"manifest + per-case JSONs at "
+                f"{display_path} (no writes applied)"
+            )
+            continue
+
+        # Flush buffered per-case writes.
+        for path, content in pending_per_case:
+            path.write_text(content, encoding="utf-8")
 
         with manifest_path.open("w", encoding="utf-8") as f:
             for row in out_rows:
