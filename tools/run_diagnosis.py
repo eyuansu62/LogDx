@@ -773,19 +773,26 @@ def build_shim_env(
     return env
 
 
+_API_VERSION_SEGMENT_RE = re.compile(r"^v\d+$")
+
+
 def _sanitize_base_url_for_compare(url: str) -> str:
-    """Per Codex 2026-05-18 F3 + 2026-05-25 F2 [medium]: the OpenAI
-    shim persists a sanitized base_url (userinfo + query + deep
-    path segments stripped) in `metadata.model_info.base_url`. The
-    runner's `effective_base_url` returns the env value verbatim.
-    Comparing sanitized-vs-raw caused cache_hit_is_acceptable to
-    reject the very row it had just written when the user pointed
+    """Per Codex 2026-05-18 F3 + 2026-05-25 F2 + 2026-05-31 F1: the
+    OpenAI shim persists a sanitized base_url (userinfo + query +
+    deep-path segments stripped) in `metadata.model_info.base_url`.
+    The runner's `effective_base_url` returns the env value
+    verbatim. Comparing sanitized-vs-raw caused cache_hit_is_acceptable
+    to reject the very row it had just written when the user pointed
     CILOGBENCH_OPENAI_BASE_URL at a credentialed-proxy URL.
 
     Same shape as `examples/diagnosis_shim_openai.py:sanitize_base_url`
     — duplicated here so the runner has no shim-import dependency.
-    Keep AT MOST the first path segment (canonical API-version
-    routes survive; secret-bearing deeper paths drop).
+    Codex 2026-05-31 F1 [high]: the 2026-05-25 logic preserved
+    arbitrary first segments — proxies shaped like
+    `https://proxy/<tenant-key>/v1` would persist the tenant key.
+    Now: only first segments matching `^v\\d+$` (canonical API-
+    version routes like /v1, /v2, /v10) are preserved. Anything
+    else is dropped entirely.
     """
     if not url:
         return url
@@ -796,10 +803,10 @@ def _sanitize_base_url_for_compare(url: str) -> str:
     path = parts.path or ""
     if path and path != "/":
         segments = [s for s in path.split("/") if s]
-        if segments:
+        if segments and _API_VERSION_SEGMENT_RE.fullmatch(segments[0]):
             path = "/" + segments[0]
         else:
-            path = "/"
+            path = ""
     return urllib.parse.urlunsplit((parts.scheme, netloc, path, "", ""))
 
 

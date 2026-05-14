@@ -79,28 +79,36 @@ class _ContextTooLargeError(Exception):
     pass
 
 
+_API_VERSION_SEGMENT_RE = re.compile(r"^v\d+$")
+
+
 def sanitize_base_url(url: str) -> str:
-    """Strip userinfo, query, AND deep path segments from a base_url for
-    safe persistence.
+    """Strip userinfo, query, AND all path segments except an
+    allowlisted API-version segment, for safe persistence.
 
-    Per Codex 2026-05-12 + 2026-05-25 F2 [medium]: an env-provided proxy
-    URL can carry secrets in (a) userinfo (https://user:pass@host),
-    (b) query string (?token=...), AND (c) deep path segments
-    (/v1/private/<token>/...). The 2026-05-12 fix stripped (a) and (b)
-    but kept the full path; a path-embedded token still leaked into
-    `metadata.model_info.base_url` despite
-    `privacy.allow_secret_values_in_results=false`. This update keeps
-    AT MOST the first path segment — the canonical API-version route
-    (e.g. `/v1`) is preserved for readability; deeper segments are
-    dropped. The full URL's sha256 is recorded alongside as
-    `base_url_sha256` so a reviewer can still distinguish a proxy run
-    from the canonical run without leaking the secret-carrying parts.
+    Codex history:
+    - 2026-05-12 F3: stripped userinfo + query but kept the full path
+    - 2026-05-25 F2 [medium]: kept only the FIRST path segment to drop
+      deep `/v1/private/<token>` shapes
+    - 2026-05-31 F1 [high]: the 2026-05-25 logic still preserved
+      arbitrary first segments — proxies shaped like
+      `https://proxy/<tenant-key>/v1` would persist the tenant key.
+      Now: only first segments matching `^v\\d+$` (canonical API-
+      version routes like /v1, /v2, /v10) are preserved. Anything
+      else is dropped entirely. The full URL's sha256 is recorded
+      separately as `base_url_sha256` so an auditor can still
+      distinguish a proxy run from the canonical run without
+      leaking secret-carrying segments.
 
-    Examples:
+    Examples (post 2026-05-31):
         https://user:pass@api.openai.com/v1?token=xyz
             -> https://api.openai.com/v1
         https://proxy.example.com/v1/private/secret-route
             -> https://proxy.example.com/v1
+        https://proxy.example.com/secret-token/v1
+            -> https://proxy.example.com           (first seg dropped)
+        https://proxy.example.com/tenants/foo/v1
+            -> https://proxy.example.com           (first seg dropped)
         http://localhost:11434/v1
             -> http://localhost:11434/v1
         https://api.openai.com
@@ -112,16 +120,16 @@ def sanitize_base_url(url: str) -> str:
     netloc = parts.hostname or ""
     if parts.port:
         netloc = f"{netloc}:{parts.port}"
-    # Keep at most the FIRST path segment so canonical API-version
-    # routes like "/v1" survive while secret-bearing deeper paths
-    # ("/v1/private/<token>") are dropped.
     path = parts.path or ""
     if path and path != "/":
         segments = [s for s in path.split("/") if s]
-        if segments:
+        if segments and _API_VERSION_SEGMENT_RE.fullmatch(segments[0]):
+            # Allowlist hit: keep the canonical `/v<N>` segment.
             path = "/" + segments[0]
         else:
-            path = "/"
+            # First segment isn't a known API-version route. Treat it
+            # as potentially secret-bearing and drop the entire path.
+            path = ""
     return urllib.parse.urlunsplit((parts.scheme, netloc, path, "", ""))
 
 

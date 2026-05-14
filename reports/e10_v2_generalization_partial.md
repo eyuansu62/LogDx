@@ -2101,6 +2101,33 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > **Test counts (cumulative):** `test_diagnosis_cache_key.py` 96 →
 > 97 (+1). `test_hybrid_router.py` unchanged at 10. All 107 pass.
 
+> ⚠️ **Codex 2026-05-31 [high] fix applied — no scores moved.**
+> Codex caught the last bypass in the base_url sanitization chain:
+>
+> **F1 [high] (Sanitizer preserved arbitrary first path segments.)**
+> The 2026-05-25 F2 fix kept "at most the first path segment" on
+> the assumption that the first segment is always a harmless API
+> version (`/v1`). But proxy / tenant-gateway URLs are commonly
+> shaped `https://proxy/<tenant-key>/v1` — the secret-bearing
+> segment is FIRST. Per Codex's verification:
+> `sanitize_base_url('https://proxy.example.com/secret-token/v1')`
+> returned `'https://proxy.example.com/secret-token'`, leaking
+> the tenant key. Fix:
+> - Allowlist only canonical API-version segments (`^v\d+$` —
+>   matches `/v1`, `/v2`, `/v10`, etc.). Any other first segment
+>   gets the entire path dropped; auditors compare via
+>   `base_url_sha256`
+> - Same change in the runner mirror so cache-hit comparisons
+>   stay consistent with the shim
+> - 2 new tests: extended sanitize-behavior coverage + the
+>   exact `secret-token/v1` regression Codex flagged (also
+>   verifies the 2026-05-29 redaction guard fires when the
+>   unsanitized form is forged into a cached row)
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 97 →
+> 98 (+1; existing sanitize-deep-path test extended).
+> `test_hybrid_router.py` unchanged at 10. All 108 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

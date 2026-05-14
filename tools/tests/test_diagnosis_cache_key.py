@@ -1736,10 +1736,11 @@ def test_v3_config_pins_expected_resolved_model():
 
 
 def test_sanitize_base_url_strips_deep_path_segments():
-    """Per Codex 2026-05-25 F2 [medium]: a proxy URL with path-embedded
-    secrets (e.g. https://proxy/v1/private/<token>) used to be
-    persisted verbatim in metadata.model_info.base_url. The
-    sanitizer now keeps at most the first path segment."""
+    """Per Codex 2026-05-25 F2 + 2026-05-31 F1 [high]: a proxy URL with
+    path-embedded secrets used to be persisted verbatim in
+    metadata.model_info.base_url. The sanitizer now keeps ONLY a
+    first-segment matching `^v\\d+$` (canonical API-version route);
+    any other first segment is dropped along with everything after."""
     import importlib.util
     repo = Path(__file__).resolve().parent.parent.parent
     spec = importlib.util.spec_from_file_location(
@@ -1749,22 +1750,86 @@ def test_sanitize_base_url_strips_deep_path_segments():
     spec.loader.exec_module(mod)
     f = mod.sanitize_base_url
 
-    # Canonical OpenAI URL preserved (single path segment).
+    # Canonical OpenAI URL preserved (single allowlisted version segment).
     assert f("https://api.openai.com/v1") == "https://api.openai.com/v1"
     # Userinfo + query already stripped (2026-05-12), now path too.
     assert f("https://user:pass@proxy.example.com/v1?token=xyz") \
         == "https://proxy.example.com/v1"
-    # Deep path segments stripped.
+    # Deep path segments after a /v1 are dropped (keep allowlisted).
     assert f("https://proxy.example.com/v1/private/secret-route") \
         == "https://proxy.example.com/v1"
+    # First segment NOT matching ^v\d+$ → entire path dropped
+    # (this is the Codex 2026-05-31 F1 case).
+    assert f("https://proxy.example.com/secret-token/v1") \
+        == "https://proxy.example.com"
+    assert f("https://proxy.example.com/tenants/foo/v1") \
+        == "https://proxy.example.com"
     assert f("https://proxy/api/internal/v2/path/with/token") \
-        == "https://proxy/api"
+        == "https://proxy"
+    # Higher version numbers also accepted.
+    assert f("https://proxy.example.com/v10") == "https://proxy.example.com/v10"
     # Trailing-slash URL untouched.
     assert f("https://api.openai.com/") == "https://api.openai.com/"
     # No-path URL untouched.
     assert f("https://api.openai.com") == "https://api.openai.com"
     # Port preserved.
     assert f("http://localhost:11434/v1") == "http://localhost:11434/v1"
+
+
+def test_sanitize_base_url_drops_tenant_key_first_segment():
+    """Per Codex 2026-05-31 F1 [high]: the EXACT regression Codex
+    flagged — proxies/tenant gateways shaped like
+    `https://proxy/<tenant-key>/v1` used to persist the tenant key
+    in metadata.model_info.base_url. Lock that case explicitly."""
+    import importlib.util
+    repo = Path(__file__).resolve().parent.parent.parent
+    spec = importlib.util.spec_from_file_location(
+        "_shim_openai", repo / "examples" / "diagnosis_shim_openai.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    sanitized = mod.sanitize_base_url(
+        "https://proxy.example.com/secret-token/v1"
+    )
+    # The tenant key MUST NOT appear in the sanitized output.
+    assert "secret-token" not in sanitized, (
+        f"first-segment secret leaked: {sanitized!r}"
+    )
+    # And the runner's mirror must agree.
+    assert rd._sanitize_base_url_for_compare(
+        "https://proxy.example.com/secret-token/v1"
+    ) == sanitized
+    # The 2026-05-29 F1 redaction guard then ALSO triggers if a
+    # malicious shim tries to persist the unsanitized form.
+    cfg = {
+        "model": {
+            "model_name": "gpt-5-mini",
+            "base_url": "https://proxy.example.com/secret-token/v1",
+            "base_url_env_var_name": "CILOGBENCH_OPENAI_BASE_URL",
+        },
+        "cache_key_env": ["CILOGBENCH_OPENAI_BASE_URL"],
+    }
+    saved = os.environ.get("CILOGBENCH_OPENAI_BASE_URL")
+    try:
+        os.environ["CILOGBENCH_OPENAI_BASE_URL"] = (
+            "https://proxy.example.com/secret-token/v1"
+        )
+        row = {"metadata": {"model_info": {
+            "requested_model": "gpt-5-mini",
+            # Malicious row: persists the unsanitized URL.
+            "base_url": "https://proxy.example.com/secret-token/v1",
+            "base_url_sha256": rd._base_url_sha256_for_compare(
+                "https://proxy.example.com/secret-token/v1"
+            ),
+        }}}
+        ok, reason = rd.cache_hit_is_acceptable(row, cfg)
+        assert not ok, "unsanitized first-segment must be rejected"
+        assert "sanitized" in (reason or "").lower() or "redaction" in (reason or "").lower()
+    finally:
+        if saved is None:
+            os.environ.pop("CILOGBENCH_OPENAI_BASE_URL", None)
+        else:
+            os.environ["CILOGBENCH_OPENAI_BASE_URL"] = saved
 
 
 def test_runner_sanitize_matches_shim_sanitize():
@@ -2286,8 +2351,9 @@ def main() -> int:
         # Codex 2026-05-27 F2 (fresh-row strict resolved_model)
         test_fresh_row_rejects_null_resolved_model_under_pin,
         test_cache_hit_accepts_null_resolved_model_under_pin,
-        # Codex 2026-05-25 F2 (sanitize_base_url strips deep paths)
+        # Codex 2026-05-25 F2 + 2026-05-31 F1 (sanitize_base_url allowlist)
         test_sanitize_base_url_strips_deep_path_segments,
+        test_sanitize_base_url_drops_tenant_key_first_segment,
         test_runner_sanitize_matches_shim_sanitize,
         # Codex 2026-05-22 F2 (cache gate uses row metadata)
         test_cache_gate_respects_row_metadata_provider_error,
