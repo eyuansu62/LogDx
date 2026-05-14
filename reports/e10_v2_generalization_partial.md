@@ -2036,6 +2036,47 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > 91 (+1: pre-state preservation regression).
 > `test_hybrid_router.py` unchanged at 10. All 101 pass.
 
+> ⚠️ **Codex 2026-05-29 [high/medium] fixes applied — no scores
+> moved.** Codex flagged two remaining bypass paths through the
+> validator + ShimCallError surface:
+>
+> **F1 [high] (Matching endpoint hash bypassed base_url redaction.)**
+> `_validate_base_url_identity` returned success as soon as
+> `base_url_sha256` matched, without checking whether the
+> persisted `base_url` was already in sanitized form. A stale
+> shim could emit a full proxy URL carrying secrets + the correct
+> hash and the validator would pass it through — credentials
+> would land in committed result JSON despite
+> `privacy.allow_secret_values_in_results=false`. Fix:
+> - Validator now checks `base_url == sanitize(base_url)` FIRST.
+>   Any URL not already in sanitized form is rejected as a
+>   redaction violation regardless of hash match
+> - 4 new tests: credentialed URL with matching hash rejected,
+>   deep-path URL with matching hash rejected, sanitized URL
+>   accepted, fresh-row also rejects unsanitized
+>
+> **F2 [medium] (Shim-error rows skipped provenance validation.)**
+> The success path validated `_model_info` with
+> `validate_fresh_row_model_identity`, but the `ShimCallError`
+> path copied `e.model_info` into a `post_api_error` row and wrote
+> it without re-validating. An API call that reached the wrong
+> model/snapshot AND failed parsing would still produce a
+> provider_error row under the canonical diagnoser with wrong
+> provenance. Fix:
+> - After lifting `e.model_info` / `e.provider_error_hint` into
+>   the stub diag_body, the runner now calls
+>   `validate_fresh_row_model_identity` on it
+> - On mismatch, raises ProvenanceMismatchError treatment:
+>   `FAIL_PROVENANCE shim_error_row ...` logged, method marked
+>   provenance-failed (so the 2026-05-28 buffer-and-preserve
+>   logic kicks in)
+> - 1 new end-to-end test forges a shim that exits 1 with a
+>   wrong-snapshot envelope and asserts the manifest is preserved
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 91 →
+> 96 (+5: 4 F1 redaction + 1 F2 shim-error provenance).
+> `test_hybrid_router.py` unchanged at 10. All 106 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

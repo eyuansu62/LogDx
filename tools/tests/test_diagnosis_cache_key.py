@@ -1317,6 +1317,152 @@ print(json.dumps({
             ), "manifest got polluted with forged resolved_model"
 
 
+def test_base_url_redaction_enforced_even_with_matching_hash():
+    """Per Codex 2026-05-29 F1 [high]: a stale shim could otherwise
+    emit a full proxy URL carrying secrets PLUS the correct sha256
+    and pass the validator. The redaction enforcement is now FIRST
+    in the validator: persisted `base_url` must equal its sanitized
+    form."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    expected_url = rd.effective_base_url(cfg)
+    canonical_hash = rd._base_url_sha256_for_compare(expected_url)
+    # Credential-bearing base_url + matching hash — must REJECT.
+    row = {"metadata": {"model_info": {
+        "requested_model": "gpt-5-mini",
+        "resolved_model": "gpt-5-mini-2025-08-07",
+        "base_url": "https://user:pass@api.openai.com/v1?token=xyz",
+        "base_url_sha256": canonical_hash,
+    }}}
+    ok, reason = rd.cache_hit_is_acceptable(row, cfg)
+    assert not ok, "credential-bearing base_url should reject"
+    assert "sanitized" in (reason or "").lower() or "redaction" in (reason or "").lower()
+
+
+def test_base_url_redaction_enforced_for_deep_path():
+    """Same enforcement applies to deep-path-bearing URLs."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    expected_url = rd.effective_base_url(cfg)
+    canonical_hash = rd._base_url_sha256_for_compare(expected_url)
+    row = {"metadata": {"model_info": {
+        "requested_model": "gpt-5-mini",
+        "resolved_model": "gpt-5-mini-2025-08-07",
+        "base_url": "https://api.openai.com/v1/private/secret-route",
+        "base_url_sha256": canonical_hash,
+    }}}
+    ok, reason = rd.cache_hit_is_acceptable(row, cfg)
+    assert not ok
+    assert "sanitized" in (reason or "").lower() or "redaction" in (reason or "").lower()
+
+
+def test_base_url_sanitized_form_accepts():
+    """Already-sanitized base_url (the shim's canonical output) passes."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    expected_url = rd.effective_base_url(cfg)
+    canonical_hash = rd._base_url_sha256_for_compare(expected_url)
+    row = {"metadata": {"model_info": {
+        "requested_model": "gpt-5-mini",
+        "resolved_model": "gpt-5-mini-2025-08-07",
+        "base_url": "https://api.openai.com/v1",  # already sanitized
+        "base_url_sha256": canonical_hash,
+    }}}
+    ok, reason = rd.cache_hit_is_acceptable(row, cfg)
+    assert ok, f"sanitized base_url should accept: {reason}"
+
+
+def test_fresh_row_rejects_unsanitized_base_url():
+    """Fresh-row path also enforces redaction (the validator is shared)."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    expected_url = rd.effective_base_url(cfg)
+    canonical_hash = rd._base_url_sha256_for_compare(expected_url)
+    diag = {"_model_info": {
+        "requested_model": "gpt-5-mini",
+        "resolved_model": "gpt-5-mini-2025-08-07",
+        "base_url": "https://user:p@api.openai.com/v1?t=x",
+        "base_url_sha256": canonical_hash,
+    }}
+    err = rd.validate_fresh_row_model_identity(diag, cfg)
+    assert err is not None
+    assert "sanitized" in err.lower() or "redaction" in err.lower()
+
+
+def test_shim_error_row_provenance_check_e2e():
+    """Per Codex 2026-05-29 F2 [medium]: when a ShimCallError carries
+    `_model_info` (post-API parse failure), the runner must run
+    fresh-row provenance validation on it before writing the
+    provider_error row. Otherwise an API call that reached the wrong
+    model/snapshot AND failed parsing would still write
+    `post_api_error` row under the canonical diagnoser with wrong
+    provenance.
+
+    End-to-end: forge a shim that exits 1 with a stdout envelope
+    declaring a wrong resolved_model, and assert the runner
+    refuses to write the row (preserves existing artifacts)."""
+    import subprocess as _sub
+    import json
+    import tempfile
+    repo = Path(__file__).resolve().parent.parent.parent
+
+    # Snapshot pre-state.
+    diag_dir = repo / "results" / "dev" / "diagnoses" / "real-debugger-v3"
+    manifest = diag_dir / "grep.jsonl"
+    pre_manifest = manifest.read_text("utf-8") if manifest.exists() else None
+
+    # Forge a shim that exits 1 with the post_api_error envelope but
+    # WITH a wrong resolved_model — exactly the failure mode F2 closes.
+    forge_src = '''
+import json, sys
+sys.stdin.read()  # consume payload
+envelope = {
+    "_model_info": {
+        "provider_name": "openai",
+        "requested_model": "gpt-5-mini",
+        "resolved_model": "gpt-5-mini-2099-01-01",  # wrong snapshot
+        "base_url": "https://api.openai.com/v1",
+        "base_url_sha256": "''' + rd._base_url_sha256_for_compare(
+            "https://api.openai.com/v1"
+        ) + '''",
+    },
+    "_provider_error": "post_api_error: synthetic JSONDecodeError",
+}
+print(json.dumps(envelope))
+sys.exit(1)
+'''
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as fp:
+        fp.write(forge_src)
+        fp.flush()
+        forge_path = fp.name
+
+    env = dict(os.environ)
+    env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+    env["DIAGNOSIS_COMMAND"] = f"python3 {forge_path}"
+
+    res = _sub.run(
+        ["python3", f"{repo}/tools/run_diagnosis.py",
+         "--split", "dev",
+         "--diagnoser", "command",
+         "--diagnoser-name", "real-debugger-v3",
+         "--command", env["DIAGNOSIS_COMMAND"],
+         "--context-method", "grep",
+         "--diagnoser-config",
+         f"{repo}/configs/diagnosers/real-debugger-v3.json",
+         "--no-cache"],
+        cwd=repo, capture_output=True, timeout=60, env=env,
+    )
+    assert res.returncode != 0
+    err_text = res.stderr.decode("utf-8")
+    assert "FAIL_PROVENANCE" in err_text, (
+        f"shim_error_row provenance failure should log FAIL_PROVENANCE; "
+        f"stderr={err_text[:400]!r}"
+    )
+    assert "shim_error_row" in err_text or "resolved_model" in err_text
+    # Manifest preserved
+    if pre_manifest is not None:
+        post_manifest = manifest.read_text("utf-8")
+        assert post_manifest == pre_manifest, (
+            "manifest was modified despite shim-error-row provenance failure"
+        )
+
+
 def test_provenance_failure_preserves_existing_manifest_and_per_case():
     """Per Codex 2026-05-28 F1 [high]: when a fresh-row provenance
     check fails for ANY case in a method, the runner must preserve
@@ -2028,6 +2174,13 @@ def main() -> int:
         test_provenance_mismatch_skips_manifest_write,
         # Codex 2026-05-28 F1 (provenance failure preserves manifest)
         test_provenance_failure_preserves_existing_manifest_and_per_case,
+        # Codex 2026-05-29 F1 (redaction enforcement on persisted base_url)
+        test_base_url_redaction_enforced_even_with_matching_hash,
+        test_base_url_redaction_enforced_for_deep_path,
+        test_base_url_sanitized_form_accepts,
+        test_fresh_row_rejects_unsanitized_base_url,
+        # Codex 2026-05-29 F2 (provenance check on ShimCallError rows)
+        test_shim_error_row_provenance_check_e2e,
         # Codex 2026-05-27 F2 (fresh-row strict resolved_model)
         test_fresh_row_rejects_null_resolved_model_under_pin,
         test_cache_hit_accepts_null_resolved_model_under_pin,

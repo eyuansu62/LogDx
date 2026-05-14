@@ -945,6 +945,29 @@ def _validate_base_url_identity(
     expected_url = effective_base_url(config)
     if not expected_url:
         return None
+
+    # Per Codex 2026-05-29 F1 [high]: redaction enforcement FIRST.
+    # The persisted `base_url` value MUST already be in its sanitized
+    # form regardless of whether sha256 also matches. A stale or
+    # custom shim could otherwise emit a full proxy URL carrying
+    # userinfo, query tokens, or deep-path secrets PLUS the correct
+    # hash and slip past the validator — leaking credentials into the
+    # canonical results JSON (privacy.allow_secret_values_in_results
+    # is false by config contract).
+    cached_url = cached_mi.get("base_url")
+    if cached_url is not None:
+        sanitized_form = _sanitize_base_url_for_compare(cached_url)
+        if cached_url != sanitized_form:
+            return (
+                f"persisted `base_url` is not in sanitized form: "
+                f"{cached_url!r} vs sanitize()={sanitized_form!r}. "
+                f"Redaction is mandatory under "
+                f"privacy.allow_secret_values_in_results=false; "
+                f"refusing to accept a row that would leak userinfo, "
+                f"query tokens, or deep-path secrets into the "
+                f"canonical diagnosis artifact."
+            )
+
     cached_hash = cached_mi.get("base_url_sha256")
     if cached_hash is not None:
         if cached_hash != _base_url_sha256_for_compare(expected_url):
@@ -954,7 +977,6 @@ def _validate_base_url_identity(
                 f"{_base_url_sha256_for_compare(expected_url)[:16]}…"
             )
         return None
-    cached_url = cached_mi.get("base_url")
     if cached_url is None:
         # No endpoint evidence in the row at all.
         if _config_requires_model_info(config):
@@ -967,11 +989,10 @@ def _validate_base_url_identity(
             )
         return None
     expected_sanitized = _sanitize_base_url_for_compare(expected_url)
-    cached_sanitized = _sanitize_base_url_for_compare(cached_url)
-    if cached_sanitized != expected_sanitized:
+    if cached_url != expected_sanitized:
         return (
-            f"shim returned base_url (sanitized)={cached_sanitized!r} "
-            f"but config expects {expected_sanitized!r}"
+            f"shim returned base_url={cached_url!r} but config "
+            f"expects (sanitized) {expected_sanitized!r}"
         )
     return None
 
@@ -1502,6 +1523,31 @@ def run(
                             diag_body["_model_info"] = e.model_info
                         if e.provider_error_hint:
                             diag_body["_provider_error"] = e.provider_error_hint
+                        # Per Codex 2026-05-29 F2 [medium]: when the
+                        # shim's error-envelope carries model_info,
+                        # run the SAME fresh-row provenance check as
+                        # the success path. Without this, an API call
+                        # that reached the wrong model/snapshot/
+                        # endpoint and then failed during parse would
+                        # still produce a `post_api_error` row under
+                        # the canonical diagnoser_name with wrong
+                        # provenance — corrupting downstream error
+                        # counts and undercutting the
+                        # provenance-mismatch-never-writes contract.
+                        prov_err = validate_fresh_row_model_identity(
+                            diag_body, diagnoser_config
+                        )
+                        if prov_err:
+                            print(
+                                f"FAIL_PROVENANCE {method}/{case_id}: "
+                                f"shim_error_row {prov_err}",
+                                file=sys.stderr,
+                            )
+                            had_failure = True
+                            method_had_provenance_failure = True
+                            if strict:
+                                return 1
+                            continue
                 runtime_ms = (time.perf_counter() - t0) * 1000
 
                 row = build_row(
