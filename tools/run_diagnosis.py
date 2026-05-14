@@ -706,30 +706,39 @@ def effective_requested_model(config: dict | None) -> str | None:
     as `metadata.model_info.requested_model`.
 
     Resolution order:
-        1. env_var_name's value in os.environ (if both declared + non-empty)
+        1. env_var_name's value in os.environ — ONLY if the config has
+           `model.allow_runtime_model_override: true` (Codex 2026-06-05
+           F2). Default for canonical real-debugger-* configs is false:
+           env overrides do NOT change the expected identity; if the
+           shim emits a different requested_model the runner rejects
+           it as a provenance mismatch.
         2. config.model.requested_alias (the shim-level alias — e.g. v1
            Claude uses 'haiku' for `claude -p --model haiku`, while
-           model.model_name is the dated identity 'claude-haiku-4-5')
+           model.model_name is the canonical dated identity)
         3. config.model.model_name (the canonical / dated identity — what
            the OpenAI shim emits when no env override is in play)
 
     Codex history:
         - 2026-05-12 F2: introduced env-aware lookup so env overrides
-          remain idempotent.
+          remain idempotent. (Was permissive by default.)
         - 2026-05-13 F2: explicit env_var_name pointer added to v3 config.
-        - 2026-05-14 F2: requested_alias added so v1/v2 (whose shim sends
-          short Claude aliases) can validate against what the shim
-          actually persists, while keeping model_name as the canonical
-          dated identity used in reports.
+        - 2026-05-14 F2: requested_alias added so v1/v2 (whose shim
+          sends short Claude aliases) can validate against what the
+          shim actually persists.
+        - 2026-06-05 F2 [high]: env override is now an OPT-IN per
+          `model.allow_runtime_model_override`. Canonical fixed
+          configs lock identity; reusable templates or experiment-
+          mode configs can opt into runtime override.
     """
     if not isinstance(config, dict):
         return None
     model_section = config.get("model") or {}
-    env_var = model_section.get("env_var_name")
-    if env_var:
-        val = os.environ.get(env_var)
-        if val:
-            return val
+    if model_section.get("allow_runtime_model_override"):
+        env_var = model_section.get("env_var_name")
+        if env_var:
+            val = os.environ.get(env_var)
+            if val:
+                return val
     alias = model_section.get("requested_alias")
     if alias:
         return alias
@@ -1281,14 +1290,16 @@ def cache_hit_is_acceptable(
                 f"effective model={expected_model!r}"
             )
 
-    # Per Codex 2026-05-25 F1 + 2026-05-26 F1 + 2026-05-27 F2 [high]:
-    # snapshot-identity validation via the shared helper. Cache-hit
-    # path uses strict=False so legacy back-compat rows
-    # (resolved_model=null on pre-2026-05-13 backfill, or
-    # oversized-context skips) continue to pass; the fresh-row path
-    # is strict and requires non-null resolved_model.
+    # Per Codex 2026-05-25 F1 + 2026-05-26 F1 + 2026-05-27 F2 +
+    # 2026-06-05 F1 [high]: snapshot-identity validation via the
+    # shared helper. The cache-hit path is now ALSO strict — a pinned
+    # config + null resolved_model means the cached row predates the
+    # snapshot pin and can't be trusted; force fresh call. Cached
+    # provider_error rows are rejected by an earlier gate (Codex
+    # 2026-05-24 F1), so this strict check only affects success
+    # rows, which are the ones the pin is meant to lock down.
     resolved_err = _validate_resolved_model_identity(
-        cached_mi, config, strict=False
+        cached_mi, config, strict=True
     )
     if resolved_err:
         return False, f"cache row {resolved_err}"

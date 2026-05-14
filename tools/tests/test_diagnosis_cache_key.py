@@ -175,8 +175,15 @@ def test_effective_model_falls_back_to_config_when_env_unset():
 
 
 def test_effective_model_uses_env_override_when_set():
-    cfg = {"model": {"model_name": "gpt-5-mini",
-                      "env_var_name": "CILOGBENCH_OPENAI_MODEL"}}
+    """Env override only takes effect when the config opts in via
+    `model.allow_runtime_model_override` (Codex 2026-06-05 F2).
+    Canonical real-debugger-* configs do NOT set this flag, so env
+    overrides are ignored at the validator layer."""
+    cfg = {"model": {
+        "model_name": "gpt-5-mini",
+        "env_var_name": "CILOGBENCH_OPENAI_MODEL",
+        "allow_runtime_model_override": True,
+    }}
     saved = os.environ.get("CILOGBENCH_OPENAI_MODEL")
     try:
         os.environ["CILOGBENCH_OPENAI_MODEL"] = "gpt-4o"
@@ -189,21 +196,50 @@ def test_effective_model_uses_env_override_when_set():
 
 
 def test_cache_hit_acceptable_when_env_override_matches_cached():
-    # Codex 2026-05-13 F2 [medium]: the scenario Codex flagged.
-    # User runs with CILOGBENCH_OPENAI_MODEL=gpt-4o. The first run writes a
-    # cache entry with requested_model='gpt-4o'. The second identical run
-    # MUST hit + accept the cache (was previously rejected because the
-    # validator compared against config.model.model_name='gpt-5-mini').
-    cfg = {"model": {"model_name": "gpt-5-mini",
-                      "env_var_name": "CILOGBENCH_OPENAI_MODEL"}}
+    """With allow_runtime_model_override=true (experiment mode),
+    env-override runs are idempotent. The 2026-05-13 F2 scenario."""
+    cfg = {"model": {
+        "model_name": "gpt-5-mini",
+        "env_var_name": "CILOGBENCH_OPENAI_MODEL",
+        "allow_runtime_model_override": True,
+    }}
     saved = os.environ.get("CILOGBENCH_OPENAI_MODEL")
     try:
         os.environ["CILOGBENCH_OPENAI_MODEL"] = "gpt-4o"
         row = {"metadata": {"model_info": {"provider_name": "openai", "requested_model": "gpt-4o"}}}
         ok, reason = rd.cache_hit_is_acceptable(row, cfg)
         assert ok and reason is None, (
-            f"env-override hit should accept; got ({ok}, {reason!r})"
+            f"env-override hit should accept under allow_runtime_model_override; "
+            f"got ({ok}, {reason!r})"
         )
+    finally:
+        if saved is None:
+            os.environ.pop("CILOGBENCH_OPENAI_MODEL", None)
+        else:
+            os.environ["CILOGBENCH_OPENAI_MODEL"] = saved
+
+
+def test_canonical_config_rejects_env_override():
+    """Per Codex 2026-06-05 F2 [high]: WITHOUT
+    allow_runtime_model_override, env overrides are treated as
+    identity mismatches. A user running real-debugger-v3 with
+    CILOGBENCH_OPENAI_MODEL=gpt-4o would have written rows under
+    v3's canonical output path with gpt-4o results. Now: the
+    validator rejects."""
+    cfg = {"model": {
+        "provider_name": "openai",
+        "model_name": "gpt-5-mini",
+        "env_var_name": "CILOGBENCH_OPENAI_MODEL",
+        # NOTE: NO allow_runtime_model_override → locked
+    }}
+    saved = os.environ.get("CILOGBENCH_OPENAI_MODEL")
+    try:
+        os.environ["CILOGBENCH_OPENAI_MODEL"] = "gpt-4o"
+        # Shim under env override would emit requested_model=gpt-4o
+        row = {"metadata": {"model_info": {"provider_name": "openai", "requested_model": "gpt-4o"}}}
+        ok, reason = rd.cache_hit_is_acceptable(row, cfg)
+        assert not ok, "canonical config must reject env-override rows"
+        assert "gpt-4o" in reason and "gpt-5-mini" in reason
     finally:
         if saved is None:
             os.environ.pop("CILOGBENCH_OPENAI_MODEL", None)
@@ -214,8 +250,11 @@ def test_cache_hit_acceptable_when_env_override_matches_cached():
 def test_cache_hit_still_rejects_genuinely_wrong_cached_model():
     # Belt-and-suspenders still fires when cache is poisoned with a row
     # from a different model than the current effective model.
-    cfg = {"model": {"model_name": "gpt-5-mini",
-                      "env_var_name": "CILOGBENCH_OPENAI_MODEL"}}
+    cfg = {"model": {
+        "model_name": "gpt-5-mini",
+        "env_var_name": "CILOGBENCH_OPENAI_MODEL",
+        "allow_runtime_model_override": True,
+    }}
     saved = os.environ.get("CILOGBENCH_OPENAI_MODEL")
     try:
         os.environ["CILOGBENCH_OPENAI_MODEL"] = "gpt-4o"
@@ -668,6 +707,7 @@ def test_base_url_validation_uses_sha256_when_available():
     expected_hash = rd._base_url_sha256_for_compare(expected_url)
     row_ok = {"metadata": {"model_info": {
         "provider_name": "openai", "requested_model": "gpt-5-mini",
+        "resolved_model": "gpt-5-mini-2025-08-07",
         "base_url": "https://api.openai.com/v1",
         "base_url_sha256": expected_hash,
     }}}
@@ -677,6 +717,7 @@ def test_base_url_validation_uses_sha256_when_available():
     # endpoint) → reject.
     row_bad = {"metadata": {"model_info": {
         "provider_name": "openai", "requested_model": "gpt-5-mini",
+        "resolved_model": "gpt-5-mini-2025-08-07",
         "base_url": "https://api.openai.com/v1",
         "base_url_sha256": "a" * 64,  # wrong hash
     }}}
@@ -1019,9 +1060,14 @@ def test_fresh_row_rejects_when_endpoint_evidence_missing():
 
 
 def test_cache_hit_rejects_when_endpoint_evidence_missing():
-    """Same scenario at the cache layer."""
+    """Same scenario at the cache layer. Note: row has the pinned
+    resolved_model so the resolved-model gate passes; only the
+    endpoint-missing branch fires."""
     cfg = rd.load_diagnoser_config("real-debugger-v3")
-    row = {"metadata": {"model_info": {"provider_name": "openai", "requested_model": "gpt-5-mini"}}}
+    row = {"metadata": {"model_info": {
+        "provider_name": "openai", "requested_model": "gpt-5-mini",
+        "resolved_model": "gpt-5-mini-2025-08-07",
+    }}}
     ok, reason = rd.cache_hit_is_acceptable(row, cfg)
     assert not ok
     assert "base_url" in reason and "provenance" in reason.lower()
@@ -1400,11 +1446,14 @@ def test_fresh_row_rejects_null_resolved_model_under_pin():
     assert "resolved_model" in err and "snapshot evidence" in err.lower()
 
 
-def test_cache_hit_accepts_null_resolved_model_under_pin():
-    """The cache-hit path keeps legacy back-compat for null
-    resolved_model so existing v3 cache (pre-2026-05-13 backfill +
-    oversized-context skips) doesn't trip on every run. Asymmetric
-    with fresh-row by design."""
+def test_cache_hit_rejects_null_resolved_model_under_pin():
+    """Per Codex 2026-06-05 F1 [high]: the cache-hit path is now ALSO
+    strict on null resolved_model when the config pins a snapshot.
+    Pre-fix, a stale or injected cache row with matching
+    requested_model + base_url but null resolved_model would be
+    accepted and could overwrite manifests as v3 output without a
+    fresh provider call. Now: rejected, forcing a fresh call (which
+    will populate resolved_model from the API response)."""
     cfg = rd.load_diagnoser_config("real-debugger-v3")
     expected_url = rd.effective_base_url(cfg)
     row = {"metadata": {"model_info": {
@@ -1414,7 +1463,8 @@ def test_cache_hit_accepts_null_resolved_model_under_pin():
         "base_url_sha256": rd._base_url_sha256_for_compare(expected_url),
     }}}
     ok, reason = rd.cache_hit_is_acceptable(row, cfg)
-    assert ok, f"legacy null resolved_model cache row should pass: {reason}"
+    assert not ok, "null resolved_model cache row under pin must reject now"
+    assert "resolved_model" in (reason or "")
 
 
 def test_provenance_mismatch_skips_manifest_write():
@@ -2056,20 +2106,11 @@ def test_cache_hit_rejects_resolved_model_drift():
     assert "resolved_model" in reason2 and "2026-01-15" in reason2
 
 
-def test_cache_hit_back_compat_null_resolved_model():
-    """Legacy/backfilled rows with resolved_model=null pass through
-    even when the config pins a snapshot — these are pre-2026-05-13
-    state we don't have evidence to reject."""
-    cfg = rd.load_diagnoser_config("real-debugger-v3")
-    expected_url = rd.effective_base_url(cfg)
-    row = {"metadata": {"model_info": {
-        "provider_name": "openai", "requested_model": "gpt-5-mini",
-        "resolved_model": None,
-        "base_url": rd._sanitize_base_url_for_compare(expected_url),
-        "base_url_sha256": rd._base_url_sha256_for_compare(expected_url),
-    }}}
-    ok, reason = rd.cache_hit_is_acceptable(row, cfg)
-    assert ok, f"null resolved_model should pass legacy back-compat: {reason}"
+# test_cache_hit_back_compat_null_resolved_model was removed per Codex
+# 2026-06-05 F1 [high]: cache-hit no longer accepts null resolved_model
+# under a pinned config. See
+# `test_cache_hit_rejects_null_resolved_model_under_pin` above for the
+# replacement behavior.
 
 
 def test_v3_config_pins_expected_resolved_model():
@@ -2211,6 +2252,7 @@ def test_cache_hit_accepts_provider_error_row_when_cache_errors_opted_in():
     row = {"metadata": {
         "model_info": {
             "provider_name": "openai", "requested_model": "gpt-5-mini",
+            "resolved_model": "gpt-5-mini-2025-08-07",
             "base_url": "https://api.openai.com/v1",
             "base_url_sha256": rd._base_url_sha256_for_compare(
                 "https://api.openai.com/v1"
@@ -2606,6 +2648,8 @@ def main() -> int:
         test_effective_model_falls_back_to_config_when_env_unset,
         test_effective_model_uses_env_override_when_set,
         test_cache_hit_acceptable_when_env_override_matches_cached,
+        # Codex 2026-06-05 F2 (canonical configs lock identity)
+        test_canonical_config_rejects_env_override,
         test_cache_hit_still_rejects_genuinely_wrong_cached_model,
         test_v3_config_declares_env_var_name,
         # Codex 2026-05-14 F2 (Claude / v1+v2)
@@ -2672,8 +2716,10 @@ def main() -> int:
         test_cache_hit_rejects_provider_error_row_by_default,
         test_cache_hit_accepts_provider_error_row_when_cache_errors_opted_in,
         # Codex 2026-05-25 F1 (resolved_model pinning, cache-hit path)
+        # NOTE: test_cache_hit_back_compat_null_resolved_model removed by
+        # Codex 2026-06-05 F1 — cache-hit no longer accepts null
+        # resolved_model under a pinned config (see below).
         test_cache_hit_rejects_resolved_model_drift,
-        test_cache_hit_back_compat_null_resolved_model,
         test_v3_config_pins_expected_resolved_model,
         # Codex 2026-05-26 F1 (resolved_model check applies to fresh-row)
         test_fresh_row_rejects_resolved_model_drift,
@@ -2709,9 +2755,9 @@ def main() -> int:
         test_redaction_error_does_not_echo_raw_cached_url,
         test_openai_shim_redacts_url_in_malformed_base_url_error,
         test_redact_urls_in_text_helper,
-        # Codex 2026-05-27 F2 (fresh-row strict resolved_model)
+        # Codex 2026-05-27 F2 + 2026-06-05 F1 (strict resolved_model)
         test_fresh_row_rejects_null_resolved_model_under_pin,
-        test_cache_hit_accepts_null_resolved_model_under_pin,
+        test_cache_hit_rejects_null_resolved_model_under_pin,
         # Codex 2026-05-25 F2 + 2026-05-31 F1 (sanitize_base_url allowlist)
         test_sanitize_base_url_strips_deep_path_segments,
         test_sanitize_base_url_drops_tenant_key_first_segment,

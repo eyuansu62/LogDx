@@ -2266,6 +2266,52 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > **Test counts (cumulative):** `test_diagnosis_cache_key.py` 106 →
 > 109 (+3). `test_hybrid_router.py` unchanged at 10. All 119 pass.
 
+> ⚠️ **Codex 2026-06-05 [high/high] fixes applied — no scores
+> moved.** Codex flagged two soft-spots in the provenance pinning:
+>
+> **F1 [high] (Cache-hit accepted null resolved_model under pin.)**
+> The 2026-05-27 F2 fix made the FRESH-row path strict (require
+> non-null `resolved_model` when the config pins a snapshot) but
+> kept the cache-hit path lax for legacy back-compat. A
+> stale/injected cache entry with matching `requested_model` +
+> `base_url` but null `resolved_model` was accepted and could
+> overwrite manifests as v3 output without a fresh provider call.
+> Fix:
+> - `cache_hit_is_acceptable` now calls
+>   `_validate_resolved_model_identity(strict=True)` — symmetric
+>   with the fresh-row path
+> - Cached provider_error rows are already rejected by Codex
+>   2026-05-24 F1, so this only tightens success-row checks
+> - 2 pre-existing legacy-null tests updated to expect REJECTION;
+>   the v3 canonical run is unaffected (all 285+26 backfilled
+>   successful rows have resolved_model populated)
+>
+> **F2 [high] (Runtime env override corrupted fixed diagnoser
+> identity.)** `effective_requested_model` honored
+> `CILOGBENCH_*_MODEL` over `config.model.model_name`. Running
+> `real-debugger-v3` with `CILOGBENCH_OPENAI_MODEL=gpt-4o` would
+> have validated and written rows under v3's canonical output
+> path with gpt-4o results — the M6 manifest records config
+> path/hash but not the runtime override. Fix:
+> - New `model.allow_runtime_model_override` opt-in (default
+>   false). Canonical real-debugger-* configs do NOT set it, so
+>   env overrides are IGNORED at the validator layer
+> - When set (e.g. experiment-mode configs), env override still
+>   works as before (Codex 2026-05-12 F2 idempotency)
+> - cache_key_env still includes the env value so cache_key
+>   differs per env, but the validator expects the locked config
+>   value — a mismatched run rejects on identity instead of
+>   silently writing under the wrong name
+> - 2 new tests: env override accepted under opt-in flag;
+>   canonical config rejects env override
+> - 3 pre-existing tests updated to use the opt-in flag (env-
+>   override idempotency tests now scope to experiment configs)
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 109
+> (test count unchanged — 1 new test, 1 removed, net 0; existing
+> tests updated). `test_hybrid_router.py` unchanged at 10. All
+> 119 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**
