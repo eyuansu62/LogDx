@@ -1837,6 +1837,34 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > **Test counts (cumulative):** `test_diagnosis_cache_key.py` 68 →
 > 73 (+5). `test_hybrid_router.py` unchanged at 10. All 83 pass.
 
+> ⚠️ **Codex 2026-05-23 [high] fix applied — no scores moved.**
+> Codex caught a follow-on bug from 2026-05-22 F1: the
+> `reusable_template` flag opted the example config out of the
+> diagnoser-name strict check, but the model-identity validators
+> still enforced its placeholder `model_name`. Result: documented
+> M6/M7 stub workflows would produce all-`provider_error` rows
+> after potentially making paid API calls that got discarded.
+>
+> **F1 [high] (reusable_template configs need to opt out of model-
+> identity validation too.)** Fix:
+> - `_config_requires_model_info()` returns False when
+>   `reusable_template: true`
+> - `validate_fresh_row_model_identity()`,
+>   `cache_hit_is_acceptable()`, and `_validate_base_url_identity()`
+>   all early-return None for reusable templates — placeholder
+>   model_name / model.base_url are documentation, not binding
+> - Canonical real-debugger configs (v1/v2/v3) do NOT set the flag,
+>   so their strict identity enforcement remains intact
+> - End-to-end regression: `examples/diagnosis_shim_stub.py` +
+>   `example.debugger-v1-command.json` produces 5 clean rows
+>   (provider_error=None, diagnoser_config_name=example-debugger-v1
+>   audit field populated) — verified via subprocess test
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 73 →
+> 77 (+4: fresh-row + cache-hit skip for reusable_template,
+> canonical-still-strict sanity, end-to-end stub regression).
+> `test_hybrid_router.py` unchanged at 10. All 87 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

@@ -1064,6 +1064,97 @@ def test_mock_provider_rejected_inline_if_config_requires_provenance():
     assert err is not None, "mock body under v3 config must be rejected"
 
 
+def test_reusable_template_skips_fresh_row_validation():
+    """Per Codex 2026-05-23 F1 [high]: reusable_template configs declare
+    a placeholder model_name (e.g. example-debugger-v1's
+    'user-configured-model'). The actual model comes from the caller's
+    shim + env. Fresh-row validation must skip identity checks against
+    that placeholder; otherwise documented M6/M7 stub workflows would
+    fail every fresh row with provider_error."""
+    repo = Path(__file__).resolve().parent.parent.parent
+    cfg = rd.load_diagnoser_config(
+        "stub-debugger-v1",
+        explicit_path=repo / "configs" / "diagnosers" / "example.debugger-v1-command.json",
+    )
+    # Stub shim emits no _model_info at all — accepted.
+    err = rd.validate_fresh_row_model_identity(
+        {"summary": "stub"}, cfg
+    )
+    assert err is None, f"stub row under template should pass: {err}"
+    # Real shim emits requested_model='gpt-5-mini' — also accepted (no
+    # binding to compare against).
+    err2 = rd.validate_fresh_row_model_identity(
+        {"_model_info": {"requested_model": "gpt-5-mini"}}, cfg
+    )
+    assert err2 is None, f"real-shim row under template should pass: {err2}"
+
+
+def test_reusable_template_skips_cache_hit_validation():
+    """Same opt-out for cache hits."""
+    repo = Path(__file__).resolve().parent.parent.parent
+    cfg = rd.load_diagnoser_config(
+        "stub-debugger-v1",
+        explicit_path=repo / "configs" / "diagnosers" / "example.debugger-v1-command.json",
+    )
+    row = {"metadata": {"model_info": {"requested_model": "haiku"}}}
+    ok, reason = rd.cache_hit_is_acceptable(row, cfg)
+    assert ok and reason is None
+
+
+def test_canonical_real_debugger_still_enforces_identity():
+    """v3 config (not reusable_template) still rejects identity
+    mismatches. Sanity-check the opt-out is scoped to templates."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    row = {"metadata": {"model_info": {"requested_model": "gpt-4o"}}}
+    ok, reason = rd.cache_hit_is_acceptable(row, cfg)
+    assert not ok
+    assert "gpt-4o" in (reason or "") and "gpt-5-mini" in (reason or "")
+
+
+def test_stub_template_end_to_end_writes_clean_rows():
+    """Per Codex 2026-05-23 F1 [high] end-to-end regression: the
+    documented workflow (`example.debugger-v1-command.json` template
+    + `examples/diagnosis_shim_stub.py`) must produce successful rows
+    with `metadata.provider_error == null` — not provider_error rows
+    that throw away paid API calls."""
+    import subprocess as _sub
+    import json
+    repo = Path(__file__).resolve().parent.parent.parent
+    env = dict(os.environ)
+    env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+    env["DIAGNOSIS_COMMAND"] = f"python3 {repo}/examples/diagnosis_shim_stub.py"
+    res = _sub.run(
+        ["python3", f"{repo}/tools/run_diagnosis.py",
+         "--split", "dev",
+         "--diagnoser", "command",
+         "--diagnoser-name", "stub-debugger-v1",
+         "--command", env["DIAGNOSIS_COMMAND"],
+         "--context-method", "grep",
+         "--diagnoser-config",
+         f"{repo}/configs/diagnosers/example.debugger-v1-command.json",
+         "--no-cache"],
+        cwd=repo, capture_output=True, timeout=60, env=env,
+    )
+    assert res.returncode == 0, (
+        f"stub template run should succeed; exit={res.returncode}; "
+        f"stderr={res.stderr.decode()[:400]!r}"
+    )
+    manifest = repo / "results" / "dev" / "diagnoses" / "stub-debugger-v1" / "grep.jsonl"
+    rows = [json.loads(l) for l in manifest.open() if l.strip()]
+    assert len(rows) > 0, "manifest should contain rows"
+    for row in rows:
+        md = row.get("metadata") or {}
+        assert md.get("provider_error") is None, (
+            f"stub row should not be a provider_error: "
+            f"case={row.get('case_id')!r} pe={md.get('provider_error')!r}"
+        )
+        # The audit trail records both names: row.diagnoser is the
+        # runtime name, metadata.diagnoser_config_name is the config's
+        # declared name.
+        assert row.get("diagnoser") == "stub-debugger-v1"
+        assert md.get("diagnoser_config_name") == "example-debugger-v1"
+
+
 def test_cache_gate_respects_row_metadata_provider_error():
     """Per Codex 2026-05-22 F2 [medium]: the cache gate historically
     used the exception-local `provider_error` variable. A shim that
@@ -1449,6 +1540,11 @@ def main() -> int:
         test_canonical_config_still_strict_on_name_mismatch,
         test_build_row_records_both_names_for_template_runs,
         test_build_row_omits_diagnoser_config_name_when_names_match,
+        # Codex 2026-05-23 F1 (reusable_template skips identity validation)
+        test_reusable_template_skips_fresh_row_validation,
+        test_reusable_template_skips_cache_hit_validation,
+        test_canonical_real_debugger_still_enforces_identity,
+        test_stub_template_end_to_end_writes_clean_rows,
         # Codex 2026-05-22 F2 (cache gate uses row metadata)
         test_cache_gate_respects_row_metadata_provider_error,
         # Codex 2026-05-21 F1 (provider/config consistency)

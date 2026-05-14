@@ -810,6 +810,18 @@ def _config_requires_model_info(config: dict | None) -> bool:
     (a canonical model identity) is saying "this diagnoser is a real
     backend-bound entity"; rows under it MUST carry model_info.
 
+    Codex 2026-05-23 F1 [high]: `reusable_template: true` configs
+    (e.g. `example.debugger-v1-command.json`) declare a PLACEHOLDER
+    `model_name` so the on-disk file is schema-valid. The actual
+    model that the run uses is bound by the caller's shim + env,
+    not by the config. Treating those placeholders as canonical
+    identity broke documented M6/M7 stub + custom-shim workflows
+    (the validator rejected every fresh row because
+    requested_model='haiku' or 'gpt-5-mini' or '' didn't match the
+    config's 'user-configured-model'). Reusable templates opt out
+    of provenance enforcement entirely; the canonical real-debugger
+    configs (v1/v2/v3) do NOT set this flag.
+
     The explicit opt-out is `model.allow_missing_model_info: true`,
     used for legacy mock / stub diagnosers that don't have a shim
     yet. Pre-2026-05-18 the validators accepted missing model_info
@@ -817,6 +829,8 @@ def _config_requires_model_info(config: dict | None) -> bool:
     write rows under real-debugger-v1/v2/v3 with no provenance.
     """
     if not isinstance(config, dict):
+        return False
+    if config.get("reusable_template"):
         return False
     model = config.get("model") or {}
     if model.get("allow_missing_model_info"):
@@ -840,8 +854,12 @@ def _validate_base_url_identity(
     endpoint evidence to compare. Now: if the config requires
     provenance (cache_key_env or model.model_name declared), missing
     endpoint evidence is itself a failure.
+    Codex 2026-05-23 F1 [high]: `reusable_template: true` configs
+    skip endpoint validation too (no binding endpoint).
     """
     if not isinstance(config, dict):
+        return None
+    if config.get("reusable_template"):
         return None
     expected_url = effective_base_url(config)
     if not expected_url:
@@ -893,8 +911,15 @@ def validate_fresh_row_model_identity(
     for endpoint identity (a stale shim that ignored
     CILOGBENCH_OPENAI_BASE_URL could otherwise hit the default OpenAI
     endpoint while the config pointed at a proxy).
+
+    Codex 2026-05-23 F1 [high]: `reusable_template: true` configs
+    opt out of identity validation entirely — their `model.model_name`
+    is a placeholder, not a binding. The caller's shim + env supply
+    the actual model.
     """
     if not isinstance(config, dict):
+        return None
+    if config.get("reusable_template"):
         return None
     expected = effective_requested_model(config)
     if not expected:
@@ -937,10 +962,15 @@ def cache_hit_is_acceptable(
     endpoint. Reject otherwise so the runner falls through to a fresh
     call.
 
+    Codex 2026-05-23 F1 [high]: `reusable_template: true` configs
+    opt out (their model_name is a placeholder, not a binding).
+
     Returns (True, None) if no validation applies or all checks pass.
     Returns (False, reason) on mismatch.
     """
     if not isinstance(config, dict):
+        return True, None
+    if config.get("reusable_template"):
         return True, None
     cached_meta = cached_row.get("metadata") or {}
     cached_mi = cached_meta.get("model_info") or {}
