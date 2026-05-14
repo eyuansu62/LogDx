@@ -301,6 +301,23 @@ def diagnose_mock(
 # ---------------------------------------------------------------------------
 
 
+class ProvenanceMismatchError(RuntimeError):
+    """Per Codex 2026-05-27 F1 [high]: dedicated exception for fresh-row
+    provenance mismatches (requested_model, endpoint, resolved_model,
+    or mock-provider-under-real-config). Distinguished from generic
+    RuntimeError so the runner can SKIP the output write entirely.
+
+    Pre-fix, the surrounding broad `except Exception` caught these as
+    normal provider failures and wrote a provider_error stub row to
+    the manifest + per-case JSON. That still polluted the canonical
+    `results/<split>/diagnoses/<diagnoser_name>/` location under
+    the wrong identity — the exact thing the validators are meant
+    to prevent. Now the runner catches ProvenanceMismatchError
+    specifically, logs the mismatch, marks the run as failed, and
+    skips the case (no row written, no cache update).
+    """
+
+
 class ShimCallError(RuntimeError):
     """Per Codex 2026-05-16 F1: raised when the diagnoser command exits
     non-zero. Carries opt-in metadata (notably `_model_info`) that the
@@ -848,17 +865,23 @@ def _config_requires_model_info(config: dict | None) -> bool:
 
 
 def _validate_resolved_model_identity(
-    mi: dict, config: dict | None
+    mi: dict, config: dict | None, *, strict: bool = False,
 ) -> str | None:
     """Shared resolved-model validation used by both fresh-row and
     cache-hit paths.
 
     Codex 2026-05-25 F1 [high] added the cache-hit check.
     Codex 2026-05-26 F1 [high]: extracted to a shared helper because
-    the fresh-row path did NOT perform the same check, so an alias
-    rotation or `--no-cache` run could write rows from a different
-    snapshot under real-debugger-v3, contaminating committed
-    benchmark results before any cache read noticed.
+    the fresh-row path did NOT perform the same check.
+    Codex 2026-05-27 F2 [high]: `strict=True` (fresh-row path) now
+    REQUIRES a non-null resolved_model under a config that pins one.
+    Pre-fix, the validator returned success when actual_resolved was
+    None — so a custom OpenAI-compatible endpoint that omits the
+    `model` field in its response could produce a successful row with
+    no snapshot evidence and pass the pin check. Cache-hit path keeps
+    `strict=False` so legacy backfilled rows with resolved_model=null
+    (pre-2026-05-13) and oversized-context rows (no API call ever
+    made) continue to pass.
 
     Returns None when validation passes or doesn't apply; an error
     string otherwise.
@@ -872,9 +895,21 @@ def _validate_resolved_model_identity(
         return None
     actual_resolved = mi.get("resolved_model") if isinstance(mi, dict) else None
     if actual_resolved is None:
-        # Legacy back-compat: pre-2026-05-13 backfilled rows + rows
-        # whose API call never happened (oversized-context skips) have
-        # resolved_model=null. We have no evidence to reject.
+        if strict:
+            return (
+                f"shim emitted no `metadata.model_info.resolved_model` "
+                f"but diagnoser config pins "
+                f"expected_resolved_model={expected_resolved!r}. "
+                f"Refusing to accept a fresh success row with no "
+                f"snapshot evidence (an OpenAI-compatible endpoint or "
+                f"modified response may have omitted the `model` field "
+                f"from its JSON envelope, which would silently bypass "
+                f"the alias-rotation check)."
+            )
+        # Legacy back-compat for cache reads: pre-2026-05-13 backfilled
+        # rows + rows whose API call never happened (oversized-context
+        # skips) have resolved_model=null. We have no evidence to
+        # reject these existing on-disk rows.
         return None
     if actual_resolved != expected_resolved:
         return (
@@ -996,11 +1031,13 @@ def validate_fresh_row_model_identity(
     url_err = _validate_base_url_identity(mi, config)
     if url_err:
         return f"endpoint mismatch under diagnoser config: {url_err}"
-    # Resolved-snapshot identity (Codex 2026-05-26 F1): the cache-hit
-    # path was already enforcing this; the fresh-row path used to skip
-    # it, so an alias rotation could write rows from a different
-    # snapshot before any cache read noticed.
-    resolved_err = _validate_resolved_model_identity(mi, config)
+    # Resolved-snapshot identity (Codex 2026-05-26 F1 + 2026-05-27 F2):
+    # the cache-hit path was already enforcing this; the fresh-row
+    # path skipped it. 2026-05-27 additionally requires the fresh-row
+    # row to carry a non-null resolved_model under pinned configs —
+    # otherwise a compatible endpoint that omits the `model` response
+    # field could silently bypass the alias-rotation check.
+    resolved_err = _validate_resolved_model_identity(mi, config, strict=True)
     if resolved_err:
         return f"resolved_model mismatch under diagnoser config: {resolved_err}"
     return None
@@ -1076,10 +1113,15 @@ def cache_hit_is_acceptable(
                 f"effective model={expected_model!r}"
             )
 
-    # Per Codex 2026-05-25 F1 + 2026-05-26 F1 [high]: snapshot-identity
-    # validation via the shared helper, so cache-hit AND fresh-row
-    # paths enforce IDENTICAL rules.
-    resolved_err = _validate_resolved_model_identity(cached_mi, config)
+    # Per Codex 2026-05-25 F1 + 2026-05-26 F1 + 2026-05-27 F2 [high]:
+    # snapshot-identity validation via the shared helper. Cache-hit
+    # path uses strict=False so legacy back-compat rows
+    # (resolved_model=null on pre-2026-05-13 backfill, or
+    # oversized-context skips) continue to pass; the fresh-row path
+    # is strict and requires non-null resolved_model.
+    resolved_err = _validate_resolved_model_identity(
+        cached_mi, config, strict=False
+    )
     if resolved_err:
         return False, f"cache row {resolved_err}"
 
@@ -1362,7 +1404,7 @@ def run(
                             diag_body, diagnoser_config
                         )
                         if mock_mismatch:
-                            raise RuntimeError(
+                            raise ProvenanceMismatchError(
                                 f"mock_provider_under_real_config: {mock_mismatch}"
                             )
                     elif diagnoser_provider == "command":
@@ -1391,13 +1433,27 @@ def run(
                             diag_body, diagnoser_config
                         )
                         if mismatch:
-                            raise RuntimeError(
+                            raise ProvenanceMismatchError(
                                 f"fresh_row_model_identity_mismatch: {mismatch}"
                             )
                     else:
                         raise ValueError(
                             f"unknown diagnoser provider: {diagnoser_provider}"
                         )
+                except ProvenanceMismatchError as e:
+                    # Per Codex 2026-05-27 F1 [high]: provenance
+                    # mismatches do NOT produce a stub provider_error
+                    # row — writing under the canonical diagnoser_name
+                    # IS the violation. Skip the case entirely, mark
+                    # the run as failed, and continue to the next.
+                    print(
+                        f"FAIL_PROVENANCE {method}/{case_id}: {e}",
+                        file=sys.stderr,
+                    )
+                    had_failure = True
+                    if strict:
+                        return 1
+                    continue
                 except Exception as e:
                     provider_error = f"{type(e).__name__}: {e}"
                     if strict:

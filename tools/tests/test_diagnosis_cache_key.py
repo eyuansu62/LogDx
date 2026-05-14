@@ -382,13 +382,16 @@ def test_build_shim_env_no_optin_means_no_injection():
 
 
 def test_validate_fresh_row_passes_when_shim_matches_config():
-    """v3 row with matching alias AND matching endpoint evidence. The
-    Codex 2026-05-20 F1 fix now requires endpoint evidence under
+    """v3 row with matching alias + endpoint + pinned snapshot. The
+    Codex 2026-05-20 F1 fix requires endpoint evidence under
     provenance-required configs (real-debugger-v3 declares
-    cache_key_env so this applies)."""
+    cache_key_env). The 2026-05-27 F2 fix additionally requires
+    a non-null resolved_model matching `model.expected_resolved_model`
+    on fresh rows."""
     cfg = rd.load_diagnoser_config("real-debugger-v3")
     diag = {"_model_info": {
         "requested_model": "gpt-5-mini",
+        "resolved_model": "gpt-5-mini-2025-08-07",
         "base_url": "https://api.openai.com/v1",
         "base_url_sha256": rd._base_url_sha256_for_compare(
             "https://api.openai.com/v1"
@@ -840,11 +843,13 @@ def test_endpoint_evidence_optional_for_legacy_optout_config():
 
 
 def test_fresh_row_accepts_matching_endpoint():
-    """Sanity: a shim emitting model + endpoint that match the config
-    passes the fresh-row gate."""
+    """Sanity: a shim emitting model + endpoint + pinned snapshot that
+    match the config passes the fresh-row gate. Per 2026-05-27 F2,
+    resolved_model must also be non-null and match the pin."""
     cfg = rd.load_diagnoser_config("real-debugger-v3")
     diag = {"_model_info": {
         "requested_model": "gpt-5-mini",
+        "resolved_model": "gpt-5-mini-2025-08-07",
         "base_url": "https://api.openai.com/v1",
         "base_url_sha256": rd._base_url_sha256_for_compare(
             "https://api.openai.com/v1"
@@ -1162,9 +1167,23 @@ def test_fresh_row_accepts_canonical_resolved_model():
     assert err is None, f"canonical fresh row should pass: {err}"
 
 
-def test_fresh_row_back_compat_null_resolved_model():
-    """Legacy/backfilled rows with resolved_model=null pass through —
-    pre-2026-05-13 state we don't have evidence to reject."""
+# NOTE: the prior 2026-05-26 test
+# `test_fresh_row_back_compat_null_resolved_model` was superseded by the
+# Codex 2026-05-27 F2 fix — fresh rows now MUST carry a non-null
+# resolved_model under pinned configs. See
+# `test_fresh_row_rejects_null_resolved_model_under_pin` and
+# `test_cache_hit_accepts_null_resolved_model_under_pin` below for the
+# asymmetric fresh-row-strict / cache-hit-legacy contract.
+
+
+def test_fresh_row_rejects_null_resolved_model_under_pin():
+    """Per Codex 2026-05-27 F2 [high]: a successful fresh row under a
+    config that pins expected_resolved_model MUST carry a non-null
+    resolved_model. Pre-fix, a compatible endpoint that omitted the
+    `model` field from its response would produce a row with
+    requested_model + base_url but no resolved_model, and the
+    validator passed it as legacy back-compat — silently bypassing
+    the alias-rotation check."""
     cfg = rd.load_diagnoser_config("real-debugger-v3")
     expected_url = rd.effective_base_url(cfg)
     diag = {"_model_info": {
@@ -1174,7 +1193,128 @@ def test_fresh_row_back_compat_null_resolved_model():
         "base_url_sha256": rd._base_url_sha256_for_compare(expected_url),
     }}
     err = rd.validate_fresh_row_model_identity(diag, cfg)
-    assert err is None, f"null resolved_model fresh row should pass: {err}"
+    assert err is not None, (
+        "fresh row with null resolved_model under pinned config should reject"
+    )
+    assert "resolved_model" in err and "snapshot evidence" in err.lower()
+
+
+def test_cache_hit_accepts_null_resolved_model_under_pin():
+    """The cache-hit path keeps legacy back-compat for null
+    resolved_model so existing v3 cache (pre-2026-05-13 backfill +
+    oversized-context skips) doesn't trip on every run. Asymmetric
+    with fresh-row by design."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    expected_url = rd.effective_base_url(cfg)
+    row = {"metadata": {"model_info": {
+        "requested_model": "gpt-5-mini",
+        "resolved_model": None,
+        "base_url": rd._sanitize_base_url_for_compare(expected_url),
+        "base_url_sha256": rd._base_url_sha256_for_compare(expected_url),
+    }}}
+    ok, reason = rd.cache_hit_is_acceptable(row, cfg)
+    assert ok, f"legacy null resolved_model cache row should pass: {reason}"
+
+
+def test_provenance_mismatch_skips_manifest_write():
+    """Per Codex 2026-05-27 F1 [high]: when fresh-row provenance
+    validation fails, the runner must NOT write a provider_error stub
+    row to the manifest — that pollutes the canonical
+    results/<split>/diagnoses/<name>/ location with the same shape as
+    a model abstention. Skip the case entirely.
+
+    Smoke-test by running with a config that pins a different
+    resolved_model than what the shim emits, and confirming:
+      (a) exit code is non-zero
+      (b) no row gets appended to the manifest for that case (or the
+          existing row is left unchanged)
+    """
+    import subprocess as _sub
+    import json
+    import tempfile
+
+    repo = Path(__file__).resolve().parent.parent.parent
+    # Use the stub shim: it emits a row WITHOUT _model_info, so under
+    # a real config the validator will reject. We tee the stub's row
+    # through a tiny pass-through that ADDS a wrong _model_info so
+    # the fresh-row check fires (rather than the "missing model_info"
+    # path).
+    stub_pkg = '''
+import json, sys
+data = json.load(sys.stdin)
+# Forge a wrong resolved_model
+print(json.dumps({
+    "summary": "fake",
+    "root_cause_category": "test_assertion",
+    "root_cause": "synthetic",
+    "confidence": 0.5,
+    "relevant_files": [], "relevant_tests": [],
+    "evidence": [], "suggested_fix": "",
+    "_model_info": {
+        "provider_name": "openai",
+        "requested_model": "gpt-5-mini",
+        "resolved_model": "gpt-5-mini-2099-01-01",
+        "base_url": "https://api.openai.com/v1",
+        "base_url_sha256": "''' + rd._base_url_sha256_for_compare(
+            "https://api.openai.com/v1"
+        ) + '''",
+    },
+}))
+'''
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as fp:
+        fp.write(stub_pkg)
+        fp.flush()
+        forge_path = fp.name
+
+    env = dict(os.environ)
+    env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+    env["DIAGNOSIS_COMMAND"] = f"python3 {forge_path}"
+    # Snapshot manifest before run.
+    manifest = repo / "results" / "dev" / "diagnoses" / "real-debugger-v3" / "grep.jsonl"
+    pre = json.loads(json.dumps(
+        [json.loads(l) for l in manifest.open() if l.strip()]
+    )) if manifest.exists() else []
+
+    res = _sub.run(
+        ["python3", f"{repo}/tools/run_diagnosis.py",
+         "--split", "dev",
+         "--diagnoser", "command",
+         "--diagnoser-name", "real-debugger-v3",
+         "--command", env["DIAGNOSIS_COMMAND"],
+         "--context-method", "grep",
+         "--diagnoser-config",
+         f"{repo}/configs/diagnosers/real-debugger-v3.json",
+         "--no-cache"],
+        cwd=repo, capture_output=True, timeout=60, env=env,
+    )
+    # exit non-zero because no rows were written (had_failure set)
+    # AND specifically FAIL_PROVENANCE was logged
+    err_text = res.stderr.decode("utf-8")
+    assert "FAIL_PROVENANCE" in err_text, (
+        f"expected FAIL_PROVENANCE log; stderr={err_text[:400]!r}"
+    )
+    assert "resolved_model" in err_text, err_text[:400]
+    assert res.returncode != 0, (
+        f"expected non-zero exit when provenance fails; got {res.returncode}"
+    )
+
+    # Manifest write was skipped — it should be EMPTY (or absent), not
+    # a manifest of provider_error stubs.
+    if manifest.exists():
+        post_rows = [json.loads(l) for l in manifest.open() if l.strip()]
+        # The runner's last action writes the manifest from out_rows;
+        # if every case is skipped, out_rows is empty and the file
+        # gets truncated. Allow either: file truncated (no rows) OR
+        # file matches pre-state.
+        if post_rows:
+            # Pre-existing rows preserved (file matched pre-state),
+            # not polluted with new provider_error stubs.
+            assert all(
+                (r.get("metadata") or {}).get("model_info", {}).get(
+                    "resolved_model"
+                ) != "gpt-5-mini-2099-01-01"
+                for r in post_rows
+            ), "manifest got polluted with forged resolved_model"
 
 
 def test_resolved_model_shared_helper_returns_consistent_results():
@@ -1784,8 +1924,14 @@ def main() -> int:
         # Codex 2026-05-26 F1 (resolved_model check applies to fresh-row)
         test_fresh_row_rejects_resolved_model_drift,
         test_fresh_row_accepts_canonical_resolved_model,
-        test_fresh_row_back_compat_null_resolved_model,
+        # 2026-05-26 test test_fresh_row_back_compat_null_resolved_model
+        # was replaced by 2026-05-27 — see below
         test_resolved_model_shared_helper_returns_consistent_results,
+        # Codex 2026-05-27 F1 (provenance mismatches skip writes)
+        test_provenance_mismatch_skips_manifest_write,
+        # Codex 2026-05-27 F2 (fresh-row strict resolved_model)
+        test_fresh_row_rejects_null_resolved_model_under_pin,
+        test_cache_hit_accepts_null_resolved_model_under_pin,
         # Codex 2026-05-25 F2 (sanitize_base_url strips deep paths)
         test_sanitize_base_url_strips_deep_path_segments,
         test_runner_sanitize_matches_shim_sanitize,

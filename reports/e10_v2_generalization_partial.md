@@ -1961,6 +1961,52 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > **Test counts (cumulative):** `test_diagnosis_cache_key.py` 84 →
 > 88 (+4). `test_hybrid_router.py` unchanged at 10. All 98 pass.
 
+> ⚠️ **Codex 2026-05-27 [high/high] fixes applied — no scores
+> moved.** Codex flagged two failure-open patterns that survived
+> the 2026-05-26 round:
+>
+> **F1 [high] (Provenance mismatches demoted into writable rows.)**
+> Pre-fix, fresh-row identity mismatches raised generic
+> `RuntimeError`; the surrounding `except Exception` caught it and
+> wrote a provider_error stub row to the manifest + per-case JSON
+> under the canonical diagnoser_name. The polluted row replaced the
+> wrong-identity case under the canonical results path — exactly
+> what the validators were supposed to prevent. Fix:
+> - New dedicated `ProvenanceMismatchError(RuntimeError)` subclass
+> - Fresh-row + mock-branch validators now raise this specific class
+> - `run()` catches it BEFORE the general exception handler, logs
+>   `FAIL_PROVENANCE`, marks the run as failed, and `continue`s to
+>   the next case. NO row is written, NO cache update
+> - 1 new subprocess test forges a wrong-resolved_model row through
+>   a tiny pass-through shim and asserts (a) exit non-zero,
+>   (b) `FAIL_PROVENANCE` in stderr, (c) the manifest is not
+>   polluted with the forged value
+>
+> **F2 [high] (Resolved-model pin accepted null on fresh rows.)**
+> The 2026-05-26 shared validator's legacy-null pass also applied
+> to fresh rows. A compatible OpenAI endpoint that omits the
+> `model` field from its response would produce a successful row
+> with no snapshot evidence and silently bypass the alias-rotation
+> check the 2026-05-25 pin was meant to enforce. Fix:
+> - `_validate_resolved_model_identity()` now takes a `strict`
+>   parameter
+> - Fresh-row path uses `strict=True`: requires non-null
+>   `resolved_model` under a pinned config
+> - Cache-hit path keeps `strict=False`: legacy backfilled rows
+>   (pre-2026-05-13) + oversized-context skips (no API call ever
+>   made) continue to pass
+> - 2 new tests: fresh-row null rejected under pin; cache-hit null
+>   accepted under pin (asymmetric contract)
+> - 2 pre-existing tests updated to include `resolved_model` in
+>   their canonical-row payloads (the v3 path now correctly
+>   requires it)
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 88 →
+> 90 (+2: F1 subprocess + F2 fresh/cache split; F2 pre-existing
+> tests updated; the 2026-05-26 legacy-null fresh-row test was
+> superseded by F2). `test_hybrid_router.py` unchanged at 10. All
+> 100 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**
