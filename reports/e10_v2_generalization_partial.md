@@ -1765,6 +1765,35 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > include endpoint evidence (the v3 path now correctly requires it).
 > `test_hybrid_router.py` unchanged at 10. All 75 pass.
 
+> ⚠️ **Codex 2026-05-21 [high] fix applied — no scores moved.**
+> Codex flagged a provider/config mismatch path that bypassed every
+> provenance gate built up since 2026-05-11:
+>
+> **F1 [high] (Provider mismatch bypassed provenance controls).**
+> Running `tools/run_diagnosis.py --diagnoser-name real-debugger-v3`
+> with the default `--diagnoser mock` kept the mock provider,
+> skipped the external-LLM gate (mock provider is never gated),
+> AND wrote successful mock rows under
+> `results/<split>/diagnoses/real-debugger-v3/` with no
+> `model_info`. Downstream eval keys primarily on
+> `diagnoser_name`, so this silently replaced real debugger
+> artifacts with mock output. Fix:
+> - After loading the config, the runner now FAILS FAST if
+>   `config.provider != --diagnoser`. End-to-end verified:
+>   `--diagnoser-name real-debugger-v3 --diagnoser mock` exits 1
+>   with a clear error pointing at the config
+> - Defense-in-depth: `validate_fresh_row_model_identity` is now
+>   also applied to mock-provider rows. So even if someone
+>   hand-edits the early check away, a mock row under a real-
+>   debugger config (which always lacks `_model_info`) gets
+>   rejected before the manifest write
+> - 3 new tests: end-to-end subprocess reject for the mock-under-v3
+>   case, sanity end-to-end accept for the canonical command-under-
+>   v3 case, and a unit test for the inline mock-branch validator
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 65 →
+> 68 (+3). `test_hybrid_router.py` unchanged at 10. All 78 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

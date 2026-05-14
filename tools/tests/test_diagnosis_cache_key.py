@@ -929,6 +929,74 @@ def test_v3_committed_artifacts_provider_error_starts_with_class():
     )
 
 
+def test_runner_rejects_mock_provider_under_real_debugger_config():
+    """Per Codex 2026-05-21 F1 [high]: running
+    `--diagnoser-name real-debugger-v3` with default `--diagnoser mock`
+    used to silently write mock rows under
+    `results/<split>/diagnoses/real-debugger-v3/` with no model_info,
+    bypassing every provenance gate added 2026-05-11..2026-05-20.
+    The runner now fails fast at config load time."""
+    import subprocess as _sub
+    repo = str(Path(__file__).resolve().parent.parent.parent)
+    res = _sub.run(
+        ["python3", f"{repo}/tools/run_diagnosis.py",
+         "--split", "dev",
+         "--diagnoser", "mock",
+         "--diagnoser-name", "real-debugger-v3",
+         "--context-method", "grep"],
+        cwd=repo, capture_output=True, timeout=20,
+    )
+    assert res.returncode == 1, (
+        f"expected exit 1; got {res.returncode}. stderr={res.stderr.decode()[:400]!r}"
+    )
+    err_msg = res.stderr.decode("utf-8")
+    assert "real-debugger-v3" in err_msg
+    assert "provider" in err_msg.lower()
+
+
+def test_runner_accepts_command_provider_under_command_config():
+    """Sanity: the canonical command-provider invocation still works
+    (smoke-test against dev/grep cache hits, no API call)."""
+    import subprocess as _sub
+    repo = str(Path(__file__).resolve().parent.parent.parent)
+    env = dict(os.environ)
+    env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+    env.setdefault("OPENAI_API_KEY", "sk-test")  # cache-hit only — never called
+    res = _sub.run(
+        ["python3", f"{repo}/tools/run_diagnosis.py",
+         "--split", "dev",
+         "--diagnoser", "command",
+         "--diagnoser-name", "real-debugger-v3",
+         "--command", f"python3 {repo}/examples/diagnosis_shim_openai.py",
+         "--context-method", "grep",
+         "--diagnoser-config",
+         f"{repo}/configs/diagnosers/real-debugger-v3.json"],
+        cwd=repo, capture_output=True, timeout=30, env=env,
+    )
+    assert res.returncode == 0, (
+        f"canonical run should succeed; exit={res.returncode}; "
+        f"stderr={res.stderr.decode()[:400]!r}"
+    )
+    assert b"5 cache hit" in res.stdout, res.stdout[:300]
+
+
+def test_mock_provider_rejected_inline_if_config_requires_provenance():
+    """Defense-in-depth: even if a caller bypassed the early
+    provider/config-match check, the inline `validate_fresh_row_model_identity`
+    on the mock branch still rejects rows that lack `_model_info` when
+    the config declares model identity. A mock-diagnosis body never has
+    model_info."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    # Simulate what `diagnose_mock` returns.
+    diag = {
+        "summary": "fake mock summary",
+        "root_cause_category": "test_assertion",
+        "confidence": 0.5,
+    }  # no _model_info
+    err = rd.validate_fresh_row_model_identity(diag, cfg)
+    assert err is not None, "mock body under v3 config must be rejected"
+
+
 def test_protocol_report_unsupported_context_predicate_handles_both_forms():
     """Per Codex 2026-05-20 F2 [medium]: the protocol report compared
     `provider_error == "unsupported_context_too_large"` exactly. After
@@ -1275,6 +1343,10 @@ def main() -> int:
         test_v3_committed_artifacts_provider_error_starts_with_class,
         # Codex 2026-05-20 F2 (protocol report prefix-aware comparison)
         test_protocol_report_unsupported_context_predicate_handles_both_forms,
+        # Codex 2026-05-21 F1 (provider/config consistency)
+        test_runner_rejects_mock_provider_under_real_debugger_config,
+        test_runner_accepts_command_provider_under_command_config,
+        test_mock_provider_rejected_inline_if_config_requires_provenance,
         test_v3_committed_artifacts_have_model_info_on_post_api_failures,
         # Codex 2026-05-13 F1
         test_opt_in_gate_blocks_when_env_unset,

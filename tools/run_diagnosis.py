@@ -1002,6 +1002,35 @@ def run(
     except DiagnoserConfigError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
+
+    # Per Codex 2026-05-21 F1 [high]: the CLI takes `--diagnoser`
+    # (mock|command) and `--diagnoser-name`, but the gate logic
+    # historically trusted the CLI value. A command like
+    # `--diagnoser-name real-debugger-v3` with default `--diagnoser mock`
+    # kept the default mock provider, skipped the external-LLM gate,
+    # AND wrote SUCCESSFUL mock rows under results/<split>/diagnoses/
+    # real-debugger-v3 with no `model_info`. Downstream eval keys
+    # primarily on `diagnoser_name`, so this silently replaced real
+    # debugger artifacts with mock output and defeated the provenance
+    # gates added by Codex 2026-05-11..2026-05-20. Fail fast when the
+    # loaded config's declared `provider` disagrees with the runtime
+    # `--diagnoser` provider.
+    if isinstance(diagnoser_config, dict):
+        config_provider = diagnoser_config.get("provider")
+        if config_provider and config_provider != diagnoser_provider:
+            print(
+                f"ERROR: diagnoser config "
+                f"{diagnoser_config.get('diagnoser_name', diagnoser_name)!r} "
+                f"declares provider={config_provider!r} but runtime "
+                f"--diagnoser is {diagnoser_provider!r}. Refusing to run: "
+                f"running a real-debugger config under the mock provider "
+                f"(or vice versa) would write rows under the wrong "
+                f"identity. Pass `--diagnoser {config_provider}` to match "
+                f"the config, OR use a different --diagnoser-name.",
+                file=sys.stderr,
+            )
+            return 1
+
     # Per Codex 2026-05-15 F1 [high]: when the diagnoser config declares
     # `model.env_var_name` (e.g. CILOGBENCH_CLAUDE_MODEL) and the user
     # has not set that env var, inject the config's effective requested
@@ -1162,6 +1191,22 @@ def run(
                             context_text=ctx_text, safe_metadata=safe_meta,
                             case_id=case_id, context_method=method,
                         )
+                        # Per Codex 2026-05-21 F1 [high] (defense-in-
+                        # depth): run the same fresh-row provenance gate
+                        # on mock rows. The earlier provider/config-match
+                        # check should have caught the mismatched case
+                        # at config-load time, but apply this here too so
+                        # a mock-provider invocation under a real-
+                        # debugger config can NEVER emit a successful
+                        # row without _model_info — even if someone
+                        # bypasses the early check by hand-editing.
+                        mock_mismatch = validate_fresh_row_model_identity(
+                            diag_body, diagnoser_config
+                        )
+                        if mock_mismatch:
+                            raise RuntimeError(
+                                f"mock_provider_under_real_config: {mock_mismatch}"
+                            )
                     elif diagnoser_provider == "command":
                         if not command_str:
                             raise ValueError(
