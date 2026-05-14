@@ -2077,6 +2077,30 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > 96 (+5: 4 F1 redaction + 1 F2 shim-error provenance).
 > `test_hybrid_router.py` unchanged at 10. All 106 pass.
 
+> ⚠️ **Codex 2026-05-30 [high] fix applied — no scores moved.**
+> Codex caught a regression introduced by the 2026-05-29 F2 fix:
+>
+> **F1 [high] (No-model-info shim failures misclassified as
+> provenance corruption.)** The 2026-05-29 F2 fix ran
+> `validate_fresh_row_model_identity` on EVERY `ShimCallError`,
+> but legitimate no-call failures (oversized context, missing
+> credentials, transport errors) emit no `_model_info` by design.
+> Under real-debugger-v3 (which requires provenance), those got
+> classified as missing-provenance → `FAIL_PROVENANCE` → method
+> skipped — losing the 39 expected `unsupported_context_too_large`
+> rows + every other no-call failure. Fix:
+> - Provenance validation in the `ShimCallError` branch is now
+>   gated on `if e.model_info is not None:`. No-call failures
+>   write a clean provider_error row with `model_info: null` as
+>   before
+> - 1 new end-to-end test forges an oversized-context envelope
+>   (no `_model_info`) and asserts (a) NO `FAIL_PROVENANCE` log,
+>   (b) the manifest row carries
+>   `provider_error: "unsupported_context_too_large: ..."`
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 96 →
+> 97 (+1). `test_hybrid_router.py` unchanged at 10. All 107 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

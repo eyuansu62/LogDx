@@ -1523,31 +1523,37 @@ def run(
                             diag_body["_model_info"] = e.model_info
                         if e.provider_error_hint:
                             diag_body["_provider_error"] = e.provider_error_hint
-                        # Per Codex 2026-05-29 F2 [medium]: when the
-                        # shim's error-envelope carries model_info,
-                        # run the SAME fresh-row provenance check as
-                        # the success path. Without this, an API call
-                        # that reached the wrong model/snapshot/
-                        # endpoint and then failed during parse would
-                        # still produce a `post_api_error` row under
-                        # the canonical diagnoser_name with wrong
-                        # provenance — corrupting downstream error
-                        # counts and undercutting the
-                        # provenance-mismatch-never-writes contract.
-                        prov_err = validate_fresh_row_model_identity(
-                            diag_body, diagnoser_config
-                        )
-                        if prov_err:
-                            print(
-                                f"FAIL_PROVENANCE {method}/{case_id}: "
-                                f"shim_error_row {prov_err}",
-                                file=sys.stderr,
+                        # Per Codex 2026-05-29 F2 + 2026-05-30 F1 [high]:
+                        # ONLY validate provenance when the shim's
+                        # error-envelope ACTUALLY carries model_info.
+                        # Pre-fix (2026-05-29 F2 alone) ran the check
+                        # unconditionally, which misclassified
+                        # legitimate no-call failures (oversized
+                        # context, missing OPENAI_API_KEY, transport
+                        # errors) as provenance corruption under
+                        # real-debugger configs that require
+                        # provenance — losing 39 expected
+                        # `unsupported_context_too_large` rows on v3
+                        # to method-level skips. The contract: if the
+                        # shim claimed model_info (i.e. reached the
+                        # API), validate it; if not, fall through
+                        # to write a clean provider_error row with
+                        # model_info: null.
+                        if e.model_info is not None:
+                            prov_err = validate_fresh_row_model_identity(
+                                diag_body, diagnoser_config
                             )
-                            had_failure = True
-                            method_had_provenance_failure = True
-                            if strict:
-                                return 1
-                            continue
+                            if prov_err:
+                                print(
+                                    f"FAIL_PROVENANCE {method}/{case_id}: "
+                                    f"shim_error_row {prov_err}",
+                                    file=sys.stderr,
+                                )
+                                had_failure = True
+                                method_had_provenance_failure = True
+                                if strict:
+                                    return 1
+                                continue
                 runtime_ms = (time.perf_counter() - t0) * 1000
 
                 row = build_row(

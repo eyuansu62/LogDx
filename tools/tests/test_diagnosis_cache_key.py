@@ -1385,6 +1385,106 @@ def test_fresh_row_rejects_unsanitized_base_url():
     assert "sanitized" in err.lower() or "redaction" in err.lower()
 
 
+def test_oversized_context_writes_provider_error_not_fail_provenance():
+    """Per Codex 2026-05-30 F1 [high]: legitimate no-call shim failures
+    (oversized context, missing credentials, transport errors) emit
+    NO `_model_info`. Under real-debugger-v3 (which requires
+    provenance), the 2026-05-29 F2 fix wrongly classified those as
+    provenance corruption — `FAIL_PROVENANCE` logged, method-level
+    skip, no provider_error row written. That lost 39 expected
+    `unsupported_context_too_large` rows.
+
+    End-to-end: forge a shim that exits 1 with an oversized-context
+    envelope (no model_info) and assert (a) the run produces a row
+    in the manifest with provider_error starting with
+    `unsupported_context_too_large:`, (b) NO `FAIL_PROVENANCE` log
+    fires.
+    """
+    import subprocess as _sub
+    import json
+    import tempfile
+    repo = Path(__file__).resolve().parent.parent.parent
+
+    diag_dir = repo / "results" / "dev" / "diagnoses" / "real-debugger-v3"
+    manifest = diag_dir / "grep.jsonl"
+
+    # Forge a shim that emits the oversized-context envelope (no
+    # _model_info) and exits 1 — matching what the real OpenAI shim
+    # does on _ContextTooLargeError post 2026-05-19 F2.
+    forge_src = '''
+import json, sys
+sys.stdin.read()  # consume payload
+envelope = {
+    "_provider_error": "unsupported_context_too_large: synthetic 600000 > 480000",
+}
+print(json.dumps(envelope))
+sys.exit(1)
+'''
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as fp:
+        fp.write(forge_src)
+        fp.flush()
+        forge_path = fp.name
+
+    env = dict(os.environ)
+    env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+    env["DIAGNOSIS_COMMAND"] = f"python3 {forge_path}"
+
+    res = _sub.run(
+        ["python3", f"{repo}/tools/run_diagnosis.py",
+         "--split", "dev",
+         "--diagnoser", "command",
+         "--diagnoser-name", "real-debugger-v3",
+         "--command", env["DIAGNOSIS_COMMAND"],
+         "--context-method", "grep",
+         "--diagnoser-config",
+         f"{repo}/configs/diagnosers/real-debugger-v3.json",
+         "--no-cache"],
+        cwd=repo, capture_output=True, timeout=60, env=env,
+    )
+    err_text = res.stderr.decode("utf-8")
+    out_text = res.stdout.decode("utf-8")
+    # The KEY assertion: this is NOT a provenance failure. The shim
+    # never claimed model_info, so the validator must skip the check.
+    assert "FAIL_PROVENANCE" not in err_text, (
+        f"oversized-context failure should NOT trip FAIL_PROVENANCE; "
+        f"stderr={err_text[:400]!r}"
+    )
+    # And a manifest row should exist with the unsupported_context_too_large
+    # prefix (one of the 5 dev/grep cases).
+    assert manifest.exists()
+    rows = [json.loads(l) for l in manifest.open() if l.strip()]
+    assert any(
+        (r.get("metadata") or {}).get("provider_error", "").startswith(
+            "unsupported_context_too_large:"
+        )
+        for r in rows
+    ), (
+        "expected at least one row with unsupported_context_too_large: "
+        f"prefix in manifest; got {[r.get('metadata', {}).get('provider_error') for r in rows]!r}"
+    )
+
+    # Cleanup: restore the canonical cache state via a real-shim
+    # run. The forged manifest needs to be replaced.
+    env_canonical = dict(os.environ)
+    env_canonical["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+    # The cached rows already match the canonical state from the
+    # 2026-05-13 re-run, so the next non-no-cache run is a 5/5 hit.
+    canonical_cmd = f"python3 {repo}/examples/diagnosis_shim_openai.py"
+    env_canonical["DIAGNOSIS_COMMAND"] = canonical_cmd
+    env_canonical.setdefault("OPENAI_API_KEY", "sk-test-not-used-due-to-cache-hits")
+    _sub.run(
+        ["python3", f"{repo}/tools/run_diagnosis.py",
+         "--split", "dev",
+         "--diagnoser", "command",
+         "--diagnoser-name", "real-debugger-v3",
+         "--command", canonical_cmd,
+         "--context-method", "grep",
+         "--diagnoser-config",
+         f"{repo}/configs/diagnosers/real-debugger-v3.json"],
+        cwd=repo, capture_output=True, timeout=60, env=env_canonical,
+    )
+
+
 def test_shim_error_row_provenance_check_e2e():
     """Per Codex 2026-05-29 F2 [medium]: when a ShimCallError carries
     `_model_info` (post-API parse failure), the runner must run
@@ -2181,6 +2281,8 @@ def main() -> int:
         test_fresh_row_rejects_unsanitized_base_url,
         # Codex 2026-05-29 F2 (provenance check on ShimCallError rows)
         test_shim_error_row_provenance_check_e2e,
+        # Codex 2026-05-30 F1 (no-call failures DON'T trip provenance)
+        test_oversized_context_writes_provider_error_not_fail_provenance,
         # Codex 2026-05-27 F2 (fresh-row strict resolved_model)
         test_fresh_row_rejects_null_resolved_model_under_pin,
         test_cache_hit_accepts_null_resolved_model_under_pin,
