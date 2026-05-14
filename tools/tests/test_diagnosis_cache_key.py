@@ -1089,8 +1089,13 @@ def test_reusable_template_skips_fresh_row_validation():
     assert err2 is None, f"real-shim row under template should pass: {err2}"
 
 
-def test_reusable_template_skips_cache_hit_validation():
-    """Same opt-out for cache hits."""
+def test_reusable_template_never_accepts_cache_hits():
+    """Per Codex 2026-05-24 F2 [high]: templates have no
+    `cache_key_env`, so changing CILOGBENCH_OPENAI_MODEL doesn't move
+    the cache key, and the validators have no canonical model identity
+    to compare against. A custom-template run could otherwise replay
+    rows from a different model. Templates ALWAYS cache-miss, forcing
+    a fresh shim call."""
     repo = Path(__file__).resolve().parent.parent.parent
     cfg = rd.load_diagnoser_config(
         "stub-debugger-v1",
@@ -1098,6 +1103,48 @@ def test_reusable_template_skips_cache_hit_validation():
     )
     row = {"metadata": {"model_info": {"requested_model": "haiku"}}}
     ok, reason = rd.cache_hit_is_acceptable(row, cfg)
+    assert not ok
+    assert "reusable_template" in reason
+
+
+def test_cache_hit_rejects_provider_error_row_by_default():
+    """Per Codex 2026-05-24 F1 [high]: a cached row with a populated
+    metadata.provider_error must be rejected on read unless
+    --cache-errors is passed. Pre-fix, a polluted cache entry from
+    a prior --cache-errors run replayed forever, hiding transient
+    failures behind a cache hit."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    row = {"metadata": {
+        "model_info": {
+            "requested_model": "gpt-5-mini",
+            "base_url": "https://api.openai.com/v1",
+            "base_url_sha256": rd._base_url_sha256_for_compare(
+                "https://api.openai.com/v1"
+            ),
+        },
+        "provider_error": "post_api_error: JSONDecodeError ...",
+    }}
+    ok, reason = rd.cache_hit_is_acceptable(row, cfg, cache_errors=False)
+    assert not ok
+    assert "provider_error" in reason and "cache-errors" in reason
+
+
+def test_cache_hit_accepts_provider_error_row_when_cache_errors_opted_in():
+    """When the operator passes --cache-errors, replaying a cached
+    provider_error row is the explicit intent (e.g. running the
+    benchmark deterministically against known-failure rows)."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    row = {"metadata": {
+        "model_info": {
+            "requested_model": "gpt-5-mini",
+            "base_url": "https://api.openai.com/v1",
+            "base_url_sha256": rd._base_url_sha256_for_compare(
+                "https://api.openai.com/v1"
+            ),
+        },
+        "provider_error": "post_api_error: JSONDecodeError ...",
+    }}
+    ok, reason = rd.cache_hit_is_acceptable(row, cfg, cache_errors=True)
     assert ok and reason is None
 
 
@@ -1542,9 +1589,14 @@ def main() -> int:
         test_build_row_omits_diagnoser_config_name_when_names_match,
         # Codex 2026-05-23 F1 (reusable_template skips identity validation)
         test_reusable_template_skips_fresh_row_validation,
-        test_reusable_template_skips_cache_hit_validation,
+        # 2026-05-23 test renamed/replaced 2026-05-24 — templates are
+        # no longer trusted on cache reads:
+        test_reusable_template_never_accepts_cache_hits,
         test_canonical_real_debugger_still_enforces_identity,
         test_stub_template_end_to_end_writes_clean_rows,
+        # Codex 2026-05-24 (cache-hit gate for provider_error rows)
+        test_cache_hit_rejects_provider_error_row_by_default,
+        test_cache_hit_accepts_provider_error_row_when_cache_errors_opted_in,
         # Codex 2026-05-22 F2 (cache gate uses row metadata)
         test_cache_gate_respects_row_metadata_provider_error,
         # Codex 2026-05-21 F1 (provider/config consistency)

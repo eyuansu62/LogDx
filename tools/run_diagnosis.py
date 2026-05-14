@@ -954,24 +954,51 @@ def validate_fresh_row_model_identity(
 
 
 def cache_hit_is_acceptable(
-    cached_row: dict, config: dict | None
+    cached_row: dict, config: dict | None,
+    *, cache_errors: bool = False,
 ) -> tuple[bool, str | None]:
-    """Per Codex 2026-05-12 F2 + 2026-05-17 F2: belt-and-suspenders. Even
-    if the cache_key matched, validate that the cached row's
-    `metadata.model_info` matches the *effective* expected model AND
-    endpoint. Reject otherwise so the runner falls through to a fresh
-    call.
+    """Per Codex 2026-05-12 F2 + 2026-05-17 F2 + 2026-05-24: belt-and-
+    suspenders. Even if the cache_key matched, validate that the cached
+    row's `metadata.model_info` matches the *effective* expected model
+    AND endpoint, and reject cached provider_error rows by default.
 
-    Codex 2026-05-23 F1 [high]: `reusable_template: true` configs
-    opt out (their model_name is a placeholder, not a binding).
+    Codex 2026-05-24 F2 [high]: `reusable_template: true` configs no
+    longer accept cache hits at all. Templates lack `cache_key_env`,
+    so changing CILOGBENCH_OPENAI_MODEL / CILOGBENCH_CLAUDE_MODEL
+    doesn't move the cache key, and the validators have nothing
+    canonical to compare against. A custom-template run could
+    otherwise replay rows from a different model/backend under the
+    same diagnoser name. Forcing cache miss-through-fresh-call is
+    safe because templates are explicitly documented as "you supply
+    the model"; the user knows there's no shared canonical state.
+
+    Codex 2026-05-24 F1 [high]: cached rows with non-empty
+    `metadata.provider_error` are rejected unless `cache_errors=True`.
+    The 2026-05-22 F2 fix prevented WRITING such rows by default, but
+    the READ path still accepted any pre-existing polluted entry —
+    a transient post_api_error/timeout row could replay forever.
 
     Returns (True, None) if no validation applies or all checks pass.
     Returns (False, reason) on mismatch.
     """
     if not isinstance(config, dict):
         return True, None
+    # Reusable templates never trust the cache (no canonical model
+    # identity).
     if config.get("reusable_template"):
-        return True, None
+        return False, (
+            "reusable_template config has no canonical model identity; "
+            "cache hits cannot be validated and are not trusted"
+        )
+    # Reject cached provider_error rows unless opted in explicitly.
+    cached_meta = cached_row.get("metadata") or {}
+    cached_pe = cached_meta.get("provider_error")
+    if cached_pe and not cache_errors:
+        return False, (
+            f"cached row has metadata.provider_error="
+            f"{str(cached_pe)[:80]!r}; rejecting (default behavior, "
+            f"pass --cache-errors to opt in)"
+        )
     cached_meta = cached_row.get("metadata") or {}
     cached_mi = cached_meta.get("model_info") or {}
 
@@ -1229,7 +1256,8 @@ def run(
                     if isinstance(cached, dict) and "row" in cached:
                         candidate = cached["row"]
                         ok, reason = cache_hit_is_acceptable(
-                            candidate, diagnoser_config
+                            candidate, diagnoser_config,
+                            cache_errors=cache_errors,
                         )
                         if ok:
                             cached_row = candidate

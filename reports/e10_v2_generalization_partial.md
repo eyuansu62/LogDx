@@ -1865,6 +1865,39 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > canonical-still-strict sanity, end-to-end stub regression).
 > `test_hybrid_router.py` unchanged at 10. All 87 pass.
 
+> ⚠️ **Codex 2026-05-24 [high/high] fixes applied — no scores
+> moved.** Codex re-reviewed the cache layer and found two cases
+> where stale or untrusted cache rows could still corrupt later
+> runs through the READ path (the 2026-05-22 F2 fix only closed
+> the WRITE path):
+>
+> **F1 [high] (Cached provider_error rows accepted on read.)**
+> A polluted cache entry from a prior `--cache-errors` run (or
+> any seeded entry) replayed forever on normal reruns; the
+> validator only checked model identity, not whether the cached
+> row WAS a provider_error in the first place. Fix:
+> `cache_hit_is_acceptable()` now takes `cache_errors`, rejects
+> cached rows whose `metadata.provider_error` is set unless the
+> operator explicitly opts in. Runner passes `cache_errors=cache_errors`
+> through.
+>
+> **F2 [high] (Reusable templates accepted cache hits with no
+> identity binding.)** Templates have no `cache_key_env`, so
+> changing CILOGBENCH_OPENAI_MODEL doesn't move the cache key.
+> Combined with the 2026-05-23 fix that made templates skip
+> identity validation, a custom-template run could replay rows
+> from a different model under the same diagnoser name. Fix:
+> templates ALWAYS cache-miss now (`cache_hit_is_acceptable`
+> returns False for them). Every template run is a fresh shim
+> call. Safe trade-off: templates are documented as "you supply
+> the model", and the stub use case is cheap.
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 77 →
+> 79 (+2: reject-by-default for provider_error rows + opt-in
+> accept; previous template cache-hit-accepts test renamed to
+> never-accepts). `test_hybrid_router.py` unchanged at 10. All 89
+> pass. v1/v2/v3 canonical eval still cache-hits 5/5.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**
