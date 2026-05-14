@@ -1040,14 +1040,28 @@ def _validate_base_url_identity(
     # applies to reusable_template configs. Both validators call the
     # helper BEFORE delegating here, so this body now only handles
     # identity comparison.
+    # Per Codex 2026-06-03 F1 [high]: never include the RAW
+    # expected_url in error strings — env values can carry userinfo,
+    # query tokens, and tenant-path secrets that would then leak
+    # through FAIL_PROVENANCE / cache_reject log lines. Use the
+    # sanitized form + short sha256 prefix instead.
+    expected_sanitized = _sanitize_base_url_for_compare(expected_url)
+    expected_hash_short = _base_url_sha256_for_compare(expected_url)[:16]
+    # Per Codex 2026-06-03 F2 [high]: detect when sanitization is
+    # lossy (sanitized != raw). For lossy endpoints (proxies/tenant
+    # gateways), the sanitized base_url alone can't distinguish
+    # `/tenant-a/v1` from `/tenant-b/v1` (both collapse to the
+    # bare host under the `^v\d+$`-only allowlist). Fresh rows + the
+    # cache-hit path REQUIRE base_url_sha256 in that case.
+    sanitization_is_lossy = expected_sanitized != expected_url
+
     cached_url = cached_mi.get("base_url")
     cached_hash = cached_mi.get("base_url_sha256")
     if cached_hash is not None:
         if cached_hash != _base_url_sha256_for_compare(expected_url):
             return (
                 f"shim returned base_url_sha256={cached_hash[:16]}… "
-                f"but config expects "
-                f"{_base_url_sha256_for_compare(expected_url)[:16]}…"
+                f"but config expects {expected_hash_short}…"
             )
         return None
     if cached_url is None:
@@ -1056,13 +1070,27 @@ def _validate_base_url_identity(
             return (
                 f"row has no `base_url` or `base_url_sha256` but "
                 f"diagnoser config declares an expected endpoint "
-                f"({expected_url!r}); provenance required. Set "
-                f"`model.allow_missing_model_info: true` in the config "
-                f"to opt out (legacy diagnosers only)."
+                f"(sanitized={expected_sanitized!r}, "
+                f"sha256={expected_hash_short}…); provenance required. "
+                f"Set `model.allow_missing_model_info: true` in the "
+                f"config to opt out (legacy diagnosers only)."
             )
         return None
-    expected_sanitized = _sanitize_base_url_for_compare(expected_url)
+    # Per Codex 2026-06-03 F2 [high]: lossy sanitization means the
+    # sanitized comparison can't distinguish proxy tenants. Require
+    # the full-URL hash from the shim.
+    if sanitization_is_lossy and _config_requires_model_info(config):
+        return (
+            f"config endpoint sanitizes lossily (sanitized="
+            f"{expected_sanitized!r}, sha256={expected_hash_short}…); "
+            f"full `base_url_sha256` required to disambiguate proxy / "
+            f"tenant paths but the shim emitted only sanitized "
+            f"`base_url`. Re-run with an updated shim that emits "
+            f"base_url_sha256 alongside base_url."
+        )
     if cached_url != expected_sanitized:
+        # Both sides are sanitized at this point; safe to include them
+        # verbatim. (The original raw expected_url stayed out.)
         return (
             f"shim returned base_url={cached_url!r} but config "
             f"expects (sanitized) {expected_sanitized!r}"

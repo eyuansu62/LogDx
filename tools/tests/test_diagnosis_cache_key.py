@@ -731,15 +731,20 @@ def test_base_url_validation_credentialed_proxy_accepts_own_row():
 
 def test_base_url_validation_falls_back_to_sanitized_compare():
     """For legacy rows that have only `base_url` (no sha256), the
-    validator sanitizes BOTH sides before comparing — so a raw
-    config-effective URL with userinfo doesn't false-mismatch the
-    shim's already-sanitized cached value."""
-    cfg = {
+    validator sanitizes BOTH sides before comparing.
+
+    Per Codex 2026-06-03 F2 [high]: this fallback ONLY applies when
+    the config opts out of provenance (`model.allow_missing_model_info:
+    true`) OR when sanitization is non-lossy. Provenance-required
+    configs with lossy endpoints now require `base_url_sha256`."""
+    # Legacy opt-out config: sanitized-only fallback still works.
+    cfg_legacy = {
         "model": {
             "model_name": "gpt-5-mini",
             "env_var_name": "CILOGBENCH_OPENAI_MODEL",
             "base_url": "https://api.openai.com/v1",
             "base_url_env_var_name": "CILOGBENCH_OPENAI_BASE_URL",
+            "allow_missing_model_info": True,
         }
     }
     saved = os.environ.get("CILOGBENCH_OPENAI_BASE_URL")
@@ -751,13 +756,110 @@ def test_base_url_validation_falls_back_to_sanitized_compare():
             "provider_name": "openai", "requested_model": "gpt-5-mini",
             "base_url": "https://proxy/v1",   # legacy: only sanitized, no sha256
         }}}
-        ok, reason = rd.cache_hit_is_acceptable(row, cfg)
-        assert ok, f"legacy sanitized-only row should accept: {reason}"
+        ok, reason = rd.cache_hit_is_acceptable(row, cfg_legacy)
+        assert ok, f"legacy opt-out + sanitized-only row should accept: {reason}"
     finally:
         if saved is None:
             os.environ.pop("CILOGBENCH_OPENAI_BASE_URL", None)
         else:
             os.environ["CILOGBENCH_OPENAI_BASE_URL"] = saved
+        if saved_model is None:
+            os.environ.pop("CILOGBENCH_OPENAI_MODEL", None)
+        else:
+            os.environ["CILOGBENCH_OPENAI_MODEL"] = saved_model
+
+
+def test_lossy_endpoint_requires_sha256_under_provenance_config():
+    """Per Codex 2026-06-03 F2 [high]: distinct proxy tenants like
+    `https://proxy/tenant-a/v1` and `https://proxy/tenant-b/v1` both
+    sanitize to `https://proxy` (the ^v\\d+$-only allowlist drops
+    non-version first segments). A sanitized-only comparison can't
+    distinguish them — fresh rows + cache hits under
+    provenance-required configs must carry `base_url_sha256`.
+    """
+    cfg = {
+        "model": {
+            "provider_name": "openai",
+            "model_name": "gpt-5-mini",
+            "env_var_name": "CILOGBENCH_OPENAI_MODEL",
+            "base_url": "https://proxy.example.com/tenant-a/v1",  # lossy
+            "base_url_env_var_name": "CILOGBENCH_OPENAI_BASE_URL",
+        },
+        "cache_key_env": ["CILOGBENCH_OPENAI_BASE_URL"],
+    }
+    saved = os.environ.get("CILOGBENCH_OPENAI_BASE_URL")
+    saved_model = os.environ.get("CILOGBENCH_OPENAI_MODEL")
+    try:
+        os.environ["CILOGBENCH_OPENAI_BASE_URL"] = (
+            "https://proxy.example.com/tenant-a/v1"
+        )
+        os.environ["CILOGBENCH_OPENAI_MODEL"] = "gpt-5-mini"
+        # Row with only sanitized base_url, no sha256 — could equally
+        # be tenant-a or tenant-b. Reject.
+        row = {"metadata": {"model_info": {
+            "provider_name": "openai",
+            "requested_model": "gpt-5-mini",
+            "base_url": "https://proxy.example.com",  # sanitized; tenant lost
+        }}}
+        ok, reason = rd.cache_hit_is_acceptable(row, cfg)
+        assert not ok
+        assert "lossily" in (reason or "").lower() or "sha256" in (reason or "").lower()
+
+        # With the full-URL sha256 from the canonical run, the row
+        # passes.
+        row_ok = {"metadata": {"model_info": {
+            "provider_name": "openai",
+            "requested_model": "gpt-5-mini",
+            "base_url": "https://proxy.example.com",
+            "base_url_sha256": rd._base_url_sha256_for_compare(
+                "https://proxy.example.com/tenant-a/v1"
+            ),
+        }}}
+        ok2, _ = rd.cache_hit_is_acceptable(row_ok, cfg)
+        assert ok2
+    finally:
+        if saved is None:
+            os.environ.pop("CILOGBENCH_OPENAI_BASE_URL", None)
+        else:
+            os.environ["CILOGBENCH_OPENAI_BASE_URL"] = saved
+        if saved_model is None:
+            os.environ.pop("CILOGBENCH_OPENAI_MODEL", None)
+        else:
+            os.environ["CILOGBENCH_OPENAI_MODEL"] = saved_model
+
+
+def test_validation_error_does_not_leak_raw_url_with_secrets():
+    """Per Codex 2026-06-03 F1 [high]: error strings must redact the
+    raw env URL. Forge a config that triggers the
+    "missing-endpoint-evidence" path with a credentialed env value
+    and assert NO userinfo/query token appears in the error."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    saved_url = os.environ.get("CILOGBENCH_OPENAI_BASE_URL")
+    saved_model = os.environ.get("CILOGBENCH_OPENAI_MODEL")
+    try:
+        os.environ["CILOGBENCH_OPENAI_BASE_URL"] = (
+            "https://user:PASS-SECRET@proxy/tenant-SECRET/v1?token=TOK-SECRET"
+        )
+        os.environ["CILOGBENCH_OPENAI_MODEL"] = "gpt-5-mini"
+        # Row with NO base_url evidence — triggers the missing-endpoint
+        # error path that previously included the raw expected_url.
+        row = {"metadata": {"model_info": {
+            "provider_name": "openai", "requested_model": "gpt-5-mini",
+            "resolved_model": "gpt-5-mini-2025-08-07",
+        }}}
+        ok, reason = rd.cache_hit_is_acceptable(row, cfg)
+        assert not ok
+        # No raw secret bits must appear.
+        for secret in ("PASS-SECRET", "tenant-SECRET", "TOK-SECRET",
+                        "user:PASS-SECRET", "?token="):
+            assert secret not in (reason or ""), (
+                f"validation error leaked {secret!r}: {reason!r}"
+            )
+    finally:
+        if saved_url is None:
+            os.environ.pop("CILOGBENCH_OPENAI_BASE_URL", None)
+        else:
+            os.environ["CILOGBENCH_OPENAI_BASE_URL"] = saved_url
         if saved_model is None:
             os.environ.pop("CILOGBENCH_OPENAI_MODEL", None)
         else:
@@ -2505,6 +2607,9 @@ def main() -> int:
         test_canonical_provider_name_accepts,
         test_provider_name_required_under_real_configs,
         test_v1_v2_v3_committed_artifacts_carry_correct_provider_name,
+        # Codex 2026-06-03 F1+F2 (URL redaction in errors + lossy sha256)
+        test_lossy_endpoint_requires_sha256_under_provenance_config,
+        test_validation_error_does_not_leak_raw_url_with_secrets,
         # Codex 2026-05-27 F2 (fresh-row strict resolved_model)
         test_fresh_row_rejects_null_resolved_model_under_pin,
         test_cache_hit_accepts_null_resolved_model_under_pin,

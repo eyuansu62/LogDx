@@ -2192,6 +2192,43 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > **Test counts (cumulative):** `test_diagnosis_cache_key.py` 99 →
 > 104 (+5). `test_hybrid_router.py` unchanged at 10. All 114 pass.
 
+> ⚠️ **Codex 2026-06-03 [high/high] fixes applied — no scores
+> moved.** Codex flagged two endpoint-validation leak/laxness
+> issues:
+>
+> **F1 [high] (Secret-bearing base_url leaked through error logs.)**
+> When the validator hit a missing-endpoint-evidence path it
+> formatted the RAW `expected_url` into the error string, e.g.
+> `f"... config declares an expected endpoint ({expected_url!r}); "`.
+> For a proxy env override
+> `CILOGBENCH_OPENAI_BASE_URL=https://user:pass@proxy/tenant-secret/v1?token=abc`
+> that string ended up in FAIL_PROVENANCE / cache_reject logs —
+> defeating the persistence-side redaction. Fix:
+> - Error strings now include `sanitize(expected_url)` + a 16-char
+>   sha256 prefix instead of the raw URL
+> - A new test forges a secrets-bearing env value and asserts the
+>   raw secret bits never appear in the rejection reason
+>
+> **F2 [high] (Lossy sanitization let sanitized-only rows replace
+> hash evidence.)** The `^v\d+$` allowlist means
+> `https://proxy/tenant-a/v1` and `https://proxy/tenant-b/v1` both
+> sanitize to `https://proxy` — a sanitized-only comparison can't
+> distinguish them. A row with only `base_url: "https://proxy"` and
+> no `base_url_sha256` was accepted under any tenant. Fix:
+> - Validator detects `sanitize(expected_url) != expected_url`
+>   (lossy)
+> - Under provenance-required configs (canonical real-debugger-v1/
+>   v2/v3), lossy endpoints REQUIRE `base_url_sha256`; sanitized-
+>   only fallback is rejected
+> - Legacy opt-out (`model.allow_missing_model_info: true`) still
+>   permits the fallback for diagnosers without provenance binding
+> - 1 new test covers the proxy-tenant scenario: sanitized-only
+>   row rejected, sha256-bearing row accepted; 1 pre-existing test
+>   updated to use the legacy opt-out path
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 104 →
+> 106 (+2). `test_hybrid_router.py` unchanged at 10. All 116 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**
