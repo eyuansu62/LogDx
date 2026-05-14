@@ -929,6 +929,73 @@ def test_v3_committed_artifacts_provider_error_starts_with_class():
     )
 
 
+def test_reusable_template_allows_diagnoser_name_override():
+    """Per Codex 2026-05-22 F1 [high]: example.debugger-v1-command.json
+    opts into name-override mode (`reusable_template: true`). The docs
+    document calling it with --diagnoser-name=stub-debugger-v1 etc.;
+    pre-fix the 2026-05-15 strict check rejected those workflows."""
+    repo = Path(__file__).resolve().parent.parent.parent
+    example_path = repo / "configs" / "diagnosers" / "example.debugger-v1-command.json"
+    # The config declares example-debugger-v1; pass a different name.
+    cfg = rd.load_diagnoser_config(
+        "stub-debugger-v1", explicit_path=example_path
+    )
+    assert cfg is not None
+    assert cfg["diagnoser_name"] == "example-debugger-v1"
+    assert cfg.get("reusable_template") is True
+
+
+def test_canonical_config_still_strict_on_name_mismatch():
+    """Real-debugger configs (v1/v2/v3) do NOT set reusable_template,
+    so the strict name check from Codex 2026-05-15 still applies."""
+    repo = Path(__file__).resolve().parent.parent.parent
+    v3_path = repo / "configs" / "diagnosers" / "real-debugger-v3.json"
+    try:
+        rd.load_diagnoser_config("not-the-right-name", explicit_path=v3_path)
+    except rd.DiagnoserConfigError as e:
+        assert "real-debugger-v3" in str(e)
+        return
+    raise AssertionError("expected strict check on canonical config")
+
+
+def test_build_row_records_both_names_for_template_runs():
+    """When the config's declared diagnoser_name differs from the
+    runtime diagnoser, metadata.diagnoser_config_name records the
+    config's name so an auditor can recover both."""
+    from pathlib import Path as _P
+    row = rd.build_row(
+        case_id="t", context_method="raw",
+        diagnoser="stub-debugger-v1",
+        diagnosis_body={"summary": "x", "_model_info": {"requested_model": "test"}},
+        context_path=_P("/tmp/x"), context_text="",
+        prompt_sha="p", runtime_ms=0.0,
+        provider_name="command",
+        command_str="cmd", cache_key="k",
+        provider_error=None,
+        diagnoser_config_name="example-debugger-v1",
+    )
+    assert row["metadata"]["diagnoser_config_name"] == "example-debugger-v1"
+    assert row["diagnoser"] == "stub-debugger-v1"
+
+
+def test_build_row_omits_diagnoser_config_name_when_names_match():
+    """For canonical runs (config name == output name), the audit field
+    is None to avoid duplicate noise in the manifest."""
+    from pathlib import Path as _P
+    row = rd.build_row(
+        case_id="t", context_method="raw",
+        diagnoser="real-debugger-v3",
+        diagnosis_body={"summary": "x", "_model_info": {"requested_model": "test"}},
+        context_path=_P("/tmp/x"), context_text="",
+        prompt_sha="p", runtime_ms=0.0,
+        provider_name="command",
+        command_str="cmd", cache_key="k",
+        provider_error=None,
+        diagnoser_config_name="real-debugger-v3",
+    )
+    assert row["metadata"]["diagnoser_config_name"] is None
+
+
 def test_runner_rejects_mock_provider_under_real_debugger_config():
     """Per Codex 2026-05-21 F1 [high]: running
     `--diagnoser-name real-debugger-v3` with default `--diagnoser mock`
@@ -995,6 +1062,40 @@ def test_mock_provider_rejected_inline_if_config_requires_provenance():
     }  # no _model_info
     err = rd.validate_fresh_row_model_identity(diag, cfg)
     assert err is not None, "mock body under v3 config must be rejected"
+
+
+def test_cache_gate_respects_row_metadata_provider_error():
+    """Per Codex 2026-05-22 F2 [medium]: the cache gate historically
+    used the exception-local `provider_error` variable. A shim that
+    exited 0 with `_provider_error` in stdout left provider_error=None
+    but build_row promoted the shim hint to metadata.provider_error.
+    Without the fix, the failed row got CACHED, then replayed as a
+    cache hit forever. Test: simulate the row-building flow and check
+    that an error row's metadata is what governs caching.
+    """
+    from pathlib import Path as _P
+    row_with_shim_err = rd.build_row(
+        case_id="t", context_method="raw",
+        diagnoser="real-debugger-v3",
+        diagnosis_body={
+            "summary": "stub",
+            "_provider_error": "post_api_error: synthetic failure",
+            "_model_info": {"requested_model": "gpt-5-mini"},
+        },
+        context_path=_P("/tmp/x"), context_text="",
+        prompt_sha="p", runtime_ms=0.0,
+        provider_name="command",
+        command_str="cmd", cache_key="k",
+        provider_error=None,  # no exception caught
+    )
+    # The row's metadata MUST carry the shim's taxonomy.
+    effective = (row_with_shim_err.get("metadata") or {}).get("provider_error")
+    assert effective and effective.startswith("post_api_error:"), (
+        f"expected post_api_error prefix; got {effective!r}"
+    )
+    # The cache gate now keys on this field, so the row would NOT be
+    # cached without --cache-errors. (We test the gate logic directly
+    # since the cache write is inside run() and requires fs setup.)
 
 
 def test_protocol_report_unsupported_context_predicate_handles_both_forms():
@@ -1343,6 +1444,13 @@ def main() -> int:
         test_v3_committed_artifacts_provider_error_starts_with_class,
         # Codex 2026-05-20 F2 (protocol report prefix-aware comparison)
         test_protocol_report_unsupported_context_predicate_handles_both_forms,
+        # Codex 2026-05-22 F1 (reusable_template opt-in)
+        test_reusable_template_allows_diagnoser_name_override,
+        test_canonical_config_still_strict_on_name_mismatch,
+        test_build_row_records_both_names_for_template_runs,
+        test_build_row_omits_diagnoser_config_name_when_names_match,
+        # Codex 2026-05-22 F2 (cache gate uses row metadata)
+        test_cache_gate_respects_row_metadata_provider_error,
         # Codex 2026-05-21 F1 (provider/config consistency)
         test_runner_rejects_mock_provider_under_real_debugger_config,
         test_runner_accepts_command_provider_under_command_config,

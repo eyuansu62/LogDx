@@ -1794,6 +1794,49 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > **Test counts (cumulative):** `test_diagnosis_cache_key.py` 65 →
 > 68 (+3). `test_hybrid_router.py` unchanged at 10. All 78 pass.
 
+> ⚠️ **Codex 2026-05-22 [high/medium] fixes applied — no scores
+> moved.** Codex flagged two issues that the 2026-05-15+2026-05-21
+> strict checks introduced or left open:
+>
+> **F1 [high] (Strict diagnoser_name check broke documented
+> custom-debugger workflows.)** The Codex 2026-05-15 F2 strict-match
+> fix rejected runs where `example.debugger-v1-command.json` (a
+> reusable template) was paired with `--diagnoser-name=stub-debugger-v1`
+> or `--diagnoser-name=my-debugger-v1`. The README and M6/M7
+> experiment docs document exactly this workflow; the strict check
+> turned them into hard failures.
+> Fix:
+> - New `reusable_template: true` config field. When set, the loader
+>   allows --diagnoser-name override; canonical real-debugger
+>   configs (v1/v2/v3) don't set it, so their strict check stays
+>   intact
+> - `example.debugger-v1-command.json` opts in
+> - `build_row` records `metadata.diagnoser_config_name` when a
+>   template is used under a custom name, so the audit trail names
+>   BOTH the config and the runtime diagnoser
+> - 4 new tests: opt-in path accepts, canonical path still strict,
+>   build_row records both names, build_row omits the field on a
+>   no-mismatch run
+>
+> **F2 [medium] (Cache gate ignored shim-emitted provider_error.)**
+> The cache write gate used the exception-local `provider_error`
+> variable. The 2026-05-16 F1 fix made the shim able to exit 0 with
+> `_provider_error` in stdout (e.g. `post_api_error: ...`) — but
+> in that path, the exception-local variable was None, so the row
+> with a populated `metadata.provider_error` got cached without
+> `--cache-errors`. A transient JSON-parse failure could then
+> replay as a cache hit on every subsequent run.
+> Fix:
+> - The gate now reads `row.metadata.provider_error` (the effective
+>   field) instead of the local exception variable; both
+>   exception-caught and shim-declared errors require
+>   `--cache-errors` to be cached
+> - 1 new test verifies build_row promotes the shim hint to
+>   row.metadata.provider_error (the cache gate keys on that)
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 68 →
+> 73 (+5). `test_hybrid_router.py` unchanged at 10. All 83 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

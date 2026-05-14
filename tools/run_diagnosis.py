@@ -429,6 +429,7 @@ def build_row(
     prompt_sha: str, runtime_ms: float, provider_name: str,
     command_str: str | None, cache_key: str | None,
     provider_error: str | None,
+    diagnoser_config_name: str | None = None,
 ) -> dict:
     """Build the per-case diagnosis row. The row captures first-compute
     facts only — there is no `cache_hit` field because reruns that pull
@@ -491,6 +492,18 @@ def build_row(
             ),
             "command": command_str,
             "model_info": model_info,
+            # Per Codex 2026-05-22 F1 [high]: when a reusable_template
+            # config is used under a custom --diagnoser-name, record
+            # BOTH the runtime output name (in row.diagnoser) and the
+            # config's declared name (here) so an auditor can recover
+            # the full provenance: "this row ran in directory
+            # results/.../stub-debugger-v1/ but used the
+            # example-debugger-v1 config".
+            "diagnoser_config_name": (
+                diagnoser_config_name
+                if diagnoser_config_name and diagnoser_config_name != diagnoser
+                else None
+            ),
         },
     }
     return row
@@ -548,13 +561,27 @@ def load_diagnoser_config(
     if explicit_path is not None:
         declared = cfg.get("diagnoser_name")
         if declared and declared != diagnoser_name:
-            raise DiagnoserConfigError(
-                f"--diagnoser-config {cfg_path} declares "
-                f"diagnoser_name={declared!r} but --diagnoser-name is "
-                f"{diagnoser_name!r}. Manifest would claim one config "
-                f"while the runner derived behaviour from another. "
-                f"Pass the correct config or override --diagnoser-name."
-            )
+            # Per Codex 2026-05-22 F1 [high]: a config can opt into
+            # name-override mode via `reusable_template: true`. The
+            # docs document workflows that use the same reusable
+            # command template under custom --diagnoser-name values
+            # (e.g. example.debugger-v1-command.json with
+            # --diagnoser-name=stub-debugger-v1). Without opt-in,
+            # the 2026-05-15 strict check rejected those workflows
+            # outright. With opt-in, the override is allowed and the
+            # config's declared name is recorded in
+            # `metadata.diagnoser_config_name` for audit.
+            if not cfg.get("reusable_template"):
+                raise DiagnoserConfigError(
+                    f"--diagnoser-config {cfg_path} declares "
+                    f"diagnoser_name={declared!r} but --diagnoser-name "
+                    f"is {diagnoser_name!r}. Manifest would claim one "
+                    f"config while the runner derived behaviour from "
+                    f"another. Pass the correct config, OR override "
+                    f"--diagnoser-name, OR mark the config "
+                    f"`reusable_template: true` if it's intended to be "
+                    f"reused under custom names."
+                )
     return cfg
 
 
@@ -1003,6 +1030,18 @@ def run(
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
+    # Per Codex 2026-05-22 F1 [high]: capture the config's declared
+    # diagnoser_name when it's a reusable_template used under a custom
+    # --diagnoser-name. build_row records this in
+    # metadata.diagnoser_config_name so the audit trail names BOTH
+    # the config (e.g. example-debugger-v1) and the run-time
+    # diagnoser (e.g. stub-debugger-v1).
+    config_declared_name = (
+        (diagnoser_config or {}).get("diagnoser_name")
+        if isinstance(diagnoser_config, dict)
+        else None
+    )
+
     # Per Codex 2026-05-21 F1 [high]: the CLI takes `--diagnoser`
     # (mock|command) and `--diagnoser-name`, but the gate logic
     # historically trusted the CLI value. A command like
@@ -1132,6 +1171,7 @@ def run(
                     provider_name=diagnoser_provider,
                     command_str=command_str, cache_key="",
                     provider_error=provider_error_msg,
+                    diagnoser_config_name=config_declared_name,
                 )
                 out_rows.append(row)
                 method_cache_misses += 1
@@ -1278,10 +1318,28 @@ def run(
                     provider_name=diagnoser_provider,
                     command_str=command_str, cache_key=key,
                     provider_error=provider_error,
+                    diagnoser_config_name=config_declared_name,
                 )
                 method_cache_misses += 1
 
-                if provider_error is None or cache_errors:
+                # Per Codex 2026-05-22 F2 [medium]: the cache gate
+                # historically only checked the exception-local
+                # `provider_error` variable, but the shim can exit 0
+                # while still emitting `_provider_error` (the JSON
+                # envelope path added 2026-05-16 F1). In that case
+                # `provider_error` here is None but the ROW carries
+                # `metadata.provider_error` (lifted by build_row from
+                # `_provider_error`). Pre-fix, that row was cached
+                # without --cache-errors and a transient provider
+                # failure could replay as a cache hit on every
+                # subsequent run. Fix: gate on the row's actual
+                # `metadata.provider_error` so any provider-error row
+                # — exception-caught OR shim-declared — requires
+                # `--cache-errors` to be cached.
+                effective_provider_error = (
+                    (row.get("metadata") or {}).get("provider_error")
+                )
+                if not effective_provider_error or cache_errors:
                     cache_path.parent.mkdir(parents=True, exist_ok=True)
                     cache_path.write_text(
                         json.dumps({"cache_key": key, "row": row},
