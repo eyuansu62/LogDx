@@ -926,6 +926,47 @@ def _validate_resolved_model_identity(
     return None
 
 
+def _validate_provider_name_identity(
+    mi: dict, config: dict | None
+) -> str | None:
+    """Per Codex 2026-06-02 F1 [high]: validate the cached
+    `provider_name` matches `config.model.provider_name`. The
+    cache/fresh-row validators historically compared
+    `requested_model`, endpoint, and resolved_model, but never the
+    provider family — so a miswired command shim could write rows
+    with `provider_name: openai` under real-debugger-v1 (Anthropic
+    config) and pass every other check, corrupting cross-family
+    provenance.
+
+    Returns None when validation passes or doesn't apply; an error
+    string on mismatch. Legacy back-compat: rows whose
+    `provider_name` is missing pass through ONLY when the config
+    doesn't require provenance — for canonical real-debugger configs
+    (which declare cache_key_env or model.model_name) missing
+    provider_name is rejected.
+    """
+    if not isinstance(config, dict) or not isinstance(mi, dict):
+        return None
+    expected = (config.get("model") or {}).get("provider_name")
+    if not expected:
+        return None
+    actual = mi.get("provider_name")
+    if actual is None:
+        if _config_requires_model_info(config):
+            return (
+                f"shim emitted no `_model_info.provider_name`, but "
+                f"diagnoser {config.get('diagnoser_name', '<unknown>')} "
+                f"declares model.provider_name={expected!r}. Required."
+            )
+        return None
+    if actual != expected:
+        return (
+            f"provider_name={actual!r} != "
+            f"config.model.provider_name={expected!r}"
+        )
+    return None
+
+
 def _check_base_url_redaction(
     mi: dict, config: dict | None
 ) -> str | None:
@@ -1064,6 +1105,13 @@ def validate_fresh_row_model_identity(
         return f"base_url redaction: {redaction_err}"
     if config.get("reusable_template"):
         return None
+    # Per Codex 2026-06-02 F1 [high]: validate provider family
+    # (anthropic / openai / etc.) BEFORE specific model identity.
+    # Catches miswired shims that emit rows with the wrong provider
+    # under a canonical diagnoser_name.
+    provider_err = _validate_provider_name_identity(mi, config)
+    if provider_err:
+        return f"provider identity: {provider_err}"
     expected = effective_requested_model(config)
     if not expected:
         # No model identity declared — also skip endpoint checks since
@@ -1163,6 +1211,14 @@ def cache_hit_is_acceptable(
         )
     # cached_meta already bound earlier (with cached_mi_for_redaction).
     cached_mi = cached_mi_for_redaction
+
+    # Per Codex 2026-06-02 F1 [high]: validate provider family. A
+    # miswired shim could pass other identity checks but emit
+    # provider_name from a different family (e.g. openai rows under
+    # real-debugger-v1's Anthropic config).
+    provider_err = _validate_provider_name_identity(cached_mi, config)
+    if provider_err:
+        return False, f"cache row provider identity: {provider_err}"
 
     expected_model = effective_requested_model(config)
     if expected_model:

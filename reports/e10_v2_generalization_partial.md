@@ -2158,6 +2158,40 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > **Test counts (cumulative):** `test_diagnosis_cache_key.py` 98 →
 > 99 (+1). `test_hybrid_router.py` unchanged at 10. All 109 pass.
 
+> ⚠️ **Codex 2026-06-02 [high] fix applied — no scores moved.**
+> Codex flagged the last identity field that wasn't being checked:
+>
+> **F1 [high] (Model provider identity never validated.)** The
+> validators compared `requested_model`, endpoint, and
+> `resolved_model`, but never `metadata.model_info.provider_name`
+> against `config.model.provider_name`. Codex verified the gap:
+> real-debugger-v1 (Anthropic config) accepted rows with
+> `provider_name: openai, requested_model: haiku`. A miswired
+> command shim could write rows under the Anthropic real-debugger
+> names while actually using an OpenAI backend, corrupting
+> cross-family provenance and any model-family conclusions built
+> from the artifacts.
+> Fix:
+> - New `_validate_provider_name_identity()` helper compares
+>   cached `provider_name` against `config.model.provider_name`.
+>   Required when the config requires provenance
+>   (`cache_key_env` or `model.model_name` declared)
+> - Called from BOTH `validate_fresh_row_model_identity` and
+>   `cache_hit_is_acceptable`, after the redaction +
+>   reusable_template short-circuit but BEFORE the
+>   requested_model/endpoint/resolved_model checks
+> - 5 new tests: fresh-row + cache-hit wrong-provider rejection,
+>   canonical-provider accept, missing-provider rejected under
+>   real configs, AND a committed-artifact lock that walks all
+>   v1/v2/v3 rows asserting provider_name matches the config
+>   family (anthropic for v1/v2, openai for v3)
+> - 23 pre-existing tests had their fixtures updated to include
+>   provider_name; 1 test renamed its scenario from "wrong-model
+>   cross-family" to "wrong-model same-family" (more targeted)
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 99 →
+> 104 (+5). `test_hybrid_router.py` unchanged at 10. All 114 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

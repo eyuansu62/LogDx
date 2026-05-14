@@ -106,14 +106,14 @@ def test_cache_key_env_values_returns_none_without_optin():
 
 def test_cache_hit_acceptable_on_match():
     cfg = _cfg()
-    row = {"metadata": {"model_info": {"requested_model": "gpt-5-mini"}}}
+    row = {"metadata": {"model_info": {"provider_name": "openai", "requested_model": "gpt-5-mini"}}}
     ok, reason = rd.cache_hit_is_acceptable(row, cfg)
     assert ok and reason is None, f"expected accept, got ({ok}, {reason!r})"
 
 
 def test_cache_hit_rejected_on_mismatch():
     cfg = _cfg()
-    row = {"metadata": {"model_info": {"requested_model": "gpt-4o"}}}
+    row = {"metadata": {"model_info": {"provider_name": "openai", "requested_model": "gpt-4o"}}}
     ok, reason = rd.cache_hit_is_acceptable(row, cfg)
     assert not ok, "expected reject"
     assert "gpt-4o" in reason and "gpt-5-mini" in reason, reason
@@ -199,7 +199,7 @@ def test_cache_hit_acceptable_when_env_override_matches_cached():
     saved = os.environ.get("CILOGBENCH_OPENAI_MODEL")
     try:
         os.environ["CILOGBENCH_OPENAI_MODEL"] = "gpt-4o"
-        row = {"metadata": {"model_info": {"requested_model": "gpt-4o"}}}
+        row = {"metadata": {"model_info": {"provider_name": "openai", "requested_model": "gpt-4o"}}}
         ok, reason = rd.cache_hit_is_acceptable(row, cfg)
         assert ok and reason is None, (
             f"env-override hit should accept; got ({ok}, {reason!r})"
@@ -220,7 +220,7 @@ def test_cache_hit_still_rejects_genuinely_wrong_cached_model():
     try:
         os.environ["CILOGBENCH_OPENAI_MODEL"] = "gpt-4o"
         # Cached row claims to be from a third, unrelated model.
-        row = {"metadata": {"model_info": {"requested_model": "claude-haiku"}}}
+        row = {"metadata": {"model_info": {"provider_name": "anthropic", "requested_model": "claude-haiku"}}}
         ok, reason = rd.cache_hit_is_acceptable(row, cfg)
         assert not ok, "wrong-model cache row should be rejected"
         assert "claude-haiku" in reason and "gpt-4o" in reason, reason
@@ -315,7 +315,7 @@ def test_v1_cache_hit_accepts_haiku_alias():
     cfg = rd.load_diagnoser_config("real-debugger-v1")
     saved = os.environ.pop("CILOGBENCH_CLAUDE_MODEL", None)
     try:
-        row = {"metadata": {"model_info": {"requested_model": "haiku"}}}
+        row = {"metadata": {"model_info": {"provider_name": "anthropic", "requested_model": "haiku"}}}
         ok, reason = rd.cache_hit_is_acceptable(row, cfg)
         assert ok and reason is None, (
             f"v1 default cache row should pass; got ({ok}, {reason!r})"
@@ -327,12 +327,16 @@ def test_v1_cache_hit_accepts_haiku_alias():
 
 def test_v1_cache_hit_rejects_wrong_model():
     # A v1 cache row that was somehow written with model_info from a
-    # different model (e.g. opus left over from a misconfigured run)
-    # gets rejected under the canonical config.
+    # different Anthropic model (e.g. opus left over from a
+    # misconfigured run, same family but wrong alias) gets rejected
+    # under the canonical config.
     cfg = rd.load_diagnoser_config("real-debugger-v1")
     saved = os.environ.pop("CILOGBENCH_CLAUDE_MODEL", None)
     try:
-        row = {"metadata": {"model_info": {"requested_model": "opus"}}}
+        # Note: provider_name is intentionally the CORRECT family so the
+        # test isolates the requested_model check (not the
+        # 2026-06-02 F1 provider_name check).
+        row = {"metadata": {"model_info": {"provider_name": "anthropic", "requested_model": "opus"}}}
         ok, reason = rd.cache_hit_is_acceptable(row, cfg)
         assert not ok, "wrong-model v1 cache row should be rejected"
         assert "opus" in reason and "haiku" in reason, reason
@@ -390,7 +394,7 @@ def test_validate_fresh_row_passes_when_shim_matches_config():
     on fresh rows."""
     cfg = rd.load_diagnoser_config("real-debugger-v3")
     diag = {"_model_info": {
-        "requested_model": "gpt-5-mini",
+        "provider_name": "openai", "requested_model": "gpt-5-mini",
         "resolved_model": "gpt-5-mini-2025-08-07",
         "base_url": "https://api.openai.com/v1",
         "base_url_sha256": rd._base_url_sha256_for_compare(
@@ -409,7 +413,7 @@ def test_validate_fresh_row_rejects_haiku_under_v2():
     cfg = rd.load_diagnoser_config("real-debugger-v2")
     saved = os.environ.pop("CILOGBENCH_CLAUDE_MODEL", None)
     try:
-        diag = {"_model_info": {"requested_model": "haiku"}}
+        diag = {"_model_info": {"provider_name": "anthropic", "requested_model": "haiku"}}
         err = rd.validate_fresh_row_model_identity(diag, cfg)
         assert err is not None, "haiku-under-v2 should be rejected"
         assert "haiku" in err and "sonnet" in err, err
@@ -524,10 +528,10 @@ def test_extract_shim_stdout_metadata_ignores_missing_fields():
 def test_shim_call_error_carries_metadata():
     err = rd.ShimCallError(
         "exit 1",
-        model_info={"requested_model": "gpt-5-mini"},
+        model_info={"provider_name": "openai", "requested_model": "gpt-5-mini"},
         provider_error_hint="post_api_error: ...",
     )
-    assert err.model_info == {"requested_model": "gpt-5-mini"}
+    assert err.model_info == {"provider_name": "openai", "requested_model": "gpt-5-mini"}
     assert err.provider_error_hint == "post_api_error: ..."
     assert "exit 1" in str(err)
 
@@ -663,7 +667,7 @@ def test_base_url_validation_uses_sha256_when_available():
     expected_url = rd.effective_base_url(cfg)
     expected_hash = rd._base_url_sha256_for_compare(expected_url)
     row_ok = {"metadata": {"model_info": {
-        "requested_model": "gpt-5-mini",
+        "provider_name": "openai", "requested_model": "gpt-5-mini",
         "base_url": "https://api.openai.com/v1",
         "base_url_sha256": expected_hash,
     }}}
@@ -672,7 +676,7 @@ def test_base_url_validation_uses_sha256_when_available():
     # Hash mismatch (someone hand-poisoned with a row from a different
     # endpoint) → reject.
     row_bad = {"metadata": {"model_info": {
-        "requested_model": "gpt-5-mini",
+        "provider_name": "openai", "requested_model": "gpt-5-mini",
         "base_url": "https://api.openai.com/v1",
         "base_url_sha256": "a" * 64,  # wrong hash
     }}}
@@ -708,7 +712,7 @@ def test_base_url_validation_credentialed_proxy_accepts_own_row():
         os.environ["CILOGBENCH_OPENAI_BASE_URL"] = proxy_url
         os.environ["CILOGBENCH_OPENAI_MODEL"] = "gpt-5-mini"
         row = {"metadata": {"model_info": {
-            "requested_model": "gpt-5-mini",
+            "provider_name": "openai", "requested_model": "gpt-5-mini",
             "base_url": sanitized,
             "base_url_sha256": full_hash,
         }}}
@@ -744,7 +748,7 @@ def test_base_url_validation_falls_back_to_sanitized_compare():
         os.environ["CILOGBENCH_OPENAI_BASE_URL"] = "https://u:p@proxy/v1?t=1"
         os.environ["CILOGBENCH_OPENAI_MODEL"] = "gpt-5-mini"
         row = {"metadata": {"model_info": {
-            "requested_model": "gpt-5-mini",
+            "provider_name": "openai", "requested_model": "gpt-5-mini",
             "base_url": "https://proxy/v1",   # legacy: only sanitized, no sha256
         }}}
         ok, reason = rd.cache_hit_is_acceptable(row, cfg)
@@ -784,7 +788,7 @@ def test_fresh_row_rejects_wrong_endpoint():
         os.environ["CILOGBENCH_OPENAI_MODEL"] = "gpt-5-mini"
         # Shim emits canonical OpenAI URL (it ignored the env override).
         diag = {"_model_info": {
-            "requested_model": "gpt-5-mini",
+            "provider_name": "openai", "requested_model": "gpt-5-mini",
             "base_url": "https://api.openai.com/v1",
             "base_url_sha256": rd._base_url_sha256_for_compare(
                 "https://api.openai.com/v1"
@@ -811,7 +815,7 @@ def test_fresh_row_rejects_when_endpoint_evidence_missing():
     emitting only `requested_model` could otherwise bypass the
     endpoint check entirely."""
     cfg = rd.load_diagnoser_config("real-debugger-v3")
-    diag = {"_model_info": {"requested_model": "gpt-5-mini"}}
+    diag = {"_model_info": {"provider_name": "openai", "requested_model": "gpt-5-mini"}}
     err = rd.validate_fresh_row_model_identity(diag, cfg)
     assert err is not None, "missing endpoint evidence should reject"
     assert "base_url" in err and "provenance" in err.lower()
@@ -820,7 +824,7 @@ def test_fresh_row_rejects_when_endpoint_evidence_missing():
 def test_cache_hit_rejects_when_endpoint_evidence_missing():
     """Same scenario at the cache layer."""
     cfg = rd.load_diagnoser_config("real-debugger-v3")
-    row = {"metadata": {"model_info": {"requested_model": "gpt-5-mini"}}}
+    row = {"metadata": {"model_info": {"provider_name": "openai", "requested_model": "gpt-5-mini"}}}
     ok, reason = rd.cache_hit_is_acceptable(row, cfg)
     assert not ok
     assert "base_url" in reason and "provenance" in reason.lower()
@@ -848,7 +852,7 @@ def test_fresh_row_accepts_matching_endpoint():
     resolved_model must also be non-null and match the pin."""
     cfg = rd.load_diagnoser_config("real-debugger-v3")
     diag = {"_model_info": {
-        "requested_model": "gpt-5-mini",
+        "provider_name": "openai", "requested_model": "gpt-5-mini",
         "resolved_model": "gpt-5-mini-2025-08-07",
         "base_url": "https://api.openai.com/v1",
         "base_url_sha256": rd._base_url_sha256_for_compare(
@@ -1089,7 +1093,7 @@ def test_reusable_template_skips_fresh_row_validation():
     # Real shim emits requested_model='gpt-5-mini' — also accepted (no
     # binding to compare against).
     err2 = rd.validate_fresh_row_model_identity(
-        {"_model_info": {"requested_model": "gpt-5-mini"}}, cfg
+        {"_model_info": {"provider_name": "openai", "requested_model": "gpt-5-mini"}}, cfg
     )
     assert err2 is None, f"real-shim row under template should pass: {err2}"
 
@@ -1106,7 +1110,7 @@ def test_reusable_template_never_accepts_cache_hits():
         "stub-debugger-v1",
         explicit_path=repo / "configs" / "diagnosers" / "example.debugger-v1-command.json",
     )
-    row = {"metadata": {"model_info": {"requested_model": "haiku"}}}
+    row = {"metadata": {"model_info": {"provider_name": "anthropic", "requested_model": "haiku"}}}
     ok, reason = rd.cache_hit_is_acceptable(row, cfg)
     assert not ok
     assert "reusable_template" in reason
@@ -1121,7 +1125,7 @@ def test_cache_hit_rejects_provider_error_row_by_default():
     cfg = rd.load_diagnoser_config("real-debugger-v3")
     row = {"metadata": {
         "model_info": {
-            "requested_model": "gpt-5-mini",
+            "provider_name": "openai", "requested_model": "gpt-5-mini",
             "base_url": "https://api.openai.com/v1",
             "base_url_sha256": rd._base_url_sha256_for_compare(
                 "https://api.openai.com/v1"
@@ -1143,7 +1147,7 @@ def test_fresh_row_rejects_resolved_model_drift():
     expected_url = rd.effective_base_url(cfg)
     # Diagnosis body emits resolved_model from a future-rotated snapshot.
     diag = {"_model_info": {
-        "requested_model": "gpt-5-mini",
+        "provider_name": "openai", "requested_model": "gpt-5-mini",
         "resolved_model": "gpt-5-mini-2099-01-01",
         "base_url": rd._sanitize_base_url_for_compare(expected_url),
         "base_url_sha256": rd._base_url_sha256_for_compare(expected_url),
@@ -1158,7 +1162,7 @@ def test_fresh_row_accepts_canonical_resolved_model():
     cfg = rd.load_diagnoser_config("real-debugger-v3")
     expected_url = rd.effective_base_url(cfg)
     diag = {"_model_info": {
-        "requested_model": "gpt-5-mini",
+        "provider_name": "openai", "requested_model": "gpt-5-mini",
         "resolved_model": "gpt-5-mini-2025-08-07",
         "base_url": rd._sanitize_base_url_for_compare(expected_url),
         "base_url_sha256": rd._base_url_sha256_for_compare(expected_url),
@@ -1187,7 +1191,7 @@ def test_fresh_row_rejects_null_resolved_model_under_pin():
     cfg = rd.load_diagnoser_config("real-debugger-v3")
     expected_url = rd.effective_base_url(cfg)
     diag = {"_model_info": {
-        "requested_model": "gpt-5-mini",
+        "provider_name": "openai", "requested_model": "gpt-5-mini",
         "resolved_model": None,
         "base_url": rd._sanitize_base_url_for_compare(expected_url),
         "base_url_sha256": rd._base_url_sha256_for_compare(expected_url),
@@ -1207,7 +1211,7 @@ def test_cache_hit_accepts_null_resolved_model_under_pin():
     cfg = rd.load_diagnoser_config("real-debugger-v3")
     expected_url = rd.effective_base_url(cfg)
     row = {"metadata": {"model_info": {
-        "requested_model": "gpt-5-mini",
+        "provider_name": "openai", "requested_model": "gpt-5-mini",
         "resolved_model": None,
         "base_url": rd._sanitize_base_url_for_compare(expected_url),
         "base_url_sha256": rd._base_url_sha256_for_compare(expected_url),
@@ -1328,7 +1332,7 @@ def test_base_url_redaction_enforced_even_with_matching_hash():
     canonical_hash = rd._base_url_sha256_for_compare(expected_url)
     # Credential-bearing base_url + matching hash — must REJECT.
     row = {"metadata": {"model_info": {
-        "requested_model": "gpt-5-mini",
+        "provider_name": "openai", "requested_model": "gpt-5-mini",
         "resolved_model": "gpt-5-mini-2025-08-07",
         "base_url": "https://user:pass@api.openai.com/v1?token=xyz",
         "base_url_sha256": canonical_hash,
@@ -1344,7 +1348,7 @@ def test_base_url_redaction_enforced_for_deep_path():
     expected_url = rd.effective_base_url(cfg)
     canonical_hash = rd._base_url_sha256_for_compare(expected_url)
     row = {"metadata": {"model_info": {
-        "requested_model": "gpt-5-mini",
+        "provider_name": "openai", "requested_model": "gpt-5-mini",
         "resolved_model": "gpt-5-mini-2025-08-07",
         "base_url": "https://api.openai.com/v1/private/secret-route",
         "base_url_sha256": canonical_hash,
@@ -1360,7 +1364,7 @@ def test_base_url_sanitized_form_accepts():
     expected_url = rd.effective_base_url(cfg)
     canonical_hash = rd._base_url_sha256_for_compare(expected_url)
     row = {"metadata": {"model_info": {
-        "requested_model": "gpt-5-mini",
+        "provider_name": "openai", "requested_model": "gpt-5-mini",
         "resolved_model": "gpt-5-mini-2025-08-07",
         "base_url": "https://api.openai.com/v1",  # already sanitized
         "base_url_sha256": canonical_hash,
@@ -1375,7 +1379,7 @@ def test_fresh_row_rejects_unsanitized_base_url():
     expected_url = rd.effective_base_url(cfg)
     canonical_hash = rd._base_url_sha256_for_compare(expected_url)
     diag = {"_model_info": {
-        "requested_model": "gpt-5-mini",
+        "provider_name": "openai", "requested_model": "gpt-5-mini",
         "resolved_model": "gpt-5-mini-2025-08-07",
         "base_url": "https://user:p@api.openai.com/v1?t=x",
         "base_url_sha256": canonical_hash,
@@ -1383,6 +1387,100 @@ def test_fresh_row_rejects_unsanitized_base_url():
     err = rd.validate_fresh_row_model_identity(diag, cfg)
     assert err is not None
     assert "sanitized" in err.lower() or "redaction" in err.lower()
+
+
+def test_fresh_row_rejects_wrong_provider_family():
+    """Per Codex 2026-06-02 F1 [high]: a miswired command shim could
+    historically emit rows with provider_name=openai under
+    real-debugger-v1 (Anthropic config) and pass every other check.
+    The new provider_name validator rejects this on the fresh-row
+    path."""
+    cfg = rd.load_diagnoser_config("real-debugger-v1")
+    diag = {"_model_info": {
+        "provider_name": "openai",  # WRONG family for v1
+        "requested_model": "haiku",
+    }}
+    err = rd.validate_fresh_row_model_identity(diag, cfg)
+    assert err is not None, "wrong-provider fresh row should reject"
+    assert "provider" in err.lower() and "openai" in err.lower() and "anthropic" in err.lower()
+
+
+def test_cache_hit_rejects_wrong_provider_family():
+    """Same check on cache-hit path."""
+    cfg = rd.load_diagnoser_config("real-debugger-v1")
+    row = {"metadata": {"model_info": {
+        "provider_name": "openai",
+        "requested_model": "haiku",
+    }}}
+    ok, reason = rd.cache_hit_is_acceptable(row, cfg)
+    assert not ok
+    assert "provider" in (reason or "").lower()
+
+
+def test_canonical_provider_name_accepts():
+    """Sanity: rows with the canonical provider_name pass."""
+    cfg_v1 = rd.load_diagnoser_config("real-debugger-v1")
+    cfg_v3 = rd.load_diagnoser_config("real-debugger-v3")
+    # v1 (anthropic)
+    diag_v1 = {"_model_info": {
+        "provider_name": "anthropic", "requested_model": "haiku"
+    }}
+    # On fresh-row, v1 requires endpoint evidence too — minimal payload
+    # for the provider_name path alone; ignore the downstream
+    # base_url error.
+    err_v1 = rd._validate_provider_name_identity(
+        diag_v1["_model_info"], cfg_v1
+    )
+    assert err_v1 is None
+    # v3 (openai)
+    err_v3 = rd._validate_provider_name_identity(
+        {"provider_name": "openai", "requested_model": "gpt-5-mini"},
+        cfg_v3,
+    )
+    assert err_v3 is None
+
+
+def test_provider_name_required_under_real_configs():
+    """A canonical config that declares model.provider_name REQUIRES
+    provider_name on cached rows. Missing → reject (provenance)."""
+    cfg = rd.load_diagnoser_config("real-debugger-v1")
+    err = rd._validate_provider_name_identity({}, cfg)
+    assert err is not None
+    assert "provider_name" in err
+
+
+def test_v1_v2_v3_committed_artifacts_carry_correct_provider_name():
+    """Lock: every committed v1/v2/v3 row that has model_info also
+    has provider_name matching the config family."""
+    import json as _json
+    repo = Path(__file__).resolve().parent.parent.parent
+    expectations = {
+        "real-debugger-v1": "anthropic",
+        "real-debugger-v2": "anthropic",
+        "real-debugger-v3": "openai",
+    }
+    failures = []
+    for diagnoser, expected in expectations.items():
+        for sp in ["dev", "holdout", "stress", "v2/dev", "v2/holdout", "v2/stress"]:
+            diag_dir = repo / "results" / sp / "diagnoses" / diagnoser
+            if not diag_dir.exists():
+                continue
+            for mf in diag_dir.glob("*.jsonl"):
+                for line in mf.open():
+                    row = _json.loads(line)
+                    mi = (row.get("metadata") or {}).get("model_info")
+                    if not mi:
+                        continue
+                    actual = mi.get("provider_name")
+                    if actual and actual != expected:
+                        failures.append(
+                            f"{sp}/{mf.stem}/{row.get('case_id')}: "
+                            f"diagnoser={diagnoser} provider_name="
+                            f"{actual!r} expected={expected!r}"
+                        )
+    assert not failures, (
+        "committed provider_name drift:\n  " + "\n  ".join(failures[:10])
+    )
 
 
 def test_reusable_template_still_enforces_redaction():
@@ -1407,7 +1505,7 @@ def test_reusable_template_still_enforces_redaction():
 
     # Fresh-row path: an unsanitized URL must reject.
     diag = {"_model_info": {
-        "requested_model": "haiku",  # arbitrary; template skips identity
+        "provider_name": "anthropic", "requested_model": "haiku",  # arbitrary; template skips identity
         "base_url": "https://user:pass@proxy.example.com/v1?token=secret",
     }}
     err = rd.validate_fresh_row_model_identity(diag, cfg)
@@ -1418,7 +1516,7 @@ def test_reusable_template_still_enforces_redaction():
 
     # Cache-hit path: same enforcement BEFORE the template short-circuit.
     row = {"metadata": {"model_info": {
-        "requested_model": "haiku",
+        "provider_name": "anthropic", "requested_model": "haiku",
         "base_url": "https://api.example.com/secret-token/v1",
     }}}
     ok, reason = rd.cache_hit_is_acceptable(row, cfg)
@@ -1429,7 +1527,7 @@ def test_reusable_template_still_enforces_redaction():
     # subsequent reusable_template skips identity. Fresh-row accepts;
     # cache-hit still rejects (templates never trust cache).
     diag_clean = {"_model_info": {
-        "requested_model": "haiku",
+        "provider_name": "anthropic", "requested_model": "haiku",
         "base_url": "https://api.openai.com/v1",
     }}
     assert rd.validate_fresh_row_model_identity(diag_clean, cfg) is None
@@ -1742,7 +1840,7 @@ def test_cache_hit_rejects_resolved_model_drift():
     cfg = rd.load_diagnoser_config("real-debugger-v3")
     expected_url = rd.effective_base_url(cfg)
     base_mi = {
-        "requested_model": "gpt-5-mini",
+        "provider_name": "openai", "requested_model": "gpt-5-mini",
         "base_url": rd._sanitize_base_url_for_compare(expected_url),
         "base_url_sha256": rd._base_url_sha256_for_compare(expected_url),
     }
@@ -1768,7 +1866,7 @@ def test_cache_hit_back_compat_null_resolved_model():
     cfg = rd.load_diagnoser_config("real-debugger-v3")
     expected_url = rd.effective_base_url(cfg)
     row = {"metadata": {"model_info": {
-        "requested_model": "gpt-5-mini",
+        "provider_name": "openai", "requested_model": "gpt-5-mini",
         "resolved_model": None,
         "base_url": rd._sanitize_base_url_for_compare(expected_url),
         "base_url_sha256": rd._base_url_sha256_for_compare(expected_url),
@@ -1866,7 +1964,7 @@ def test_sanitize_base_url_drops_tenant_key_first_segment():
             "https://proxy.example.com/secret-token/v1"
         )
         row = {"metadata": {"model_info": {
-            "requested_model": "gpt-5-mini",
+            "provider_name": "openai", "requested_model": "gpt-5-mini",
             # Malicious row: persists the unsanitized URL.
             "base_url": "https://proxy.example.com/secret-token/v1",
             "base_url_sha256": rd._base_url_sha256_for_compare(
@@ -1915,7 +2013,7 @@ def test_cache_hit_accepts_provider_error_row_when_cache_errors_opted_in():
     cfg = rd.load_diagnoser_config("real-debugger-v3")
     row = {"metadata": {
         "model_info": {
-            "requested_model": "gpt-5-mini",
+            "provider_name": "openai", "requested_model": "gpt-5-mini",
             "base_url": "https://api.openai.com/v1",
             "base_url_sha256": rd._base_url_sha256_for_compare(
                 "https://api.openai.com/v1"
@@ -1931,7 +2029,7 @@ def test_canonical_real_debugger_still_enforces_identity():
     """v3 config (not reusable_template) still rejects identity
     mismatches. Sanity-check the opt-out is scoped to templates."""
     cfg = rd.load_diagnoser_config("real-debugger-v3")
-    row = {"metadata": {"model_info": {"requested_model": "gpt-4o"}}}
+    row = {"metadata": {"model_info": {"provider_name": "openai", "requested_model": "gpt-4o"}}}
     ok, reason = rd.cache_hit_is_acceptable(row, cfg)
     assert not ok
     assert "gpt-4o" in (reason or "") and "gpt-5-mini" in (reason or "")
@@ -1997,7 +2095,7 @@ def test_cache_gate_respects_row_metadata_provider_error():
         diagnosis_body={
             "summary": "stub",
             "_provider_error": "post_api_error: synthetic failure",
-            "_model_info": {"requested_model": "gpt-5-mini"},
+            "_model_info": {"provider_name": "openai", "requested_model": "gpt-5-mini"},
         },
         context_path=_P("/tmp/x"), context_text="",
         prompt_sha="p", runtime_ms=0.0,
@@ -2401,6 +2499,12 @@ def main() -> int:
         test_oversized_context_writes_provider_error_not_fail_provenance,
         # Codex 2026-06-01 F1 (redaction enforced even on templates)
         test_reusable_template_still_enforces_redaction,
+        # Codex 2026-06-02 F1 (provider_name family validation)
+        test_fresh_row_rejects_wrong_provider_family,
+        test_cache_hit_rejects_wrong_provider_family,
+        test_canonical_provider_name_accepts,
+        test_provider_name_required_under_real_configs,
+        test_v1_v2_v3_committed_artifacts_carry_correct_provider_name,
         # Codex 2026-05-27 F2 (fresh-row strict resolved_model)
         test_fresh_row_rejects_null_resolved_model_under_pin,
         test_cache_hit_accepts_null_resolved_model_under_pin,
