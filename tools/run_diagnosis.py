@@ -926,6 +926,47 @@ def _validate_resolved_model_identity(
     return None
 
 
+def _check_base_url_redaction(
+    mi: dict, config: dict | None
+) -> str | None:
+    """Per Codex 2026-06-01 F1 [high]: base_url redaction is a PRIVACY
+    invariant, not an identity check. It applies regardless of
+    whether the config pins an expected endpoint AND regardless of
+    `reusable_template` status (Codex 2026-05-23 made reusable_template
+    skip identity checks, but redaction must still fire — templates
+    are EXACTLY the case where an externally-supplied shim might
+    forget to sanitize, and the runner can't assume it did).
+
+    Returns None when no enforcement applies or the row is already
+    sanitized. Returns an error string when the config opts into
+    `privacy.allow_secret_values_in_results: false` and the persisted
+    `base_url` is NOT already in sanitized form (would leak userinfo,
+    query tokens, or non-allowlist path segments).
+    """
+    if not isinstance(config, dict) or not isinstance(mi, dict):
+        return None
+    privacy = config.get("privacy") or {}
+    # The privacy invariant is "secrets MUST NOT be in results"; enforce
+    # only when the field is explicitly set to False. Missing field is
+    # policy-unspecified and we don't speculate.
+    if privacy.get("allow_secret_values_in_results", True):
+        return None
+    cached_url = mi.get("base_url")
+    if cached_url is None:
+        return None
+    sanitized_form = _sanitize_base_url_for_compare(cached_url)
+    if cached_url != sanitized_form:
+        return (
+            f"persisted `base_url` is not in sanitized form: "
+            f"{cached_url!r} vs sanitize()={sanitized_form!r}. "
+            f"privacy.allow_secret_values_in_results=false; refusing "
+            f"to accept a row that would leak userinfo, query tokens, "
+            f"or non-allowlist path segments into the canonical "
+            f"diagnosis artifact."
+        )
+    return None
+
+
 def _validate_base_url_identity(
     cached_mi: dict, config: dict | None
 ) -> str | None:
@@ -953,28 +994,12 @@ def _validate_base_url_identity(
     if not expected_url:
         return None
 
-    # Per Codex 2026-05-29 F1 [high]: redaction enforcement FIRST.
-    # The persisted `base_url` value MUST already be in its sanitized
-    # form regardless of whether sha256 also matches. A stale or
-    # custom shim could otherwise emit a full proxy URL carrying
-    # userinfo, query tokens, or deep-path secrets PLUS the correct
-    # hash and slip past the validator — leaking credentials into the
-    # canonical results JSON (privacy.allow_secret_values_in_results
-    # is false by config contract).
+    # Codex 2026-05-29 F1 redaction check moved out into
+    # `_check_base_url_redaction()` (Codex 2026-06-01 F1) so it also
+    # applies to reusable_template configs. Both validators call the
+    # helper BEFORE delegating here, so this body now only handles
+    # identity comparison.
     cached_url = cached_mi.get("base_url")
-    if cached_url is not None:
-        sanitized_form = _sanitize_base_url_for_compare(cached_url)
-        if cached_url != sanitized_form:
-            return (
-                f"persisted `base_url` is not in sanitized form: "
-                f"{cached_url!r} vs sanitize()={sanitized_form!r}. "
-                f"Redaction is mandatory under "
-                f"privacy.allow_secret_values_in_results=false; "
-                f"refusing to accept a row that would leak userinfo, "
-                f"query tokens, or deep-path secrets into the "
-                f"canonical diagnosis artifact."
-            )
-
     cached_hash = cached_mi.get("base_url_sha256")
     if cached_hash is not None:
         if cached_hash != _base_url_sha256_for_compare(expected_url):
@@ -1028,6 +1053,15 @@ def validate_fresh_row_model_identity(
     """
     if not isinstance(config, dict):
         return None
+    mi = diag_body.get("_model_info") or {}
+    # Per Codex 2026-06-01 F1 [high]: redaction is unconditional —
+    # applies even to reusable_template configs and to configs with
+    # no model identity declared. Runs FIRST so a shim that emits an
+    # unsanitized base_url can't write a row even when other
+    # provenance checks short-circuit.
+    redaction_err = _check_base_url_redaction(mi, config)
+    if redaction_err:
+        return f"base_url redaction: {redaction_err}"
     if config.get("reusable_template"):
         return None
     expected = effective_requested_model(config)
@@ -1035,7 +1069,6 @@ def validate_fresh_row_model_identity(
         # No model identity declared — also skip endpoint checks since
         # the config evidently doesn't ground identity.
         return None
-    mi = diag_body.get("_model_info") or {}
     actual = mi.get("requested_model")
     if actual is None:
         if _config_requires_model_info(config):
@@ -1101,6 +1134,18 @@ def cache_hit_is_acceptable(
     """
     if not isinstance(config, dict):
         return True, None
+    cached_meta = cached_row.get("metadata") or {}
+    cached_mi_for_redaction = cached_meta.get("model_info") or {}
+    # Per Codex 2026-06-01 F1 [high]: redaction is unconditional and
+    # applies BEFORE the reusable_template short-circuit and the
+    # provider_error gate. Even if we're going to reject the cache hit
+    # for a different reason, the row's persisted metadata must comply
+    # with the privacy policy.
+    redaction_err = _check_base_url_redaction(
+        cached_mi_for_redaction, config
+    )
+    if redaction_err:
+        return False, f"cache row base_url redaction: {redaction_err}"
     # Reusable templates never trust the cache (no canonical model
     # identity).
     if config.get("reusable_template"):
@@ -1109,7 +1154,6 @@ def cache_hit_is_acceptable(
             "cache hits cannot be validated and are not trusted"
         )
     # Reject cached provider_error rows unless opted in explicitly.
-    cached_meta = cached_row.get("metadata") or {}
     cached_pe = cached_meta.get("provider_error")
     if cached_pe and not cache_errors:
         return False, (
@@ -1117,8 +1161,8 @@ def cache_hit_is_acceptable(
             f"{str(cached_pe)[:80]!r}; rejecting (default behavior, "
             f"pass --cache-errors to opt in)"
         )
-    cached_meta = cached_row.get("metadata") or {}
-    cached_mi = cached_meta.get("model_info") or {}
+    # cached_meta already bound earlier (with cached_mi_for_redaction).
+    cached_mi = cached_mi_for_redaction
 
     expected_model = effective_requested_model(config)
     if expected_model:

@@ -2128,6 +2128,36 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > 98 (+1; existing sanitize-deep-path test extended).
 > `test_hybrid_router.py` unchanged at 10. All 108 pass.
 
+> ⚠️ **Codex 2026-06-01 [high] fix applied — no scores moved.**
+> Codex caught a regression introduced by the 2026-05-23 fix:
+>
+> **F1 [high] (Reusable templates bypassed base_url redaction.)**
+> The 2026-05-23 fix made reusable_template configs skip identity
+> validation entirely. That accidentally swallowed the redaction
+> guard too: a custom shim using example.debugger-v1-command.json
+> could write a row with
+> `base_url: https://user:pass@proxy/v1?token=...` and it would
+> pass validation despite `privacy.allow_secret_values_in_results=false`.
+> Fix:
+> - Extracted `_check_base_url_redaction()` helper — privacy
+>   enforcement separated from identity validation
+> - Called from BOTH `validate_fresh_row_model_identity` AND
+>   `cache_hit_is_acceptable` BEFORE the reusable_template
+>   short-circuit
+> - Templates still skip identity checks (no canonical model to
+>   bind), but unsanitized base_urls under privacy.no-secrets
+>   configs are still rejected
+> - Inline redaction check inside `_validate_base_url_identity`
+>   removed (now centralized in the helper)
+> - 1 new test covering the exact regression Codex flagged:
+>   template + privacy.no-secrets + unsanitized URL → reject on
+>   both fresh-row and cache-hit paths; sanitized URL accepts
+>   fresh-row (cache-hit still rejects for unrelated template
+>   reason)
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 98 →
+> 99 (+1). `test_hybrid_router.py` unchanged at 10. All 109 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

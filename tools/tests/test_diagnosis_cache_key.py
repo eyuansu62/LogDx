@@ -1385,6 +1385,56 @@ def test_fresh_row_rejects_unsanitized_base_url():
     assert "sanitized" in err.lower() or "redaction" in err.lower()
 
 
+def test_reusable_template_still_enforces_redaction():
+    """Per Codex 2026-06-01 F1 [high]: the 2026-05-23 fix made
+    reusable_template configs skip identity validation, but that
+    swallowed the redaction guard too. A custom shim using
+    example.debugger-v1-command.json could write a row with
+    `base_url: https://user:pass@proxy/v1?token=...` and the
+    validator passed it. Now: redaction is unconditional. Templates
+    still skip identity checks, but unsanitized base_urls are
+    rejected on both fresh-row and cache-hit paths."""
+    # example.debugger-v1-command.json declares
+    # privacy.allow_secret_values_in_results: false AND
+    # reusable_template: true.
+    repo = Path(__file__).resolve().parent.parent.parent
+    cfg = rd.load_diagnoser_config(
+        "stub-debugger-v1",
+        explicit_path=repo / "configs" / "diagnosers" / "example.debugger-v1-command.json",
+    )
+    assert cfg.get("reusable_template") is True
+    assert cfg["privacy"]["allow_secret_values_in_results"] is False
+
+    # Fresh-row path: an unsanitized URL must reject.
+    diag = {"_model_info": {
+        "requested_model": "haiku",  # arbitrary; template skips identity
+        "base_url": "https://user:pass@proxy.example.com/v1?token=secret",
+    }}
+    err = rd.validate_fresh_row_model_identity(diag, cfg)
+    assert err is not None, (
+        "template with privacy.no-secrets + unsanitized base_url should reject"
+    )
+    assert "redaction" in err.lower() or "sanitized" in err.lower()
+
+    # Cache-hit path: same enforcement BEFORE the template short-circuit.
+    row = {"metadata": {"model_info": {
+        "requested_model": "haiku",
+        "base_url": "https://api.example.com/secret-token/v1",
+    }}}
+    ok, reason = rd.cache_hit_is_acceptable(row, cfg)
+    assert not ok
+    assert "redaction" in (reason or "").lower() or "sanitized" in (reason or "").lower()
+
+    # Sanitized URL under same template: redaction passes; the
+    # subsequent reusable_template skips identity. Fresh-row accepts;
+    # cache-hit still rejects (templates never trust cache).
+    diag_clean = {"_model_info": {
+        "requested_model": "haiku",
+        "base_url": "https://api.openai.com/v1",
+    }}
+    assert rd.validate_fresh_row_model_identity(diag_clean, cfg) is None
+
+
 def test_oversized_context_writes_provider_error_not_fail_provenance():
     """Per Codex 2026-05-30 F1 [high]: legitimate no-call shim failures
     (oversized context, missing credentials, transport errors) emit
@@ -1808,6 +1858,7 @@ def test_sanitize_base_url_drops_tenant_key_first_segment():
             "base_url_env_var_name": "CILOGBENCH_OPENAI_BASE_URL",
         },
         "cache_key_env": ["CILOGBENCH_OPENAI_BASE_URL"],
+        "privacy": {"allow_secret_values_in_results": False},
     }
     saved = os.environ.get("CILOGBENCH_OPENAI_BASE_URL")
     try:
@@ -2348,6 +2399,8 @@ def main() -> int:
         test_shim_error_row_provenance_check_e2e,
         # Codex 2026-05-30 F1 (no-call failures DON'T trip provenance)
         test_oversized_context_writes_provider_error_not_fail_provenance,
+        # Codex 2026-06-01 F1 (redaction enforced even on templates)
+        test_reusable_template_still_enforces_redaction,
         # Codex 2026-05-27 F2 (fresh-row strict resolved_model)
         test_fresh_row_rejects_null_resolved_model_under_pin,
         test_cache_hit_accepts_null_resolved_model_under_pin,
