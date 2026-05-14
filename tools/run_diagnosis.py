@@ -997,13 +997,20 @@ def _check_base_url_redaction(
         return None
     sanitized_form = _sanitize_base_url_for_compare(cached_url)
     if cached_url != sanitized_form:
+        # Per Codex 2026-06-04 F1 [high]: the raw `cached_url` carries
+        # the very secrets this guard is meant to block — DO NOT echo
+        # it into the rejection reason. The reason is propagated by
+        # `cache_reject` / `FAIL_PROVENANCE` log lines and would leak
+        # the secret bits into CI logs and stderr. Use the sanitized
+        # form + a sha256 prefix of the unsanitized form for identity.
+        cached_hash_short = _base_url_sha256_for_compare(cached_url)[:16]
         return (
-            f"persisted `base_url` is not in sanitized form: "
-            f"{cached_url!r} vs sanitize()={sanitized_form!r}. "
-            f"privacy.allow_secret_values_in_results=false; refusing "
+            f"persisted `base_url` is not in sanitized form; refusing "
             f"to accept a row that would leak userinfo, query tokens, "
             f"or non-allowlist path segments into the canonical "
-            f"diagnosis artifact."
+            f"diagnosis artifact. sanitized={sanitized_form!r}, "
+            f"unsanitized_sha={cached_hash_short}…. "
+            f"privacy.allow_secret_values_in_results=false."
         )
     return None
 
@@ -1089,11 +1096,16 @@ def _validate_base_url_identity(
             f"base_url_sha256 alongside base_url."
         )
     if cached_url != expected_sanitized:
-        # Both sides are sanitized at this point; safe to include them
-        # verbatim. (The original raw expected_url stayed out.)
+        # Per Codex 2026-06-04 F1 [high]: `cached_url` here passed the
+        # redaction guard (it equals its sanitize() form) but a future
+        # shim bug could regress that invariant. Defensive: use only
+        # the sanitized form + sha for cached side too.
+        cached_hash_short = _base_url_sha256_for_compare(cached_url)[:16]
         return (
-            f"shim returned base_url={cached_url!r} but config "
-            f"expects (sanitized) {expected_sanitized!r}"
+            f"shim returned base_url (sanitized)={cached_url!r} "
+            f"(sha={cached_hash_short}…) but config expects "
+            f"(sanitized) {expected_sanitized!r} "
+            f"(sha={expected_hash_short}…)"
         )
     return None
 

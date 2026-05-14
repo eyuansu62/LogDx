@@ -828,6 +828,101 @@ def test_lossy_endpoint_requires_sha256_under_provenance_config():
             os.environ["CILOGBENCH_OPENAI_MODEL"] = saved_model
 
 
+def test_redaction_error_does_not_echo_raw_cached_url():
+    """Per Codex 2026-06-04 F1 [high]: when the validator rejects an
+    unsanitized cached_url, the rejection reason must NOT include the
+    raw URL — that reason flows through cache_reject / FAIL_PROVENANCE
+    logs and would leak the secrets the guard was supposed to block.
+    Use the sanitized form + sha256 prefix instead."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    secret_url = (
+        "https://user:PASS-SECRET@api.openai.com/tenant-SECRET/v1?token=TOK-SECRET"
+    )
+    diag = {"_model_info": {
+        "provider_name": "openai",
+        "requested_model": "gpt-5-mini",
+        "base_url": secret_url,
+    }}
+    err = rd.validate_fresh_row_model_identity(diag, cfg)
+    assert err is not None
+    for secret in ("PASS-SECRET", "tenant-SECRET", "TOK-SECRET",
+                    "user:PASS-SECRET", "?token="):
+        assert secret not in err, f"redaction error leaked {secret!r}: {err!r}"
+    # The legitimate sanitized form + a sha prefix may appear (those
+    # are themselves redacted/identifying-only).
+    assert "sha=" in err.lower() or "unsanitized_sha" in err
+
+
+def test_openai_shim_redacts_url_in_malformed_base_url_error():
+    """Per Codex 2026-06-04 F2 [high]: a typo'd or proxy-token
+    `CILOGBENCH_OPENAI_BASE_URL` would historically surface in
+    `urllib.request` exception text (`ValueError: unknown url type:
+    'malformed-secret/v1'`). The shim's stderr is promoted into
+    `metadata.provider_error`, so secret-bearing values would land
+    in committed artifacts. Now: the shim validates scheme upfront
+    and never echoes the raw value."""
+    import subprocess as _sub
+    import json
+    repo = Path(__file__).resolve().parent.parent.parent
+    env = dict(os.environ)
+    env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+    env["OPENAI_API_KEY"] = "sk-test"
+    env["CILOGBENCH_OPENAI_BASE_URL"] = (
+        "malformed-secret-token/v1/private-route"
+    )
+    res = _sub.run(
+        ["python3", f"{repo}/examples/diagnosis_shim_openai.py"],
+        input=json.dumps({
+            "case_id": "t", "context_method": "raw", "prompt": "x",
+            "context": "y", "safe_case_metadata": {},
+            "expected_output_schema": "s",
+        }).encode("utf-8"),
+        capture_output=True, timeout=20, env=env,
+    )
+    assert res.returncode == 1
+    stdout = res.stdout.decode("utf-8")
+    stderr = res.stderr.decode("utf-8")
+    body = json.loads(stdout)
+    pe = body.get("_provider_error", "")
+    assert pe.startswith("invalid_base_url_scheme:"), pe
+    # Crucially: the raw secret-bearing value must NOT appear in
+    # either stdout (which the runner persists) or stderr (which
+    # the runner promotes into row.metadata.provider_error).
+    for secret in ("malformed-secret-token", "private-route",
+                    "secret-token", "secret"):
+        assert secret not in pe, f"leak in stdout envelope: {secret!r}: {pe!r}"
+        assert secret not in stderr, f"leak in stderr: {secret!r}: {stderr!r}"
+
+
+def test_redact_urls_in_text_helper():
+    """Unit test for the shim's URL scrubber."""
+    import importlib.util
+    repo = Path(__file__).resolve().parent.parent.parent
+    spec = importlib.util.spec_from_file_location(
+        "_shim_openai", repo / "examples" / "diagnosis_shim_openai.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    f = mod.redact_urls_in_text
+    # Single URL in exception-shaped text is replaced.
+    text = (
+        "ValueError: unknown url type: "
+        "'https://user:pass@proxy/tenant-secret/v1?token=ABC'"
+    )
+    redacted = f(text)
+    assert "pass@proxy" not in redacted
+    assert "tenant-secret" not in redacted
+    assert "token=ABC" not in redacted
+    assert "<redacted-url" in redacted
+    # Multiple URLs in one string each get scrubbed.
+    text2 = "first https://a/secret and second http://b/secret"
+    out2 = f(text2)
+    assert "secret" not in out2
+    # Empty / None handled.
+    assert f("") == ""
+    assert f(None) is None
+
+
 def test_validation_error_does_not_leak_raw_url_with_secrets():
     """Per Codex 2026-06-03 F1 [high]: error strings must redact the
     raw env URL. Forge a config that triggers the
@@ -2610,6 +2705,10 @@ def main() -> int:
         # Codex 2026-06-03 F1+F2 (URL redaction in errors + lossy sha256)
         test_lossy_endpoint_requires_sha256_under_provenance_config,
         test_validation_error_does_not_leak_raw_url_with_secrets,
+        # Codex 2026-06-04 F1+F2 (deeper URL scrubbing in errors)
+        test_redaction_error_does_not_echo_raw_cached_url,
+        test_openai_shim_redacts_url_in_malformed_base_url_error,
+        test_redact_urls_in_text_helper,
         # Codex 2026-05-27 F2 (fresh-row strict resolved_model)
         test_fresh_row_rejects_null_resolved_model_under_pin,
         test_cache_hit_accepts_null_resolved_model_under_pin,

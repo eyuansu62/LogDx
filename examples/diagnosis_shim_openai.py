@@ -137,6 +137,35 @@ def base_url_sha256(url: str) -> str:
     return hashlib.sha256((url or "").encode("utf-8")).hexdigest()
 
 
+_URL_LIKE_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s'\"]+")
+
+
+def redact_urls_in_text(text: str) -> str:
+    """Per Codex 2026-06-04 F2 [high]: replace any URL-like substring
+    in a message with a redacted placeholder. urllib's exceptions
+    (e.g. `ValueError: unknown url type: 'malformed-base-url-with-secret/v1'`)
+    include the raw URL verbatim; if we let those flow into stderr,
+    the runner promotes them into `metadata.provider_error`, leaking
+    secret-bearing proxy URLs / typo'd base_urls into committed
+    diagnosis artifacts despite `allow_secret_values_in_results=false`.
+
+    Matches any `<scheme>://...` substring up to whitespace or a
+    quote. The replacement carries a sha256 prefix so an auditor
+    can still tell two malformed inputs apart without seeing the
+    raw text.
+    """
+    if not text:
+        return text
+    def repl(m):
+        raw = m.group(0)
+        try:
+            sanitized = sanitize_base_url(raw)
+        except Exception:
+            sanitized = "<unparseable>"
+        return f"<redacted-url sanitized={sanitized!r} sha={base_url_sha256(raw)[:16]}…>"
+    return _URL_LIKE_RE.sub(repl, text)
+
+
 def build_user_message(payload: dict) -> str:
     ctx = payload.get("context", "")
     meta = payload.get("safe_case_metadata") or {}
@@ -288,6 +317,29 @@ def main() -> int:
         )
         return 1
 
+    # Per Codex 2026-06-04 F2 [high]: validate base_url shape UPFRONT.
+    # If the env value isn't a parseable http(s) URL, fail closed
+    # WITHOUT echoing the malformed (potentially secret-bearing)
+    # string into stderr — urllib's own ValueError includes the raw
+    # URL, which the runner would then promote into
+    # metadata.provider_error.
+    base_url_parts = urllib.parse.urlsplit(base_url)
+    if base_url_parts.scheme not in ("http", "https"):
+        envelope = {
+            "_provider_error": (
+                f"invalid_base_url_scheme: scheme="
+                f"{base_url_parts.scheme!r} "
+                f"(base_url_sha256={base_url_sha256(base_url)[:16]}…)"
+            ),
+        }
+        json.dump(envelope, sys.stdout, ensure_ascii=False)
+        sys.stdout.write("\n")
+        sys.stderr.write(
+            f"diagnosis_shim_openai: invalid_base_url_scheme "
+            f"(sha={base_url_sha256(base_url)[:16]}…)\n"
+        )
+        return 1
+
     try:
         user_message = build_user_message(payload)
     except _ContextTooLargeError as e:
@@ -324,7 +376,19 @@ def main() -> int:
         )
     except Exception as e:
         # The API call never succeeded — no model_info is available.
-        msg = f"{type(e).__name__}: {e}"
+        # Per Codex 2026-06-04 F2 [high]: urllib's exceptions
+        # include the raw URL (e.g.
+        # `ValueError: unknown url type: 'malformed-secret/v1'`).
+        # The runner promotes our stderr into metadata.provider_error,
+        # so any URL-bearing exception text would leak the secret-
+        # carrying value into committed artifacts. Scrub all URL-like
+        # substrings before persisting AND before logging.
+        msg = redact_urls_in_text(f"{type(e).__name__}: {e}")
+        envelope = {
+            "_provider_error": f"api_call_failed: {msg}",
+        }
+        json.dump(envelope, sys.stdout, ensure_ascii=False)
+        sys.stdout.write("\n")
         sys.stderr.write(f"diagnosis_shim_openai: {msg}\n")
         return 1
 
@@ -368,7 +432,9 @@ def main() -> int:
         # to stdout that carries model_info + a structured error string
         # so the runner can lift model_info into the provider_error row
         # via tools/run_diagnosis.py:_extract_shim_stdout_metadata.
-        msg = f"{type(e).__name__}: {e}"
+        # Per Codex 2026-06-04 F2 [high]: scrub URL-like substrings
+        # from the exception text before persisting / logging.
+        msg = redact_urls_in_text(f"{type(e).__name__}: {e}")
         envelope = {
             "_model_info": model_info,
             "_provider_error": f"post_api_error: {msg}",

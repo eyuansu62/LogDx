@@ -2229,6 +2229,43 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > **Test counts (cumulative):** `test_diagnosis_cache_key.py` 104 →
 > 106 (+2). `test_hybrid_router.py` unchanged at 10. All 116 pass.
 
+> ⚠️ **Codex 2026-06-04 [high/high] fixes applied — no scores
+> moved.** Codex caught two remaining URL-leak vectors:
+>
+> **F1 [high] (Redaction rejection still echoed raw cached_url.)**
+> The 2026-06-01 `_check_base_url_redaction` rejected unsanitized
+> base_urls but formatted the raw `cached_url` into the rejection
+> reason. That string flows through cache_reject / FAIL_PROVENANCE
+> logs — defeating the redaction. Fix: rejection reason now uses
+> the sanitized form + sha256[:16] for identity; the raw url-with-
+> secrets never appears. Same treatment applied to the
+> sanitized-side-mismatch error in `_validate_base_url_identity`.
+> Test: forge a row with `https://user:PASS-SECRET@.../tenant-SECRET/v1?token=TOK-SECRET`
+> and assert no secret substrings appear in the rejection reason.
+>
+> **F2 [high] (Shim leaked malformed/secret URLs via urllib
+> exception text.)** A typo'd `CILOGBENCH_OPENAI_BASE_URL` carrying
+> a proxy token would surface in `urllib.request` exception text
+> (`ValueError: unknown url type: 'malformed-secret/v1'`). The
+> shim wrote that verbatim to stderr; the runner promoted it into
+> `metadata.provider_error`. Fix:
+> - Pre-validate `base_url` scheme upfront. Bad scheme produces
+>   a structured envelope `invalid_base_url_scheme: scheme='X'`
+>   with only the scheme name + sha256[:16] of the full URL —
+>   the raw value never appears
+> - New `redact_urls_in_text()` helper in the shim regex-replaces
+>   any `<scheme>://...` substring with
+>   `<redacted-url sanitized=... sha=...>`. Applied to both
+>   `api_call_failed` and `post_api_error` paths so any
+>   url-bearing exception text is scrubbed before stderr write +
+>   stdout envelope persist
+> - 3 new tests: redaction reason has no raw URL; shim end-to-end
+>   on a secret-bearing malformed env value emits scrubbed
+>   stdout AND stderr; unit test for the redactor helper
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 106 →
+> 109 (+3). `test_hybrid_router.py` unchanged at 10. All 119 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**
