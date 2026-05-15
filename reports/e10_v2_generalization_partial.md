@@ -2645,6 +2645,44 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > end-to-end). `test_hybrid_router.py` unchanged at 10. All 139
 > pass.
 
+> ⚠️ **Codex 2026-06-12 [high/medium] fixes applied — no committed
+> scores moved.** This round closed two follow-on gaps in the
+> 2026-06-08 F1 + 2026-06-11 F1 fixes:
+>
+> **F1 [high] (Fatal provider_error still overwrote canonical
+> manifests.)** The 2026-06-08 F1 fix set had_failure=True on
+> non-allowlisted provider_error rows but the loop-end flush
+> happened BEFORE the wrapper aborted, so a transient auth /
+> transport / JSONDecode failure during re-run nuked the
+> previously valid manifest + per-case JSONs. Fix:
+> - New per-method flag `method_had_fatal_provider_error` set
+>   by BOTH fail-closed branches (main + context-provider).
+> - Loop-end skip block (`method_had_provenance_failure` from
+>   2026-05-28 F1) extended to also skip on
+>   `method_had_fatal_provider_error`, with a distinct
+>   `PROVIDER-ERROR-FAILED` log marker.
+> - 1 new end-to-end test: snapshot v3 dev/grep manifest + per-
+>   case JSONs, run with a forged `api_call_failed` shim
+>   (--no-cache to hit the fresh path), assert byte-identical
+>   preservation of pre-existing artifacts and the log marker.
+>
+> **F2 [medium] (Consistency check missed entire omitted methods.)**
+> `validate_eval_manifest_consistency.py` only iterated methods
+> present in the eval file; a manifest method that was MISSING
+> from a stale eval file was silently ignored. Fix:
+> - Compare the eval method set against the manifest `*.jsonl`
+>   file-stem set in BOTH directions. Report `in eval but no
+>   manifest` and `manifest exists but eval omits this method`
+>   separately.
+> - 1 new test: synthesize tree with manifest-x + manifest-y,
+>   eval file only covers method-x, assert check rejects with
+>   method-y in stderr.
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py`
+> 129 → 131 (+2). `test_hybrid_router.py` unchanged at 10. All
+> 141 pass. Working tree clean after the manifest-preservation
+> test (snapshot/restore wrapper verified).
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

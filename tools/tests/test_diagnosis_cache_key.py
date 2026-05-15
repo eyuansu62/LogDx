@@ -3130,6 +3130,141 @@ def test_migrated_cache_rejects_after_config_edit_e2e():
     assert "shim_sha256" in (reason3 or "")
 
 
+def test_fatal_provider_error_preserves_existing_method_artifacts():
+    """Per Codex 2026-06-12 F1 [high]: a non-allowlisted provider_error
+    during a re-run must NOT overwrite the existing canonical manifest
+    + per-case JSONs. The 2026-06-08 F1 fix set had_failure but the
+    flush happened before the wrapper aborted, so a transient
+    auth/transport/JSONDecode failure during re-run destroyed good
+    data.
+
+    End-to-end: snapshot the v3 dev/grep manifest + per-case JSONs,
+    run with a forged shim that emits a non-allowlisted `api_call_failed`
+    prefix (which exits 1 from the shim), assert byte-identical
+    preservation of the pre-existing artifacts.
+    """
+    import subprocess as _sub
+    import tempfile
+    repo = Path(__file__).resolve().parent.parent.parent
+    diag_dir = repo / "results" / "dev" / "diagnoses" / "real-debugger-v3"
+    with _snapshot_restore_diag_dir(diag_dir):
+        # Snapshot what the current canonical state SHOULD be.
+        manifest = diag_dir / "grep.jsonl"
+        per_case_dir = diag_dir / "grep"
+        pre_manifest = manifest.read_text("utf-8") if manifest.exists() else None
+        pre_per_case = {}
+        if per_case_dir.exists():
+            for p in per_case_dir.glob("*.json"):
+                pre_per_case[p.name] = p.read_text("utf-8")
+
+        # Forge a shim emitting a non-allowlisted `api_call_failed`
+        # prefix. Use --no-cache to force the fresh-call path.
+        forge_src = '''
+import json, sys
+sys.stdin.read()
+envelope = {
+    "_provider_error": "api_call_failed: synthetic transient transport",
+}
+print(json.dumps(envelope))
+sys.exit(1)
+'''
+        with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as fp:
+            fp.write(forge_src)
+            fp.flush()
+            forge_path = fp.name
+        env = dict(os.environ)
+        env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+        env["DIAGNOSIS_COMMAND"] = f"python3 {forge_path}"
+        res = _sub.run(
+            ["python3", f"{repo}/tools/run_diagnosis.py",
+             "--split", "dev",
+             "--diagnoser", "command",
+             "--diagnoser-name", "real-debugger-v3",
+             "--command", env["DIAGNOSIS_COMMAND"],
+             "--context-method", "grep",
+             "--diagnoser-config",
+             f"{repo}/configs/diagnosers/real-debugger-v3.json",
+             "--no-cache"],
+            cwd=repo, capture_output=True, timeout=60, env=env,
+        )
+        assert res.returncode != 0, "transient failure should exit non-zero"
+        out_text = res.stdout.decode("utf-8")
+        assert "PROVIDER-ERROR-FAILED" in out_text or "preserved" in out_text, (
+            f"runner should log preservation message; stdout={out_text[:400]!r}"
+        )
+
+        # Verify byte-identical preservation.
+        if pre_manifest is not None:
+            post_manifest = manifest.read_text("utf-8")
+            assert post_manifest == pre_manifest, (
+                "manifest was modified despite provider-error failure"
+            )
+        post_per_case = {}
+        if per_case_dir.exists():
+            for p in per_case_dir.glob("*.json"):
+                post_per_case[p.name] = p.read_text("utf-8")
+        assert post_per_case == pre_per_case, (
+            f"per-case JSONs changed despite provider-error failure: "
+            f"diff_keys={set(post_per_case) ^ set(pre_per_case)!r}"
+        )
+
+
+def test_eval_consistency_catches_manifest_method_omitted_from_eval():
+    """Per Codex 2026-06-12 F2 [medium]: the consistency check used to
+    only iterate methods present in the eval file. A manifest method
+    that was MISSING from a stale eval file was silently ignored —
+    metrics could omit committed diagnosis data while the gate
+    claimed consistency.
+
+    Synthesize a tree with two manifests (method-x, method-y) but an
+    eval file that only includes method-x. Assert the check rejects.
+    """
+    import subprocess as _sub
+    import tempfile
+    import json
+    repo = Path(__file__).resolve().parent.parent.parent
+    check = repo / "tools" / "validate_eval_manifest_consistency.py"
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        split = root / "dev"
+        diag_dir = split / "diagnoses" / "real-debugger-v3"
+        diag_dir.mkdir(parents=True)
+        # Two manifests with one case each.
+        (diag_dir / "method-x.jsonl").write_text(
+            json.dumps({"case_id": "case-a", "context_method": "method-x"}) + "\n",
+            encoding="utf-8",
+        )
+        (diag_dir / "method-y.jsonl").write_text(
+            json.dumps({"case_id": "case-a", "context_method": "method-y"}) + "\n",
+            encoding="utf-8",
+        )
+        # Eval file only covers method-x.
+        eval_path = split / "eval_diagnosis_real-debugger-v3.json"
+        eval_path.write_text(
+            json.dumps({
+                "split": "dev",
+                "diagnoser": "real-debugger-v3",
+                "methods": [
+                    {
+                        "context_method": "method-x",
+                        "cases": [{"case_id": "case-a"}],
+                    },
+                ],
+            }),
+            encoding="utf-8",
+        )
+        res = _sub.run(
+            ["python3", str(check), "--results-dir", str(root)],
+            cwd=repo, capture_output=True, timeout=30,
+        )
+        assert res.returncode != 0, (
+            f"check should reject omitted-method state; "
+            f"stdout={res.stdout.decode()[:300]!r}"
+        )
+        err = res.stderr.decode("utf-8")
+        assert "method-y" in err, err[:600]
+
+
 def test_eval_manifest_consistency_check_passes_on_canonical_state():
     """Per Codex 2026-06-11 F1 [high]: after the 2026-06-09 + 2026-06-10
     cleanups, eval_diagnosis_*.json files were regenerated to match
@@ -3573,6 +3708,10 @@ def main() -> int:
         # Codex 2026-06-11 F1 (eval-manifest consistency release check)
         test_eval_manifest_consistency_check_passes_on_canonical_state,
         test_eval_manifest_consistency_check_catches_drift,
+        # Codex 2026-06-12 F1 (fatal provider_error preserves manifests)
+        test_fatal_provider_error_preserves_existing_method_artifacts,
+        # Codex 2026-06-12 F2 (consistency check also asserts method set)
+        test_eval_consistency_catches_manifest_method_omitted_from_eval,
         # Codex 2026-05-14 F3
         test_all_real_debugger_configs_validate_against_schema,
     ]

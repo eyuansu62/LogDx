@@ -83,7 +83,32 @@ def main():
             )
             continue
         eval_methods = eval_case_ids(eval_path)
+        # Per Codex 2026-06-12 F2 [medium]: also assert the SET of
+        # methods matches between eval file and manifest directory.
+        # Pre-fix, the check only iterated over methods present in the
+        # eval file; a manifest method missing from a stale eval file
+        # was silently ignored. Now we compare both directions.
+        manifest_method_set = {
+            m.stem for m in diag_root.glob("*.jsonl")
+        }
+        eval_method_set = set(eval_methods.keys())
+        only_in_eval = eval_method_set - manifest_method_set
+        only_in_manifest = manifest_method_set - eval_method_set
+        for m in sorted(only_in_eval):
+            failures.append(
+                f"{eval_path.relative_to(args.results_dir)} "
+                f"method={m!r}: in eval but no manifest "
+                f"{diag_root.relative_to(args.results_dir)}/{m}.jsonl"
+            )
+        for m in sorted(only_in_manifest):
+            failures.append(
+                f"{eval_path.relative_to(args.results_dir)} "
+                f"method={m!r}: manifest exists but eval omits this method"
+            )
         for method, eval_set in eval_methods.items():
+            if method not in manifest_method_set:
+                # Already reported above; skip per-case detail.
+                continue
             manifest = diag_root / f"{method}.jsonl"
             manifest_set = manifest_case_ids(manifest)
             if eval_set != manifest_set:

@@ -1682,6 +1682,18 @@ def run(
         # the prior method's artifacts intact when any case fails.
         pending_per_case: list[tuple[Path, str]] = []
         method_had_provenance_failure = False
+        # Per Codex 2026-06-12 F1 [high]: track whether any case in
+        # this method tripped a non-allowlisted provider_error (a
+        # transient auth / transport / timeout / malformed-response
+        # failure). When set, the loop-end flush is skipped — same
+        # discipline as method_had_provenance_failure — so a transient
+        # rerun cannot overwrite the previously valid canonical
+        # manifest + per-case JSONs with stub failure rows before
+        # the wrapper aborts. Allowlisted graceful provider_error
+        # rows (e.g. unsupported_context_too_large on v3) do NOT
+        # set this flag; they are documented benchmark outcomes and
+        # should be persisted.
+        method_had_fatal_provider_error = False
         for m_row in rows:
             case_id = m_row["case_id"]
             ctx_path = ROOT / m_row["context_path"]
@@ -1753,6 +1765,12 @@ def run(
                     )
                     if not matched:
                         had_failure = True
+                        # Per Codex 2026-06-12 F1 [high]: also block
+                        # the method-level flush so a transient
+                        # context-provider failure cannot overwrite
+                        # the previously valid canonical manifest +
+                        # per-case JSONs on rerun.
+                        method_had_fatal_provider_error = True
                         print(
                             f"FAIL_PROVIDER_ERROR {method}/{case_id}: "
                             f"{row_pe[:160]!r} "
@@ -2010,6 +2028,17 @@ def run(
                     )
                     if not matched:
                         had_failure = True
+                        # Per Codex 2026-06-12 F1 [high]: also block
+                        # the method-level flush so a transient
+                        # diagnoser failure cannot overwrite the
+                        # previously valid canonical manifest +
+                        # per-case JSONs on rerun. Without this, the
+                        # 2026-06-08 F1 fail-closed exit code came
+                        # AFTER the per-case + manifest writes — so
+                        # a transient auth/transport/JSONDecode
+                        # failure during re-run nuked good data
+                        # before the wrapper aborted.
+                        method_had_fatal_provider_error = True
                         print(
                             f"FAIL_PROVIDER_ERROR {method}/{case_id}: "
                             f"{effective_provider_error[:160]!r} "
@@ -2058,13 +2087,24 @@ def run(
         # rotated alias or stale shim could truncate a prior valid
         # manifest to a shortened (skipped-case) version while
         # leaving stale per-case JSONs alongside it.
-        if method_had_provenance_failure:
+        #
+        # Per Codex 2026-06-12 F1 [high]: same discipline for fatal
+        # provider_error (a non-allowlisted transient failure during
+        # rerun). The 2026-06-08 F1 fix set had_failure but let the
+        # flush proceed first, overwriting good canonical data with
+        # stub failure rows before the wrapper aborted. Now the
+        # method-level guard preserves the on-disk artifacts.
+        if method_had_provenance_failure or method_had_fatal_provider_error:
+            label = (
+                "PROVENANCE-FAILED" if method_had_provenance_failure
+                else "PROVIDER-ERROR-FAILED"
+            )
             try:
                 display_path = str(manifest_path.relative_to(ROOT))
             except ValueError:
                 display_path = str(manifest_path)
             print(
-                f"  {method}: PROVENANCE-FAILED — preserved existing "
+                f"  {method}: {label} — preserved existing "
                 f"manifest + per-case JSONs at "
                 f"{display_path} (no writes applied)"
             )
