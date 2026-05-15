@@ -2396,6 +2396,73 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > unchanged at 10. All 122 pass. Working tree clean after run —
 > snapshot/restore verified.
 
+> ⚠️ **Codex 2026-06-08 [high/high] fixes applied — no committed
+> scores moved.** This round caught two silent-failure modes that
+> could let wrappers publish failed/stale runs as success:
+>
+> **F1 [high] (Provider failures converted into green benchmark
+> runs.)** Pre-fix, `tools/run_diagnosis.py`'s `except Exception`
+> path caught auth failures, transport errors, malformed model JSON,
+> post-API parse failures, etc., wrote an "unknown" diagnosis row
+> with `metadata.provider_error` set, and the runner exited 0 — the
+> wrappers (M6/M7) then evaluated, rendered, and published the
+> failed run as a successful experiment. Fix:
+> - New `provider_policy.non_fatal_provider_error_prefixes`
+>   allowlist on the diagnoser config (empty by default = strict).
+> - After `build_row`, if the row's `metadata.provider_error`
+>   prefix does NOT match any allowlist entry, set
+>   `had_failure=True` and log `FAIL_PROVIDER_ERROR
+>   <method>/<case>: <text>` — the runner exits non-zero.
+> - Real-debugger-v1/v2/v3 configs declare the allowlist as
+>   `["unsupported_context_too_large"]` only. That preserves v3's
+>   documented graceful refusal path (39 expected
+>   `unsupported_context_too_large` rows on the canonical dev/
+>   stress/holdout sweep) but makes every OTHER provider_error
+>   class fail-closed.
+> - 3 new tests: end-to-end run with a forged "api_call_failed"
+>   prefix exits non-zero + logs FAIL_PROVIDER_ERROR; end-to-end
+>   run with the allowlisted `unsupported_context_too_large`
+>   prefix exits 0; config-level assertion that v3 declares the
+>   allowlist.
+>
+> **F2 [high] (Diagnosis cache ignored config and shim revisions.)**
+> The cache key was built from case/context/prompt/provider/
+> diagnoser/command/env-values only, so editing
+> `configs/diagnosers/*.json` or `examples/diagnosis_shim_*.py`
+> would silently replay an old cached success if the literal
+> command string and env values stayed the same. Fix:
+> - `build_row` now stamps `metadata.diagnoser_config_sha256` and
+>   `metadata.shim_sha256` on every fresh write.
+> - `cache_hit_is_acceptable` rejects cache hits whose persisted
+>   SHA disagrees with the current run's loaded config/shim file
+>   (`current_diagnoser_config_sha` / `current_shim_sha` params).
+> - Legacy rows without these fields pass back-compat — the
+>   existing tracked canonical state pre-dates the field; future
+>   strict mode can drop the back-compat path once the canonical
+>   state has been re-run.
+> - New helpers (`diagnoser_config_sha256`, `shim_sha256_for_command`,
+>   `shim_path_from_command`) wired into `run()`. The shim helper
+>   parses the command string with shlex and finds the first
+>   existing `.py` argument — repo-local shims contribute a hash;
+>   external binaries contribute nothing (the literal command
+>   string is still in the key).
+> - 7 new tests: rejection-on-mismatch for config_sha and shim_sha,
+>   acceptance-on-match, legacy back-compat pass-through, helper
+>   round-trips, and a build_row contract assertion.
+> - One-shot migration tool `tools/migrate_cache_keys_codex_2026_06_08.py`
+>   rebuilds `results/<split>/.cache/diagnosis/` from the canonical
+>   manifests (the cache is gitignored; manifests are tracked and
+>   authoritative). Idempotent.
+> - `test_runner_accepts_command_provider_under_command_config`
+>   wrapped in `_snapshot_restore_diag_dir` so a fall-through
+>   (cache miss → fresh API call → 401) cannot pollute the
+>   tracked v3 manifest. (Discovered + fixed within the same
+>   round.)
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py`
+> 112 → 122 (+3 F1 + 7 F2). `test_hybrid_router.py` unchanged at
+> 10. All 132 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

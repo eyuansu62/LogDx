@@ -76,6 +76,69 @@ def sha256_text(s: str) -> str:
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
 
+def sha256_path(p: Path) -> str | None:
+    """Read file bytes and return SHA256. Returns None if unreadable."""
+    try:
+        return hashlib.sha256(p.read_bytes()).hexdigest()
+    except OSError:
+        return None
+
+
+def diagnoser_config_sha256(
+    diagnoser_name: str, explicit_path: Path | None = None
+) -> str | None:
+    """Per Codex 2026-06-08 F2 [high]: compute the on-disk SHA of the
+    loaded diagnoser config so the cache key reflects config identity.
+
+    Resolution mirrors `load_diagnoser_config`: explicit_path wins,
+    otherwise fall back to `configs/diagnosers/<name>.json`. Returns
+    None when the resolved path doesn't exist (no SHA contribution to
+    the cache key)."""
+    cfg_path = (
+        explicit_path
+        if explicit_path is not None
+        else ROOT / "configs" / "diagnosers" / f"{diagnoser_name}.json"
+    )
+    if not cfg_path.exists():
+        return None
+    return sha256_path(cfg_path)
+
+
+def shim_path_from_command(command_str: str | None) -> Path | None:
+    """Per Codex 2026-06-08 F2 [high]: best-effort parse of a shell
+    `command_str` to find the first existing .py file path. Returns
+    None when not parseable or no .py file found.
+
+    This lets the runner fold shim-implementation identity into the
+    cache key for the canonical repo-local shims (e.g.
+    `python3 examples/diagnosis_shim_openai.py`) so editing the shim
+    invalidates cached rows that used the old implementation.
+    Non-repo-local commands (e.g. an external binary) contribute
+    nothing here; the cache key still includes the literal command
+    string."""
+    if not command_str:
+        return None
+    try:
+        parts = shlex.split(command_str)
+    except ValueError:
+        return None
+    for part in parts:
+        if not part.endswith(".py"):
+            continue
+        p = Path(part)
+        if p.is_file():
+            return p
+    return None
+
+
+def shim_sha256_for_command(command_str: str | None) -> str | None:
+    """SHA256 of the shim script referenced by command_str, if any."""
+    p = shim_path_from_command(command_str)
+    if p is None:
+        return None
+    return sha256_path(p)
+
+
 def estimate_tokens(text: str) -> int:
     return math.ceil(len(text) / 4)
 
@@ -447,6 +510,8 @@ def build_row(
     command_str: str | None, cache_key: str | None,
     provider_error: str | None,
     diagnoser_config_name: str | None = None,
+    diagnoser_config_sha256_value: str | None = None,
+    shim_sha256_value: str | None = None,
 ) -> dict:
     """Build the per-case diagnosis row. The row captures first-compute
     facts only — there is no `cache_hit` field because reruns that pull
@@ -521,6 +586,16 @@ def build_row(
                 if diagnoser_config_name and diagnoser_config_name != diagnoser
                 else None
             ),
+            # Per Codex 2026-06-08 F2 [high]: persist the loaded
+            # diagnoser-config SHA + shim-implementation SHA so
+            # `cache_hit_is_acceptable` can reject cached rows whose
+            # config or shim has since changed. Legacy rows without
+            # these fields pass back-compat (accepted on cache hit)
+            # until canonical state is re-run; future strict-mode
+            # validation can drop the back-compat path once all
+            # canonical rows carry the fields.
+            "diagnoser_config_sha256": diagnoser_config_sha256_value,
+            "shim_sha256": shim_sha256_value,
         },
     }
     return row
@@ -1246,6 +1321,8 @@ def validate_fresh_row_model_identity(
 def cache_hit_is_acceptable(
     cached_row: dict, config: dict | None,
     *, cache_errors: bool = False,
+    current_diagnoser_config_sha: str | None = None,
+    current_shim_sha: str | None = None,
 ) -> tuple[bool, str | None]:
     """Per Codex 2026-05-12 F2 + 2026-05-17 F2 + 2026-05-24: belt-and-
     suspenders. Even if the cache_key matched, validate that the cached
@@ -1352,6 +1429,39 @@ def cache_hit_is_acceptable(
     url_err = _validate_base_url_identity(cached_mi, config)
     if url_err:
         return False, f"cache row endpoint mismatch: {url_err}"
+
+    # Per Codex 2026-06-08 F2 [high]: reject cache hits whose persisted
+    # diagnoser-config SHA or shim-implementation SHA doesn't match the
+    # current run's loaded config + shim. Closes the silent-replay
+    # window where editing `configs/diagnosers/*.json` or
+    # `examples/diagnosis_shim_*.py` would otherwise reuse stale cache
+    # entries (the literal command string + env values stayed the same,
+    # so the cache_key didn't move). Legacy cached rows without these
+    # fields pass back-compat — they predate the field's introduction;
+    # all NEW fresh writes carry the fields so once the canonical state
+    # is regenerated the back-compat path becomes unreachable.
+    cached_config_sha = cached_meta.get("diagnoser_config_sha256")
+    if (
+        cached_config_sha is not None
+        and current_diagnoser_config_sha is not None
+        and cached_config_sha != current_diagnoser_config_sha
+    ):
+        return False, (
+            f"cache row diagnoser_config_sha256={cached_config_sha[:12]}… "
+            f"!= current config sha={current_diagnoser_config_sha[:12]}… "
+            f"(config edited since cache write — forcing fresh call)"
+        )
+    cached_shim_sha = cached_meta.get("shim_sha256")
+    if (
+        cached_shim_sha is not None
+        and current_shim_sha is not None
+        and cached_shim_sha != current_shim_sha
+    ):
+        return False, (
+            f"cache row shim_sha256={cached_shim_sha[:12]}… "
+            f"!= current shim sha={current_shim_sha[:12]}… "
+            f"(shim edited since cache write — forcing fresh call)"
+        )
     return True, None
 
 
@@ -1379,6 +1489,16 @@ def cache_key_for(
     norm = json.dumps(parts, sort_keys=True, separators=(",", ":"),
                       ensure_ascii=False)
     return sha256_text(norm)
+    # Per Codex 2026-06-08 F2 [high]: the diagnoser-config SHA and the
+    # shim-impl SHA are NOT folded into the cache key directly. Instead
+    # they are persisted into `metadata.diagnoser_config_sha256` /
+    # `metadata.shim_sha256` on every fresh write, and
+    # `cache_hit_is_acceptable` rejects cache hits when those captured
+    # values do not match the current run's loaded config + shim. The
+    # validation approach preserves the existing cache filename layout
+    # (no migration needed) while closing the silent-replay window
+    # Codex flagged: a config or shim edit invalidates affected cache
+    # rows by rejection rather than by re-keying.
 
 
 def run(
@@ -1409,6 +1529,15 @@ def run(
     except DiagnoserConfigError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
+
+    # Per Codex 2026-06-08 F2 [high]: SHA the loaded config + the shim
+    # script (if command_str references a repo-local .py). These get
+    # folded into every cache key so editing either invalidates stale
+    # cache entries.
+    diagnoser_config_sha = diagnoser_config_sha256(
+        diagnoser_name, explicit_path=diagnoser_config_path
+    )
+    shim_sha = shim_sha256_for_command(command_str)
 
     # Per Codex 2026-05-22 F1 [high]: capture the config's declared
     # diagnoser_name when it's a reusable_template used under a custom
@@ -1575,6 +1704,8 @@ def run(
                     command_str=command_str, cache_key="",
                     provider_error=provider_error_msg,
                     diagnoser_config_name=config_declared_name,
+                    diagnoser_config_sha256_value=diagnoser_config_sha,
+                    shim_sha256_value=shim_sha,
                 )
                 out_rows.append(row)
                 method_cache_misses += 1
@@ -1604,6 +1735,8 @@ def run(
                         ok, reason = cache_hit_is_acceptable(
                             candidate, diagnoser_config,
                             cache_errors=cache_errors,
+                            current_diagnoser_config_sha=diagnoser_config_sha,
+                            current_shim_sha=shim_sha,
                         )
                         if ok:
                             cached_row = candidate
@@ -1777,6 +1910,8 @@ def run(
                     command_str=command_str, cache_key=key,
                     provider_error=provider_error,
                     diagnoser_config_name=config_declared_name,
+                    diagnoser_config_sha256_value=diagnoser_config_sha,
+                    shim_sha256_value=shim_sha,
                 )
                 method_cache_misses += 1
 
@@ -1797,6 +1932,40 @@ def run(
                 effective_provider_error = (
                     (row.get("metadata") or {}).get("provider_error")
                 )
+                # Per Codex 2026-06-08 F1 [high]: fresh provider_error
+                # rows must default to fail-closed. Pre-fix, the
+                # generic `except Exception` path caught auth failures,
+                # transport errors, malformed model JSON, etc., wrote
+                # an "unknown" diagnosis row, and the runner exited 0
+                # — wrappers then evaluated/rendered/published failed
+                # runs as a successful experiment. Now: any
+                # provider_error sets had_failure UNLESS its prefix is
+                # in the config's explicit non-fatal allowlist.
+                # Canonical real-debugger configs declare
+                # `["unsupported_context_too_large"]` as the only
+                # non-fatal class (oversized-context refusal is the
+                # documented graceful path on v3); everything else
+                # fails the run.
+                if effective_provider_error:
+                    non_fatal = (
+                        ((diagnoser_config or {}).get("provider_policy") or {})
+                        .get("non_fatal_provider_error_prefixes") or []
+                    )
+                    matched = any(
+                        isinstance(p, str) and effective_provider_error.startswith(p)
+                        for p in non_fatal
+                    )
+                    if not matched:
+                        had_failure = True
+                        print(
+                            f"FAIL_PROVIDER_ERROR {method}/{case_id}: "
+                            f"{effective_provider_error[:160]!r} "
+                            f"not in non_fatal_provider_error_prefixes "
+                            f"{non_fatal!r}",
+                            file=sys.stderr,
+                        )
+                        if strict:
+                            return 1
                 if not effective_provider_error or cache_errors:
                     cache_path.parent.mkdir(parents=True, exist_ok=True)
                     cache_path.write_text(

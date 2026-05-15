@@ -1410,28 +1410,41 @@ def test_runner_rejects_mock_provider_under_real_debugger_config():
 
 def test_runner_accepts_command_provider_under_command_config():
     """Sanity: the canonical command-provider invocation still works
-    (smoke-test against dev/grep cache hits, no API call)."""
+    (smoke-test against dev/grep cache hits, no API call).
+
+    Per Codex 2026-06-08 F2 [high]: cache keys now fold the loaded
+    diagnoser config SHA + shim-impl SHA so a config or shim edit
+    invalidates stale cache entries. If those caches are remapped
+    (one-shot migration on the F2 commit), this test stays a cache-
+    hit replay; if not, the runner would fall through to fresh API
+    calls and the Codex 2026-06-08 F1 fail-closed gate would
+    correctly exit non-zero. Either outcome is appropriate; the
+    snapshot/restore wrapper protects tracked artifacts in the
+    fall-through case.
+    """
     import subprocess as _sub
-    repo = str(Path(__file__).resolve().parent.parent.parent)
-    env = dict(os.environ)
-    env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
-    env.setdefault("OPENAI_API_KEY", "sk-test")  # cache-hit only — never called
-    res = _sub.run(
-        ["python3", f"{repo}/tools/run_diagnosis.py",
-         "--split", "dev",
-         "--diagnoser", "command",
-         "--diagnoser-name", "real-debugger-v3",
-         "--command", f"python3 {repo}/examples/diagnosis_shim_openai.py",
-         "--context-method", "grep",
-         "--diagnoser-config",
-         f"{repo}/configs/diagnosers/real-debugger-v3.json"],
-        cwd=repo, capture_output=True, timeout=30, env=env,
-    )
-    assert res.returncode == 0, (
-        f"canonical run should succeed; exit={res.returncode}; "
-        f"stderr={res.stderr.decode()[:400]!r}"
-    )
-    assert b"5 cache hit" in res.stdout, res.stdout[:300]
+    repo = Path(__file__).resolve().parent.parent.parent
+    diag_dir = repo / "results" / "dev" / "diagnoses" / "real-debugger-v3"
+    with _snapshot_restore_diag_dir(diag_dir):
+        env = dict(os.environ)
+        env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+        env.setdefault("OPENAI_API_KEY", "sk-test")  # cache-hit only — never called
+        res = _sub.run(
+            ["python3", f"{repo}/tools/run_diagnosis.py",
+             "--split", "dev",
+             "--diagnoser", "command",
+             "--diagnoser-name", "real-debugger-v3",
+             "--command", f"python3 {repo}/examples/diagnosis_shim_openai.py",
+             "--context-method", "grep",
+             "--diagnoser-config",
+             f"{repo}/configs/diagnosers/real-debugger-v3.json"],
+            cwd=repo, capture_output=True, timeout=30, env=env,
+        )
+        assert res.returncode == 0, (
+            f"canonical run should succeed; exit={res.returncode}; "
+            f"stderr={res.stderr.decode()[:400]!r}"
+        )
+        assert b"5 cache hit" in res.stdout, res.stdout[:300]
 
 
 def test_mock_provider_rejected_inline_if_config_requires_provenance():
@@ -2724,6 +2737,311 @@ def test_v1_v2_configs_also_declare_optin():
 
 # === Codex 2026-05-14 F3: configs validate against committed schema ===
 
+def test_provider_error_unknown_class_fails_run_by_default():
+    """Per Codex 2026-06-08 F1 [high]: a fresh provider_error row whose
+    prefix is NOT in the config's `provider_policy.
+    non_fatal_provider_error_prefixes` allowlist must set had_failure
+    and exit non-zero. Pre-fix, the runner caught the exception, wrote
+    an "unknown" stub row, and exited 0 — wrappers then evaluated /
+    rendered / published the failed run as a successful experiment.
+
+    Forge a shim that exits 1 with an arbitrary `_provider_error`
+    prefix (e.g. `api_call_failed`) that is NOT in v3's allowlist
+    (which only allows `unsupported_context_too_large`). The run
+    should exit non-zero AND log FAIL_PROVIDER_ERROR for every case.
+    """
+    import subprocess as _sub
+    import tempfile
+
+    repo = Path(__file__).resolve().parent.parent.parent
+    diag_dir = repo / "results" / "dev" / "diagnoses" / "real-debugger-v3"
+    with _snapshot_restore_diag_dir(diag_dir):
+        forge_src = '''
+import json, sys
+sys.stdin.read()
+envelope = {
+    "_provider_error": "api_call_failed: synthetic transport failure",
+}
+print(json.dumps(envelope))
+sys.exit(1)
+'''
+        with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as fp:
+            fp.write(forge_src)
+            fp.flush()
+            forge_path = fp.name
+        env = dict(os.environ)
+        env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+        env["DIAGNOSIS_COMMAND"] = f"python3 {forge_path}"
+        res = _sub.run(
+            ["python3", f"{repo}/tools/run_diagnosis.py",
+             "--split", "dev",
+             "--diagnoser", "command",
+             "--diagnoser-name", "real-debugger-v3",
+             "--command", env["DIAGNOSIS_COMMAND"],
+             "--context-method", "grep",
+             "--diagnoser-config",
+             f"{repo}/configs/diagnosers/real-debugger-v3.json",
+             "--no-cache"],
+            cwd=repo, capture_output=True, timeout=60, env=env,
+        )
+        err_text = res.stderr.decode("utf-8")
+        assert res.returncode != 0, (
+            f"expected non-zero exit when provider_error is not in "
+            f"non_fatal allowlist; got {res.returncode}; stderr={err_text[:400]!r}"
+        )
+        assert "FAIL_PROVIDER_ERROR" in err_text, (
+            f"expected FAIL_PROVIDER_ERROR log; stderr={err_text[:400]!r}"
+        )
+        assert "api_call_failed" in err_text, err_text[:400]
+
+
+def test_provider_error_in_allowlist_preserves_success():
+    """Per Codex 2026-06-08 F1 [high]: a fresh provider_error row whose
+    prefix IS in the config's allowlist must NOT set had_failure. v3
+    declares `unsupported_context_too_large` as the only non-fatal
+    class. The runner exits 0 even though provider_error rows are in
+    the manifest, because oversized context is the documented graceful
+    refusal path per `context_policy.on_context_too_large=provider_error`.
+
+    Companion to test_provider_error_unknown_class_fails_run_by_default
+    — together they pin the allowlist contract.
+    """
+    import subprocess as _sub
+    import tempfile
+
+    repo = Path(__file__).resolve().parent.parent.parent
+    diag_dir = repo / "results" / "dev" / "diagnoses" / "real-debugger-v3"
+    with _snapshot_restore_diag_dir(diag_dir):
+        forge_src = '''
+import json, sys
+sys.stdin.read()
+envelope = {
+    "_provider_error": "unsupported_context_too_large: synthetic 600000 > 480000",
+}
+print(json.dumps(envelope))
+sys.exit(1)
+'''
+        with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as fp:
+            fp.write(forge_src)
+            fp.flush()
+            forge_path = fp.name
+        env = dict(os.environ)
+        env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+        env["DIAGNOSIS_COMMAND"] = f"python3 {forge_path}"
+        res = _sub.run(
+            ["python3", f"{repo}/tools/run_diagnosis.py",
+             "--split", "dev",
+             "--diagnoser", "command",
+             "--diagnoser-name", "real-debugger-v3",
+             "--command", env["DIAGNOSIS_COMMAND"],
+             "--context-method", "grep",
+             "--diagnoser-config",
+             f"{repo}/configs/diagnosers/real-debugger-v3.json",
+             "--no-cache"],
+            cwd=repo, capture_output=True, timeout=60, env=env,
+        )
+        err_text = res.stderr.decode("utf-8")
+        assert res.returncode == 0, (
+            f"expected exit 0 when provider_error matches allowlist; "
+            f"got {res.returncode}; stderr={err_text[:400]!r}"
+        )
+        assert "FAIL_PROVIDER_ERROR" not in err_text, (
+            f"allowlisted prefix should NOT trigger FAIL_PROVIDER_ERROR; "
+            f"stderr={err_text[:400]!r}"
+        )
+
+
+def test_cache_hit_rejects_when_config_sha_changed():
+    """Per Codex 2026-06-08 F2 [high]: cached rows persist
+    `metadata.diagnoser_config_sha256` on every fresh write.
+    `cache_hit_is_acceptable` rejects when the cached value disagrees
+    with the current run's loaded config SHA — closes the silent-
+    replay window for behavior-affecting config edits outside
+    cache_key_env's coverage.
+    """
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    canonical_url = rd.effective_base_url(cfg)
+    row = {
+        "metadata": {
+            "model_info": {
+                "provider_name": "openai",
+                "requested_model": "gpt-5-mini",
+                "resolved_model": "gpt-5-mini-2025-08-07",
+                "base_url": canonical_url,
+                "base_url_sha256": rd._base_url_sha256_for_compare(
+                    canonical_url
+                ),
+            },
+            "diagnoser_config_sha256": "stale-config-sha-from-a-prior-version",
+        },
+    }
+    ok, reason = rd.cache_hit_is_acceptable(
+        row, cfg,
+        current_diagnoser_config_sha="current-config-sha-different",
+    )
+    assert not ok, "stale config sha should reject"
+    assert "diagnoser_config_sha256" in (reason or ""), reason
+
+
+def test_cache_hit_accepts_when_config_sha_matches():
+    """Companion to the rejection test: when cached SHA == current
+    SHA, accept the row (no false negatives)."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    canonical_url = rd.effective_base_url(cfg)
+    row = {
+        "metadata": {
+            "model_info": {
+                "provider_name": "openai",
+                "requested_model": "gpt-5-mini",
+                "resolved_model": "gpt-5-mini-2025-08-07",
+                "base_url": canonical_url,
+                "base_url_sha256": rd._base_url_sha256_for_compare(
+                    canonical_url
+                ),
+            },
+            "diagnoser_config_sha256": "fake-sha-matches-both-sides",
+        },
+    }
+    ok, reason = rd.cache_hit_is_acceptable(
+        row, cfg,
+        current_diagnoser_config_sha="fake-sha-matches-both-sides",
+    )
+    assert ok, f"matching config sha should accept; reason={reason!r}"
+
+
+def test_cache_hit_accepts_legacy_row_without_config_sha():
+    """Per Codex 2026-06-08 F2 [high]: legacy rows (pre-F2) lack
+    `metadata.diagnoser_config_sha256`. The validator passes them
+    back-compat so existing canonical cache entries keep working
+    until the canonical state is re-run. Strict mode can drop the
+    back-compat path once all rows carry the field.
+    """
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    canonical_url = rd.effective_base_url(cfg)
+    row = {
+        "metadata": {
+            "model_info": {
+                "provider_name": "openai",
+                "requested_model": "gpt-5-mini",
+                "resolved_model": "gpt-5-mini-2025-08-07",
+                "base_url": canonical_url,
+                "base_url_sha256": rd._base_url_sha256_for_compare(
+                    canonical_url
+                ),
+            },
+            # Note: no diagnoser_config_sha256, no shim_sha256.
+        },
+    }
+    ok, reason = rd.cache_hit_is_acceptable(
+        row, cfg,
+        current_diagnoser_config_sha="some-config-sha",
+        current_shim_sha="some-shim-sha",
+    )
+    assert ok, f"legacy row without sha fields should pass back-compat; reason={reason!r}"
+
+
+def test_cache_hit_rejects_when_shim_sha_changed():
+    """Per Codex 2026-06-08 F2 [high]: same gate for shim-impl SHA.
+    A cached row that recorded a different shim SHA than the current
+    run's shim file must be rejected — the parser/behavior of the
+    shim has changed.
+    """
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    canonical_url = rd.effective_base_url(cfg)
+    row = {
+        "metadata": {
+            "model_info": {
+                "provider_name": "openai",
+                "requested_model": "gpt-5-mini",
+                "resolved_model": "gpt-5-mini-2025-08-07",
+                "base_url": canonical_url,
+                "base_url_sha256": rd._base_url_sha256_for_compare(
+                    canonical_url
+                ),
+            },
+            "shim_sha256": "stale-shim-sha",
+        },
+    }
+    ok, reason = rd.cache_hit_is_acceptable(
+        row, cfg,
+        current_shim_sha="current-shim-sha-different",
+    )
+    assert not ok, "stale shim sha should reject"
+    assert "shim_sha256" in (reason or ""), reason
+
+
+def test_diagnoser_config_sha256_helper_returns_sha_of_loaded_file():
+    """Helper test: the SHA helper resolves the same path
+    load_diagnoser_config uses and produces the expected hex digest."""
+    import hashlib as _hl
+    p = (Path(__file__).resolve().parent.parent.parent
+         / "configs" / "diagnosers" / "real-debugger-v3.json")
+    expected = _hl.sha256(p.read_bytes()).hexdigest()
+    got = rd.diagnoser_config_sha256("real-debugger-v3")
+    assert got == expected, f"sha mismatch: {got!r} != {expected!r}"
+
+
+def test_shim_sha256_for_command_resolves_repo_local_path():
+    """Helper test: when command_str references a real .py file in
+    the repo, the helper returns that file's SHA. When the command
+    has no .py file (or points to a nonexistent path), it returns
+    None — non-repo-local commands contribute no shim hash."""
+    import hashlib as _hl
+    repo = Path(__file__).resolve().parent.parent.parent
+    shim = repo / "examples" / "diagnosis_shim_openai.py"
+    expected = _hl.sha256(shim.read_bytes()).hexdigest()
+    cmd = f"python3 {shim}"
+    got = rd.shim_sha256_for_command(cmd)
+    assert got == expected, f"shim sha mismatch: {got!r} != {expected!r}"
+
+    # No .py → None
+    assert rd.shim_sha256_for_command("some-binary --flag") is None
+    # Nonexistent .py → None
+    assert rd.shim_sha256_for_command("python3 /no/such/path.py") is None
+    # None command → None
+    assert rd.shim_sha256_for_command(None) is None
+
+
+def test_fresh_row_writes_carry_config_and_shim_sha():
+    """Per Codex 2026-06-08 F2 [high]: build_row stamps the
+    `metadata.diagnoser_config_sha256` and `metadata.shim_sha256`
+    fields on every fresh row. Existing tracked v3 manifest rows
+    pre-date this so they don't carry the fields yet (legacy);
+    this unit test pins the build_row contract going forward.
+    """
+    row = rd.build_row(
+        case_id="c1", context_method="grep", diagnoser="real-debugger-v3",
+        diagnosis_body={
+            "summary": "x", "root_cause_category": "unknown",
+            "root_cause": "x", "confidence": 0.5,
+            "relevant_files": [], "relevant_tests": [],
+            "evidence": [], "suggested_fix": "",
+        },
+        context_path=Path("ctx.txt"), context_text="ctx",
+        prompt_sha="p", runtime_ms=1.0, provider_name="command",
+        command_str="cmd", cache_key="k", provider_error=None,
+        diagnoser_config_name=None,
+        diagnoser_config_sha256_value="cfg-sha",
+        shim_sha256_value="shim-sha",
+    )
+    md = row["metadata"]
+    assert md["diagnoser_config_sha256"] == "cfg-sha"
+    assert md["shim_sha256"] == "shim-sha"
+
+
+def test_v3_config_declares_provider_policy_allowlist():
+    """Per Codex 2026-06-08 F1 [high]: v3 config must declare
+    `provider_policy.non_fatal_provider_error_prefixes` with
+    `unsupported_context_too_large` so the documented graceful
+    refusal path stays non-fatal."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    pp = (cfg or {}).get("provider_policy") or {}
+    allow = pp.get("non_fatal_provider_error_prefixes") or []
+    assert "unsupported_context_too_large" in allow, (
+        f"v3 must allowlist 'unsupported_context_too_large'; got {allow!r}"
+    )
+
+
 def test_all_real_debugger_configs_validate_against_schema():
     """Per Codex 2026-05-14 F3 [medium]: lock the contract between the
     on-disk diagnoser configs and schemas/diagnoser_config.schema.json.
@@ -2917,6 +3235,18 @@ def main() -> int:
         test_runner_cli_flag_satisfies_opt_in_gate,
         test_opt_in_gate_honors_custom_env_var_name,
         test_v1_v2_configs_also_declare_optin,
+        # Codex 2026-06-08 F1 (provider_error fail-closed)
+        test_provider_error_unknown_class_fails_run_by_default,
+        test_provider_error_in_allowlist_preserves_success,
+        test_v3_config_declares_provider_policy_allowlist,
+        # Codex 2026-06-08 F2 (config-sha + shim-sha validation)
+        test_cache_hit_rejects_when_config_sha_changed,
+        test_cache_hit_accepts_when_config_sha_matches,
+        test_cache_hit_accepts_legacy_row_without_config_sha,
+        test_cache_hit_rejects_when_shim_sha_changed,
+        test_diagnoser_config_sha256_helper_returns_sha_of_loaded_file,
+        test_shim_sha256_for_command_resolves_repo_local_path,
+        test_fresh_row_writes_carry_config_and_shim_sha,
         # Codex 2026-05-14 F3
         test_all_real_debugger_configs_validate_against_schema,
     ]

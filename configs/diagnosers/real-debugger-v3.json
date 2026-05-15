@@ -45,6 +45,11 @@
     "allow_secret_values_in_results": false
   },
 
+  "provider_policy": {
+    "non_fatal_provider_error_prefixes": ["unsupported_context_too_large"],
+    "non_fatal_provider_error_prefixes_note": "Per Codex 2026-06-08 F1 [high]: tools/run_diagnosis.py defaults to fail-closed when a fresh provider_error row lands in the manifest (had_failure=True → non-zero exit). The only prefix listed here is `unsupported_context_too_large` because `context_policy.on_context_too_large=provider_error` documents that this is the graceful refusal path for inputs that exceed the shim's 480000-char cap. All OTHER provider_error classes (auth, transport, post_api_error, JSON parse failures, etc.) should fail the run so wrappers don't evaluate/render/publish failed experiments as success. Add prefixes here ONLY for additional documented graceful failure modes."
+  },
+
   "cache_key_env": [
     "CILOGBENCH_OPENAI_BASE_URL",
     "CILOGBENCH_OPENAI_MODEL"
