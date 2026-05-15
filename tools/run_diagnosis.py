@@ -1732,6 +1732,36 @@ def run(
                 )
                 out_rows.append(row)
                 method_cache_misses += 1
+                # Per Codex 2026-06-11 F2 [high]: route context-provider
+                # errors through the same fail-closed allowlist check as
+                # fresh diagnoser provider errors. Pre-fix, this branch
+                # wrote a `context_provider_error:` row and continued
+                # without ever setting had_failure, so a hybrid router
+                # that flagged "no method selectable" would land in the
+                # manifest as an abstention AND let the runner exit 0
+                # — wrappers then evaluated and published the failed
+                # upstream context as a successful experiment.
+                row_pe = (row.get("metadata") or {}).get("provider_error")
+                if row_pe:
+                    non_fatal = (
+                        ((diagnoser_config or {}).get("provider_policy") or {})
+                        .get("non_fatal_provider_error_prefixes") or []
+                    )
+                    matched = any(
+                        isinstance(p, str) and row_pe.startswith(p)
+                        for p in non_fatal
+                    )
+                    if not matched:
+                        had_failure = True
+                        print(
+                            f"FAIL_PROVIDER_ERROR {method}/{case_id}: "
+                            f"{row_pe[:160]!r} "
+                            f"(context-provider error not in non_fatal "
+                            f"allowlist {non_fatal!r})",
+                            file=sys.stderr,
+                        )
+                        if strict:
+                            return 1
                 continue
 
             ctx_text = ctx_path.read_text(encoding="utf-8", errors="replace")

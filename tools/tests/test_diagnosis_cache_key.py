@@ -3130,6 +3130,152 @@ def test_migrated_cache_rejects_after_config_edit_e2e():
     assert "shim_sha256" in (reason3 or "")
 
 
+def test_eval_manifest_consistency_check_passes_on_canonical_state():
+    """Per Codex 2026-06-11 F1 [high]: after the 2026-06-09 + 2026-06-10
+    cleanups, eval_diagnosis_*.json files were regenerated to match
+    the cleaned manifests. This test pins the consistency: any future
+    manifest edit MUST be paired with eval-file regeneration."""
+    import subprocess as _sub
+    repo = Path(__file__).resolve().parent.parent.parent
+    res = _sub.run(
+        ["python3",
+         str(repo / "tools" / "validate_eval_manifest_consistency.py")],
+        cwd=repo, capture_output=True, timeout=30,
+    )
+    assert res.returncode == 0, (
+        f"eval-manifest consistency check failed; "
+        f"stderr={res.stderr.decode()[:800]!r}"
+    )
+
+
+def test_eval_manifest_consistency_check_catches_drift():
+    """Per Codex 2026-06-11 F1 [high]: synthesize a temp tree with an
+    eval file claiming case IDs that aren't in the corresponding
+    manifest, assert the check exits non-zero with a useful diff."""
+    import subprocess as _sub
+    import tempfile
+    import json
+    repo = Path(__file__).resolve().parent.parent.parent
+    check = repo / "tools" / "validate_eval_manifest_consistency.py"
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        split = root / "dev"
+        diag_dir = split / "diagnoses" / "real-debugger-v3"
+        diag_dir.mkdir(parents=True)
+        # Manifest with 2 case IDs.
+        (diag_dir / "grep.jsonl").write_text(
+            json.dumps({"case_id": "case-a", "context_method": "grep"}) + "\n"
+            + json.dumps({"case_id": "case-b", "context_method": "grep"}) + "\n",
+            encoding="utf-8",
+        )
+        # Eval file with 3 case IDs (one missing from manifest, one extra).
+        eval_path = split / "eval_diagnosis_real-debugger-v3.json"
+        eval_path.write_text(
+            json.dumps({
+                "split": "dev",
+                "diagnoser": "real-debugger-v3",
+                "methods": [
+                    {
+                        "context_method": "grep",
+                        "cases": [
+                            {"case_id": "case-a"},
+                            {"case_id": "case-c"},  # not in manifest
+                            {"case_id": "case-d"},  # not in manifest
+                        ],
+                    },
+                ],
+            }),
+            encoding="utf-8",
+        )
+        res = _sub.run(
+            ["python3", str(check), "--results-dir", str(root)],
+            cwd=repo, capture_output=True, timeout=30,
+        )
+        assert res.returncode != 0, (
+            f"check should reject drifted state; "
+            f"stdout={res.stdout.decode()[:300]!r}"
+        )
+        err = res.stderr.decode("utf-8")
+        assert "case-c" in err and "case-d" in err, err[:600]
+        assert "case-b" in err, err[:600]  # in manifest but not eval
+
+
+def test_context_provider_error_triggers_fail_closed():
+    """Per Codex 2026-06-11 F2 [high]: when an upstream context row
+    carries `metadata.provider_error` (e.g. hybrid router emitted
+    "no method selectable"), the diagnosis runner used to write a
+    `context_provider_error:` row WITHOUT setting had_failure — the
+    runner exited 0 and wrappers published the failed upstream
+    context as a successful experiment.
+
+    Fix: route the context_provider_error path through the same
+    `provider_policy.non_fatal_provider_error_prefixes` allowlist
+    check as fresh diagnoser provider errors. Non-allowlisted
+    prefixes → had_failure=True → non-zero exit.
+
+    End-to-end: forge a context manifest with a provider_error row
+    (no shim invocation needed — the upstream metadata triggers the
+    early branch). Assert the runner exits non-zero and stderr says
+    FAIL_PROVIDER_ERROR.
+    """
+    import subprocess as _sub
+    import tempfile
+    import json
+    import shutil
+    repo = Path(__file__).resolve().parent.parent.parent
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_root = Path(tmp)
+        # Set up minimal results layout pointing at the real cases
+        # dir for context_path.
+        results_dir = tmp_root / "results"
+        cases_dir = repo / "cases"
+        method_dir = results_dir / "dev"
+        method_dir.mkdir(parents=True)
+        # Forge a context manifest carrying provider_error.
+        # We need a real case + raw.log for the context_path check.
+        real_case = "lint-react-001"  # exists under cases/dev/
+        ctx_path = repo / "cases" / "dev" / real_case / "raw.log"
+        if not ctx_path.exists():
+            return  # skip if fixture missing
+        manifest = method_dir / "synthetic-ctx.jsonl"
+        manifest.write_text(
+            json.dumps({
+                "case_id": real_case,
+                "context_method": "synthetic-ctx",
+                "context_path": str(ctx_path.relative_to(repo)),
+                "metadata": {
+                    "provider_error": "rtk_input_truncated: synthetic huge log",
+                },
+            }) + "\n",
+            encoding="utf-8",
+        )
+        env = dict(os.environ)
+        env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+        env["DIAGNOSIS_COMMAND"] = "true"  # not invoked on context_provider_error path
+        res = _sub.run(
+            ["python3", f"{repo}/tools/run_diagnosis.py",
+             "--split", "dev",
+             "--diagnoser", "command",
+             "--diagnoser-name", "real-debugger-v3",
+             "--command", env["DIAGNOSIS_COMMAND"],
+             "--context-method", "synthetic-ctx",
+             "--results-dir", str(results_dir),
+             "--diagnoser-config",
+             f"{repo}/configs/diagnosers/real-debugger-v3.json",
+             "--no-cache"],
+            cwd=repo, capture_output=True, timeout=30, env=env,
+        )
+        err = res.stderr.decode("utf-8")
+        assert res.returncode != 0, (
+            f"context_provider_error should fail run; "
+            f"got rc={res.returncode}; stderr={err[:400]!r}"
+        )
+        assert "FAIL_PROVIDER_ERROR" in err, (
+            f"expected FAIL_PROVIDER_ERROR; stderr={err[:400]!r}"
+        )
+        assert "context-provider" in err or "context_provider_error" in err, err[:400]
+
+
 def test_release_check_recurses_into_nested_diagnoses_layouts():
     """Per Codex 2026-06-10 F1 [high]: the release check must walk
     recursively for `**/diagnoses` directories, not just direct
@@ -3422,6 +3568,11 @@ def main() -> int:
         test_release_check_passes_on_clean_canonical_state,
         # Codex 2026-06-10 F1 (recursive walk for nested layouts)
         test_release_check_recurses_into_nested_diagnoses_layouts,
+        # Codex 2026-06-11 F2 (context_provider_error fail-closed)
+        test_context_provider_error_triggers_fail_closed,
+        # Codex 2026-06-11 F1 (eval-manifest consistency release check)
+        test_eval_manifest_consistency_check_passes_on_canonical_state,
+        test_eval_manifest_consistency_check_catches_drift,
         # Codex 2026-05-14 F3
         test_all_real_debugger_configs_validate_against_schema,
     ]

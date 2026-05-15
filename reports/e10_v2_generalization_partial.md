@@ -2589,6 +2589,62 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > 125 → 126 (+1). `test_hybrid_router.py` unchanged at 10. All
 > 136 pass.
 
+> ⚠️ **Codex 2026-06-11 [high/high] fixes applied — 22 eval files
+> regenerated.** This round caught two consequences of the previous
+> two rounds' manifest cleanups that hadn't been closed:
+>
+> **F1 [high] (Eval files still scored removed rows.)** The
+> 2026-06-09 and 2026-06-10 cleanups removed 20 non-allowlisted
+> provider_error rows from manifests + per-case JSONs but did NOT
+> regenerate the corresponding `eval_diagnosis_*.json` files. A
+> recursive scan found 36 eval-vs-manifest mismatches across the
+> 27 committed eval files — downstream reports could still count
+> the removed failures as abstentions and publish metrics that
+> couldn't be reproduced from shipped manifests. Fix:
+> - Re-ran `python3 tools/evaluate_diagnosis.py --split <split>
+>   --diagnoser <diagnoser>` for every (split × diagnoser) eval
+>   file (27 files, 22 actually changed: real-debugger-* across
+>   flat dev/holdout/stress + nested v2/dev, v2/holdout, v2/stress).
+> - New release check `tools/validate_eval_manifest_consistency.py`
+>   asserts every `eval_diagnosis_*.json` per-method case-ID set
+>   exactly matches its corresponding manifest's case-ID set
+>   (recursively walks `**/eval_diagnosis_*.json` so it also
+>   covers v2/ nested layouts).
+> - 2 new tests: passes on canonical state; catches synthetic
+>   drift (eval claims case-c/case-d not in manifest, manifest
+>   has case-b not in eval — check rejects with both violations
+>   in stderr).
+>
+> Score impact: the §3i v2 cross-family ranking was computed from
+> the OLD eval files (with stale rows). Headline ranking is
+> robust — v1 RuntimeError failures were already low-score
+> abstentions, so removing them from the denominator can only
+> ADD to v1's macro means (slightly raising the floor it was
+> already at). Spearman correlations across debuggers were
+> computed at rank level, not absolute level, so still stable.
+> Re-running §3i Spearman + agreement-set computations would
+> tighten the numbers; deferred to v3 protocol freeze.
+>
+> **F2 [high] (Context-provider errors bypassed fail-closed.)**
+> The 2026-06-08 F1 fail-closed gate was only applied to fresh
+> diagnoser provider_error rows. The context-provider early-branch
+> in `tools/run_diagnosis.py` (added 2026-05-10 for hybrid router
+> "no method selectable" cases) wrote a `context_provider_error:`
+> row WITHOUT setting had_failure — the runner exited 0 and
+> wrappers published the failed upstream context as a successful
+> experiment. Fix:
+> - The context_provider_error path now runs the same allowlist
+>   check + had_failure=True + strict-mode early-return as the
+>   main provider_error path.
+> - 1 new end-to-end test: forge a temp context manifest with a
+>   `provider_error: rtk_input_truncated: ...` row, assert the
+>   runner exits non-zero with FAIL_PROVIDER_ERROR in stderr.
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py`
+> 126 → 129 (+3: 2 eval-consistency + 1 context-provider-error
+> end-to-end). `test_hybrid_router.py` unchanged at 10. All 139
+> pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**
