@@ -73,11 +73,18 @@ def git_commit() -> tuple[str, bool]:
     return commit, dirty
 
 
-def run_step(argv: list[str], *, label: str) -> None:
+def run_step(argv: list[str], *, label: str) -> int:
+    """Run a step. Per Codex 2026-06-07 F2 [high]: returns the child's
+    exit code; callers must check and abort the wrapper on non-zero.
+    Previously raised SystemExit which worked but was easy to misread."""
     print(f"\n$ {' '.join(argv)}")
     res = subprocess.run(argv, cwd=ROOT)
     if res.returncode != 0:
-        raise SystemExit(f"step '{label}' failed with exit {res.returncode}")
+        print(
+            f"step '{label}' failed with exit {res.returncode}",
+            file=sys.stderr,
+        )
+    return res.returncode
 
 
 def check_external_llm_opt_in(config_privacy: dict, cli_flag: bool) -> bool:
@@ -601,21 +608,25 @@ def main(argv: list[str] | None = None) -> int:
 
     # 1. validate
     if not args.diagnosis_only:
-        run_step(
+        rc = run_step(
             [sys.executable, "tools/validate_cases.py",
              str(args.cases_dir / args.split)],
             label="validate_cases",
         )
+        if rc != 0:
+            return rc
 
     # 2. privacy audit on raw logs
     if not args.diagnosis_only:
-        run_step(
+        rc = run_step(
             [sys.executable, "tools/audit_context_privacy.py",
              "--split", args.split, "--context-method", "raw",
              "--results-dir", str(args.results_dir),
              "--reports-dir", str(args.reports_dir)],
             label="audit_context_privacy",
         )
+        if rc != 0:
+            return rc
         hits = audit_had_hits(args.results_dir / args.split / "privacy_audit.json")
         if hits > 0 and not args.allow_privacy_audit_hits:
             print(
@@ -661,15 +672,19 @@ def main(argv: list[str] | None = None) -> int:
             summary_argv.append("--force")
         if args.strict:
             summary_argv.append("--fail-fast")
-        run_step(summary_argv, label="run_llm_summary_baseline")
+        rc = run_step(summary_argv, label="run_llm_summary_baseline")
+        if rc != 0:
+            return rc
 
     # 4. signal recall for the new method
-    run_step(
+    rc = run_step(
         [sys.executable, "tools/evaluate_signal_recall.py",
          "--split", args.split, "--method", method_name,
          "--results-dir", str(args.results_dir)],
         label="evaluate_signal_recall",
     )
+    if rc != 0:
+        return rc
 
     # 5 + 6. optional diagnosis pass over the new summary method
     debugger_prompt_sha: str | None = None
@@ -713,27 +728,38 @@ def main(argv: list[str] | None = None) -> int:
         # the child uses the same file the wrapper loaded.
         if d_config_path is not None:
             diag_argv += ["--diagnoser-config", str(d_config_path)]
-        run_step(diag_argv, label="run_diagnosis")
+        # Per Codex 2026-06-07 F2 [high]: capture rc and abort the
+        # wrapper on any non-zero step. Crucially, did_diagnosis must
+        # only flip to True after all three diagnosis steps succeed;
+        # otherwise the manifest claims a diagnoser was used when the
+        # child actually failed.
+        rc = run_step(diag_argv, label="run_diagnosis")
+        if rc != 0:
+            return rc
 
-        run_step(
+        rc = run_step(
             [sys.executable, "tools/evaluate_diagnosis.py",
              "--split", args.split, "--diagnoser", diagnoser_name,
              "--cases-dir", str(args.cases_dir),
              "--results-dir", str(args.results_dir)],
             label="evaluate_diagnosis",
         )
-        run_step(
+        if rc != 0:
+            return rc
+        rc = run_step(
             [sys.executable, "tools/render_diagnosis_report.py",
              "--split", args.split, "--diagnoser", diagnoser_name,
              "--results-dir", str(args.results_dir),
              "--reports-dir", str(args.reports_dir)],
             label="render_diagnosis_report",
         )
+        if rc != 0:
+            return rc
         did_diagnosis = True
 
     # 7. Rebuild the signal-recall cross-method report so it includes the
     # new summary method.
-    run_step(
+    rc = run_step(
         [sys.executable, "tools/render_report.py",
          "--split", args.split,
          "--results-dir", str(args.results_dir),
@@ -743,6 +769,8 @@ def main(argv: list[str] | None = None) -> int:
          "llm-summary-v1-mock", method_name],
         label="render_report",
     )
+    if rc != 0:
+        return rc
 
     # 8. manifest
     finished_at = dt.datetime.now(dt.timezone.utc).isoformat()

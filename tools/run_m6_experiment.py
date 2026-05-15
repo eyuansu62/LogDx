@@ -96,11 +96,20 @@ def check_external_llm_opt_in(config: dict, cli_flag: bool) -> bool:
     return env_on or cli_flag
 
 
-def run_step(argv: list[str], *, label: str) -> None:
+def run_step(argv: list[str], *, label: str) -> int:
+    """Run a step in the wrapper pipeline. Per Codex 2026-06-07 F1
+    [high]: returns the child's exit code; callers must check and
+    abort the wrapper on non-zero. Previously raised SystemExit
+    which worked but was easy to misread as fire-and-forget.
+    """
     print(f"\n$ {' '.join(argv)}")
     res = subprocess.run(argv, cwd=ROOT)
     if res.returncode != 0:
-        raise SystemExit(f"step '{label}' failed with exit {res.returncode}")
+        print(
+            f"step '{label}' failed with exit {res.returncode}",
+            file=sys.stderr,
+        )
+    return res.returncode
 
 
 def load_json(path: Path) -> dict:
@@ -443,15 +452,17 @@ def main(argv: list[str] | None = None) -> int:
     started_at = dt.datetime.now(dt.timezone.utc).isoformat()
 
     # 1. validate
-    run_step(
+    rc = run_step(
         [sys.executable, "tools/validate_cases.py",
          str(args.cases_dir / args.split)],
         label="validate_cases",
     )
+    if rc != 0:
+        return rc
 
     # 2. privacy audit
     if not args.skip_audit:
-        run_step(
+        rc = run_step(
             [sys.executable, "tools/audit_context_privacy.py",
              "--split", args.split,
              "--context-method", args.context_method,
@@ -459,6 +470,8 @@ def main(argv: list[str] | None = None) -> int:
              "--reports-dir", str(args.reports_dir)],
             label="audit_context_privacy",
         )
+        if rc != 0:
+            return rc
 
     # 3. run_diagnosis with command provider
     diag_argv = [
@@ -498,10 +511,16 @@ def main(argv: list[str] | None = None) -> int:
     # the child uses the same file the wrapper hashed (rather than
     # re-discovering by name).
     diag_argv += ["--diagnoser-config", str(config_path)]
-    run_step(diag_argv, label="run_diagnosis")
+    # Per Codex 2026-06-07 F1 [high]: abort the wrapper if diagnosis
+    # fails. Otherwise the wrapper would proceed into evaluate/render
+    # against stale on-disk artifacts and publish a manifest claiming
+    # success for a run that never completed.
+    rc = run_step(diag_argv, label="run_diagnosis")
+    if rc != 0:
+        return rc
 
     # 4. evaluate_diagnosis
-    run_step(
+    rc = run_step(
         [sys.executable, "tools/evaluate_diagnosis.py",
          "--split", args.split,
          "--diagnoser", args.diagnoser_name,
@@ -509,9 +528,11 @@ def main(argv: list[str] | None = None) -> int:
          "--results-dir", str(args.results_dir)],
         label="evaluate_diagnosis",
     )
+    if rc != 0:
+        return rc
 
     # 5. render_diagnosis_report
-    run_step(
+    rc = run_step(
         [sys.executable, "tools/render_diagnosis_report.py",
          "--split", args.split,
          "--diagnoser", args.diagnoser_name,
@@ -519,6 +540,8 @@ def main(argv: list[str] | None = None) -> int:
          "--reports-dir", str(args.reports_dir)],
         label="render_diagnosis_report",
     )
+    if rc != 0:
+        return rc
 
     # 6. experiment manifest + M6 report
     diag_root = args.results_dir / args.split / "diagnoses" / args.diagnoser_name

@@ -11,14 +11,47 @@ Run:
 """
 from __future__ import annotations
 
+import contextlib
 import os
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(
     0, str(Path(__file__).resolve().parent.parent)
 )
 import run_diagnosis as rd  # noqa: E402
+
+
+@contextlib.contextmanager
+def _snapshot_restore_diag_dir(diag_dir: Path):
+    """Per Codex 2026-06-07 F3 [med]: end-to-end tests that drive
+    `tools/run_diagnosis.py` against the tracked `results/dev/diagnoses`
+    tree must restore the on-disk state on exit so a failed run does
+    not leave the canonical artifacts polluted.
+
+    Snapshot the entire diag_dir tree (manifest + per_case/) before
+    yield; restore it on __exit__ regardless of whether the test
+    passed, failed an assertion, or raised. If diag_dir did not exist
+    before, it is removed on cleanup.
+    """
+    backup_root: Path | None = None
+    snap_dir: Path | None = None
+    existed_before = diag_dir.exists()
+    if existed_before:
+        backup_root = Path(tempfile.mkdtemp(prefix="cilogbench-diag-snap-"))
+        snap_dir = backup_root / "snap"
+        shutil.copytree(diag_dir, snap_dir)
+    try:
+        yield
+    finally:
+        if diag_dir.exists():
+            shutil.rmtree(diag_dir)
+        if existed_before and snap_dir is not None:
+            shutil.copytree(snap_dir, diag_dir)
+        if backup_root is not None and backup_root.exists():
+            shutil.rmtree(backup_root)
 
 
 def _cfg(**overrides):
@@ -1581,18 +1614,24 @@ def test_provenance_mismatch_skips_manifest_write():
       (a) exit code is non-zero
       (b) no row gets appended to the manifest for that case (or the
           existing row is left unchanged)
+
+    Per Codex 2026-06-07 F3 [med]: wrapped in _snapshot_restore_diag_dir
+    so a failed run cannot leave the tracked results/dev/diagnoses/
+    real-debugger-v3 tree polluted with the forged row.
     """
     import subprocess as _sub
     import json
     import tempfile
 
     repo = Path(__file__).resolve().parent.parent.parent
-    # Use the stub shim: it emits a row WITHOUT _model_info, so under
-    # a real config the validator will reject. We tee the stub's row
-    # through a tiny pass-through that ADDS a wrong _model_info so
-    # the fresh-row check fires (rather than the "missing model_info"
-    # path).
-    stub_pkg = '''
+    diag_dir = repo / "results" / "dev" / "diagnoses" / "real-debugger-v3"
+    with _snapshot_restore_diag_dir(diag_dir):
+        # Use the stub shim: it emits a row WITHOUT _model_info, so under
+        # a real config the validator will reject. We tee the stub's row
+        # through a tiny pass-through that ADDS a wrong _model_info so
+        # the fresh-row check fires (rather than the "missing model_info"
+        # path).
+        stub_pkg = '''
 import json, sys
 data = json.load(sys.stdin)
 # Forge a wrong resolved_model
@@ -1614,60 +1653,56 @@ print(json.dumps({
     },
 }))
 '''
-    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as fp:
-        fp.write(stub_pkg)
-        fp.flush()
-        forge_path = fp.name
+        with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as fp:
+            fp.write(stub_pkg)
+            fp.flush()
+            forge_path = fp.name
 
-    env = dict(os.environ)
-    env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
-    env["DIAGNOSIS_COMMAND"] = f"python3 {forge_path}"
-    # Snapshot manifest before run.
-    manifest = repo / "results" / "dev" / "diagnoses" / "real-debugger-v3" / "grep.jsonl"
-    pre = json.loads(json.dumps(
-        [json.loads(l) for l in manifest.open() if l.strip()]
-    )) if manifest.exists() else []
+        env = dict(os.environ)
+        env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+        env["DIAGNOSIS_COMMAND"] = f"python3 {forge_path}"
+        manifest = diag_dir / "grep.jsonl"
 
-    res = _sub.run(
-        ["python3", f"{repo}/tools/run_diagnosis.py",
-         "--split", "dev",
-         "--diagnoser", "command",
-         "--diagnoser-name", "real-debugger-v3",
-         "--command", env["DIAGNOSIS_COMMAND"],
-         "--context-method", "grep",
-         "--diagnoser-config",
-         f"{repo}/configs/diagnosers/real-debugger-v3.json",
-         "--no-cache"],
-        cwd=repo, capture_output=True, timeout=60, env=env,
-    )
-    # exit non-zero because no rows were written (had_failure set)
-    # AND specifically FAIL_PROVENANCE was logged
-    err_text = res.stderr.decode("utf-8")
-    assert "FAIL_PROVENANCE" in err_text, (
-        f"expected FAIL_PROVENANCE log; stderr={err_text[:400]!r}"
-    )
-    assert "resolved_model" in err_text, err_text[:400]
-    assert res.returncode != 0, (
-        f"expected non-zero exit when provenance fails; got {res.returncode}"
-    )
+        res = _sub.run(
+            ["python3", f"{repo}/tools/run_diagnosis.py",
+             "--split", "dev",
+             "--diagnoser", "command",
+             "--diagnoser-name", "real-debugger-v3",
+             "--command", env["DIAGNOSIS_COMMAND"],
+             "--context-method", "grep",
+             "--diagnoser-config",
+             f"{repo}/configs/diagnosers/real-debugger-v3.json",
+             "--no-cache"],
+            cwd=repo, capture_output=True, timeout=60, env=env,
+        )
+        # exit non-zero because no rows were written (had_failure set)
+        # AND specifically FAIL_PROVENANCE was logged
+        err_text = res.stderr.decode("utf-8")
+        assert "FAIL_PROVENANCE" in err_text, (
+            f"expected FAIL_PROVENANCE log; stderr={err_text[:400]!r}"
+        )
+        assert "resolved_model" in err_text, err_text[:400]
+        assert res.returncode != 0, (
+            f"expected non-zero exit when provenance fails; got {res.returncode}"
+        )
 
-    # Manifest write was skipped — it should be EMPTY (or absent), not
-    # a manifest of provider_error stubs.
-    if manifest.exists():
-        post_rows = [json.loads(l) for l in manifest.open() if l.strip()]
-        # The runner's last action writes the manifest from out_rows;
-        # if every case is skipped, out_rows is empty and the file
-        # gets truncated. Allow either: file truncated (no rows) OR
-        # file matches pre-state.
-        if post_rows:
-            # Pre-existing rows preserved (file matched pre-state),
-            # not polluted with new provider_error stubs.
-            assert all(
-                (r.get("metadata") or {}).get("model_info", {}).get(
-                    "resolved_model"
-                ) != "gpt-5-mini-2099-01-01"
-                for r in post_rows
-            ), "manifest got polluted with forged resolved_model"
+        # Manifest write was skipped — it should be EMPTY (or absent), not
+        # a manifest of provider_error stubs.
+        if manifest.exists():
+            post_rows = [json.loads(l) for l in manifest.open() if l.strip()]
+            # The runner's last action writes the manifest from out_rows;
+            # if every case is skipped, out_rows is empty and the file
+            # gets truncated. Allow either: file truncated (no rows) OR
+            # file matches pre-state.
+            if post_rows:
+                # Pre-existing rows preserved (file matched pre-state),
+                # not polluted with new provider_error stubs.
+                assert all(
+                    (r.get("metadata") or {}).get("model_info", {}).get(
+                        "resolved_model"
+                    ) != "gpt-5-mini-2099-01-01"
+                    for r in post_rows
+                ), "manifest got polluted with forged resolved_model"
 
 
 def test_base_url_redaction_enforced_even_with_matching_hash():
@@ -1896,6 +1931,12 @@ def test_oversized_context_writes_provider_error_not_fail_provenance():
     in the manifest with provider_error starting with
     `unsupported_context_too_large:`, (b) NO `FAIL_PROVENANCE` log
     fires.
+
+    Per Codex 2026-06-07 F3 [med]: wrapped in _snapshot_restore_diag_dir
+    so the forged-shim run cannot leave tracked artifacts polluted on
+    test failure. (The prior ad-hoc canonical-shim cleanup at the
+    function tail was racy — it never fired if any earlier assert
+    raised.)
     """
     import subprocess as _sub
     import json
@@ -1903,12 +1944,13 @@ def test_oversized_context_writes_provider_error_not_fail_provenance():
     repo = Path(__file__).resolve().parent.parent.parent
 
     diag_dir = repo / "results" / "dev" / "diagnoses" / "real-debugger-v3"
-    manifest = diag_dir / "grep.jsonl"
+    with _snapshot_restore_diag_dir(diag_dir):
+        manifest = diag_dir / "grep.jsonl"
 
-    # Forge a shim that emits the oversized-context envelope (no
-    # _model_info) and exits 1 — matching what the real OpenAI shim
-    # does on _ContextTooLargeError post 2026-05-19 F2.
-    forge_src = '''
+        # Forge a shim that emits the oversized-context envelope (no
+        # _model_info) and exits 1 — matching what the real OpenAI shim
+        # does on _ContextTooLargeError post 2026-05-19 F2.
+        forge_src = '''
 import json, sys
 sys.stdin.read()  # consume payload
 envelope = {
@@ -1917,69 +1959,47 @@ envelope = {
 print(json.dumps(envelope))
 sys.exit(1)
 '''
-    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as fp:
-        fp.write(forge_src)
-        fp.flush()
-        forge_path = fp.name
+        with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as fp:
+            fp.write(forge_src)
+            fp.flush()
+            forge_path = fp.name
 
-    env = dict(os.environ)
-    env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
-    env["DIAGNOSIS_COMMAND"] = f"python3 {forge_path}"
+        env = dict(os.environ)
+        env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+        env["DIAGNOSIS_COMMAND"] = f"python3 {forge_path}"
 
-    res = _sub.run(
-        ["python3", f"{repo}/tools/run_diagnosis.py",
-         "--split", "dev",
-         "--diagnoser", "command",
-         "--diagnoser-name", "real-debugger-v3",
-         "--command", env["DIAGNOSIS_COMMAND"],
-         "--context-method", "grep",
-         "--diagnoser-config",
-         f"{repo}/configs/diagnosers/real-debugger-v3.json",
-         "--no-cache"],
-        cwd=repo, capture_output=True, timeout=60, env=env,
-    )
-    err_text = res.stderr.decode("utf-8")
-    out_text = res.stdout.decode("utf-8")
-    # The KEY assertion: this is NOT a provenance failure. The shim
-    # never claimed model_info, so the validator must skip the check.
-    assert "FAIL_PROVENANCE" not in err_text, (
-        f"oversized-context failure should NOT trip FAIL_PROVENANCE; "
-        f"stderr={err_text[:400]!r}"
-    )
-    # And a manifest row should exist with the unsupported_context_too_large
-    # prefix (one of the 5 dev/grep cases).
-    assert manifest.exists()
-    rows = [json.loads(l) for l in manifest.open() if l.strip()]
-    assert any(
-        (r.get("metadata") or {}).get("provider_error", "").startswith(
-            "unsupported_context_too_large:"
+        res = _sub.run(
+            ["python3", f"{repo}/tools/run_diagnosis.py",
+             "--split", "dev",
+             "--diagnoser", "command",
+             "--diagnoser-name", "real-debugger-v3",
+             "--command", env["DIAGNOSIS_COMMAND"],
+             "--context-method", "grep",
+             "--diagnoser-config",
+             f"{repo}/configs/diagnosers/real-debugger-v3.json",
+             "--no-cache"],
+            cwd=repo, capture_output=True, timeout=60, env=env,
         )
-        for r in rows
-    ), (
-        "expected at least one row with unsupported_context_too_large: "
-        f"prefix in manifest; got {[r.get('metadata', {}).get('provider_error') for r in rows]!r}"
-    )
-
-    # Cleanup: restore the canonical cache state via a real-shim
-    # run. The forged manifest needs to be replaced.
-    env_canonical = dict(os.environ)
-    env_canonical["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
-    # The cached rows already match the canonical state from the
-    # 2026-05-13 re-run, so the next non-no-cache run is a 5/5 hit.
-    canonical_cmd = f"python3 {repo}/examples/diagnosis_shim_openai.py"
-    env_canonical["DIAGNOSIS_COMMAND"] = canonical_cmd
-    env_canonical.setdefault("OPENAI_API_KEY", "sk-test-not-used-due-to-cache-hits")
-    _sub.run(
-        ["python3", f"{repo}/tools/run_diagnosis.py",
-         "--split", "dev",
-         "--diagnoser", "command",
-         "--diagnoser-name", "real-debugger-v3",
-         "--command", canonical_cmd,
-         "--context-method", "grep",
-         "--diagnoser-config",
-         f"{repo}/configs/diagnosers/real-debugger-v3.json"],
-        cwd=repo, capture_output=True, timeout=60, env=env_canonical,
-    )
+        err_text = res.stderr.decode("utf-8")
+        # The KEY assertion: this is NOT a provenance failure. The shim
+        # never claimed model_info, so the validator must skip the check.
+        assert "FAIL_PROVENANCE" not in err_text, (
+            f"oversized-context failure should NOT trip FAIL_PROVENANCE; "
+            f"stderr={err_text[:400]!r}"
+        )
+        # And a manifest row should exist with the unsupported_context_too_large
+        # prefix (one of the 5 dev/grep cases).
+        assert manifest.exists()
+        rows = [json.loads(l) for l in manifest.open() if l.strip()]
+        assert any(
+            (r.get("metadata") or {}).get("provider_error", "").startswith(
+                "unsupported_context_too_large:"
+            )
+            for r in rows
+        ), (
+            "expected at least one row with unsupported_context_too_large: "
+            f"prefix in manifest; got {[r.get('metadata', {}).get('provider_error') for r in rows]!r}"
+        )
 
 
 def test_shim_error_row_provenance_check_e2e():
@@ -1993,20 +2013,24 @@ def test_shim_error_row_provenance_check_e2e():
 
     End-to-end: forge a shim that exits 1 with a stdout envelope
     declaring a wrong resolved_model, and assert the runner
-    refuses to write the row (preserves existing artifacts)."""
+    refuses to write the row (preserves existing artifacts).
+
+    Per Codex 2026-06-07 F3 [med]: wrapped in _snapshot_restore_diag_dir
+    so the runner cannot leave the tracked diag tree in a polluted
+    state if it regresses and DOES write the forged row.
+    """
     import subprocess as _sub
-    import json
     import tempfile
     repo = Path(__file__).resolve().parent.parent.parent
 
-    # Snapshot pre-state.
     diag_dir = repo / "results" / "dev" / "diagnoses" / "real-debugger-v3"
-    manifest = diag_dir / "grep.jsonl"
-    pre_manifest = manifest.read_text("utf-8") if manifest.exists() else None
+    with _snapshot_restore_diag_dir(diag_dir):
+        manifest = diag_dir / "grep.jsonl"
+        pre_manifest = manifest.read_text("utf-8") if manifest.exists() else None
 
-    # Forge a shim that exits 1 with the post_api_error envelope but
-    # WITH a wrong resolved_model — exactly the failure mode F2 closes.
-    forge_src = '''
+        # Forge a shim that exits 1 with the post_api_error envelope but
+        # WITH a wrong resolved_model — exactly the failure mode F2 closes.
+        forge_src = '''
 import json, sys
 sys.stdin.read()  # consume payload
 envelope = {
@@ -2024,40 +2048,40 @@ envelope = {
 print(json.dumps(envelope))
 sys.exit(1)
 '''
-    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as fp:
-        fp.write(forge_src)
-        fp.flush()
-        forge_path = fp.name
+        with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as fp:
+            fp.write(forge_src)
+            fp.flush()
+            forge_path = fp.name
 
-    env = dict(os.environ)
-    env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
-    env["DIAGNOSIS_COMMAND"] = f"python3 {forge_path}"
+        env = dict(os.environ)
+        env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+        env["DIAGNOSIS_COMMAND"] = f"python3 {forge_path}"
 
-    res = _sub.run(
-        ["python3", f"{repo}/tools/run_diagnosis.py",
-         "--split", "dev",
-         "--diagnoser", "command",
-         "--diagnoser-name", "real-debugger-v3",
-         "--command", env["DIAGNOSIS_COMMAND"],
-         "--context-method", "grep",
-         "--diagnoser-config",
-         f"{repo}/configs/diagnosers/real-debugger-v3.json",
-         "--no-cache"],
-        cwd=repo, capture_output=True, timeout=60, env=env,
-    )
-    assert res.returncode != 0
-    err_text = res.stderr.decode("utf-8")
-    assert "FAIL_PROVENANCE" in err_text, (
-        f"shim_error_row provenance failure should log FAIL_PROVENANCE; "
-        f"stderr={err_text[:400]!r}"
-    )
-    assert "shim_error_row" in err_text or "resolved_model" in err_text
-    # Manifest preserved
-    if pre_manifest is not None:
-        post_manifest = manifest.read_text("utf-8")
-        assert post_manifest == pre_manifest, (
-            "manifest was modified despite shim-error-row provenance failure"
+        res = _sub.run(
+            ["python3", f"{repo}/tools/run_diagnosis.py",
+             "--split", "dev",
+             "--diagnoser", "command",
+             "--diagnoser-name", "real-debugger-v3",
+             "--command", env["DIAGNOSIS_COMMAND"],
+             "--context-method", "grep",
+             "--diagnoser-config",
+             f"{repo}/configs/diagnosers/real-debugger-v3.json",
+             "--no-cache"],
+            cwd=repo, capture_output=True, timeout=60, env=env,
         )
+        assert res.returncode != 0
+        err_text = res.stderr.decode("utf-8")
+        assert "FAIL_PROVENANCE" in err_text, (
+            f"shim_error_row provenance failure should log FAIL_PROVENANCE; "
+            f"stderr={err_text[:400]!r}"
+        )
+        assert "shim_error_row" in err_text or "resolved_model" in err_text
+        # Manifest preserved
+        if pre_manifest is not None:
+            post_manifest = manifest.read_text("utf-8")
+            assert post_manifest == pre_manifest, (
+                "manifest was modified despite shim-error-row provenance failure"
+            )
 
 
 def test_provenance_failure_preserves_existing_manifest_and_per_case():
@@ -2381,43 +2405,51 @@ def test_stub_template_end_to_end_writes_clean_rows():
     documented workflow (`example.debugger-v1-command.json` template
     + `examples/diagnosis_shim_stub.py`) must produce successful rows
     with `metadata.provider_error == null` — not provider_error rows
-    that throw away paid API calls."""
+    that throw away paid API calls.
+
+    Per Codex 2026-06-07 F3 [med]: wrapped in _snapshot_restore_diag_dir
+    so the test's writes to results/dev/diagnoses/stub-debugger-v1/
+    never persist past the test (stub artifacts must not leak into
+    canonical results).
+    """
     import subprocess as _sub
     import json
     repo = Path(__file__).resolve().parent.parent.parent
-    env = dict(os.environ)
-    env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
-    env["DIAGNOSIS_COMMAND"] = f"python3 {repo}/examples/diagnosis_shim_stub.py"
-    res = _sub.run(
-        ["python3", f"{repo}/tools/run_diagnosis.py",
-         "--split", "dev",
-         "--diagnoser", "command",
-         "--diagnoser-name", "stub-debugger-v1",
-         "--command", env["DIAGNOSIS_COMMAND"],
-         "--context-method", "grep",
-         "--diagnoser-config",
-         f"{repo}/configs/diagnosers/example.debugger-v1-command.json",
-         "--no-cache"],
-        cwd=repo, capture_output=True, timeout=60, env=env,
-    )
-    assert res.returncode == 0, (
-        f"stub template run should succeed; exit={res.returncode}; "
-        f"stderr={res.stderr.decode()[:400]!r}"
-    )
-    manifest = repo / "results" / "dev" / "diagnoses" / "stub-debugger-v1" / "grep.jsonl"
-    rows = [json.loads(l) for l in manifest.open() if l.strip()]
-    assert len(rows) > 0, "manifest should contain rows"
-    for row in rows:
-        md = row.get("metadata") or {}
-        assert md.get("provider_error") is None, (
-            f"stub row should not be a provider_error: "
-            f"case={row.get('case_id')!r} pe={md.get('provider_error')!r}"
+    diag_dir = repo / "results" / "dev" / "diagnoses" / "stub-debugger-v1"
+    with _snapshot_restore_diag_dir(diag_dir):
+        env = dict(os.environ)
+        env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+        env["DIAGNOSIS_COMMAND"] = f"python3 {repo}/examples/diagnosis_shim_stub.py"
+        res = _sub.run(
+            ["python3", f"{repo}/tools/run_diagnosis.py",
+             "--split", "dev",
+             "--diagnoser", "command",
+             "--diagnoser-name", "stub-debugger-v1",
+             "--command", env["DIAGNOSIS_COMMAND"],
+             "--context-method", "grep",
+             "--diagnoser-config",
+             f"{repo}/configs/diagnosers/example.debugger-v1-command.json",
+             "--no-cache"],
+            cwd=repo, capture_output=True, timeout=60, env=env,
         )
-        # The audit trail records both names: row.diagnoser is the
-        # runtime name, metadata.diagnoser_config_name is the config's
-        # declared name.
-        assert row.get("diagnoser") == "stub-debugger-v1"
-        assert md.get("diagnoser_config_name") == "example-debugger-v1"
+        assert res.returncode == 0, (
+            f"stub template run should succeed; exit={res.returncode}; "
+            f"stderr={res.stderr.decode()[:400]!r}"
+        )
+        manifest = diag_dir / "grep.jsonl"
+        rows = [json.loads(l) for l in manifest.open() if l.strip()]
+        assert len(rows) > 0, "manifest should contain rows"
+        for row in rows:
+            md = row.get("metadata") or {}
+            assert md.get("provider_error") is None, (
+                f"stub row should not be a provider_error: "
+                f"case={row.get('case_id')!r} pe={md.get('provider_error')!r}"
+            )
+            # The audit trail records both names: row.diagnoser is the
+            # runtime name, metadata.diagnoser_config_name is the config's
+            # declared name.
+            assert row.get("diagnoser") == "stub-debugger-v1"
+            assert md.get("diagnoser_config_name") == "example-debugger-v1"
 
 
 def test_cache_gate_respects_row_metadata_provider_error():

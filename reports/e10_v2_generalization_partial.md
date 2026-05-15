@@ -2339,6 +2339,63 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > **Test counts (cumulative):** `test_diagnosis_cache_key.py` 109 →
 > 112 (+3). `test_hybrid_router.py` unchanged at 10. All 122 pass.
 
+> ⚠️ **Codex 2026-06-07 [high/high/medium] fixes applied — no scores
+> moved.** This round caught two wrapper-level rc-propagation bugs
+> introduced by the 2026-05-14 F1 and 2026-05-15 F2 child-config
+> threading + the existing m7 multi-step pipeline, plus a
+> test-isolation gap on the end-to-end provenance tests:
+>
+> **F1 [high] (M6 wrapper ignored diagnosis failures.)** Pre-fix,
+> `tools/run_m6_experiment.py`'s `run_step` helper printed the rc to
+> stderr but raised SystemExit only from `run_step` itself, with the
+> def signature `-> None` making call sites read like they ignored
+> the return. The diagnosis pass therefore looked like it might
+> proceed to the next step (audit_context_privacy →
+> run_diagnosis → evaluate_diagnosis → render_diagnosis_report) even
+> if an earlier step had failed. While the actual raise behaviour
+> did abort, the signature was misleading enough to invite a real
+> bug under future maintenance. Fix: `run_step` now returns `int`
+> (the child's rc, no longer raises); all 5 call sites capture rc
+> and `return rc` on non-zero. The wrapper aborts cleanly instead
+> of relying on an implicit raise.
+>
+> **F2 [high] (M7 wrapper marked diagnosis complete after child
+> failure.)** Same class of bug in
+> `tools/run_m7_real_summary_experiment.py`, plus a real
+> behavioural issue: `did_diagnosis = True` fired unconditionally
+> after the three diagnosis sub-steps (run_diagnosis +
+> evaluate_diagnosis + render_diagnosis_report), so the manifest
+> recorded a `diagnoser_name` and `diagnoser_config_path` even if
+> the child exited non-zero. After the 2026-05-14 F1
+> `--allow-external-llm` gate and 2026-05-15 F2 `--diagnoser-config`
+> arg, the child can now fail early and the wrapper would falsely
+> claim the diagnosis succeeded. Fix: `run_step` returns `int`; all
+> 8 call sites capture rc and abort on non-zero; `did_diagnosis =
+> True` is gated on all three diagnosis sub-steps returning 0.
+>
+> **F3 [medium] (End-to-end provenance tests could pollute tracked
+> results on failure.)** Four tests in
+> `tools/tests/test_diagnosis_cache_key.py` drive
+> `tools/run_diagnosis.py` against the real
+> `results/dev/diagnoses/real-debugger-v3/` and
+> `.../stub-debugger-v1/` directories. On a passing run, the
+> existing snapshot-and-restore-by-comparison-or-rerun logic
+> (`pre_manifest`, canonical-shim reset) was usually fine, but a
+> failing assertion would leave the tracked manifest containing
+> forged rows. Fix: new `_snapshot_restore_diag_dir(diag_dir)`
+> context manager copies the whole diag tree to a tempdir on enter
+> and restores on exit unconditionally (including on assertion
+> failure or exception). Wraps:
+> - `test_provenance_mismatch_skips_manifest_write`
+> - `test_oversized_context_writes_provider_error_not_fail_provenance`
+> - `test_shim_error_row_provenance_check_e2e`
+> - `test_stub_template_end_to_end_writes_clean_rows`
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py`
+> unchanged at 112 (helper added, no new tests). `test_hybrid_router.py`
+> unchanged at 10. All 122 pass. Working tree clean after run —
+> snapshot/restore verified.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**
