@@ -2909,12 +2909,18 @@ def test_cache_hit_accepts_when_config_sha_matches():
     assert ok, f"matching config sha should accept; reason={reason!r}"
 
 
-def test_cache_hit_accepts_legacy_row_without_config_sha():
-    """Per Codex 2026-06-08 F2 [high]: legacy rows (pre-F2) lack
-    `metadata.diagnoser_config_sha256`. The validator passes them
-    back-compat so existing canonical cache entries keep working
-    until the canonical state is re-run. Strict mode can drop the
-    back-compat path once all rows carry the field.
+def test_cache_hit_rejects_legacy_null_under_canonical_config():
+    """Per Codex 2026-06-09 F2 [high]: under a canonical config (one
+    that declares cache_key_env / requires provenance), cached rows
+    missing `metadata.diagnoser_config_sha256` are REJECTED. Pre-2026-
+    06-08 F2 cached rows pre-date the field; the migration tool now
+    stamps current SHAs onto rebuilt rows so the strict mode passes.
+
+    Companion-test note: a previous round (2026-06-08 F2) accepted
+    legacy null as back-compat. The 2026-06-09 F2 round caught that
+    this was the exact silent-replay window F2 meant to close — a
+    migrated cache with null SHA would replay across future config /
+    shim edits. Strict mode closes it.
     """
     cfg = rd.load_diagnoser_config("real-debugger-v3")
     canonical_url = rd.effective_base_url(cfg)
@@ -2937,7 +2943,43 @@ def test_cache_hit_accepts_legacy_row_without_config_sha():
         current_diagnoser_config_sha="some-config-sha",
         current_shim_sha="some-shim-sha",
     )
-    assert ok, f"legacy row without sha fields should pass back-compat; reason={reason!r}"
+    assert not ok, "legacy null SHA under canonical config should reject"
+    assert "diagnoser_config_sha256" in (reason or ""), reason
+
+
+def test_cache_hit_accepts_legacy_null_under_template_config():
+    """Companion: configs that opt OUT of provenance enforcement
+    (reusable_template, or model.allow_missing_model_info=true) keep
+    back-compat for null SHA fields. Closed-form: the strict gate
+    only fires when _config_requires_model_info(config) is true.
+
+    This protects documented stub / template / mock workflows that
+    pre-date the SHA fields and have no canonical model identity to
+    stamp.
+    """
+    # Reusable template: cache hits are rejected at an earlier gate
+    # (no canonical identity), so we use the `allow_missing_model_info`
+    # opt-out instead.
+    cfg = {
+        "diagnoser_name": "legacy-mock-debugger",
+        "model": {
+            "provider_name": "anthropic",
+            "model_name": "haiku",
+            "allow_missing_model_info": True,
+        },
+    }
+    row = {
+        "metadata": {
+            "model_info": None,
+            # No diagnoser_config_sha256, no shim_sha256.
+        },
+    }
+    ok, _ = rd.cache_hit_is_acceptable(
+        row, cfg,
+        current_diagnoser_config_sha="some-config-sha",
+        current_shim_sha="some-shim-sha",
+    )
+    assert ok, "legacy null SHA under opt-out config should pass back-compat"
 
 
 def test_cache_hit_rejects_when_shim_sha_changed():
@@ -3027,6 +3069,83 @@ def test_fresh_row_writes_carry_config_and_shim_sha():
     md = row["metadata"]
     assert md["diagnoser_config_sha256"] == "cfg-sha"
     assert md["shim_sha256"] == "shim-sha"
+
+
+def test_migrated_cache_rejects_after_config_edit_e2e():
+    """Per Codex 2026-06-09 F2 [high]: end-to-end smoke test that a
+    cache row stamped under the CURRENT config sha gets rejected when
+    the validator is called with a DIFFERENT current_diagnoser_config_sha
+    (simulating a post-migration config edit). This is the closed-loop
+    contract: migration stamps current SHA → future edit changes SHA
+    → cache hit rejects → fresh call required.
+    """
+    repo = Path(__file__).resolve().parent.parent.parent
+    cfg = rd.load_diagnoser_config("real-debugger-v3")
+    current_config_sha = rd.diagnoser_config_sha256("real-debugger-v3")
+    assert current_config_sha is not None
+    canonical_url = rd.effective_base_url(cfg)
+
+    # Simulate a cache row stamped by the migration with the CURRENT
+    # config SHA.
+    row = {
+        "metadata": {
+            "model_info": {
+                "provider_name": "openai",
+                "requested_model": "gpt-5-mini",
+                "resolved_model": "gpt-5-mini-2025-08-07",
+                "base_url": canonical_url,
+                "base_url_sha256": rd._base_url_sha256_for_compare(
+                    canonical_url
+                ),
+            },
+            "diagnoser_config_sha256": current_config_sha,
+            "shim_sha256": "current-shim-sha-placeholder",
+        },
+    }
+
+    # Matched config sha → accepted.
+    ok, _ = rd.cache_hit_is_acceptable(
+        row, cfg,
+        current_diagnoser_config_sha=current_config_sha,
+        current_shim_sha="current-shim-sha-placeholder",
+    )
+    assert ok, "matched SHA should accept (baseline)"
+
+    # Now simulate a config edit by passing a DIFFERENT current sha.
+    ok2, reason = rd.cache_hit_is_acceptable(
+        row, cfg,
+        current_diagnoser_config_sha=current_config_sha[:-1] + "0",
+        current_shim_sha="current-shim-sha-placeholder",
+    )
+    assert not ok2, "config edit should invalidate cache hit"
+    assert "diagnoser_config_sha256" in (reason or "")
+
+    # Same for shim edit.
+    ok3, reason3 = rd.cache_hit_is_acceptable(
+        row, cfg,
+        current_diagnoser_config_sha=current_config_sha,
+        current_shim_sha="some-other-shim-sha",
+    )
+    assert not ok3, "shim edit should invalidate cache hit"
+    assert "shim_sha256" in (reason3 or "")
+
+
+def test_release_check_passes_on_clean_canonical_state():
+    """Per Codex 2026-06-09 F1 [high]: the release check
+    `tools/validate_committed_diagnosis_provider_errors.py` exits 0 on
+    the post-cleanup canonical state. If the test ever fails, it means
+    a regression has re-introduced non-allowlisted provider_error rows
+    into a committed real-debugger-* manifest."""
+    import subprocess as _sub
+    repo = Path(__file__).resolve().parent.parent.parent
+    res = _sub.run(
+        ["python3",
+         str(repo / "tools" / "validate_committed_diagnosis_provider_errors.py")],
+        cwd=repo, capture_output=True, timeout=30,
+    )
+    assert res.returncode == 0, (
+        f"release check failed; stderr={res.stderr.decode()[:600]!r}"
+    )
 
 
 def test_v3_config_declares_provider_policy_allowlist():
@@ -3242,11 +3361,16 @@ def main() -> int:
         # Codex 2026-06-08 F2 (config-sha + shim-sha validation)
         test_cache_hit_rejects_when_config_sha_changed,
         test_cache_hit_accepts_when_config_sha_matches,
-        test_cache_hit_accepts_legacy_row_without_config_sha,
         test_cache_hit_rejects_when_shim_sha_changed,
         test_diagnoser_config_sha256_helper_returns_sha_of_loaded_file,
         test_shim_sha256_for_command_resolves_repo_local_path,
         test_fresh_row_writes_carry_config_and_shim_sha,
+        # Codex 2026-06-09 F2 (strict mode for canonical configs)
+        test_cache_hit_rejects_legacy_null_under_canonical_config,
+        test_cache_hit_accepts_legacy_null_under_template_config,
+        test_migrated_cache_rejects_after_config_edit_e2e,
+        # Codex 2026-06-09 F1 (release check on committed artifacts)
+        test_release_check_passes_on_clean_canonical_state,
         # Codex 2026-05-14 F3
         test_all_real_debugger_configs_validate_against_schema,
     ]

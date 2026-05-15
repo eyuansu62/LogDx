@@ -1430,17 +1430,41 @@ def cache_hit_is_acceptable(
     if url_err:
         return False, f"cache row endpoint mismatch: {url_err}"
 
-    # Per Codex 2026-06-08 F2 [high]: reject cache hits whose persisted
-    # diagnoser-config SHA or shim-implementation SHA doesn't match the
-    # current run's loaded config + shim. Closes the silent-replay
-    # window where editing `configs/diagnosers/*.json` or
-    # `examples/diagnosis_shim_*.py` would otherwise reuse stale cache
-    # entries (the literal command string + env values stayed the same,
-    # so the cache_key didn't move). Legacy cached rows without these
-    # fields pass back-compat — they predate the field's introduction;
-    # all NEW fresh writes carry the fields so once the canonical state
-    # is regenerated the back-compat path becomes unreachable.
+    # Per Codex 2026-06-08 F2 + 2026-06-09 F2 [high]: reject cache
+    # hits whose persisted diagnoser-config SHA or shim-implementation
+    # SHA doesn't match the current run's loaded config + shim. Closes
+    # the silent-replay window where editing `configs/diagnosers/*.json`
+    # or `examples/diagnosis_shim_*.py` would otherwise reuse stale
+    # cache entries (the literal command string + env values stayed
+    # the same, so the cache_key didn't move).
+    #
+    # Codex 2026-06-09 F2: when the config requires provenance
+    # (canonical real-debugger-* via `_config_requires_model_info`),
+    # the SHA fields are REQUIRED. Missing fields → reject. Pre-fix
+    # (2026-06-08 F2 only), the back-compat "accept null" branch let
+    # the one-shot migration's null-stamped rows replay across future
+    # config / shim edits — exactly the failure 2026-06-08 F2 meant
+    # to close. The migration tool now stamps current SHAs onto
+    # rebuilt rows so the strict mode passes on the canonical state.
+    # Configs without provenance requirements (mock/stub/template)
+    # keep back-compat: null SHA → accept (legacy data).
     cached_config_sha = cached_meta.get("diagnoser_config_sha256")
+    cached_shim_sha = cached_meta.get("shim_sha256")
+    if _config_requires_model_info(config):
+        if cached_config_sha is None and current_diagnoser_config_sha is not None:
+            return False, (
+                "cache row missing metadata.diagnoser_config_sha256 "
+                "under a config that requires provenance "
+                "(model.model_name / cache_key_env declared). Pre-2026-06-08 "
+                "rows pre-date the field; run tools/migrate_cache_keys_"
+                "codex_2026_06_08.py to stamp current SHAs."
+            )
+        if cached_shim_sha is None and current_shim_sha is not None:
+            return False, (
+                "cache row missing metadata.shim_sha256 under a config "
+                "that requires provenance. Run tools/migrate_cache_keys_"
+                "codex_2026_06_08.py to stamp current SHAs."
+            )
     if (
         cached_config_sha is not None
         and current_diagnoser_config_sha is not None
@@ -1451,7 +1475,6 @@ def cache_hit_is_acceptable(
             f"!= current config sha={current_diagnoser_config_sha[:12]}… "
             f"(config edited since cache write — forcing fresh call)"
         )
-    cached_shim_sha = cached_meta.get("shim_sha256")
     if (
         cached_shim_sha is not None
         and current_shim_sha is not None

@@ -117,16 +117,35 @@ def rebuild_split(split_root: Path, dry_run: bool) -> tuple[int, int]:
                         provider=provider, diagnoser=diagnoser_name,
                         command_str=command_str, env_values=env_values,
                     )
+                    # Per Codex 2026-06-09 F2 [high]: stamp the current
+                    # config + shim SHAs into the migrated cache row so
+                    # `cache_hit_is_acceptable`'s 2026-06-08 F2 strict
+                    # check has something to validate against. Without
+                    # this, every migrated row was null-on-sha and the
+                    # validator's "legacy back-compat = accept null"
+                    # branch let the row replay across future config /
+                    # shim edits. Stamping the SHAs means migrated rows
+                    # become first-class entries that DO get rejected
+                    # if the config or shim later changes. The migration
+                    # is by definition the canonical-state moment, so
+                    # stamping current SHAs is correct: the cached row
+                    # WAS produced under "this config + this shim" (the
+                    # current ones); future edits invalidate.
+                    config_sha = rd.diagnoser_config_sha256(diagnoser_name)
+                    shim_sha = rd.shim_sha256_for_command(command_str)
                     if dry_run:
                         print(
                             f"  WOULD write {cache_root.name}/{key[:12]}.json "
                             f"diag={diagnoser_name} case={case_id} "
-                            f"method={context_method}"
+                            f"method={context_method} "
+                            f"cfg_sha={config_sha[:8] if config_sha else None} "
+                            f"shim_sha={shim_sha[:8] if shim_sha else None}"
                         )
                     else:
-                        # Stamp the cache_key field on the row to match
-                        # the new file location (audit trail).
-                        row.setdefault("metadata", {})["cache_key"] = key
+                        md = row.setdefault("metadata", {})
+                        md["cache_key"] = key
+                        md["diagnoser_config_sha256"] = config_sha
+                        md["shim_sha256"] = shim_sha
                         cache_file = cache_root / f"{key}.json"
                         cache_file.write_text(
                             json.dumps(

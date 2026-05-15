@@ -2463,6 +2463,83 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > 112 → 122 (+3 F1 + 7 F2). `test_hybrid_router.py` unchanged at
 > 10. All 132 pass.
 
+> ⚠️ **Codex 2026-06-09 [high/high] fixes applied — 8 historical
+> failed rows removed from committed manifests.** This round caught
+> two gaps in the 2026-06-08 bundle: the runner-level fix didn't
+> retroactively reconcile committed artifacts, and the cache-SHA
+> validator's back-compat path defanged the migration:
+>
+> **F1 [high] (Committed real-debugger artifacts shipped non-
+> allowlisted provider_error rows.)** Eight rows in committed
+> manifests under `results/<split>/diagnoses/real-debugger-*/` had
+> `metadata.provider_error` prefixes outside the v1/v2/v3
+> allowlist (which is `["unsupported_context_too_large"]`):
+> - v1: `RuntimeError: claude CLI exited 1` × 2 (cargo-tokio-001
+>   in dev/raw + dev/rtk-read)
+> - v2: `JSONDecodeError: Invalid \\escape` × 1 (jest-nextjs-001 in
+>   dev/hybrid-grep-120k-rtk-tail-v3)
+> - v3: `post_api_error: JSONDecodeError` × 5 (mypy-pandas-001 in
+>   dev/{hybrid-grep-120k-tail-v2, hybrid-grep-4k-rtk-err-cat-v1,
+>   llm-summary-v1-mock}, cargo-tokio-001 in dev/rtk-read,
+>   tsc-typescript-001 in holdout/llm-summary-v1-mock)
+>
+> These predate the 2026-06-08 F1 fail-closed fix. They were stub
+> "unknown" diagnoses with `provider_error` set, treated as
+> abstentions by downstream evaluation. The 2026-06-08 F1 fix
+> would have failed those runs — but the artifacts had already
+> shipped. Fix:
+> - New release check `tools/validate_committed_diagnosis_provider_errors.py`
+>   that scans every `results/<split>/diagnoses/real-debugger-*/`
+>   manifest and exits non-zero on any row whose `provider_error`
+>   prefix isn't in the diagnoser's allowlist. CI-gateable.
+> - One-shot cleanup `tools/cleanup_committed_provider_errors_codex_2026_06_09.py`
+>   removed the 8 rows from manifests + their per-case JSONs.
+>   Affected cases now appear as missing from manifests, which is
+>   more honest than "silently failed abstention".
+> - 1 new test (`test_release_check_passes_on_clean_canonical_state`)
+>   pins the post-cleanup canonical state and fires on regression.
+>
+> Score impact: minimal. The removed rows were ALREADY excluded from
+> "diagnosis succeeded" counts via the provider_error gate; their
+> only contribution to evaluation was as zero-score abstentions.
+> Macro means may shift by < 0.01 absolute on affected method ×
+> diagnoser pairs (5/5 → 4/5 denominator on the affected dev/grep
+> v3 paths). No rank reorderings expected; §3i headline finding
+> stable.
+>
+> **F2 [high] (SHA validator silently accepted migrated cache rows
+> without SHAs.)** The 2026-06-08 F2 fix added
+> `metadata.diagnoser_config_sha256` / `metadata.shim_sha256` to
+> fresh row writes and rejected cache hits on SHA mismatch, BUT
+> the back-compat branch ("legacy null SHA → accept") meant the
+> one-shot migration's null-stamped rebuild stayed permanently
+> permissive across future config / shim edits. That re-opened
+> the silent-replay window F2 was meant to close. Fix:
+> - Migration tool `tools/migrate_cache_keys_codex_2026_06_08.py`
+>   now STAMPS the current diagnoser_config_sha256 +
+>   shim_sha256_for_command into every row it rebuilds. Migrated
+>   rows are first-class entries that get rejected on future
+>   edits.
+> - `cache_hit_is_acceptable` now requires non-null SHA fields when
+>   `_config_requires_model_info(config)` is true (i.e. canonical
+>   real-debugger-v1/v2/v3). Back-compat null is preserved only for
+>   templates / mocks / configs with `allow_missing_model_info`.
+> - 4 new tests: rejection of legacy null under canonical config,
+>   acceptance under template config, end-to-end migration →
+>   config-edit → reject smoke test, plus the existing
+>   matched-SHA-accepts test.
+> - Migration re-ran on the local cache. Files = 703 written, 30
+>   skipped (rows with `provider_error` or missing context paths).
+>
+> Cache invariant going forward: every cached row under a canonical
+> real-debugger config carries both SHA fields; any future config /
+> shim edit invalidates affected rows by validator rejection.
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py`
+> 122 → 125 (+3 net; 1 prior 2026-06-08 back-compat test replaced
+> by 2 strict-mode + 1 migration test + 1 release-check smoke test).
+> `test_hybrid_router.py` unchanged at 10. All 135 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**
