@@ -745,6 +745,48 @@ def effective_requested_model(config: dict | None) -> str | None:
     return model_section.get("model_name") or None
 
 
+def check_locked_env_override(config: dict | None) -> str | None:
+    """Per Codex 2026-06-06 F1 [high]: a canonical (locked) config
+    that does NOT set `model.allow_runtime_model_override` must
+    refuse to invoke the shim when the user has set the
+    config-declared env var to a non-canonical value.
+
+    The 2026-06-05 F2 fix made the validator reject post-API rows
+    whose `requested_model` disagreed with the locked config — but
+    by then the shim had already made the wrong-model API call,
+    paying both the $ cost and the privacy cost of shipping CI
+    logs to a backend the operator didn't intend. This pre-flight
+    check blocks the shim invocation entirely in that case.
+
+    Returns None when the run is safe to proceed; an error string
+    otherwise so the runner can print + return 1.
+    """
+    if not isinstance(config, dict):
+        return None
+    model = config.get("model") or {}
+    if model.get("allow_runtime_model_override"):
+        return None  # Experiment-mode configs accept env overrides.
+    env_var = model.get("env_var_name")
+    if not env_var:
+        return None
+    user_value = os.environ.get(env_var)
+    if user_value is None:
+        return None  # Env var unset; canonical alias will be used.
+    canonical = model.get("requested_alias") or model.get("model_name")
+    if not canonical or user_value == canonical:
+        return None
+    return (
+        f"diagnoser config "
+        f"{config.get('diagnoser_name', '<unknown>')!r} locks model "
+        f"identity to {canonical!r} but {env_var}={user_value!r} is "
+        f"set in the environment. Refusing to invoke the shim — that "
+        f"would ship CI log context to a different model than the "
+        f"config declares. Either unset {env_var} (or set it to "
+        f"{canonical!r}), or use a config that declares "
+        f"`model.allow_runtime_model_override: true`."
+    )
+
+
 def build_shim_env(
     config: dict | None, parent_env: dict[str, str] | None = None
 ) -> dict[str, str]:
@@ -1416,6 +1458,18 @@ def run(
     # hardcoded default is "haiku" and produces rows whose own cache
     # validator later rejects them.
     shim_env = build_shim_env(diagnoser_config)
+
+    # Per Codex 2026-06-06 F1 [high]: BEFORE the shim is invoked,
+    # block locked-config runs where the user has set the model env
+    # var to a non-canonical value. Without this, the shim would
+    # make the wrong-model API call (paying both the $ cost and the
+    # privacy cost of shipping CI logs to the wrong backend) and
+    # the 2026-06-05 F2 validator would only reject the row after
+    # the egress.
+    locked_err = check_locked_env_override(diagnoser_config)
+    if locked_err is not None:
+        print(f"ERROR: {locked_err}", file=sys.stderr)
+        return 1
 
     # Per Codex 2026-05-17 F2 [medium]: collect cache_key env contributions
     # AFTER `build_shim_env` injects config defaults — otherwise the cache

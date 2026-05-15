@@ -219,6 +219,108 @@ def test_cache_hit_acceptable_when_env_override_matches_cached():
             os.environ["CILOGBENCH_OPENAI_MODEL"] = saved
 
 
+def test_locked_config_check_helper():
+    """Per Codex 2026-06-06 F1 [high]: the new check_locked_env_override
+    helper. Canonical configs (no allow_runtime_model_override) with
+    a non-canonical env value must return an error string."""
+    cfg = rd.load_diagnoser_config("real-debugger-v3")  # canonical, locked
+    saved = os.environ.get("CILOGBENCH_OPENAI_MODEL")
+    try:
+        # Non-canonical env value → error
+        os.environ["CILOGBENCH_OPENAI_MODEL"] = "gpt-4o"
+        err = rd.check_locked_env_override(cfg)
+        assert err is not None
+        assert "gpt-4o" in err and "gpt-5-mini" in err
+        # Canonical env value → OK
+        os.environ["CILOGBENCH_OPENAI_MODEL"] = "gpt-5-mini"
+        assert rd.check_locked_env_override(cfg) is None
+        # Env unset → OK
+        os.environ.pop("CILOGBENCH_OPENAI_MODEL", None)
+        assert rd.check_locked_env_override(cfg) is None
+    finally:
+        if saved is None:
+            os.environ.pop("CILOGBENCH_OPENAI_MODEL", None)
+        else:
+            os.environ["CILOGBENCH_OPENAI_MODEL"] = saved
+
+
+def test_override_allowed_config_skips_locked_check():
+    """Experiment-mode configs (allow_runtime_model_override=true)
+    don't trip the locked-env check."""
+    cfg = {"model": {
+        "model_name": "gpt-5-mini",
+        "env_var_name": "CILOGBENCH_OPENAI_MODEL",
+        "allow_runtime_model_override": True,
+    }}
+    saved = os.environ.get("CILOGBENCH_OPENAI_MODEL")
+    try:
+        os.environ["CILOGBENCH_OPENAI_MODEL"] = "gpt-4o"
+        assert rd.check_locked_env_override(cfg) is None
+    finally:
+        if saved is None:
+            os.environ.pop("CILOGBENCH_OPENAI_MODEL", None)
+        else:
+            os.environ["CILOGBENCH_OPENAI_MODEL"] = saved
+
+
+def test_locked_env_mismatch_blocks_shim_invocation_end_to_end():
+    """Per Codex 2026-06-06 F1 [high]: the EXACT regression Codex
+    requested — prove no external shim is called on locked-config
+    env mismatch.
+
+    Uses a command-spy shim that writes a sentinel to a temp file
+    every time it's invoked. If the runner correctly fails fast on
+    the locked-env mismatch, the sentinel file remains empty.
+    """
+    import subprocess as _sub
+    import tempfile
+    repo = Path(__file__).resolve().parent.parent.parent
+
+    sentinel = tempfile.NamedTemporaryFile(
+        suffix=".sentinel", delete=False
+    )
+    sentinel.close()
+    Path(sentinel.name).write_text("")
+
+    spy_src = f'''
+import sys
+from pathlib import Path
+Path({sentinel.name!r}).write_text("INVOKED")
+sys.exit(1)
+'''
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as fp:
+        fp.write(spy_src)
+        fp.flush()
+        spy_path = fp.name
+
+    env = dict(os.environ)
+    env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+    env["OPENAI_API_KEY"] = "sk-test"
+    env["CILOGBENCH_OPENAI_MODEL"] = "gpt-4o"  # mismatched vs v3's gpt-5-mini
+    env["DIAGNOSIS_COMMAND"] = f"python3 {spy_path}"
+    res = _sub.run(
+        ["python3", f"{repo}/tools/run_diagnosis.py",
+         "--split", "dev",
+         "--diagnoser", "command",
+         "--diagnoser-name", "real-debugger-v3",
+         "--command", env["DIAGNOSIS_COMMAND"],
+         "--context-method", "grep",
+         "--diagnoser-config",
+         f"{repo}/configs/diagnosers/real-debugger-v3.json",
+         "--no-cache"],
+        cwd=repo, capture_output=True, timeout=30, env=env,
+    )
+    assert res.returncode == 1, f"expected exit 1; got {res.returncode}"
+    err = res.stderr.decode("utf-8")
+    assert "locks model identity" in err or "gpt-4o" in err, err[:400]
+    # KEY: the spy shim was never invoked.
+    sentinel_content = Path(sentinel.name).read_text()
+    assert sentinel_content == "", (
+        f"shim was invoked despite locked-config mismatch: "
+        f"sentinel={sentinel_content!r}"
+    )
+
+
 def test_canonical_config_rejects_env_override():
     """Per Codex 2026-06-05 F2 [high]: WITHOUT
     allow_runtime_model_override, env overrides are treated as
@@ -2650,6 +2752,10 @@ def main() -> int:
         test_cache_hit_acceptable_when_env_override_matches_cached,
         # Codex 2026-06-05 F2 (canonical configs lock identity)
         test_canonical_config_rejects_env_override,
+        # Codex 2026-06-06 F1 (locked configs block shim invocation)
+        test_locked_config_check_helper,
+        test_override_allowed_config_skips_locked_check,
+        test_locked_env_mismatch_blocks_shim_invocation_end_to_end,
         test_cache_hit_still_rejects_genuinely_wrong_cached_model,
         test_v3_config_declares_env_var_name,
         # Codex 2026-05-14 F2 (Claude / v1+v2)

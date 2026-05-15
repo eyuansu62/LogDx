@@ -2312,6 +2312,33 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > tests updated). `test_hybrid_router.py` unchanged at 10. All
 > 119 pass.
 
+> ⚠️ **Codex 2026-06-06 [high] fix applied — no scores moved.**
+> Codex caught that the 2026-06-05 F2 lock only rejected rows
+> AFTER the wrong-model call:
+>
+> **F1 [high] (Locked configs still executed wrong-model API call
+> before rejection.)** Pre-fix, when a user set
+> `CILOGBENCH_OPENAI_MODEL=gpt-4o` and ran the canonical
+> real-debugger-v3 config, `build_shim_env` preserved the env
+> value and passed it to the subprocess; the OpenAI shim made the
+> gpt-4o API call AND only after the response came back did
+> `validate_fresh_row_model_identity` reject the row. The runner
+> stopped manifest pollution but did NOT prevent the wrong-model
+> egress (paid $ cost + privacy violation: CI logs sent to the
+> wrong backend). Fix:
+> - New `check_locked_env_override()` helper runs BEFORE
+>   `diagnose_command`. Locked configs (no
+>   `allow_runtime_model_override`) with a non-canonical env value
+>   → exit 1 with a clear error pointing at the env var
+> - Allowed paths (canonical match, env unset, opt-in configs)
+>   proceed normally
+> - 3 new tests: helper unit test, opt-in-config skips check,
+>   and an end-to-end command-spy test that asserts NO subprocess
+>   invocation happens when the locked-env mismatch fires
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py` 109 →
+> 112 (+3). `test_hybrid_router.py` unchanged at 10. All 122 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**
