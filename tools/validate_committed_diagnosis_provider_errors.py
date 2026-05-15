@@ -68,13 +68,18 @@ def main():
     )
     args = ap.parse_args()
 
-    findings: list[tuple[str, str, str, str]] = []
-    for split_dir in sorted(args.results_dir.iterdir()):
-        if not split_dir.is_dir():
-            continue
-        diag_root = split_dir / "diagnoses"
-        if not diag_root.exists():
-            continue
+    findings: list[tuple[str, str, str]] = []
+    # Per Codex 2026-06-10 F1 [high]: walk recursively for ALL
+    # `diagnoses/` directories under results-root, not just direct
+    # children of a single-segment split. The v2 protocol uses a
+    # nested layout (`results/v2/<split>/diagnoses/`) which the
+    # 2026-06-09 single-level scanner skipped entirely. 12
+    # non-allowlisted RuntimeError rows were hiding under
+    # `results/v2/<split>/diagnoses/real-debugger-v1/` because of
+    # this gap.
+    diagnoses_roots = sorted(p for p in args.results_dir.rglob("diagnoses") if p.is_dir())
+    for diag_root in diagnoses_roots:
+        rel_root = diag_root.relative_to(args.results_dir)
         for diag_dir in sorted(diag_root.iterdir()):
             if not diag_dir.is_dir():
                 continue
@@ -91,7 +96,11 @@ def main():
             )
             for manifest in sorted(diag_dir.glob("*.jsonl")):
                 for case_id, pe in scan_manifest(manifest, allowlist):
-                    findings.append((split_dir.name, name, manifest.name, f"{case_id} :: {pe[:120]}"))
+                    findings.append((
+                        str(rel_root.parent / name),
+                        manifest.name,
+                        f"{case_id} :: {pe[:120]}",
+                    ))
 
     if findings:
         print(
@@ -99,9 +108,9 @@ def main():
             "non-allowlisted provider_error rows:",
             file=sys.stderr,
         )
-        for split, diag, manifest, detail in findings:
+        for rel_diag, manifest, detail in findings:
             print(
-                f"  {split}/diagnoses/{diag}/{manifest} :: {detail}",
+                f"  results/{rel_diag}/{manifest} :: {detail}",
                 file=sys.stderr,
             )
         print(

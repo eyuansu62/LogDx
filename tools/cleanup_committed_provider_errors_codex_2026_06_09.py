@@ -73,12 +73,15 @@ def main():
 
     total_removed = 0
     affected: list[str] = []
-    for split_dir in sorted(args.results_dir.iterdir()):
-        if not split_dir.is_dir():
-            continue
-        diag_root = split_dir / "diagnoses"
-        if not diag_root.exists():
-            continue
+    # Per Codex 2026-06-10 F1 [high]: walk recursively for ALL
+    # diagnoses/ directories (the v2 protocol nests under
+    # results/v2/<split>/diagnoses/, which a single-level walk
+    # missed). The 2026-06-09 cleanup left 12 v2 RuntimeError
+    # rows in place because of this gap; this rescan fixes it.
+    diagnoses_roots = sorted(
+        p for p in args.results_dir.rglob("diagnoses") if p.is_dir()
+    )
+    for diag_root in diagnoses_roots:
         for diag_dir in sorted(diag_root.iterdir()):
             if not diag_dir.is_dir():
                 continue

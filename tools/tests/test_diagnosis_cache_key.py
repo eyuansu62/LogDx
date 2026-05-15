@@ -3130,6 +3130,55 @@ def test_migrated_cache_rejects_after_config_edit_e2e():
     assert "shim_sha256" in (reason3 or "")
 
 
+def test_release_check_recurses_into_nested_diagnoses_layouts():
+    """Per Codex 2026-06-10 F1 [high]: the release check must walk
+    recursively for `**/diagnoses` directories, not just direct
+    children of split. The v2 protocol nests results under
+    `results/v2/<split>/diagnoses/`, which the 2026-06-09 single-
+    level scanner skipped — 12 v2 RuntimeError rows hid there.
+
+    Fixture: synthesize a temp results tree with both flat
+    (`results/dev/diagnoses/`) and nested (`results/v2/dev/diagnoses/`)
+    layouts. Plant a non-allowlisted row in the nested manifest only;
+    assert the scanner exits non-zero and the failure references the
+    nested path.
+    """
+    import subprocess as _sub
+    import tempfile
+    import json
+    repo = Path(__file__).resolve().parent.parent.parent
+    scanner = repo / "tools" / "validate_committed_diagnosis_provider_errors.py"
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        nested_dir = root / "v2" / "dev" / "diagnoses" / "real-debugger-v1"
+        nested_dir.mkdir(parents=True)
+        manifest = nested_dir / "grep.jsonl"
+        manifest.write_text(
+            json.dumps({
+                "case_id": "synthetic-001",
+                "context_method": "grep",
+                "diagnoser": "real-debugger-v1",
+                "metadata": {
+                    "provider_error": "RuntimeError: synthetic transient failure",
+                },
+            }) + "\n",
+            encoding="utf-8",
+        )
+        res = _sub.run(
+            ["python3", str(scanner), "--results-dir", str(root)],
+            cwd=repo, capture_output=True, timeout=30,
+        )
+        assert res.returncode != 0, (
+            f"scanner should reject nested non-allowlisted row; "
+            f"stdout={res.stdout.decode()[:300]!r}"
+        )
+        err = res.stderr.decode("utf-8")
+        assert "v2/dev/diagnoses/real-debugger-v1" in err or "v2/dev" in err, (
+            f"scanner stderr should reference the nested path; got {err[:600]!r}"
+        )
+        assert "synthetic-001" in err, err[:600]
+
+
 def test_release_check_passes_on_clean_canonical_state():
     """Per Codex 2026-06-09 F1 [high]: the release check
     `tools/validate_committed_diagnosis_provider_errors.py` exits 0 on
@@ -3371,6 +3420,8 @@ def main() -> int:
         test_migrated_cache_rejects_after_config_edit_e2e,
         # Codex 2026-06-09 F1 (release check on committed artifacts)
         test_release_check_passes_on_clean_canonical_state,
+        # Codex 2026-06-10 F1 (recursive walk for nested layouts)
+        test_release_check_recurses_into_nested_diagnoses_layouts,
         # Codex 2026-05-14 F3
         test_all_real_debugger_configs_validate_against_schema,
     ]

@@ -2540,6 +2540,55 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > by 2 strict-mode + 1 migration test + 1 release-check smoke test).
 > `test_hybrid_router.py` unchanged at 10. All 135 pass.
 
+> ⚠️ **Codex 2026-06-10 [high] fix applied — 12 additional v2
+> failed rows removed.** This round caught a directory-walk bug in
+> the 2026-06-09 release check + cleanup tooling that masked v2-
+> layout artifacts:
+>
+> **F1 [high] (Release check skipped nested v2 diagnosis
+> artifacts.)** The 2026-06-09 scanner walked
+> `results/<split>/diagnoses/` as direct children only, but the v2
+> protocol uses `results/v2/<split>/diagnoses/` (nested under a v2
+> protocol root). Twelve `RuntimeError: claude CLI exited 1` rows
+> under v2 real-debugger-v1 manifests were therefore not flagged
+> when the 2026-06-09 cleanup ran:
+> - v2/dev: moby-buildx-bake-v2-001 × 2 (raw + rtk-read)
+> - v2/holdout: biome-pnpm-not-found-v2-001 × 3 (grep + hybrid-v3 +
+>   hybrid-v2)
+> - v2/stress: airflow-precommit-tsc-middle-v2-001 × 3 (grep +
+>   hybrid-v3 + hybrid-v2), cpython-tcl-windows-matrix-v2-001 × 2
+>   (hybrid-v3 + hybrid-v2), argocd-race-conditions-batch5-v2-001
+>   × 2 (hybrid-v1 + rtk-err-cat)
+>
+> Fix:
+> - Both the scanner (`validate_committed_diagnosis_provider_errors.py`)
+>   and the cleanup tool (`cleanup_committed_provider_errors_codex_2026_06_09.py`)
+>   now walk recursively for ANY `diagnoses/` directory under the
+>   results root via `Path.rglob("diagnoses")`. The scanner's
+>   stderr format updated to show the full relative path
+>   (`v2/dev/diagnoses/real-debugger-v1/`) so violations route to
+>   the right layout.
+> - Cleanup re-run: 12 rows + per-case JSONs removed from
+>   `results/v2/{dev,holdout,stress}/diagnoses/real-debugger-v1/`.
+> - 1 new regression test
+>   (`test_release_check_recurses_into_nested_diagnoses_layouts`)
+>   synthesizes a temp tree with a nested-only manifest and asserts
+>   the scanner exits non-zero with the nested path in stderr.
+>
+> Score impact on §3i: minimal. The removed rows were Claude CLI
+> transient failures on v1 (haiku), already excluded from
+> "diagnosis succeeded" counts. v2 v1.3 headline ranking (haiku
+> top-3 ∩ = {hybrid-v1}) was on the canonical v1.3 split, not the
+> v2 corpus; v2 corpus rankings (sonnet top-3 ∩ = {hybrid-v2,
+> hybrid-v3}) are on real-debugger-v2 (sonnet), not affected.
+> Real-debugger-v1 (haiku) means on v2 may shift by ≤0.02 abs on
+> affected method × case denominators (5/cases → 4/cases). No
+> rank reorderings expected.
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py`
+> 125 → 126 (+1). `test_hybrid_router.py` unchanged at 10. All
+> 136 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**
