@@ -61,10 +61,37 @@ def eval_case_ids(eval_path: Path) -> dict[str, set[str]]:
     return out
 
 
+def _load_exclusion_set(path: Path) -> set[tuple[str, str, str, str]]:
+    """Per Codex 2026-06-15 F1 [high]: synthesized excluded rows
+    appear in eval files (as zero-score abstentions injected by
+    evaluate_diagnosis.py) but NOT in diagnosis manifests. The
+    consistency check needs to know about them so the synthesized
+    rows don't get flagged as "in eval but not manifest"."""
+    if not path.exists():
+        return set()
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return set()
+    return {
+        (e["split"], e["diagnoser"], e["method"], e["case_id"])
+        for e in (data.get("exclusions") or [])
+    }
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--results-dir", type=Path, default=REPO / "results")
+    ap.add_argument(
+        "--exclusions",
+        type=Path,
+        default=REPO / "configs" / "historical_provider_error_exclusions.json",
+        help="Historical-exclusion manifest; synthesized eval rows for these "
+             "(split, diagnoser, method, case_id) tuples are not required to "
+             "appear in diagnosis manifests.",
+    )
     args = ap.parse_args()
+    exclusion_set = _load_exclusion_set(args.exclusions)
 
     failures: list[str] = []
     # Walk recursively for every eval_diagnosis_*.json.
@@ -82,6 +109,9 @@ def main():
                 f"(no {diag_root.relative_to(args.results_dir)})"
             )
             continue
+        # The eval path is `results/<split>/eval_diagnosis_<diag>.json`;
+        # extract <split> for exclusion-set lookups.
+        split_label = str(split_dir.relative_to(args.results_dir))
         eval_methods = eval_case_ids(eval_path)
         # Per Codex 2026-06-12 F2 [medium]: also assert the SET of
         # methods matches between eval file and manifest directory.
@@ -112,12 +142,24 @@ def main():
             manifest = diag_root / f"{method}.jsonl"
             manifest_set = manifest_case_ids(manifest)
             if eval_set != manifest_set:
-                missing_in_manifest = eval_set - manifest_set
+                missing_in_manifest_raw = eval_set - manifest_set
+                # Per Codex 2026-06-15 F1 [high]: filter out cases
+                # that ARE listed in the historical exclusion
+                # manifest — those are intentionally injected by
+                # evaluate_diagnosis.py as zero-score abstentions
+                # and don't have a corresponding manifest row.
+                missing_in_manifest = {
+                    cid for cid in missing_in_manifest_raw
+                    if (split_label, diagnoser, method, cid)
+                       not in exclusion_set
+                }
                 missing_in_eval = manifest_set - eval_set
+                if not missing_in_manifest and not missing_in_eval:
+                    continue
                 detail = []
                 if missing_in_manifest:
                     detail.append(
-                        f"in eval but not manifest: "
+                        f"in eval but not manifest (and not in exclusions): "
                         f"{sorted(missing_in_manifest)}"
                     )
                 if missing_in_eval:

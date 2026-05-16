@@ -415,14 +415,76 @@ def macro_mean_int(values: Iterable[int]) -> float | None:
     return round(sum(arr) / len(arr), 2)
 
 
+def _load_historical_exclusions() -> list[dict]:
+    """Per Codex 2026-06-15 F1 [high]: read
+    `configs/historical_provider_error_exclusions.json` so the
+    evaluator can inject synthetic zero-score "failed" rows for
+    cases that were removed from diagnosis manifests by the
+    2026-06-09 / 2026-06-10 cleanups. Pre-fix, the eval denominator
+    silently shrank — failures vanished instead of being scored as
+    zero. Now: every (split, diagnoser, method, case_id) in the
+    exclusion list contributes a provider_error-shaped row to the
+    method's cases array, scored through the normal score_case
+    path so the macro means reflect the true denominator.
+
+    Returns the raw list from the file (each item has split,
+    diagnoser, method, case_id, provider_error_prefix). Returns
+    [] if the file doesn't exist (back-compat for repos without
+    the exclusion manifest).
+    """
+    excl_path = ROOT / "configs" / "historical_provider_error_exclusions.json"
+    if not excl_path.exists():
+        return []
+    try:
+        data = json.loads(excl_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return []
+    return list(data.get("exclusions") or [])
+
+
+def _synthesize_excluded_case_row(
+    *, case_id: str, method: str, diagnoser: str,
+    provider_error_prefix: str, cases_dir: Path, split: str,
+) -> dict:
+    """Build a provider_error-shaped diagnosis row for a documented
+    historical exclusion. Mirrors what the runner wrote pre-cleanup
+    when the model produced a transient failure: stub "unknown"
+    diagnosis body + metadata.provider_error set. The score_case
+    pipeline then produces a zero-score abstention entry that
+    properly contributes to the macro denominator."""
+    return {
+        "case_id": case_id,
+        "context_method": method,
+        "diagnoser": diagnoser,
+        "mode": "root_cause_diagnosis",
+        "summary": "Diagnoser failed (historical exclusion).",
+        "root_cause_category": "unknown",
+        "root_cause": "unknown",
+        "confidence": 0.0,
+        "relevant_files": [],
+        "relevant_tests": [],
+        "evidence": [],
+        "suggested_fix": "",
+        "input": {"context_tokens_estimate": 0, "context_path": ""},
+        "usage": {"output_tokens_estimate": 0},
+        "metadata": {
+            "provider_error": f"{provider_error_prefix} [historical exclusion]",
+            "_excluded_by_historical_manifest": True,
+        },
+    }
+
+
 def evaluate_method(
     *,
     split: str,
     diag_path: Path,
     cases_dir: Path,
     results_dir: Path,
+    diagnoser: str | None = None,
+    exclusions: list[dict] | None = None,
 ) -> dict:
     rows = load_manifest_rows(diag_path)
+    method = diag_path.stem
     cases: list[dict] = []
     for row in rows:
         case_id = row["case_id"]
@@ -437,6 +499,35 @@ def evaluate_method(
             score_case(diagnosis=row, ground_truth=ground_truth,
                        context_text=ctx_text)
         )
+    # Per Codex 2026-06-15 F1 [high]: inject zero-score rows for
+    # historical exclusions. The diagnoser/method combination is
+    # matched from the exclusion manifest; the synthesized row is
+    # scored via the standard score_case path so the resulting
+    # case entry is indistinguishable from a real provider_error
+    # row from the runner.
+    if diagnoser and exclusions:
+        existing_ids = {c["case_id"] for c in cases}
+        for excl in exclusions:
+            if (excl.get("split") != split
+                    or excl.get("diagnoser") != diagnoser
+                    or excl.get("method") != method):
+                continue
+            case_id = excl.get("case_id")
+            if not case_id or case_id in existing_ids:
+                continue
+            gt_path = cases_dir / split / case_id / "ground_truth.json"
+            ground_truth = load_json(gt_path) if gt_path.exists() else {}
+            synthetic = _synthesize_excluded_case_row(
+                case_id=case_id, method=method, diagnoser=diagnoser,
+                provider_error_prefix=excl.get(
+                    "provider_error_prefix", "historical_provider_error"
+                ),
+                cases_dir=cases_dir, split=split,
+            )
+            cases.append(
+                score_case(diagnosis=synthetic, ground_truth=ground_truth,
+                           context_text="")
+            )
 
     n = len(cases)
     success_rate = sum(1 for c in cases if c["diagnosis_success"]) / n if n else None
@@ -489,6 +580,9 @@ def evaluate(
     if not methods:
         print(f"ERROR: no diagnosis manifests under {diag_root}", file=sys.stderr)
         return 1
+    # Per Codex 2026-06-15 F1 [high]: load historical exclusions
+    # once; evaluate_method threads them into per-method scoring.
+    exclusions = _load_historical_exclusions()
     method_blocks: list[dict] = []
     case_count = 0
     for m in methods:
@@ -497,6 +591,8 @@ def evaluate(
             diag_path=diag_root / f"{m}.jsonl",
             cases_dir=cases_dir,
             results_dir=results_dir,
+            diagnoser=diagnoser,
+            exclusions=exclusions,
         )
         case_count = max(case_count, len(block["cases"]))
         method_blocks.append(block)

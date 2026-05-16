@@ -139,6 +139,23 @@ def base_url_sha256(url: str) -> str:
 
 _URL_LIKE_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s'\"]+")
 
+# Per Codex 2026-06-15 F2 [high]: secret-shape redactors applied
+# alongside redact_urls_in_text whenever a provider-side text payload
+# (HTTP response body, exception string) could land in
+# metadata.provider_error. Without these, a compatible endpoint or
+# proxy that echoes Authorization headers, API keys, or session
+# tokens back in its 4xx error body would persist those secrets into
+# committed diagnosis artifacts despite
+# `allow_secret_values_in_results=false`.
+_BEARER_RE = re.compile(r"(?i)(?:bearer|authorization\s*:)\s*[A-Za-z0-9._\-+/=]{8,}")
+# OpenAI-style keys ("sk-..."), generic API-key prefixes, and long
+# opaque tokens that look like credentials. We err on the side of
+# over-redacting; legitimate prose mentioning short identifiers is
+# fine, but anything that looks credential-shaped goes through the
+# sha-prefixed placeholder.
+_APIKEY_LIKE_RE = re.compile(r"\b(?:sk|pk|rk|api[_-]?key)[-_][A-Za-z0-9]{16,}\b")
+_LONG_TOKEN_RE = re.compile(r"\b[A-Za-z0-9_\-]{40,}\b")
+
 
 def redact_urls_in_text(text: str) -> str:
     """Per Codex 2026-06-04 F2 [high]: replace any URL-like substring
@@ -164,6 +181,49 @@ def redact_urls_in_text(text: str) -> str:
             sanitized = "<unparseable>"
         return f"<redacted-url sanitized={sanitized!r} sha={base_url_sha256(raw)[:16]}…>"
     return _URL_LIKE_RE.sub(repl, text)
+
+
+def redact_secrets_in_text(text: str) -> str:
+    """Per Codex 2026-06-15 F2 [high]: scrub secret-shape substrings
+    from a free-form error message before it lands in
+    metadata.provider_error. Combines URL redaction
+    (`redact_urls_in_text`) with bearer-token, API-key, and long-
+    opaque-token patterns. Replacement preserves a sha256 prefix so
+    auditors can tell two leaked tokens apart without seeing the
+    raw value.
+    """
+    if not text:
+        return text
+    text = redact_urls_in_text(text)
+
+    def _sha_tag(raw: str) -> str:
+        return f"<redacted-secret sha={hashlib.sha256(raw.encode('utf-8')).hexdigest()[:16]}…>"
+
+    text = _BEARER_RE.sub(lambda m: _sha_tag(m.group(0)), text)
+    text = _APIKEY_LIKE_RE.sub(lambda m: _sha_tag(m.group(0)), text)
+    text = _LONG_TOKEN_RE.sub(lambda m: _sha_tag(m.group(0)), text)
+    return text
+
+
+def safe_http_error_summary(http_code: int, body: bytes | str) -> str:
+    """Per Codex 2026-06-15 F2 [high]: return a stable error summary
+    that captures the HTTP status and a body digest WITHOUT echoing
+    the raw response body. Compatible endpoints / proxies sometimes
+    echo Authorization headers, tenant IDs, or session tokens back
+    in 4xx error bodies; persisting the raw body into
+    `metadata.provider_error` would commit those secrets.
+
+    Format: `OpenAI HTTP {code} body_sha256={prefix} body_len={n}`.
+    No body content; an auditor can reproduce the digest if needed."""
+    if isinstance(body, str):
+        raw = body.encode("utf-8", "replace")
+    else:
+        raw = body
+    body_sha = hashlib.sha256(raw).hexdigest()[:16]
+    return (
+        f"OpenAI HTTP {http_code} body_sha256={body_sha}… "
+        f"body_len={len(raw)}"
+    )
 
 
 def build_user_message(payload: dict) -> str:
@@ -217,6 +277,13 @@ def invoke_openai(system_prompt: str, user_message: str, model: str,
         method="POST",
     )
     # Simple retry on 5xx / connection failures (3 attempts, exp backoff).
+    # Per Codex 2026-06-15 F2 [high]: error messages NEVER include the
+    # raw response body — that body can contain echoed Authorization
+    # headers, tenant identifiers, session tokens, or prompt
+    # fragments from a compatible proxy/endpoint. Use
+    # `safe_http_error_summary` to record status + body digest only,
+    # and `redact_secrets_in_text` on any exception text before
+    # re-raising so the runner persists a sanitized form.
     last_err = None
     for attempt in range(3):
         try:
@@ -224,18 +291,22 @@ def invoke_openai(system_prompt: str, user_message: str, model: str,
                 data = resp.read().decode("utf-8")
                 return json.loads(data)
         except urllib.error.HTTPError as e:
-            err_body = e.read().decode("utf-8", "replace")[:400]
+            err_body = e.read()
+            summary = safe_http_error_summary(e.code, err_body)
             if 500 <= e.code < 600 and attempt < 2:
-                last_err = f"HTTP {e.code}: {err_body!r}"
+                last_err = summary
                 time.sleep(2 ** attempt)
                 continue
-            raise RuntimeError(f"OpenAI HTTP {e.code}: {err_body!r}") from e
+            raise RuntimeError(summary) from e
         except (urllib.error.URLError, TimeoutError) as e:
+            sanitized = redact_secrets_in_text(f"{type(e).__name__}: {e}")
             if attempt < 2:
-                last_err = f"{type(e).__name__}: {e}"
+                last_err = sanitized
                 time.sleep(2 ** attempt)
                 continue
-            raise RuntimeError(f"OpenAI request failed: {e}") from e
+            raise RuntimeError(
+                f"OpenAI request failed: {sanitized}"
+            ) from e
     raise RuntimeError(f"OpenAI request failed after retries: {last_err}")
 
 

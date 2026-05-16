@@ -3130,6 +3130,100 @@ def test_migrated_cache_rejects_after_config_edit_e2e():
     assert "shim_sha256" in (reason3 or "")
 
 
+def test_eval_injects_zero_score_rows_for_historical_exclusions():
+    """Per Codex 2026-06-15 F1 [high]: evaluate_diagnosis.py loads the
+    historical exclusion manifest and injects a zero-score
+    abstention row for each (split, diagnoser, method, case_id)
+    listed there. The macro denominator must reflect the source
+    context manifest size, not the post-cleanup diagnosis manifest
+    size.
+
+    Smoke: real-debugger-v3 dev/rtk-read had cargo-tokio-001 removed
+    in the 2026-06-09 cleanup. The current diagnosis manifest has
+    4 rows but the eval file's rtk-read method must include 5 case
+    entries (4 real + 1 synthesized historical exclusion).
+    """
+    import json
+    repo = Path(__file__).resolve().parent.parent.parent
+    eval_path = repo / "results" / "dev" / "eval_diagnosis_real-debugger-v3.json"
+    data = json.loads(eval_path.read_text(encoding="utf-8"))
+    rtk_read = next(
+        (m for m in data["methods"] if m["context_method"] == "rtk-read"),
+        None,
+    )
+    assert rtk_read is not None, "rtk-read method missing from eval"
+    case_ids = [c["case_id"] for c in rtk_read["cases"]]
+    assert "cargo-tokio-001" in case_ids, (
+        f"historical exclusion should be injected into eval; got {case_ids!r}"
+    )
+    # The injected row carries provider_error and zero scores.
+    injected = next(c for c in rtk_read["cases"] if c["case_id"] == "cargo-tokio-001")
+    assert injected.get("provider_error"), "synthesized row must have provider_error"
+    assert injected.get("diagnosis_success") is False, (
+        "synthesized row must NOT count as success"
+    )
+    assert injected.get("abstained"), "synthesized row must count as abstention"
+
+
+def test_openai_shim_redacts_bearer_tokens_in_error_text():
+    """Per Codex 2026-06-15 F2 [high]: provider error messages that
+    contain Bearer tokens or API-key-shaped strings must be
+    redacted before they land in metadata.provider_error. Pre-fix,
+    a compatible endpoint that echoed Authorization headers in its
+    error body would persist those secrets into committed
+    diagnosis artifacts."""
+    import importlib.util
+    repo = Path(__file__).resolve().parent.parent.parent
+    spec = importlib.util.spec_from_file_location(
+        "_shim_for_test", repo / "examples" / "diagnosis_shim_openai.py"
+    )
+    shim = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(shim)
+
+    out = shim.redact_secrets_in_text(
+        "Auth fail: Authorization: Bearer sk-abc12345678901234567890abc reject"
+    )
+    assert "sk-abc12345678901234567890abc" not in out, out
+    assert "redacted-secret" in out, out
+
+
+def test_openai_shim_redacts_api_key_shape():
+    import importlib.util
+    repo = Path(__file__).resolve().parent.parent.parent
+    spec = importlib.util.spec_from_file_location(
+        "_shim_for_test2", repo / "examples" / "diagnosis_shim_openai.py"
+    )
+    shim = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(shim)
+    out = shim.redact_secrets_in_text(
+        "provider replied: sk-abcdef0123456789012345678901 invalid"
+    )
+    assert "sk-abcdef0123456789012345678901" not in out, out
+    assert "redacted-secret" in out, out
+
+
+def test_openai_shim_http_error_summary_omits_body():
+    """Per Codex 2026-06-15 F2 [high]: the HTTP error path uses
+    `safe_http_error_summary` which records status code + body
+    digest only — the raw body never appears in the error message.
+    """
+    import importlib.util
+    repo = Path(__file__).resolve().parent.parent.parent
+    spec = importlib.util.spec_from_file_location(
+        "_shim_for_test3", repo / "examples" / "diagnosis_shim_openai.py"
+    )
+    shim = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(shim)
+    body_with_secret = (
+        '{"error": {"message": "key sk-abc1234567890123456789012345 wrong"}}'
+    )
+    summary = shim.safe_http_error_summary(401, body_with_secret)
+    assert "sk-abc" not in summary, f"body content leaked into summary: {summary!r}"
+    assert "401" in summary, summary
+    assert "body_sha256=" in summary, summary
+    assert "body_len=" in summary, summary
+
+
 def test_diagnosis_vs_context_check_passes_on_canonical_state():
     """Per Codex 2026-06-14 F1 [high]: every diagnosis manifest case
     must be present in its source context manifest, OR be listed in
@@ -3945,6 +4039,12 @@ def main() -> int:
         test_diagnosis_vs_context_check_passes_on_canonical_state,
         test_diagnosis_vs_context_check_catches_unexcluded_omission,
         test_diagnosis_vs_context_check_honors_exclusion_list,
+        # Codex 2026-06-15 F1 (eval injects zero-score for exclusions)
+        test_eval_injects_zero_score_rows_for_historical_exclusions,
+        # Codex 2026-06-15 F2 (shim secret redaction in error text)
+        test_openai_shim_redacts_bearer_tokens_in_error_text,
+        test_openai_shim_redacts_api_key_shape,
+        test_openai_shim_http_error_summary_omits_body,
         # Codex 2026-06-12 F1 (fatal provider_error preserves manifests)
         test_fatal_provider_error_preserves_existing_method_artifacts,
         # Codex 2026-06-12 F2 (consistency check also asserts method set)

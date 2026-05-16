@@ -2772,6 +2772,69 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > 133 → 136 (+3). `test_hybrid_router.py` unchanged at 10. All
 > 146 pass.
 
+> ⚠️ **Codex 2026-06-15 [high/high] fixes applied — eval macro
+> means recomputed on full denominator; shim error path
+> hardened.** This round caught that the 2026-06-14 exclusion-
+> manifest approach still let excluded rows DISAPPEAR from
+> scoring, AND that the OpenAI shim was persisting raw HTTP
+> error bodies (potential secret leak):
+>
+> **F1 [high] (Excluded rows still shrank the eval denominator.)**
+> The 2026-06-14 `configs/historical_provider_error_exclusions.json`
+> documented 20 missing-with-reason cases, but
+> `evaluate_diagnosis.py` only scored rows present in the
+> diagnosis manifest. The release check passed (exclusions
+> matched), but the macro means were still computed on a 4-row
+> denominator for the affected method × case cells — selection
+> bias still in play.
+> - Fix: `evaluate_diagnosis.py` now reads the exclusion manifest
+>   and, for each (split, diagnoser, method, case_id) listed
+>   there, INJECTS a synthetic provider_error-shaped row into
+>   the per-method `cases` array. The row carries
+>   `metadata.provider_error: "<prefix> [historical exclusion]"`,
+>   `root_cause_category: "unknown"`, and runs through the normal
+>   `score_case` pipeline. The resulting case entry has
+>   `diagnosis_success=False`, `abstained=True`, and zero-scored
+>   metrics — equivalent to a real failure row from the runner.
+> - The `validate_eval_manifest_consistency.py` check now ALSO
+>   consults the exclusion manifest so synthesized rows
+>   (in-eval-not-in-manifest by design) don't fire false
+>   positives.
+> - Regenerated all 22 eval files: macro means dropped slightly
+>   on the affected method × diagnoser cells (e.g. v3 dev/rtk-read
+>   `diagnosis_score_v1` 0.090 → 0.080 as cargo-tokio-001's zero
+>   re-entered the average). No rank reorderings on §3i v2 top-3
+>   agreement sets.
+> - 1 new test pins the contract: rtk-read eval block contains 5
+>   case entries (4 real + 1 synthesized cargo-tokio-001) with
+>   the synthesized row carrying provider_error + abstention.
+>
+> **F2 [high] (OpenAI shim persisted raw response bodies in
+> provider_error.)** The shim's HTTPError handler captured the
+> first 400 chars of the response body verbatim and re-raised it
+> as `RuntimeError(f"OpenAI HTTP {code}: {body!r}")`, which the
+> runner then wrote to `metadata.provider_error`. A compatible
+> proxy that echoed `Authorization: Bearer ...` headers, tenant
+> identifiers, or session tokens in its 4xx body would commit
+> those secrets into diagnosis artifacts despite
+> `allow_secret_values_in_results=false`.
+> - Fix: new `safe_http_error_summary(code, body)` returns a
+>   stable summary `"OpenAI HTTP {code} body_sha256={digest}…
+>   body_len={n}"` — no body content. New `redact_secrets_in_text`
+>   chains `redact_urls_in_text` with bearer-token, API-key, and
+>   long-opaque-token regex redactors (sha256-prefixed
+>   placeholders). The URLError path now redacts the exception
+>   text through `redact_secrets_in_text` before re-raising.
+> - 3 new tests cover the redactors: Bearer-token shape,
+>   `sk-*` API-key shape, and HTTP error summary omits raw body
+>   while preserving status + digest.
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py`
+> 136 → 140 (+4). `test_hybrid_router.py` unchanged at 10. All
+> 150 pass. All three release checks (eval consistency,
+> diagnosis-vs-context, committed provider_error allowlist)
+> report OK.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**
