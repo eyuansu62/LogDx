@@ -152,6 +152,7 @@ for the complete list.
 
 ## Citation
 
+{% raw %}
 ```bibtex
 @misc{qin2026logdx,
   title  = {{LogDx-CI}: A Reproducible Benchmark for
@@ -163,6 +164,7 @@ for the complete list.
            \url{https://huggingface.co/datasets/eyuansu71/logdx-ci}},
 }
 ```
+{% endraw %}
 
 Plain text → **[cite](cite.html)**.
 

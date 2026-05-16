@@ -12,6 +12,7 @@ or context-strategy findings, please cite the v2-partial release:
 
 ## BibTeX
 
+{% raw %}
 ```bibtex
 @misc{qin2026logdx,
   title  = {{LogDx-CI}: A Reproducible Benchmark for
@@ -23,6 +24,7 @@ or context-strategy findings, please cite the v2-partial release:
            \url{https://huggingface.co/datasets/eyuansu71/logdx-ci}},
 }
 ```
+{% endraw %}
 
 ## APA-style
 
