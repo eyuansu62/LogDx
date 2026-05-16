@@ -55,7 +55,7 @@ git clone https://github.com/eyuansu62/LogDx.git
 cd LogDx
 
 # (optional) pull cases corpus from the HF mirror
-huggingface-cli download --repo-type dataset \
+hf download --repo-type dataset \
     eyuansu71/logdx-ci --local-dir cases-from-hf
 
 # run the 165-test suite

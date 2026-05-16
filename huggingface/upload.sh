@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # Upload the LogDx-CI cases corpus to HuggingFace as a dataset.
 #
-# Prereq: `pyenv shell 3.12.12 && pip install -U huggingface_hub`
-#         + `huggingface-cli login` (once, with a write token).
+# Prereq: install the modern unified Hugging Face CLI:
+#     pip install -U huggingface_hub
+# Then authenticate (once, with a write token from
+# https://huggingface.co/settings/tokens):
+#     hf auth login
 #
 # Idempotent: re-running will sync the latest cases/ tree to the
 # dataset repo. To bump release tag, change v2-partial-2026-06-22
@@ -29,18 +32,18 @@ echo "==> Verifying staging tree"
 echo "Case count: $(find "$STAGING/cases" -name case.json | wc -l | tr -d ' ')"
 echo "Total size: $(du -sh "$STAGING" | cut -f1)"
 
-echo "==> Creating HF dataset repo (idempotent — will warn if exists)"
-huggingface-cli repo create logdx-ci --type dataset || true
+echo "==> Creating HF dataset repo (idempotent via --exist-ok)"
+hf repo create "$DATASET_REPO" --repo-type dataset --exist-ok
 
 echo "==> Uploading to $DATASET_REPO"
-huggingface-cli upload \
+hf upload \
     "$DATASET_REPO" \
     "$STAGING" . \
-    --repo-type=dataset \
-    --commit-message="$RELEASE_TAG initial release"
+    --repo-type dataset \
+    --commit-message "$RELEASE_TAG initial release"
 
 echo ""
 echo "==> Done. View at: https://huggingface.co/datasets/$DATASET_REPO"
 echo "==> To verify download:"
-echo "    huggingface-cli download --repo-type dataset \\"
+echo "    hf download --repo-type dataset \\"
 echo "        $DATASET_REPO --local-dir /tmp/logdx-hf-verify"

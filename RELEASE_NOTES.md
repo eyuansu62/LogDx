@@ -80,7 +80,7 @@ cd LogDx
 
 # (optional) pull the cases corpus from HF
 # the same files are also tracked in this repo under cases/
-huggingface-cli download --repo-type dataset \
+hf download --repo-type dataset \
     eyuansu71/logdx-ci --local-dir cases-from-hf
 
 # validate the canonical protocol lock

@@ -102,7 +102,7 @@ v2 — its 4k-token threshold is overfit to the v1.3 case distribution.
 ## How to use
 
 ```python
-# Download via huggingface-cli
+# Download via the unified hf CLI (pip install huggingface_hub; hf auth login)
 # (the dataset's primary format is per-case JSON + raw.log files,
 # not a single HF Dataset table)
 from huggingface_hub import snapshot_download
