@@ -3130,6 +3130,128 @@ def test_migrated_cache_rejects_after_config_edit_e2e():
     assert "shim_sha256" in (reason3 or "")
 
 
+def test_diagnosis_vs_context_check_passes_on_canonical_state():
+    """Per Codex 2026-06-14 F1 [high]: every diagnosis manifest case
+    must be present in its source context manifest, OR be listed in
+    `configs/historical_provider_error_exclusions.json`. The canonical
+    state should satisfy this — the 20 historical removals from the
+    2026-06-09 + 2026-06-10 cleanups are all in the exclusion file."""
+    import subprocess as _sub
+    repo = Path(__file__).resolve().parent.parent.parent
+    res = _sub.run(
+        ["python3",
+         str(repo / "tools" / "validate_diagnosis_vs_context_consistency.py")],
+        cwd=repo, capture_output=True, timeout=30,
+    )
+    assert res.returncode == 0, (
+        f"diagnosis-vs-context check failed; "
+        f"stderr={res.stderr.decode()[:1200]!r}"
+    )
+
+
+def test_diagnosis_vs_context_check_catches_unexcluded_omission():
+    """Per Codex 2026-06-14 F1 [high]: synthesize a temp tree where the
+    diagnosis manifest is missing a case present in the source context
+    manifest, and that case is NOT in the exclusion list. The check
+    must reject."""
+    import subprocess as _sub
+    import tempfile
+    import json
+    repo = Path(__file__).resolve().parent.parent.parent
+    check = repo / "tools" / "validate_diagnosis_vs_context_consistency.py"
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        split = root / "dev"
+        # Source context manifest has 2 cases.
+        (split / "grep.jsonl").parent.mkdir(parents=True, exist_ok=True)
+        (split / "grep.jsonl").write_text(
+            json.dumps({"case_id": "case-a", "context_method": "grep"}) + "\n"
+            + json.dumps({"case_id": "case-b", "context_method": "grep"}) + "\n",
+            encoding="utf-8",
+        )
+        # Diagnosis manifest only has case-a.
+        diag_dir = split / "diagnoses" / "real-debugger-v3"
+        diag_dir.mkdir(parents=True)
+        (diag_dir / "grep.jsonl").write_text(
+            json.dumps({
+                "case_id": "case-a",
+                "context_method": "grep",
+                "diagnoser": "real-debugger-v3",
+            }) + "\n",
+            encoding="utf-8",
+        )
+        # Empty exclusion file → case-b is NOT excluded.
+        excl = root / "exclusions.json"
+        excl.write_text(json.dumps({"exclusions": []}), encoding="utf-8")
+        res = _sub.run(
+            ["python3", str(check),
+             "--results-dir", str(root),
+             "--exclusions", str(excl)],
+            cwd=repo, capture_output=True, timeout=30,
+        )
+        assert res.returncode != 0, (
+            f"check should reject unexcluded omission; "
+            f"stdout={res.stdout.decode()[:300]!r}"
+        )
+        err = res.stderr.decode("utf-8")
+        assert "case-b" in err, err[:600]
+
+
+def test_diagnosis_vs_context_check_honors_exclusion_list():
+    """Per Codex 2026-06-14 F1 [high]: same shape, but case-b IS in the
+    exclusion list — check passes."""
+    import subprocess as _sub
+    import tempfile
+    import json
+    repo = Path(__file__).resolve().parent.parent.parent
+    check = repo / "tools" / "validate_diagnosis_vs_context_consistency.py"
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        split = root / "dev"
+        split.mkdir()
+        (split / "grep.jsonl").write_text(
+            json.dumps({"case_id": "case-a", "context_method": "grep"}) + "\n"
+            + json.dumps({"case_id": "case-b", "context_method": "grep"}) + "\n",
+            encoding="utf-8",
+        )
+        diag_dir = split / "diagnoses" / "real-debugger-v3"
+        diag_dir.mkdir(parents=True)
+        (diag_dir / "grep.jsonl").write_text(
+            json.dumps({
+                "case_id": "case-a",
+                "context_method": "grep",
+                "diagnoser": "real-debugger-v3",
+            }) + "\n",
+            encoding="utf-8",
+        )
+        excl = root / "exclusions.json"
+        excl.write_text(
+            json.dumps({
+                "exclusions": [
+                    {
+                        "split": "dev",
+                        "diagnoser": "real-debugger-v3",
+                        "method": "grep",
+                        "case_id": "case-b",
+                        "provider_error_prefix": "synthetic",
+                        "note": "test fixture",
+                    },
+                ],
+            }),
+            encoding="utf-8",
+        )
+        res = _sub.run(
+            ["python3", str(check),
+             "--results-dir", str(root),
+             "--exclusions", str(excl)],
+            cwd=repo, capture_output=True, timeout=30,
+        )
+        assert res.returncode == 0, (
+            f"check should accept excluded omission; "
+            f"stderr={res.stderr.decode()[:600]!r}"
+        )
+
+
 def test_missing_context_with_provider_error_fails_closed():
     """Per Codex 2026-06-13 F1 [high]: a manifest row that declares
     `metadata.provider_error` AND points at a nonexistent context_path
@@ -3819,6 +3941,10 @@ def main() -> int:
         # Codex 2026-06-13 F1 (missing context + provider_error fail-closed)
         test_missing_context_with_provider_error_fails_closed,
         test_missing_context_without_provider_error_also_fails_closed,
+        # Codex 2026-06-14 F1 (diagnosis-vs-context consistency)
+        test_diagnosis_vs_context_check_passes_on_canonical_state,
+        test_diagnosis_vs_context_check_catches_unexcluded_omission,
+        test_diagnosis_vs_context_check_honors_exclusion_list,
         # Codex 2026-06-12 F1 (fatal provider_error preserves manifests)
         test_fatal_provider_error_preserves_existing_method_artifacts,
         # Codex 2026-06-12 F2 (consistency check also asserts method set)

@@ -2720,6 +2720,58 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > 131 → 133 (+2). `test_hybrid_router.py` unchanged at 10. All
 > 143 pass.
 
+> ⚠️ **Codex 2026-06-14 [high] fix applied — eval denominator
+> integrity restored.** This round caught that the 2026-06-09 +
+> 2026-06-10 cleanups created a selection-bias hazard:
+>
+> **F1 [high] (Failed diagnoser rows were deleted instead of
+> counted as failures.)** The cleanup tools removed 20 non-
+> allowlisted provider_error rows from diagnosis manifests, but
+> evaluate_diagnosis.py only scores rows present in the manifest.
+> The eval denominator silently shrank — failures dropped out
+> rather than being counted as zero-score. This can inflate macro
+> scores and make rank comparisons depend on which provider
+> failures were removed.
+>
+> Fix:
+> - New explicit exclusion manifest
+>   `configs/historical_provider_error_exclusions.json` listing all
+>   20 (split, diagnoser, method, case_id) tuples with provider_error
+>   prefix, removed-at-commit, and per-row note.
+> - New release check `tools/validate_diagnosis_vs_context_consistency.py`
+>   walks every diagnosis manifest under `**/diagnoses/real-debugger-*/`
+>   and asserts every case in the corresponding source context manifest
+>   (`results/<split>/<method>.jsonl`) is present in the diagnosis
+>   manifest OR explicitly listed in the exclusion file. Extras
+>   (diagnosis rows for cases not in context) also fail. CI-gateable.
+> - 3 new tests: passes on canonical state (all 20 historical
+>   omissions accounted for); rejects synthetic unexcluded
+>   omission; accepts when the omission IS in the exclusion list.
+>
+> Score impact: the §3i v2 cross-family ranking was computed on
+> the post-cleanup eval files (with the failures already removed).
+> So the ranking remains stable, BUT the table footnote should
+> read "v2 macro means computed on denominator excluding 20
+> documented transient failures (see
+> `configs/historical_provider_error_exclusions.json`)" so readers
+> understand the small denominator gap. Affected per-method n's:
+> v1 dev raw 5→4, v1 dev rtk-read 5→4, v2 dev hybrid-v3 5→4, v3 dev
+> hybrid-v2 5→4, v3 dev hybrid-v1 5→4, v3 dev llm-summary-v1-mock
+> 5→4, v3 dev rtk-read 5→4, v3 holdout llm-summary-v1-mock 5→4
+> (8 dev/holdout cells); plus 10 v2 cells on real-debugger-v1
+> across v2/{dev,holdout,stress}.
+>
+> Future re-runs that produce clean (non-provider-error) rows for
+> these cases should drop the corresponding exclusion entry. The
+> 2026-06-12 F1 method-level skip discipline ensures that a fresh
+> re-run hitting the same transient won't silently overwrite —
+> the runner refuses to persist non-allowlisted provider_error,
+> logs FAIL_PROVIDER_ERROR, and preserves prior valid artifacts.
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py`
+> 133 → 136 (+3). `test_hybrid_router.py` unchanged at 10. All
+> 146 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

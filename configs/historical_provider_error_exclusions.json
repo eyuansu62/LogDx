@@ -1,0 +1,186 @@
+{
+  "_doc": "Per Codex 2026-06-14 F1 [high]: 20 (split, diagnoser, method, case) tuples whose diagnosis rows were removed by the 2026-06-09 / 2026-06-10 cleanup. These rows had non-allowlisted provider_error prefixes (claude-CLI RuntimeError on v1, JSONDecodeError on v2, post_api_error on v3). The cleanup removed them so the validate_committed_diagnosis_provider_errors.py release check could pass, BUT removing rows shrinks the eval denominator and inflates macro means.\n\nThe diagnosis-vs-context release check (validate_diagnosis_vs_context_consistency.py) treats these tuples as explicitly-excluded missing cases. Future re-runs can re-introduce them under the 2026-06-12 F1 method-level skip discipline (the runner now refuses to persist non-allowlisted provider_error rows, so a fresh re-run that hits the same transient failure would NOT silently overwrite — it would log FAIL_PROVIDER_ERROR and preserve any prior valid artifacts).\n\nWhen a future re-run successfully produces a clean (non-provider-error) row for one of these tuples, drop the corresponding entry from this list. The release check will then require a present diagnosis row for that case.",
+  "_codex_finding": "Codex 2026-06-14 F1 [high]: failed-diagnoser rows deleted instead of counted; the eval denominator shrinks → score inflation. Recommendation: add an explicit exclusion manifest and a release check that compares diagnosis case IDs against the source context manifest. This file IS that exclusion manifest.",
+  "exclusions": [
+    {
+      "split": "dev",
+      "diagnoser": "real-debugger-v1",
+      "method": "raw",
+      "case_id": "cargo-tokio-001",
+      "removed_at_commit": "8df2265",
+      "provider_error_prefix": "RuntimeError: claude CLI exited 1",
+      "note": "Claude CLI transient subprocess failure from canonical 2026-04..05 sweep; row removed by cleanup_committed_provider_errors_codex_2026_06_09.py."
+    },
+    {
+      "split": "dev",
+      "diagnoser": "real-debugger-v1",
+      "method": "rtk-read",
+      "case_id": "cargo-tokio-001",
+      "removed_at_commit": "8df2265",
+      "provider_error_prefix": "RuntimeError: claude CLI exited 1",
+      "note": "Same transient as dev/v1/raw."
+    },
+    {
+      "split": "dev",
+      "diagnoser": "real-debugger-v2",
+      "method": "hybrid-grep-120k-rtk-tail-v3",
+      "case_id": "jest-nextjs-001",
+      "removed_at_commit": "8df2265",
+      "provider_error_prefix": "JSONDecodeError: Invalid \\\\escape",
+      "note": "Claude sonnet response parse failure; one-off."
+    },
+    {
+      "split": "dev",
+      "diagnoser": "real-debugger-v3",
+      "method": "hybrid-grep-120k-tail-v2",
+      "case_id": "mypy-pandas-001",
+      "removed_at_commit": "8df2265",
+      "provider_error_prefix": "post_api_error: JSONDecodeError",
+      "note": "OpenAI gpt-5-mini response parse failure (Invalid control character)."
+    },
+    {
+      "split": "dev",
+      "diagnoser": "real-debugger-v3",
+      "method": "hybrid-grep-4k-rtk-err-cat-v1",
+      "case_id": "mypy-pandas-001",
+      "removed_at_commit": "8df2265",
+      "provider_error_prefix": "post_api_error: JSONDecodeError",
+      "note": "Same case as v3/hybrid-grep-120k-tail-v2 but on hybrid-v1; same parse failure pattern across context methods (suggests model issue with this case)."
+    },
+    {
+      "split": "dev",
+      "diagnoser": "real-debugger-v3",
+      "method": "llm-summary-v1-mock",
+      "case_id": "mypy-pandas-001",
+      "removed_at_commit": "8df2265",
+      "provider_error_prefix": "post_api_error: JSONDecodeError",
+      "note": "Same case + parse failure, llm-summary-v1-mock context."
+    },
+    {
+      "split": "dev",
+      "diagnoser": "real-debugger-v3",
+      "method": "rtk-read",
+      "case_id": "cargo-tokio-001",
+      "removed_at_commit": "8df2265",
+      "provider_error_prefix": "post_api_error: JSONDecodeError",
+      "note": "OpenAI parse failure on rtk-read context."
+    },
+    {
+      "split": "holdout",
+      "diagnoser": "real-debugger-v3",
+      "method": "llm-summary-v1-mock",
+      "case_id": "tsc-typescript-001",
+      "removed_at_commit": "8df2265",
+      "provider_error_prefix": "post_api_error: JSONDecodeError",
+      "note": "OpenAI parse failure on holdout llm-summary-v1-mock context."
+    },
+    {
+      "split": "v2/dev",
+      "diagnoser": "real-debugger-v1",
+      "method": "raw",
+      "case_id": "moby-buildx-bake-v2-001",
+      "removed_at_commit": "609e71a",
+      "provider_error_prefix": "RuntimeError: claude CLI exited 1",
+      "note": "v2 split — Claude CLI transient on v2/dev raw context."
+    },
+    {
+      "split": "v2/dev",
+      "diagnoser": "real-debugger-v1",
+      "method": "rtk-read",
+      "case_id": "moby-buildx-bake-v2-001",
+      "removed_at_commit": "609e71a",
+      "provider_error_prefix": "RuntimeError: claude CLI exited 1",
+      "note": "Same v2 case + transient as v2/dev/v1/raw."
+    },
+    {
+      "split": "v2/holdout",
+      "diagnoser": "real-debugger-v1",
+      "method": "grep",
+      "case_id": "biome-pnpm-not-found-v2-001",
+      "removed_at_commit": "609e71a",
+      "provider_error_prefix": "RuntimeError: claude CLI exited 1",
+      "note": "v2/holdout grep — Claude CLI transient."
+    },
+    {
+      "split": "v2/holdout",
+      "diagnoser": "real-debugger-v1",
+      "method": "hybrid-grep-120k-rtk-tail-v3",
+      "case_id": "biome-pnpm-not-found-v2-001",
+      "removed_at_commit": "609e71a",
+      "provider_error_prefix": "RuntimeError: claude CLI exited 1",
+      "note": "Same v2 case as v2/holdout/v1/grep."
+    },
+    {
+      "split": "v2/holdout",
+      "diagnoser": "real-debugger-v1",
+      "method": "hybrid-grep-120k-tail-v2",
+      "case_id": "biome-pnpm-not-found-v2-001",
+      "removed_at_commit": "609e71a",
+      "provider_error_prefix": "RuntimeError: claude CLI exited 1",
+      "note": "Same v2 case as v2/holdout/v1/grep."
+    },
+    {
+      "split": "v2/stress",
+      "diagnoser": "real-debugger-v1",
+      "method": "grep",
+      "case_id": "airflow-precommit-tsc-middle-v2-001",
+      "removed_at_commit": "609e71a",
+      "provider_error_prefix": "RuntimeError: claude CLI exited 1",
+      "note": "v2/stress airflow — Claude CLI transient."
+    },
+    {
+      "split": "v2/stress",
+      "diagnoser": "real-debugger-v1",
+      "method": "hybrid-grep-120k-rtk-tail-v3",
+      "case_id": "airflow-precommit-tsc-middle-v2-001",
+      "removed_at_commit": "609e71a",
+      "provider_error_prefix": "RuntimeError: claude CLI exited 1",
+      "note": "Same v2 case."
+    },
+    {
+      "split": "v2/stress",
+      "diagnoser": "real-debugger-v1",
+      "method": "hybrid-grep-120k-rtk-tail-v3",
+      "case_id": "cpython-tcl-windows-matrix-v2-001",
+      "removed_at_commit": "609e71a",
+      "provider_error_prefix": "RuntimeError: claude CLI exited 1",
+      "note": "v2/stress cpython tcl — Claude CLI transient on hybrid-v3 context."
+    },
+    {
+      "split": "v2/stress",
+      "diagnoser": "real-debugger-v1",
+      "method": "hybrid-grep-120k-tail-v2",
+      "case_id": "airflow-precommit-tsc-middle-v2-001",
+      "removed_at_commit": "609e71a",
+      "provider_error_prefix": "RuntimeError: claude CLI exited 1",
+      "note": "Same v2/stress airflow + transient on hybrid-v2 context."
+    },
+    {
+      "split": "v2/stress",
+      "diagnoser": "real-debugger-v1",
+      "method": "hybrid-grep-120k-tail-v2",
+      "case_id": "cpython-tcl-windows-matrix-v2-001",
+      "removed_at_commit": "609e71a",
+      "provider_error_prefix": "RuntimeError: claude CLI exited 1",
+      "note": "Same v2/stress cpython + transient on hybrid-v2 context."
+    },
+    {
+      "split": "v2/stress",
+      "diagnoser": "real-debugger-v1",
+      "method": "hybrid-grep-4k-rtk-err-cat-v1",
+      "case_id": "argocd-race-conditions-batch5-v2-001",
+      "removed_at_commit": "609e71a",
+      "provider_error_prefix": "RuntimeError: claude CLI exited 1",
+      "note": "v2/stress argocd — Claude CLI transient on hybrid-v1 context."
+    },
+    {
+      "split": "v2/stress",
+      "diagnoser": "real-debugger-v1",
+      "method": "rtk-err-cat",
+      "case_id": "argocd-race-conditions-batch5-v2-001",
+      "removed_at_commit": "609e71a",
+      "provider_error_prefix": "RuntimeError: claude CLI exited 1",
+      "note": "Same v2/stress argocd + transient on rtk-err-cat context."
+    }
+  ]
+}
