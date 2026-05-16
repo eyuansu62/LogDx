@@ -1697,10 +1697,43 @@ def run(
         for m_row in rows:
             case_id = m_row["case_id"]
             ctx_path = ROOT / m_row["context_path"]
+            # Per Codex 2026-06-13 F1 [high]: inspect
+            # metadata.provider_error BEFORE the ctx_path.exists()
+            # gate. Pre-fix, a context-provider row that emitted
+            # provider_error AND failed to leave a placeholder
+            # context file would hit the "context file missing"
+            # branch first, `continue` silently, and the method
+            # would flush as a clean run with the failed case
+            # simply omitted. That hides upstream context
+            # corruption AND truncates previously valid diagnosis
+            # artifacts via the flush. Route through the fail-
+            # closed provider-error path regardless of whether
+            # ctx_path exists.
+            ctx_meta = m_row.get("metadata") or {}
+            ctx_provider_error = ctx_meta.get("provider_error")
             if not ctx_path.exists():
-                print(f"  skip {method}/{case_id}: context file missing "
-                      f"({ctx_path})", file=sys.stderr)
-                continue
+                if not ctx_provider_error:
+                    # Per Codex 2026-06-13 F1 [high]: a missing
+                    # context file WITHOUT an upstream provider_error
+                    # is also a corruption signal — the manifest row
+                    # claims a context that isn't on disk. Treat as
+                    # a method-level failure rather than a silent
+                    # skip; otherwise the wrapper exits 0 with a
+                    # short manifest after a partial regeneration.
+                    print(
+                        f"FAIL_PROVIDER_ERROR {method}/{case_id}: "
+                        f"context file missing ({ctx_path}) AND no "
+                        f"upstream provider_error declared — refusing "
+                        f"to silently omit the case.",
+                        file=sys.stderr,
+                    )
+                    had_failure = True
+                    method_had_fatal_provider_error = True
+                    if strict:
+                        return 1
+                    continue
+                # provider_error path takes ctx_text=""; safe to
+                # proceed without the file.
 
             # Per Codex 2026-05-10 [high]: a context-provider (e.g. hybrid
             # router) can emit a method_row whose metadata.provider_error is
@@ -1712,8 +1745,6 @@ def run(
             # context-provider already declared a provider_error, propagate
             # it directly into a provider-error diagnosis row WITHOUT
             # invoking the diagnoser.
-            ctx_meta = m_row.get("metadata") or {}
-            ctx_provider_error = ctx_meta.get("provider_error")
             if ctx_provider_error:
                 ctx_text = ""  # not used; we skip the diagnoser
                 provider_error_msg = (

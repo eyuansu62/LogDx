@@ -3130,6 +3130,114 @@ def test_migrated_cache_rejects_after_config_edit_e2e():
     assert "shim_sha256" in (reason3 or "")
 
 
+def test_missing_context_with_provider_error_fails_closed():
+    """Per Codex 2026-06-13 F1 [high]: a manifest row that declares
+    `metadata.provider_error` AND points at a nonexistent context_path
+    must STILL trip the fail-closed path. Pre-fix, the
+    ctx_path.exists() check ran first and quietly `continue`d, so the
+    method flushed as a clean run with the failed case silently
+    omitted — wrapper exited 0 and overwrote prior valid artifacts.
+    """
+    import subprocess as _sub
+    import tempfile
+    import json
+    repo = Path(__file__).resolve().parent.parent.parent
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_root = Path(tmp)
+        results_dir = tmp_root / "results"
+        method_dir = results_dir / "dev"
+        method_dir.mkdir(parents=True)
+        manifest = method_dir / "synthetic-ctx.jsonl"
+        # context_path points at a file that doesn't exist.
+        manifest.write_text(
+            json.dumps({
+                "case_id": "lint-react-001",
+                "context_method": "synthetic-ctx",
+                "context_path": "cases/dev/lint-react-001/nonexistent.log",
+                "metadata": {
+                    "provider_error": "rtk_input_truncated: synthetic huge log",
+                },
+            }) + "\n",
+            encoding="utf-8",
+        )
+        env = dict(os.environ)
+        env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+        env["DIAGNOSIS_COMMAND"] = "true"
+        res = _sub.run(
+            ["python3", f"{repo}/tools/run_diagnosis.py",
+             "--split", "dev",
+             "--diagnoser", "command",
+             "--diagnoser-name", "real-debugger-v3",
+             "--command", env["DIAGNOSIS_COMMAND"],
+             "--context-method", "synthetic-ctx",
+             "--results-dir", str(results_dir),
+             "--diagnoser-config",
+             f"{repo}/configs/diagnosers/real-debugger-v3.json",
+             "--no-cache"],
+            cwd=repo, capture_output=True, timeout=30, env=env,
+        )
+        err = res.stderr.decode("utf-8")
+        assert res.returncode != 0, (
+            f"missing context + provider_error should fail run; "
+            f"rc={res.returncode}; stderr={err[:600]!r}"
+        )
+        assert "FAIL_PROVIDER_ERROR" in err, (
+            f"expected FAIL_PROVIDER_ERROR; stderr={err[:600]!r}"
+        )
+
+
+def test_missing_context_without_provider_error_also_fails_closed():
+    """Per Codex 2026-06-13 F1 [high]: a missing context file with NO
+    upstream provider_error is ALSO a corruption signal — the manifest
+    claims a context that isn't on disk. The runner must fail-closed
+    and preserve any existing diagnosis artifacts rather than silently
+    omit the case.
+    """
+    import subprocess as _sub
+    import tempfile
+    import json
+    repo = Path(__file__).resolve().parent.parent.parent
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_root = Path(tmp)
+        results_dir = tmp_root / "results"
+        method_dir = results_dir / "dev"
+        method_dir.mkdir(parents=True)
+        manifest = method_dir / "synthetic-ctx.jsonl"
+        manifest.write_text(
+            json.dumps({
+                "case_id": "lint-react-001",
+                "context_method": "synthetic-ctx",
+                "context_path": "cases/dev/lint-react-001/nonexistent.log",
+                # No metadata.provider_error.
+            }) + "\n",
+            encoding="utf-8",
+        )
+        env = dict(os.environ)
+        env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+        env["DIAGNOSIS_COMMAND"] = "true"
+        res = _sub.run(
+            ["python3", f"{repo}/tools/run_diagnosis.py",
+             "--split", "dev",
+             "--diagnoser", "command",
+             "--diagnoser-name", "real-debugger-v3",
+             "--command", env["DIAGNOSIS_COMMAND"],
+             "--context-method", "synthetic-ctx",
+             "--results-dir", str(results_dir),
+             "--diagnoser-config",
+             f"{repo}/configs/diagnosers/real-debugger-v3.json",
+             "--no-cache"],
+            cwd=repo, capture_output=True, timeout=30, env=env,
+        )
+        err = res.stderr.decode("utf-8")
+        assert res.returncode != 0, (
+            f"missing context (no provider_error) should fail run; "
+            f"rc={res.returncode}; stderr={err[:600]!r}"
+        )
+        assert "FAIL_PROVIDER_ERROR" in err and "context file missing" in err, (
+            f"expected fail-closed message; stderr={err[:600]!r}"
+        )
+
+
 def test_fatal_provider_error_preserves_existing_method_artifacts():
     """Per Codex 2026-06-12 F1 [high]: a non-allowlisted provider_error
     during a re-run must NOT overwrite the existing canonical manifest
@@ -3708,6 +3816,9 @@ def main() -> int:
         # Codex 2026-06-11 F1 (eval-manifest consistency release check)
         test_eval_manifest_consistency_check_passes_on_canonical_state,
         test_eval_manifest_consistency_check_catches_drift,
+        # Codex 2026-06-13 F1 (missing context + provider_error fail-closed)
+        test_missing_context_with_provider_error_fails_closed,
+        test_missing_context_without_provider_error_also_fails_closed,
         # Codex 2026-06-12 F1 (fatal provider_error preserves manifests)
         test_fatal_provider_error_preserves_existing_method_artifacts,
         # Codex 2026-06-12 F2 (consistency check also asserts method set)

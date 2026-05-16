@@ -2683,6 +2683,43 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > 141 pass. Working tree clean after the manifest-preservation
 > test (snapshot/restore wrapper verified).
 
+> ⚠️ **Codex 2026-06-13 [high] fix applied — no scores moved.**
+> This round caught one ordering bug introduced by the 2026-06-11
+> F2 context-provider fail-closed work:
+>
+> **F1 [high] (Missing context files bypassed fail-closed.)** The
+> manifest-row loop checked `ctx_path.exists()` BEFORE inspecting
+> `metadata.provider_error`. A context-provider that emitted a
+> `provider_error` row but failed to leave a placeholder context
+> file landed in the missing-context-file branch first, hit a
+> silent `continue`, and the method-end flush proceeded with the
+> failed case quietly omitted — wrapper exited 0 AND the flush
+> overwrote previously valid artifacts with a short manifest.
+> Fix:
+> - Reordered the check: inspect `metadata.provider_error` first.
+>   When `ctx_path` is missing AND a `provider_error` is set, fall
+>   through to the existing context-provider fail-closed branch
+>   (which sets `had_failure`, `method_had_fatal_provider_error`,
+>   and the strict-mode early return). `ctx_text=""` is already
+>   safe on that branch.
+> - When `ctx_path` is missing AND no `provider_error` is declared,
+>   the runner now also fails-closed (had_failure + method-level
+>   flush block) instead of silently skipping. The manifest row
+>   claimed a context that isn't on disk — that's corruption, not
+>   a "case to skip".
+> - 2 new tests: synthetic manifest with provider_error +
+>   nonexistent context_path → fail; same shape WITHOUT
+>   provider_error → also fail with a "context file missing"
+>   message.
+>
+> Score impact: zero. Canonical manifests all reference real
+> context files on disk; this fix only activates on tampered /
+> partially-regenerated state.
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py`
+> 131 → 133 (+2). `test_hybrid_router.py` unchanged at 10. All
+> 143 pass.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**
