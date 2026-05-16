@@ -61,9 +61,10 @@ listed at the bottom of the [project README](https://github.com/eyuansu62/LogDx/
 
 ## Author
 
-**Bowen Qin** · National University of Singapore · bowen@lum.id
+**Bowen Qin** · National University of Singapore
 
-Maintained at <https://github.com/eyuansu62/LogDx>.
+Maintained at <https://github.com/eyuansu62/LogDx>; contact via
+[GitHub Issues](https://github.com/eyuansu62/LogDx/issues).
 Issues / PRs welcome. New context-provider methods can be benchmarked
 by adding a config in `configs/baselines/` and submitting their
 output manifests; the three release gates will validate consistency

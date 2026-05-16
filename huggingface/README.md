@@ -193,5 +193,4 @@ for the full list.
 ## Contact
 
 - Author: Bowen Qin (National University of Singapore)
-- Email: bowen@lum.id
 - Issues: file at <https://github.com/eyuansu62/LogDx/issues>

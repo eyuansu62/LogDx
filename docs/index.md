@@ -169,7 +169,6 @@ Plain text → **[cite](cite.html)**.
 ## Contact
 
 - **Author**: Bowen Qin (National University of Singapore)
-- **Email**: bowen@lum.id
 - **Issues**: <https://github.com/eyuansu62/LogDx/issues>
 
 ---
