@@ -82,9 +82,28 @@ class _ContextTooLargeError(Exception):
 _API_VERSION_SEGMENT_RE = re.compile(r"^v\d+$")
 
 
+_PUBLIC_HOST_ALLOWLIST = frozenset({
+    "api.openai.com", "api.anthropic.com",
+    "localhost", "127.0.0.1", "::1",
+})
+
+
+def _redact_hostname(host: str) -> str:
+    """Per Codex 2026-06-19 F1 [high]: non-allowlisted hostnames may
+    themselves carry tenant or resource identity (e.g.
+    `my-resource.openai.azure.com`, internal proxy names with
+    tenant prefixes). Replace the hostname with a stable
+    sha-prefixed placeholder; auditors can still distinguish runs
+    via the full-URL `base_url_sha256` recorded in model_info."""
+    if not host:
+        return host
+    digest = hashlib.sha256(host.encode("utf-8")).hexdigest()[:16]
+    return f"<redacted-host sha={digest}>"
+
+
 def sanitize_base_url(url: str) -> str:
-    """Strip userinfo, query, AND all path segments except an
-    allowlisted API-version segment, for safe persistence.
+    """Strip userinfo, query, deep path segments, AND redact
+    non-allowlisted hostnames for safe persistence.
 
     Codex history:
     - 2026-05-12 F3: stripped userinfo + query but kept the full path
@@ -94,21 +113,24 @@ def sanitize_base_url(url: str) -> str:
       arbitrary first segments — proxies shaped like
       `https://proxy/<tenant-key>/v1` would persist the tenant key.
       Now: only first segments matching `^v\\d+$` (canonical API-
-      version routes like /v1, /v2, /v10) are preserved. Anything
-      else is dropped entirely. The full URL's sha256 is recorded
-      separately as `base_url_sha256` so an auditor can still
-      distinguish a proxy run from the canonical run without
-      leaking secret-carrying segments.
+      version routes like /v1, /v2, /v10) are preserved.
+    - 2026-06-19 F1 [high]: the path-segment sanitizer still preserved
+      arbitrary HOSTNAMES — a private proxy like
+      `https://my-tenant-resource.proxy.example.com/v1` persisted
+      `my-tenant-resource.proxy.example.com` verbatim in
+      `metadata.model_info.base_url`. Now: only hostnames in
+      `_PUBLIC_HOST_ALLOWLIST` (api.openai.com, api.anthropic.com,
+      localhost, 127.0.0.1, ::1) pass through; everything else is
+      replaced with `<redacted-host sha=PREFIX>`. The full URL's
+      sha256 is still recorded separately as `base_url_sha256`.
 
-    Examples (post 2026-05-31):
+    Examples:
         https://user:pass@api.openai.com/v1?token=xyz
             -> https://api.openai.com/v1
         https://proxy.example.com/v1/private/secret-route
-            -> https://proxy.example.com/v1
-        https://proxy.example.com/secret-token/v1
-            -> https://proxy.example.com           (first seg dropped)
-        https://proxy.example.com/tenants/foo/v1
-            -> https://proxy.example.com           (first seg dropped)
+            -> https://<redacted-host sha=...>/v1
+        https://my-resource.openai.azure.com/v1
+            -> https://<redacted-host sha=...>/v1
         http://localhost:11434/v1
             -> http://localhost:11434/v1
         https://api.openai.com
@@ -117,9 +139,15 @@ def sanitize_base_url(url: str) -> str:
     if not url:
         return url
     parts = urllib.parse.urlsplit(url)
-    netloc = parts.hostname or ""
-    if parts.port:
-        netloc = f"{netloc}:{parts.port}"
+    host = parts.hostname or ""
+    if host.lower() in _PUBLIC_HOST_ALLOWLIST:
+        netloc = host
+        if parts.port:
+            netloc = f"{netloc}:{parts.port}"
+    else:
+        # Redact the host AND drop the port (custom-port info on a
+        # private endpoint is also identity-leaking).
+        netloc = _redact_hostname(host)
     path = parts.path or ""
     if path and path != "/":
         segments = [s for s in path.split("/") if s]

@@ -997,30 +997,55 @@ def build_shim_env(
 _API_VERSION_SEGMENT_RE = re.compile(r"^v\d+$")
 
 
+_PUBLIC_HOST_ALLOWLIST = frozenset({
+    "api.openai.com", "api.anthropic.com",
+    "localhost", "127.0.0.1", "::1",
+})
+
+
+def _redact_hostname(host: str) -> str:
+    """Per Codex 2026-06-19 F1 [high]: replace non-allowlisted
+    hostnames with a sha-prefixed placeholder so private-proxy /
+    tenant-resource hostnames don't leak into committed artifacts.
+    Mirrors the shim helper for consistent cache-hit validation."""
+    if not host:
+        return host
+    return (
+        "<redacted-host sha="
+        + hashlib.sha256(host.encode("utf-8")).hexdigest()[:16]
+        + ">"
+    )
+
+
 def _sanitize_base_url_for_compare(url: str) -> str:
-    """Per Codex 2026-05-18 F3 + 2026-05-25 F2 + 2026-05-31 F1: the
-    OpenAI shim persists a sanitized base_url (userinfo + query +
-    deep-path segments stripped) in `metadata.model_info.base_url`.
-    The runner's `effective_base_url` returns the env value
-    verbatim. Comparing sanitized-vs-raw caused cache_hit_is_acceptable
-    to reject the very row it had just written when the user pointed
+    """Per Codex 2026-05-18 F3 + 2026-05-25 F2 + 2026-05-31 F1 +
+    2026-06-19 F1: the OpenAI shim persists a sanitized base_url
+    (userinfo + query + deep-path segments stripped + non-public
+    hostnames redacted) in `metadata.model_info.base_url`. The
+    runner's `effective_base_url` returns the env value verbatim.
+    Comparing sanitized-vs-raw caused cache_hit_is_acceptable to
+    reject the very row it had just written when the user pointed
     CILOGBENCH_OPENAI_BASE_URL at a credentialed-proxy URL.
 
     Same shape as `examples/diagnosis_shim_openai.py:sanitize_base_url`
     — duplicated here so the runner has no shim-import dependency.
-    Codex 2026-05-31 F1 [high]: the 2026-05-25 logic preserved
-    arbitrary first segments — proxies shaped like
-    `https://proxy/<tenant-key>/v1` would persist the tenant key.
-    Now: only first segments matching `^v\\d+$` (canonical API-
-    version routes like /v1, /v2, /v10) are preserved. Anything
-    else is dropped entirely.
+    Codex 2026-06-19 F1 [high]: non-allowlisted hostnames are now
+    replaced with `<redacted-host sha=PREFIX>` so Azure-style
+    tenant hostnames (e.g. `my-resource.openai.azure.com`) and
+    private proxy names can't leak into committed artifacts. The
+    full URL sha256 (`base_url_sha256`) still distinguishes runs
+    against different endpoints.
     """
     if not url:
         return url
     parts = urllib.parse.urlsplit(url)
-    netloc = parts.hostname or ""
-    if parts.port:
-        netloc = f"{netloc}:{parts.port}"
+    host = parts.hostname or ""
+    if host.lower() in _PUBLIC_HOST_ALLOWLIST:
+        netloc = host
+        if parts.port:
+            netloc = f"{netloc}:{parts.port}"
+    else:
+        netloc = _redact_hostname(host)
     path = parts.path or ""
     if path and path != "/":
         segments = [s for s in path.split("/") if s]

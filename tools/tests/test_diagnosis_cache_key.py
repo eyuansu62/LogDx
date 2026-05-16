@@ -912,7 +912,17 @@ def test_base_url_validation_falls_back_to_sanitized_compare():
     Per Codex 2026-06-03 F2 [high]: this fallback ONLY applies when
     the config opts out of provenance (`model.allow_missing_model_info:
     true`) OR when sanitization is non-lossy. Provenance-required
-    configs with lossy endpoints now require `base_url_sha256`."""
+    configs with lossy endpoints now require `base_url_sha256`.
+
+    Per Codex 2026-06-19 F1 [high]: hostname redaction now applies
+    to non-allowlisted hosts on BOTH the shim and runner sides, so
+    this test uses the allowlisted `api.openai.com` host. A
+    proxy-style host like `https://proxy/v1` would be redacted on
+    both sides equally, BUT a legacy row recording the bare
+    unredacted form would correctly be rejected (forcing a fresh
+    re-stamp). The fallback path still applies for allowlisted
+    hosts where the sanitized form is stable.
+    """
     # Legacy opt-out config: sanitized-only fallback still works.
     cfg_legacy = {
         "model": {
@@ -926,11 +936,13 @@ def test_base_url_validation_falls_back_to_sanitized_compare():
     saved = os.environ.get("CILOGBENCH_OPENAI_BASE_URL")
     saved_model = os.environ.get("CILOGBENCH_OPENAI_MODEL")
     try:
-        os.environ["CILOGBENCH_OPENAI_BASE_URL"] = "https://u:p@proxy/v1?t=1"
+        # Allowlisted host with userinfo + query; sanitized form
+        # collapses to https://api.openai.com/v1 on both sides.
+        os.environ["CILOGBENCH_OPENAI_BASE_URL"] = "https://u:p@api.openai.com/v1?t=1"
         os.environ["CILOGBENCH_OPENAI_MODEL"] = "gpt-5-mini"
         row = {"metadata": {"model_info": {
             "provider_name": "openai", "requested_model": "gpt-5-mini",
-            "base_url": "https://proxy/v1",   # legacy: only sanitized, no sha256
+            "base_url": "https://api.openai.com/v1",
         }}}
         ok, reason = rd.cache_hit_is_acceptable(row, cfg_legacy)
         assert ok, f"legacy opt-out + sanitized-only row should accept: {reason}"
@@ -2261,11 +2273,14 @@ def test_v3_config_pins_expected_resolved_model():
 
 
 def test_sanitize_base_url_strips_deep_path_segments():
-    """Per Codex 2026-05-25 F2 + 2026-05-31 F1 [high]: a proxy URL with
-    path-embedded secrets used to be persisted verbatim in
-    metadata.model_info.base_url. The sanitizer now keeps ONLY a
-    first-segment matching `^v\\d+$` (canonical API-version route);
-    any other first segment is dropped along with everything after."""
+    """Per Codex 2026-05-25 F2 + 2026-05-31 F1 + 2026-06-19 F1 [high]:
+    a proxy URL with path-embedded secrets used to be persisted
+    verbatim in metadata.model_info.base_url. The sanitizer now
+    keeps ONLY a first-segment matching `^v\\d+$` (canonical API-
+    version route); any other first segment is dropped along with
+    everything after. AND non-allowlisted hostnames are redacted
+    with a sha-prefix marker (Azure/proxy tenant hostnames can
+    carry identity)."""
     import importlib.util
     repo = Path(__file__).resolve().parent.parent.parent
     spec = importlib.util.spec_from_file_location(
@@ -2275,30 +2290,105 @@ def test_sanitize_base_url_strips_deep_path_segments():
     spec.loader.exec_module(mod)
     f = mod.sanitize_base_url
 
-    # Canonical OpenAI URL preserved (single allowlisted version segment).
+    # Canonical OpenAI URL preserved (allowlisted hostname +
+    # version segment).
     assert f("https://api.openai.com/v1") == "https://api.openai.com/v1"
-    # Userinfo + query already stripped (2026-05-12), now path too.
-    assert f("https://user:pass@proxy.example.com/v1?token=xyz") \
-        == "https://proxy.example.com/v1"
-    # Deep path segments after a /v1 are dropped (keep allowlisted).
-    assert f("https://proxy.example.com/v1/private/secret-route") \
-        == "https://proxy.example.com/v1"
+    # Userinfo + query already stripped (2026-05-12), now path too,
+    # and the non-allowlisted hostname is redacted.
+    out = f("https://user:pass@proxy.example.com/v1?token=xyz")
+    assert "proxy.example.com" not in out, out
+    assert "redacted-host sha=" in out, out
+    assert out.endswith("/v1"), out
+    # Deep path segments after a /v1 are dropped (keep allowlisted),
+    # hostname redacted.
+    out2 = f("https://proxy.example.com/v1/private/secret-route")
+    assert "proxy.example.com" not in out2 and "redacted-host" in out2, out2
+    assert out2.endswith("/v1"), out2
     # First segment NOT matching ^v\d+$ → entire path dropped
-    # (this is the Codex 2026-05-31 F1 case).
-    assert f("https://proxy.example.com/secret-token/v1") \
-        == "https://proxy.example.com"
-    assert f("https://proxy.example.com/tenants/foo/v1") \
-        == "https://proxy.example.com"
-    assert f("https://proxy/api/internal/v2/path/with/token") \
-        == "https://proxy"
+    # (Codex 2026-05-31 F1 case). Hostname also redacted.
+    out3 = f("https://proxy.example.com/secret-token/v1")
+    assert "proxy.example.com" not in out3 and "redacted-host" in out3, out3
+    assert not out3.endswith("/v1"), out3
     # Higher version numbers also accepted.
-    assert f("https://proxy.example.com/v10") == "https://proxy.example.com/v10"
-    # Trailing-slash URL untouched.
+    out4 = f("https://proxy.example.com/v10")
+    assert out4.endswith("/v10"), out4
+    # Trailing-slash URL untouched (allowlisted host).
     assert f("https://api.openai.com/") == "https://api.openai.com/"
-    # No-path URL untouched.
+    # No-path URL untouched (allowlisted host).
     assert f("https://api.openai.com") == "https://api.openai.com"
-    # Port preserved.
+    # Port preserved on allowlisted host.
     assert f("http://localhost:11434/v1") == "http://localhost:11434/v1"
+
+
+def test_sanitize_base_url_redacts_tenant_hostname():
+    """Per Codex 2026-06-19 F1 [high]: non-allowlisted hostnames can
+    carry tenant / resource identity (e.g. Azure
+    `<resource>.openai.azure.com`, internal proxy names with
+    tenant prefixes). The sanitizer replaces them with a sha-
+    prefixed placeholder so they can't leak into committed
+    artifacts."""
+    import importlib.util
+    repo = Path(__file__).resolve().parent.parent.parent
+    spec = importlib.util.spec_from_file_location(
+        "_shim_openai_redact", repo / "examples" / "diagnosis_shim_openai.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    f = mod.sanitize_base_url
+
+    # Azure-style tenant host.
+    azure_out = f("https://my-resource.openai.azure.com/v1")
+    assert "my-resource.openai.azure.com" not in azure_out, azure_out
+    assert "redacted-host sha=" in azure_out, azure_out
+    # Internal proxy with tenant prefix.
+    proxy_out = f("https://tenant42.proxy.internal/v1")
+    assert "tenant42" not in proxy_out, proxy_out
+    assert "redacted-host" in proxy_out, proxy_out
+    # Port on non-allowlisted host is DROPPED (custom-port info on
+    # a private endpoint is also identity-leaking).
+    port_out = f("https://tenant.proxy:8443/v1")
+    assert "8443" not in port_out, port_out
+    # Two different tenant hosts produce DIFFERENT redacted forms
+    # (sha differs) — so an auditor can still tell two runs apart.
+    out_a = f("https://tenant-a.azure.com/v1")
+    out_b = f("https://tenant-b.azure.com/v1")
+    assert out_a != out_b, f"redacted forms should differ: {out_a} == {out_b}"
+    # Allowlisted hosts NOT redacted.
+    assert f("https://api.openai.com/v1") == "https://api.openai.com/v1"
+    assert f("https://api.anthropic.com/v1") == "https://api.anthropic.com/v1"
+    assert f("http://localhost:8000/v1") == "http://localhost:8000/v1"
+    assert f("http://127.0.0.1:8000/v1") == "http://127.0.0.1:8000/v1"
+
+
+def test_runner_sanitize_base_url_for_compare_mirrors_shim_redaction():
+    """Per Codex 2026-06-19 F1 [high]: runner-side `_sanitize_base_url
+    _for_compare` must agree with shim-side `sanitize_base_url` on
+    hostname redaction. Otherwise cache_hit_is_acceptable would
+    compare sanitized-redacted-shim-row vs unredacted-runner-form
+    and reject every cache hit for non-allowlisted endpoints."""
+    import importlib.util
+    repo = Path(__file__).resolve().parent.parent.parent
+    # Import shim module
+    spec_s = importlib.util.spec_from_file_location(
+        "_shim_o2", repo / "examples" / "diagnosis_shim_openai.py"
+    )
+    shim = importlib.util.module_from_spec(spec_s)
+    spec_s.loader.exec_module(shim)
+    # Use runner module (already imported as `rd`)
+    test_urls = [
+        "https://api.openai.com/v1",
+        "https://my-resource.openai.azure.com/v1",
+        "https://tenant-x.proxy.internal/v1/private/segment",
+        "http://localhost:11434/v1",
+        "http://127.0.0.1:8000/v1",
+    ]
+    for u in test_urls:
+        shim_out = shim.sanitize_base_url(u)
+        runner_out = rd._sanitize_base_url_for_compare(u)
+        assert shim_out == runner_out, (
+            f"shim/runner disagree on {u!r}: shim={shim_out!r}, "
+            f"runner={runner_out!r}"
+        )
 
 
 def test_sanitize_base_url_drops_tenant_key_first_segment():
@@ -4492,6 +4582,9 @@ def main() -> int:
         test_cache_hit_rejects_null_resolved_model_under_pin,
         # Codex 2026-05-25 F2 + 2026-05-31 F1 (sanitize_base_url allowlist)
         test_sanitize_base_url_strips_deep_path_segments,
+        # Codex 2026-06-19 F1 (hostname redaction for non-public hosts)
+        test_sanitize_base_url_redacts_tenant_hostname,
+        test_runner_sanitize_base_url_for_compare_mirrors_shim_redaction,
         test_sanitize_base_url_drops_tenant_key_first_segment,
         test_runner_sanitize_matches_shim_sanitize,
         # Codex 2026-05-22 F2 (cache gate uses row metadata)

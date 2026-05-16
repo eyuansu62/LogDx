@@ -2966,6 +2966,55 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > 144 → 146 (+2). `test_hybrid_router.py` unchanged at 10. All
 > 156 pass. All three release checks OK.
 
+> ⚠️ **Codex 2026-06-19 [high] fix applied — non-allowlisted
+> base_url hostnames now redacted.**
+>
+> **F1 [high] (Sanitized base_url leaked tenant/proxy hostnames.)**
+> The post-2026-05-31 sanitizer stripped userinfo + query + deep
+> path segments and kept only `^v\d+$` first path segments — but
+> still preserved `parts.hostname` verbatim. For Azure-style
+> endpoints (`<resource>.openai.azure.com`) or internal proxies
+> with tenant prefixes, the hostname itself carries identity. A
+> run that pointed CILOGBENCH_OPENAI_BASE_URL at such an endpoint
+> committed the tenant-identifying hostname into
+> `metadata.model_info.base_url` despite
+> `allow_secret_values_in_results=false`.
+> Fix:
+> - `_PUBLIC_HOST_ALLOWLIST = {api.openai.com, api.anthropic.com,
+>   localhost, 127.0.0.1, ::1}` defined in both
+>   `examples/diagnosis_shim_openai.py` and `tools/run_diagnosis.py`.
+> - Non-allowlisted hostnames replaced with
+>   `<redacted-host sha=PREFIX>` (custom port also dropped — port
+>   info on a private endpoint can be identity-leaking too).
+> - Both shim and runner sanitize identically (mirror-test pins
+>   this so cache_hit_is_acceptable doesn't reject canonical rows
+>   due to sanitizer drift).
+> - `base_url_sha256` (over the full URL) remains the
+>   distinguishing audit signal — two different tenant runs
+>   still produce different sha256s.
+> - 2 new tests: redaction on Azure / proxy / port-bearing hosts
+>   produces distinct sha-prefixed forms for distinct hosts and
+>   leaves allowlisted hosts intact; shim and runner sanitizers
+>   agree on every URL in a fixture set.
+> - 1 existing test
+>   (`test_base_url_validation_falls_back_to_sanitized_compare`)
+>   updated to use the allowlisted `api.openai.com` host so the
+>   legacy-back-compat scenario it exercises (sanitized-only row,
+>   no sha256) is independent of the new hostname redaction.
+>
+> Score impact: zero on canonical state. The v3 canonical config
+> points at `https://api.openai.com/v1` (allowlisted host), so
+> the sanitized form is unchanged and the
+> 285-cache-hit canonical run still hits 5/5 on
+> `test_runner_accepts_command_provider_under_command_config`.
+> Cache files were re-stamped via
+> `tools/migrate_cache_keys_codex_2026_06_08.py` (703 written, 30
+> skipped — provider_error rows aren't cached by default).
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py`
+> 146 → 148 (+2). `test_hybrid_router.py` unchanged at 10. All
+> 158 pass. All three release checks OK.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**
