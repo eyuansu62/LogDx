@@ -3361,6 +3361,177 @@ sys.exit(1)
                 )
 
 
+def test_eval_consistency_rejects_excluded_row_with_required_signal_only():
+    """Per Codex 2026-06-18 F1 [high]: SCORE_FIELDS previously omitted
+    `required_signal_mention_recall` and `category_match_score_v1_1`.
+    A stale row with the `[historical exclusion]` marker, abstention
+    semantics, and every checked score at 0 — but those two
+    specific fields nonzero — passed the gate and still inflated
+    the corresponding macro rates in published reports.
+
+    Forge exactly that row shape and assert the check rejects it
+    with a specific reason naming the offending field.
+    """
+    import subprocess as _sub
+    import tempfile
+    import json
+    repo = Path(__file__).resolve().parent.parent.parent
+    check = repo / "tools" / "validate_eval_manifest_consistency.py"
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        split = root / "dev"
+        diag_dir = split / "diagnoses" / "real-debugger-v3"
+        diag_dir.mkdir(parents=True)
+        (diag_dir / "grep.jsonl").write_text(
+            json.dumps({"case_id": "case-a", "context_method": "grep"}) + "\n",
+            encoding="utf-8",
+        )
+        eval_path = split / "eval_diagnosis_real-debugger-v3.json"
+        eval_path.write_text(
+            json.dumps({
+                "split": "dev",
+                "diagnoser": "real-debugger-v3",
+                "methods": [{
+                    "context_method": "grep",
+                    "cases": [
+                        {"case_id": "case-a"},
+                        {
+                            "case_id": "case-b",
+                            # All the fields the 2026-06-17 gate
+                            # checked are zero/abstention; only the
+                            # two omitted fields are inflated.
+                            "provider_error": "synthetic [historical exclusion]",
+                            "diagnosis_success": False,
+                            "abstained": True,
+                            "diagnosis_score_v1": 0.0,
+                            "diagnosis_score_v1_1": 0.0,
+                            "category_accuracy": 0.0,
+                            "critical_signal_mention_recall": 0.0,
+                            "must_mention_coverage": 0.0,
+                            "relevant_file_recall": 0.0,
+                            "relevant_test_recall": 0.0,
+                            "valid_evidence_quote_rate": 0.0,
+                            # Inflated:
+                            "required_signal_mention_recall": 1.0,
+                            "category_match_score_v1_1": 1.0,
+                        },
+                    ],
+                }],
+            }),
+            encoding="utf-8",
+        )
+        excl = root / "exclusions.json"
+        excl.write_text(
+            json.dumps({"exclusions": [{
+                "split": "dev",
+                "diagnoser": "real-debugger-v3",
+                "method": "grep",
+                "case_id": "case-b",
+                "provider_error_prefix": "synthetic",
+                "note": "test",
+            }]}),
+            encoding="utf-8",
+        )
+        res = _sub.run(
+            ["python3", str(check),
+             "--results-dir", str(root),
+             "--exclusions", str(excl)],
+            cwd=repo, capture_output=True, timeout=30,
+        )
+        assert res.returncode != 0, (
+            f"check should reject row with required_signal_mention_recall "
+            f"=1.0; stdout={res.stdout.decode()[:300]!r}"
+        )
+        err = res.stderr.decode("utf-8")
+        # Must name one of the previously-omitted fields.
+        assert (
+            "required_signal_mention_recall" in err
+            or "category_match_score_v1_1" in err
+        ), err[:600]
+
+
+def test_eval_consistency_rejects_excluded_row_with_forbidden_claim():
+    """Per Codex 2026-06-18 F1 [high]: also reject excluded rows
+    whose `forbidden_claim_violations` is non-empty or
+    `confident_error*` is True — those contribute to per-method
+    rates even when every numeric score field is 0.
+    """
+    import subprocess as _sub
+    import tempfile
+    import json
+    repo = Path(__file__).resolve().parent.parent.parent
+    check = repo / "tools" / "validate_eval_manifest_consistency.py"
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        split = root / "dev"
+        diag_dir = split / "diagnoses" / "real-debugger-v3"
+        diag_dir.mkdir(parents=True)
+        (diag_dir / "grep.jsonl").write_text(
+            json.dumps({"case_id": "case-a", "context_method": "grep"}) + "\n",
+            encoding="utf-8",
+        )
+        eval_path = split / "eval_diagnosis_real-debugger-v3.json"
+        eval_path.write_text(
+            json.dumps({
+                "split": "dev",
+                "diagnoser": "real-debugger-v3",
+                "methods": [{
+                    "context_method": "grep",
+                    "cases": [
+                        {"case_id": "case-a"},
+                        {
+                            "case_id": "case-b",
+                            "provider_error": "synthetic [historical exclusion]",
+                            "diagnosis_success": False,
+                            "abstained": True,
+                            "diagnosis_score_v1": 0.0,
+                            "diagnosis_score_v1_1": 0.0,
+                            "category_accuracy": 0.0,
+                            "category_match_score_v1_1": 0.0,
+                            "required_signal_mention_recall": 0.0,
+                            "critical_signal_mention_recall": 0.0,
+                            "must_mention_coverage": 0.0,
+                            "relevant_file_recall": 0.0,
+                            "relevant_test_recall": 0.0,
+                            "valid_evidence_quote_rate": 0.0,
+                            # Inflated boolean / list fields:
+                            "forbidden_claim_violations": ["leaked claim"],
+                            "confident_error": True,
+                        },
+                    ],
+                }],
+            }),
+            encoding="utf-8",
+        )
+        excl = root / "exclusions.json"
+        excl.write_text(
+            json.dumps({"exclusions": [{
+                "split": "dev",
+                "diagnoser": "real-debugger-v3",
+                "method": "grep",
+                "case_id": "case-b",
+                "provider_error_prefix": "synthetic",
+                "note": "test",
+            }]}),
+            encoding="utf-8",
+        )
+        res = _sub.run(
+            ["python3", str(check),
+             "--results-dir", str(root),
+             "--exclusions", str(excl)],
+            cwd=repo, capture_output=True, timeout=30,
+        )
+        assert res.returncode != 0, (
+            f"check should reject row with forbidden_claim_violations / "
+            f"confident_error; stdout={res.stdout.decode()[:300]!r}"
+        )
+        err = res.stderr.decode("utf-8")
+        assert (
+            "forbidden_claim_violations" in err
+            or "confident_error" in err
+        ), err[:600]
+
+
 def test_eval_consistency_rejects_stale_excluded_row_with_inflated_score():
     """Per Codex 2026-06-17 F2 [high]: an exclusion-exempt eval row
     that lacks the `[historical exclusion]` marker OR carries
@@ -4385,6 +4556,9 @@ def main() -> int:
         test_runner_redacts_structured_provider_error_from_shim_stdout,
         # Codex 2026-06-17 F2 (eval consistency rejects inflated excluded rows)
         test_eval_consistency_rejects_stale_excluded_row_with_inflated_score,
+        # Codex 2026-06-18 F1 (SCORE_FIELDS now covers all macro fields)
+        test_eval_consistency_rejects_excluded_row_with_required_signal_only,
+        test_eval_consistency_rejects_excluded_row_with_forbidden_claim,
         # Codex 2026-06-12 F1 (fatal provider_error preserves manifests)
         test_fatal_provider_error_preserves_existing_method_artifacts,
         # Codex 2026-06-12 F2 (consistency check also asserts method set)

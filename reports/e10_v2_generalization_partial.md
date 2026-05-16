@@ -2930,6 +2930,42 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > 142 → 144 (+2). `test_hybrid_router.py` unchanged at 10. All
 > 154 pass. All three release checks OK on canonical state.
 
+> ⚠️ **Codex 2026-06-18 [high] fix applied — excluded-row score
+> gate now covers all macro fields.**
+>
+> **F1 [high] (`_excluded_case_is_zero_score` missed two macro-
+> averaged fields.)** The 2026-06-17 F2 check rejected stale
+> excluded rows whose `diagnosis_score_v1`,
+> `category_accuracy`, `critical_signal_mention_recall`,
+> `must_mention_coverage`, `relevant_file_recall`,
+> `relevant_test_recall`, or `valid_evidence_quote_rate` were
+> non-zero — but `required_signal_mention_recall` and
+> `category_match_score_v1_1` (both macro-averaged in
+> `evaluate_diagnosis.py`) were OMITTED from `SCORE_FIELDS`. A
+> stale row keeping those at 1.0 with every other score at 0
+> could pass the gate and still inflate
+> `macro_required_signal_mention_recall` /
+> `macro_category_match_score_v1_1` in published reports.
+> Fix:
+> - `SCORE_FIELDS` extended to include both omitted fields.
+> - Added boolean / list checks for fields that contribute to
+>   per-method rates: `forbidden_claim_violations` must be empty,
+>   `confident_error` and `confident_error_v1_1` must be False.
+>   A row with `confident_error=True` would inflate
+>   `confident_error_rate` even with every numeric score at 0.
+> - 2 new tests pin the contract:
+>   `test_eval_consistency_rejects_excluded_row_with_required_signal_only`
+>   forges a row where exactly the two previously-omitted fields
+>   are at 1.0 and asserts rejection with the field name in
+>   stderr;
+>   `test_eval_consistency_rejects_excluded_row_with_forbidden_claim`
+>   does the same for `forbidden_claim_violations` /
+>   `confident_error`.
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py`
+> 144 → 146 (+2). `test_hybrid_router.py` unchanged at 10. All
+> 156 pass. All three release checks OK.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

@@ -91,11 +91,22 @@ def _excluded_case_is_zero_score(case: dict) -> tuple[bool, str]:
     # None) — anything else means a stale/edited row leaked inflated
     # numbers into the eval. Some metrics are nullable when GT is
     # absent (None is fine); non-zero numeric values are not.
+    # Per Codex 2026-06-18 F1 [high]: SCORE_FIELDS now mirrors EVERY
+    # per-case field that `evaluate_method` (in evaluate_diagnosis.py)
+    # macro-averages — pre-fix, `required_signal_mention_recall` and
+    # `category_match_score_v1_1` were omitted, so a stale row with
+    # those two at 1.0 plus all other scores at 0 silently passed
+    # the gate and still inflated `macro_required_signal_mention_
+    # recall` / `macro_category_match_score_v1_1` in the published
+    # report.
     SCORE_FIELDS = (
         "diagnosis_score_v1", "diagnosis_score_v1_1",
-        "category_accuracy", "critical_signal_mention_recall",
-        "must_mention_coverage", "relevant_file_recall",
-        "relevant_test_recall", "valid_evidence_quote_rate",
+        "category_accuracy", "category_match_score_v1_1",
+        "required_signal_mention_recall",
+        "critical_signal_mention_recall",
+        "must_mention_coverage",
+        "relevant_file_recall", "relevant_test_recall",
+        "valid_evidence_quote_rate",
     )
     for f in SCORE_FIELDS:
         v = case.get(f)
@@ -104,6 +115,25 @@ def _excluded_case_is_zero_score(case: dict) -> tuple[bool, str]:
         return False, (
             f"score field {f}={v!r} is non-zero on an excluded row "
             f"(expected 0.0 or null)"
+        )
+    # Per Codex 2026-06-18 F1 [high]: boolean / list fields that
+    # contribute to per-method rates (forbidden_claim_violations →
+    # forbidden_rate, confident_error → confident_error_rate,
+    # confident_error_v1_1 → confident_error_rate_v1_1) must also be
+    # "no-violation" on a properly synthesized excluded row. A stale
+    # row with `confident_error=True` would inflate the rate's
+    # numerator even though every numeric field was 0.
+    forbidden = case.get("forbidden_claim_violations")
+    if forbidden:
+        return False, (
+            f"forbidden_claim_violations={forbidden!r} non-empty on "
+            f"excluded row (expected [])"
+        )
+    if case.get("confident_error") is True:
+        return False, "confident_error=True on excluded row (expected False)"
+    if case.get("confident_error_v1_1") is True:
+        return False, (
+            "confident_error_v1_1=True on excluded row (expected False)"
         )
     return True, ""
 
