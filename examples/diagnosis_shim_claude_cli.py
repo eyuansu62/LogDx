@@ -285,11 +285,20 @@ def main() -> int:
     try:
         wrapper = invoke_claude(system_prompt, user_message, model, timeout_s)
     except Exception as e:
-        # Per Codex 2026-06-17 F1 [high]: even though invoke_claude
-        # already redacts CLI stdout/stderr, run the exception text
-        # through the redactor as belt-and-suspenders before it
-        # lands in our stderr (which the runner persists).
-        msg = redact_secrets_in_text(f"{type(e).__name__}: {e}")
+        # Per Codex 2026-06-22 F2 [high]: invoke_claude raises
+        # RuntimeError with `redacted[:400]!r` of CLI stderr / stdout
+        # / `wrapper.get("result")` — those slices are token-shape-
+        # redacted but prose / CI log text / tenant names / emails
+        # / short secrets survive. Hash the entire exception text so
+        # the persisted stderr (lifted into `metadata.provider_error_
+        # detail` by the runner) carries NO model-controlled content.
+        # Same pattern as the post-CLI parse/normalize handler below.
+        raw_msg = f"{type(e).__name__}: {e}"
+        msg_sha = hashlib.sha256(raw_msg.encode("utf-8")).hexdigest()[:16]
+        msg = (
+            f"{type(e).__name__} message_sha256={msg_sha}… "
+            f"message_len={len(raw_msg)}"
+        )
         sys.stderr.write(f"diagnosis_shim_claude_cli: {msg}\n")
         return 1
 
@@ -319,11 +328,24 @@ def main() -> int:
         # model_info + the structured error string to stdout so the
         # runner can preserve provenance via
         # tools/run_diagnosis.py:_extract_shim_stdout_metadata.
-        # Per Codex 2026-06-17 F1 [high]: redact the exception text
-        # before it lands in _provider_error. The model's raw reply
-        # was the source of `e`; without redaction, any echoed
-        # credential / URL in that reply would be persisted.
-        msg = redact_secrets_in_text(f"{type(e).__name__}: {e}")
+        # Per Codex 2026-06-22 F2 [high]: post-CLI exceptions include
+        # MODEL-CONTROLLED text. `normalize()` raises ValueError from
+        # e.g. `float(diag_raw["confidence"])` when the model returns
+        # a non-numeric string; the offending raw value lands in the
+        # exception message. The 2026-06-17 token-shape redactor does
+        # NOT catch prose / CI log text / tenant names / emails /
+        # short secrets the model may echo. Replace the exception
+        # body with a hash + length summary so `_provider_error`
+        # carries NO model-controlled content. The exception CLASS
+        # name stays (structural, non-sensitive) so operators can
+        # tell apart "ValueError" (parse / normalize) from
+        # "RuntimeError" (CLI errors).
+        raw_msg = f"{type(e).__name__}: {e}"
+        msg_sha = hashlib.sha256(raw_msg.encode("utf-8")).hexdigest()[:16]
+        msg = (
+            f"{type(e).__name__} message_sha256={msg_sha}… "
+            f"message_len={len(raw_msg)}"
+        )
         envelope = {
             "_model_info": model_info,
             "_provider_error": f"post_cli_error: {msg}",

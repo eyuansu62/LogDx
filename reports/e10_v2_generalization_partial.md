@@ -3095,6 +3095,50 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > 151 → 153 (+2). `test_hybrid_router.py` unchanged at 10. All
 > 163 pass. All three release checks OK.
 
+> ⚠️ **Codex 2026-06-22 [high/high] fixes applied — post-API
+> exception bodies now uniformly hash-only.**
+>
+> **F1+F2 [high] (`normalize()` exceptions leaked model-controlled
+> values.)** The 2026-06-21 round closed
+> `parse_diagnosis_json`'s reply slice; the broader post-API
+> exception handler in both shims still used
+> `redact_secrets_in_text(f"{type(e).__name__}: {e}")`. But
+> `normalize()` raises ValueError from e.g.
+> `float(diag_raw["confidence"])` when the model returned a
+> non-numeric string — and that string is MODEL-CONTROLLED. Prose
+> / CI log text / tenant names / emails / short secrets the
+> model echoed into a malformed `confidence` survived the token-
+> shape redactors. Same vector via `invoke_claude` /
+> `invoke_openai` RuntimeErrors that wrap `[:400]!r` of CLI /
+> wrapper output.
+> Fix: both shims' post-API exception handlers AND the
+> `api_call_failed` / invoke_claude-failed handlers now hash the
+> ENTIRE exception text:
+> ```
+> raw_msg = f"{type(e).__name__}: {e}"
+> msg_sha = hashlib.sha256(raw_msg.encode("utf-8")).hexdigest()[:16]
+> msg = f"{type(e).__name__} message_sha256={msg_sha}… "
+>       f"message_len={len(raw_msg)}"
+> ```
+> The exception CLASS name stays (non-sensitive, helps operators
+> distinguish ValueError from RuntimeError); the body is opaque
+> to the persisted artifact. Two different malformed replies
+> produce distinct shas (the inner wrapper_sha256 / reply_sha256
+> from the 2026-06-20/21 layers feeds into the outer hash, so
+> differentiation is preserved). 2 new tests:
+> - OpenAI end-to-end with a local server returning a 200 whose
+>   `confidence` is malformed prose (tenant ID + email + path);
+>   assert no raw substrings in stdout/stderr and `message_sha256=`
+>   is present.
+> - Claude shim source-level assertion that the post-CLI handler
+>   uses the hash-only pattern (no `redact_secrets_in_text(
+>   f"{type(e).__name__}: {e}")`) — running the full Claude shim
+>   requires the real `claude` CLI binary.
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py`
+> 153 → 155 (+2). `test_hybrid_router.py` unchanged at 10. All
+> 165 pass. All three release checks OK.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

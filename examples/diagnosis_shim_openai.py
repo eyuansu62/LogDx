@@ -509,17 +509,21 @@ def main() -> int:
         )
     except Exception as e:
         # The API call never succeeded — no model_info is available.
-        # Per Codex 2026-06-04 F2 [high]: urllib's exceptions
-        # include the raw URL (e.g.
-        # `ValueError: unknown url type: 'malformed-secret/v1'`).
-        # The runner promotes our stderr into metadata.provider_error,
-        # so any URL-bearing exception text would leak the secret-
-        # carrying value into committed artifacts. Scrub all URL-like
-        # substrings before persisting AND before logging.
-        # Per Codex 2026-06-16 F1 [high]: also redact bearer / API-key
-        # / long-opaque-token shapes here; api_call_failed exceptions
-        # from urlopen can still carry credential-shaped substrings.
-        msg = redact_secrets_in_text(f"{type(e).__name__}: {e}")
+        # Per Codex 2026-06-04 F2 + 2026-06-16 F1 + 2026-06-22 F1
+        # [high]: hash the entire exception text. Pre-fix iterations
+        # applied URL / bearer / API-key / long-token redactors
+        # before persisting, but non-token-shape content
+        # (URLError args may include network-failure descriptions
+        # that contain proxy / tenant identifiers) could survive.
+        # Hash-only is the uniform safe boundary; the exception
+        # CLASS name stays for structural diagnostics, the body is
+        # opaque to the persisted artifact.
+        raw_msg = f"{type(e).__name__}: {e}"
+        msg_sha = hashlib.sha256(raw_msg.encode("utf-8")).hexdigest()[:16]
+        msg = (
+            f"{type(e).__name__} message_sha256={msg_sha}… "
+            f"message_len={len(raw_msg)}"
+        )
         envelope = {
             "_provider_error": f"api_call_failed: {msg}",
         }
@@ -592,17 +596,28 @@ def main() -> int:
         # to stdout that carries model_info + a structured error string
         # so the runner can lift model_info into the provider_error row
         # via tools/run_diagnosis.py:_extract_shim_stdout_metadata.
-        # Per Codex 2026-06-04 F2 [high]: scrub URL-like substrings
-        # from the exception text before persisting / logging.
-        # Per Codex 2026-06-16 F1 [high]: scrub BEARER / API-key /
-        # long-opaque-token shapes too. The post-API path can carry
-        # `json.dumps(wrapper)` (the full response body) when a
-        # compatible endpoint returns an OK status with no choices /
-        # empty content — without this, a malformed 200 response
-        # that echoes Authorization headers would leak into
-        # `metadata.provider_error` despite the 2026-06-15 F2 fix
-        # which only covered the HTTP-error path.
-        msg = redact_secrets_in_text(f"{type(e).__name__}: {e}")
+        # Per Codex 2026-06-22 F1 [high]: post-API exceptions include
+        # MODEL-CONTROLLED text — e.g. `normalize()` raises ValueError
+        # from `float(diag_raw["confidence"])` if the model returned a
+        # non-numeric string; the offending raw value lands in the
+        # exception message. The 2026-06-16 / 2026-06-17 redactors
+        # catch URL / bearer / API-key / long-opaque-token shapes,
+        # NOT prose / CI log text / tenant names / emails / short
+        # secrets the model may have echoed into a malformed field.
+        # Replace the entire exception body with a hash + length
+        # summary so the persisted `_provider_error` carries NO
+        # model-controlled content. The exception CLASS name stays
+        # (structural, non-sensitive) so operators can still tell
+        # apart "ValueError" (parse / normalize) from "RuntimeError"
+        # (no_choices / empty_content). Two different malformed
+        # replies produce distinct shas so debugging differentiation
+        # is preserved.
+        raw_msg = f"{type(e).__name__}: {e}"
+        msg_sha = hashlib.sha256(raw_msg.encode("utf-8")).hexdigest()[:16]
+        msg = (
+            f"{type(e).__name__} message_sha256={msg_sha}… "
+            f"message_len={len(raw_msg)}"
+        )
         envelope = {
             "_model_info": model_info,
             "_provider_error": f"post_api_error: {msg}",

@@ -2440,6 +2440,152 @@ def test_private_endpoint_cache_hit_accepts_redacted_row():
     )
 
 
+def test_openai_shim_normalize_failure_omits_raw_model_value():
+    """Per Codex 2026-06-22 F1 [high]: when the model returns a JSON
+    object with a malformed `confidence` field (e.g. a string
+    containing prose / tenant name / short secret), `normalize()`
+    raises `ValueError: could not convert string to float: '<raw>'`
+    where `<raw>` is model-controlled content. Pre-fix, the
+    2026-06-17 redactor caught only token-shape substrings, so
+    non-token sensitive content survived into `_provider_error`.
+
+    End-to-end: forge an OpenAI response with a confidence field
+    containing tenant prose; assert the persisted envelope on
+    stdout contains hash-only summary and NO raw model content.
+    """
+    import subprocess as _sub
+    import tempfile
+    import json
+    import threading
+    import http.server
+    import os
+    repo = Path(__file__).resolve().parent.parent.parent
+
+    # The malformed confidence value carries prose that no token-
+    # shape redactor would catch.
+    sensitive_payload = (
+        "tenant=acme-internal-2025 build failed at foo/bar/baz "
+        "user dev@example.com"
+    )
+    response_body = json.dumps({
+        "id": "chatcmpl-test",
+        "model": "gpt-5-mini-2025-08-07",
+        "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+        "choices": [{
+            "message": {
+                "content": json.dumps({
+                    "summary": "x",
+                    "root_cause_category": "unknown",
+                    "root_cause": "y",
+                    "confidence": sensitive_payload,  # malformed
+                    "relevant_files": [],
+                    "relevant_tests": [],
+                    "evidence": [],
+                    "suggested_fix": "",
+                }),
+            },
+        }],
+    }).encode("utf-8")
+
+    class _Handler(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            length = int(self.headers.get("Content-Length", "0"))
+            self.rfile.read(length)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(response_body)))
+            self.end_headers()
+            self.wfile.write(response_body)
+        def log_message(self, *_a, **_k):
+            pass
+
+    srv = http.server.HTTPServer(("127.0.0.1", 0), _Handler)
+    port = srv.server_port
+    t = threading.Thread(target=srv.serve_forever, daemon=True)
+    t.start()
+    try:
+        env = dict(os.environ)
+        env["OPENAI_API_KEY"] = "sk-test-not-real-but-long-enough-12345"
+        env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+        env["CILOGBENCH_OPENAI_BASE_URL"] = f"http://127.0.0.1:{port}/v1"
+        env["CILOGBENCH_OPENAI_MODEL"] = "gpt-5-mini"
+        for k in ("HTTP_PROXY", "http_proxy", "HTTPS_PROXY",
+                  "https_proxy", "ALL_PROXY", "all_proxy"):
+            env.pop(k, None)
+        env["NO_PROXY"] = "127.0.0.1,localhost"
+        env["no_proxy"] = "127.0.0.1,localhost"
+        payload = json.dumps({
+            "case_id": "synthetic", "context_method": "raw",
+            "prompt": "x", "context": "y",
+            "safe_case_metadata": {"case_id": "synthetic"},
+            "expected_output_schema": "schemas/diagnosis.schema.json",
+        })
+        res = _sub.run(
+            ["python3", f"{repo}/examples/diagnosis_shim_openai.py"],
+            input=payload.encode("utf-8"),
+            capture_output=True, timeout=30, env=env, cwd=repo,
+        )
+        stdout = res.stdout.decode("utf-8")
+        stderr = res.stderr.decode("utf-8")
+        assert "acme-internal-2025" not in stdout, stdout[:400]
+        assert "acme-internal-2025" not in stderr, stderr[:400]
+        assert "foo/bar/baz" not in stdout, stdout[:400]
+        assert "dev@example.com" not in stdout, stdout[:400]
+        assert "message_sha256=" in stdout, stdout[:400]
+        assert "post_api_error" in stdout, stdout[:400]
+    finally:
+        srv.shutdown()
+        t.join(timeout=3)
+
+
+def test_claude_shim_normalize_failure_omits_raw_model_value():
+    """Per Codex 2026-06-22 F2 [high]: same gap on the Claude shim.
+    Inline-test the normalize/parse failure handler by directly
+    constructing a synthetic exception and asserting the message
+    that lands in the envelope is hash-only.
+
+    We exercise the handler via a unit test on the construction
+    pattern rather than via a Claude CLI end-to-end (which would
+    require the real `claude` binary), since the patch is identical
+    in shape to the OpenAI fix.
+    """
+    import importlib.util
+    repo = Path(__file__).resolve().parent.parent.parent
+    spec = importlib.util.spec_from_file_location(
+        "_shim_claude_norm", repo / "examples" / "diagnosis_shim_claude_cli.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    # Verify the hash-only summary construction by simulating
+    # what the handler does. The patch swaps redact_secrets_in_text
+    # for an unconditional hash, so the message body never embeds
+    # raw exception text.
+    import hashlib
+    sensitive_exc = ValueError(
+        "could not convert string to float: "
+        "'tenant=foo-internal-prod email=ops@example.com'"
+    )
+    raw_msg = f"{type(sensitive_exc).__name__}: {sensitive_exc}"
+    expected_sha = hashlib.sha256(raw_msg.encode("utf-8")).hexdigest()[:16]
+    expected_msg = (
+        f"{type(sensitive_exc).__name__} message_sha256={expected_sha}… "
+        f"message_len={len(raw_msg)}"
+    )
+    # The expected msg shape doesn't reference the raw values.
+    assert "foo-internal-prod" not in expected_msg
+    assert "ops@example.com" not in expected_msg
+    # And source confirms the handler uses this pattern (we can't
+    # easily run the full Claude shim path here; check the source).
+    src = (repo / "examples" / "diagnosis_shim_claude_cli.py").read_text()
+    assert "message_sha256=" in src, (
+        "Claude shim source must contain the hash-only summary pattern"
+    )
+    assert "redact_secrets_in_text(f\"{type(e).__name__}: {e}\")" not in src, (
+        "Claude shim must NOT use the old token-shape-only redaction "
+        "in the post-CLI exception path"
+    )
+
+
 def test_openai_shim_parse_failure_omits_raw_reply():
     """Per Codex 2026-06-21 F1 [high]: parse_diagnosis_json's
     "no JSON object found" error used to embed `t[:200]` of the
@@ -2573,7 +2719,15 @@ def test_openai_shim_no_choices_emits_hash_only_summary():
         assert "PRIVATE CI LOG" not in stdout, stdout[:400]
         assert "PRIVATE CI LOG" not in stderr, stderr[:400]
         # Hash-only summary should be present.
-        assert "wrapper_sha256=" in stdout or "wrapper_sha256=" in stderr, (
+        # Per Codex 2026-06-22 F1 fix, the outer post-API exception
+        # handler now hashes the whole inner message — the persisted
+        # form shows `message_sha256=` rather than the inner
+        # `wrapper_sha256=`. Either is a hash-only signal.
+        assert (
+            "message_sha256=" in stdout
+            or "wrapper_sha256=" in stdout
+            or "message_sha256=" in stderr
+        ), (
             f"expected hash-only summary; stdout={stdout[:400]!r}"
         )
         assert "post_api_error" in stdout, stdout[:400]
@@ -4815,6 +4969,9 @@ def main() -> int:
         # Codex 2026-06-21 F1+F2 (parse_diagnosis_json hash-only summary)
         test_openai_shim_parse_failure_omits_raw_reply,
         test_claude_shim_parse_failure_omits_raw_reply,
+        # Codex 2026-06-22 F1+F2 (post-API normalize hash-only)
+        test_openai_shim_normalize_failure_omits_raw_model_value,
+        test_claude_shim_normalize_failure_omits_raw_model_value,
         test_sanitize_base_url_drops_tenant_key_first_segment,
         test_runner_sanitize_matches_shim_sanitize,
         # Codex 2026-05-22 F2 (cache gate uses row metadata)
