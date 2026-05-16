@@ -177,7 +177,15 @@ def invoke_claude(system_prompt: str, user_message: str,
 
 
 def parse_diagnosis_json(text: str) -> dict:
-    """Extract a diagnosis dict from whatever the model produced."""
+    """Extract a diagnosis dict from whatever the model produced.
+
+    Per Codex 2026-06-21 F2 [high]: when no JSON object is found,
+    do NOT embed the raw reply (or a slice of it) in the exception
+    message. The 2026-06-17 redactors only catch URL / bearer /
+    API-key / long-token shapes, so prose / CI log text / tenant
+    names / emails / short secrets survive into
+    `metadata.provider_error`. Emit a hash + length summary instead.
+    """
     t = text.strip()
     # Strip ```json ... ``` fences if present
     m = re.match(r"```(?:json)?\s*(.+?)\s*```$", t, re.DOTALL)
@@ -187,7 +195,11 @@ def parse_diagnosis_json(text: str) -> dict:
     start = t.find("{")
     end = t.rfind("}")
     if start < 0 or end <= start:
-        raise ValueError(f"no JSON object found in model reply: {t[:200]!r}")
+        body_sha = hashlib.sha256(t.encode("utf-8")).hexdigest()[:16]
+        raise ValueError(
+            f"no JSON object found in model reply: "
+            f"reply_sha256={body_sha}… reply_len={len(t)}"
+        )
     return json.loads(t[start:end + 1])
 
 

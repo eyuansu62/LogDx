@@ -3067,6 +3067,34 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > 148 → 151 (+3). `test_hybrid_router.py` unchanged at 10. All
 > 161 pass. All three release checks OK.
 
+> ⚠️ **Codex 2026-06-21 [high/high] fixes applied — parse-failure
+> reply slice replaced with hash-only summary in both shims.**
+>
+> **F1+F2 [high] (`parse_diagnosis_json` leaked raw model reply.)**
+> Both `examples/diagnosis_shim_openai.py` and
+> `examples/diagnosis_shim_claude_cli.py` had
+> `raise ValueError(f"no JSON object found in model reply:
+> {t[:200]!r}")` — when the model returned non-JSON content, the
+> first 200 chars of the reply landed verbatim in the exception
+> text, which then flowed through the 2026-06-17 redactors into
+> `metadata.provider_error`. The redactors catch URL / bearer /
+> API-key / long-opaque-token shapes BUT pass through normal
+> prose, CI log text, tenant names, emails, and short secrets
+> (`p@ssw0rd` etc.). Fix:
+> - Both shims now emit
+>   `f"no JSON object found in model reply: reply_sha256={prefix}…
+>   reply_len={n}"` — hash + length, no body content. An auditor
+>   can still distinguish two malformed replies via the sha
+>   prefix.
+> - 2 new tests: each shim's `parse_diagnosis_json` rejects a
+>   reply containing tenant ID / email / unredacted prose, and
+>   the resulting ValueError carries `reply_sha256=` / `reply_len=`
+>   but NO raw sensitive substrings.
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py`
+> 151 → 153 (+2). `test_hybrid_router.py` unchanged at 10. All
+> 163 pass. All three release checks OK.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

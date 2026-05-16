@@ -359,7 +359,17 @@ def invoke_openai(system_prompt: str, user_message: str, model: str,
 
 
 def parse_diagnosis_json(text: str) -> dict:
-    """Extract a diagnosis dict from the model's content string."""
+    """Extract a diagnosis dict from the model's content string.
+
+    Per Codex 2026-06-21 F1 [high]: when no JSON object is found, do
+    NOT embed the raw reply (or a slice of it) in the exception
+    message. Even after the URL / bearer / API-key / long-token
+    redactors, non-token-shape sensitive content (echoed CI log
+    text, tenant names, prose) survives. Emit a hash + length
+    summary instead — an auditor can still distinguish two
+    malformed replies via the sha prefix without seeing their
+    content.
+    """
     t = (text or "").strip()
     m = re.match(r"```(?:json)?\s*(.+?)\s*```$", t, re.DOTALL)
     if m:
@@ -367,7 +377,11 @@ def parse_diagnosis_json(text: str) -> dict:
     start = t.find("{")
     end = t.rfind("}")
     if start < 0 or end <= start:
-        raise ValueError(f"no JSON object found in model reply: {t[:200]!r}")
+        body_sha = hashlib.sha256(t.encode("utf-8")).hexdigest()[:16]
+        raise ValueError(
+            f"no JSON object found in model reply: "
+            f"reply_sha256={body_sha}… reply_len={len(t)}"
+        )
     return json.loads(t[start:end + 1])
 
 

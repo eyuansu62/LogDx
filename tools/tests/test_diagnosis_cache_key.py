@@ -2440,6 +2440,65 @@ def test_private_endpoint_cache_hit_accepts_redacted_row():
     )
 
 
+def test_openai_shim_parse_failure_omits_raw_reply():
+    """Per Codex 2026-06-21 F1 [high]: parse_diagnosis_json's
+    "no JSON object found" error used to embed `t[:200]` of the
+    model reply, leaking non-token-shape sensitive content
+    (echoed CI log text, tenant names, prose) into
+    metadata.provider_error.
+    """
+    import importlib.util
+    repo = Path(__file__).resolve().parent.parent.parent
+    spec = importlib.util.spec_from_file_location(
+        "_shim_pjson_o", repo / "examples" / "diagnosis_shim_openai.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    sensitive = (
+        "Internal customer tenant: acme-corp-internal-2025 "
+        "echoed CI step: build failed in foo/bar/baz "
+        "user_email: someone@example.com"
+    )
+    try:
+        mod.parse_diagnosis_json(sensitive)
+        raise AssertionError("parse should have failed")
+    except ValueError as e:
+        msg = str(e)
+    assert "acme-corp-internal-2025" not in msg, msg
+    assert "someone@example.com" not in msg, msg
+    assert "foo/bar/baz" not in msg, msg
+    assert "reply_sha256=" in msg, msg
+    assert "reply_len=" in msg, msg
+
+
+def test_claude_shim_parse_failure_omits_raw_reply():
+    """Per Codex 2026-06-21 F2 [high]: Claude shim's
+    parse_diagnosis_json had the same raw-reply leak. Same fix:
+    hash + length summary, no raw reply slice."""
+    import importlib.util
+    repo = Path(__file__).resolve().parent.parent.parent
+    spec = importlib.util.spec_from_file_location(
+        "_shim_pjson_c", repo / "examples" / "diagnosis_shim_claude_cli.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    sensitive = (
+        "Tenant: foo-internal-prod "
+        "log: secret password p@ssw0rd was wrong "
+        "email: dev@example.com"
+    )
+    try:
+        mod.parse_diagnosis_json(sensitive)
+        raise AssertionError("parse should have failed")
+    except ValueError as e:
+        msg = str(e)
+    assert "foo-internal-prod" not in msg, msg
+    assert "p@ssw0rd" not in msg, msg
+    assert "dev@example.com" not in msg, msg
+    assert "reply_sha256=" in msg, msg
+    assert "reply_len=" in msg, msg
+
+
 def test_openai_shim_no_choices_emits_hash_only_summary():
     """Per Codex 2026-06-20 F2 [high]: the post-API `no choices` and
     empty-content paths used to embed `json.dumps(wrapper)[:400]`
@@ -4753,6 +4812,9 @@ def main() -> int:
         test_private_endpoint_cache_hit_accepts_redacted_row,
         # Codex 2026-06-20 F2 (no-choices hash-only summary)
         test_openai_shim_no_choices_emits_hash_only_summary,
+        # Codex 2026-06-21 F1+F2 (parse_diagnosis_json hash-only summary)
+        test_openai_shim_parse_failure_omits_raw_reply,
+        test_claude_shim_parse_failure_omits_raw_reply,
         test_sanitize_base_url_drops_tenant_key_first_segment,
         test_runner_sanitize_matches_shim_sanitize,
         # Codex 2026-05-22 F2 (cache gate uses row metadata)
