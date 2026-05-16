@@ -2835,6 +2835,49 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > diagnosis-vs-context, committed provider_error allowlist)
 > report OK.
 
+> ⚠️ **Codex 2026-06-16 [high/high] fixes applied — two secret-
+> leak paths closed.** The 2026-06-15 F2 hardening only covered
+> the HTTP-error path inside the OpenAI shim. Two other code
+> paths could still echo credentials into committed artifacts:
+>
+> **F1 [high] (Post-API exception path leaked echoed secrets.)**
+> When a compatible 200 response had no choices or empty content,
+> the shim's `except Exception` branch built the
+> `post_api_error: ...` envelope using only `redact_urls_in_text`
+> — bearer tokens / API keys in `json.dumps(wrapper)` or
+> `json.dumps(choices[0])` (the body of an OK-but-malformed
+> response) passed through verbatim. Same gap on the api_call_failed
+> branch (urlopen exceptions). Fix: both branches now use
+> `redact_secrets_in_text` which chains URL redaction with
+> bearer-token / API-key / long-opaque-token regex redactors.
+> 1 new test stands up a local HTTP server that returns a 200
+> with a Bearer token echoed in the body; asserts neither stdout
+> nor stderr from the shim contains the leaked token (and the
+> envelope is a clean `post_api_error: ...`).
+>
+> **F2 [high] (Runner persisted raw shim stderr in
+> `provider_error_detail`.)** When a command-provider shim exited
+> non-zero, `diagnose_command` stored the first 600 bytes of raw
+> stderr in `ShimCallError`; `build_row` then lifted it into
+> `metadata.provider_error_detail`. A shim that sanitized its
+> stdout but accidentally logged credentials to stderr (via a
+> logging library or shell wrapper) leaked those secrets into
+> committed artifacts. Fix:
+> - New `redact_secrets_in_text` in `tools/run_diagnosis.py`
+>   (mirrors the shim's regex set so redaction is consistent).
+> - Applied to stderr BEFORE constructing `ShimCallError` on the
+>   exit-non-zero path. The 600-byte cap is preserved; redaction
+>   happens BEFORE truncation. Same applied to stdout in the
+>   `JSONDecodeError` branch.
+> - 1 new end-to-end test: forge a shim that emits sanitized
+>   stdout AND `Authorization: Bearer sk-stderr...` on stderr;
+>   assert no manifest row's `provider_error_detail` contains
+>   the raw secret.
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py`
+> 140 → 142 (+2). `test_hybrid_router.py` unchanged at 10. All
+> 152 pass. All three release checks OK.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

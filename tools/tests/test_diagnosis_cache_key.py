@@ -3202,6 +3202,178 @@ def test_openai_shim_redacts_api_key_shape():
     assert "redacted-secret" in out, out
 
 
+def test_openai_shim_post_api_error_redacts_bearer_payload():
+    """Per Codex 2026-06-16 F1 [high]: when a 200 OpenAI response has
+    no choices / empty content, the shim falls into the post-API
+    error path. Pre-fix, that path only applied URL redaction —
+    a malformed 200 from a proxy that echoed Authorization headers
+    in the wrapper JSON would land verbatim in _provider_error.
+    """
+    import subprocess as _sub
+    import tempfile
+    import os
+    import json
+    repo = Path(__file__).resolve().parent.parent.parent
+    # Stand up a local HTTP server that returns a malformed 200
+    # echoing a bearer token in the wrapper JSON. Verify the shim's
+    # post-API error envelope sanitizes it.
+    import http.server, threading
+    body = json.dumps({
+        "choices": [{"message": {"content": ""}}],
+        "id": "chatcmpl-test",
+        "echoed_auth": "Bearer sk-leak1234567890abcdefghij1234567890",
+    }).encode("utf-8")
+
+    class _Handler(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            length = int(self.headers.get("Content-Length", "0"))
+            self.rfile.read(length)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        def log_message(self, *_a, **_k):
+            pass
+
+    srv = http.server.HTTPServer(("127.0.0.1", 0), _Handler)
+    port = srv.server_port
+    t = threading.Thread(target=srv.serve_forever, daemon=True)
+    t.start()
+    try:
+        env = dict(os.environ)
+        env["OPENAI_API_KEY"] = "sk-test-not-real-but-long-enough-1234"
+        env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+        env["CILOGBENCH_OPENAI_BASE_URL"] = f"http://127.0.0.1:{port}/v1"
+        env["CILOGBENCH_OPENAI_MODEL"] = "gpt-5-mini"
+        # Bypass any system-level HTTP_PROXY so urllib hits our
+        # local test server directly.
+        for k in ("HTTP_PROXY", "http_proxy", "HTTPS_PROXY",
+                  "https_proxy", "ALL_PROXY", "all_proxy"):
+            env.pop(k, None)
+        env["NO_PROXY"] = "127.0.0.1,localhost"
+        env["no_proxy"] = "127.0.0.1,localhost"
+        payload = json.dumps({
+            "case_id": "synthetic", "context_method": "raw",
+            "prompt": "x", "context": "y",
+            "safe_case_metadata": {"case_id": "synthetic"},
+            "expected_output_schema": "schemas/diagnosis.schema.json",
+        })
+        res = _sub.run(
+            ["python3", f"{repo}/examples/diagnosis_shim_openai.py"],
+            input=payload.encode("utf-8"),
+            capture_output=True, timeout=30, env=env, cwd=repo,
+        )
+        stdout = res.stdout.decode("utf-8")
+        stderr = res.stderr.decode("utf-8")
+        # The shim must exit 1 with a post_api_error envelope.
+        assert res.returncode == 1, (
+            f"shim should fail post-API; stdout={stdout[:400]!r} "
+            f"stderr={stderr[:400]!r}"
+        )
+        # Neither stdout NOR stderr can contain the leaked token.
+        assert "sk-leak1234567890abcdefghij1234567890" not in stdout, (
+            f"stdout leaks token: {stdout[:600]!r}"
+        )
+        assert "sk-leak1234567890abcdefghij1234567890" not in stderr, (
+            f"stderr leaks token: {stderr[:600]!r}"
+        )
+        assert "post_api_error" in stdout, stdout[:400]
+    finally:
+        srv.shutdown()
+        t.join(timeout=3)
+
+
+def test_runner_redacts_shim_stderr_in_provider_error_detail():
+    """Per Codex 2026-06-16 F2 [high]: when a command shim exits
+    non-zero, the runner stores up to 600 bytes of stderr in
+    ShimCallError, later persisted as
+    `metadata.provider_error_detail`. Pre-fix, that string was
+    raw. A shim that sanitized its stdout but accidentally wrote
+    credentials to stderr (e.g. via a logging library) leaked them
+    into committed artifacts.
+
+    End-to-end: forge a shim that writes a sanitized stdout
+    envelope AND a secret-bearing stderr line. Run the runner;
+    assert `metadata.provider_error` contains the sanitized form
+    AND `metadata.provider_error_detail` does NOT contain the raw
+    secret.
+    """
+    import subprocess as _sub
+    import tempfile
+    import json
+    repo = Path(__file__).resolve().parent.parent.parent
+    diag_dir = repo / "results" / "dev" / "diagnoses" / "real-debugger-v3"
+    with _snapshot_restore_diag_dir(diag_dir):
+        forge_src = '''
+import json, sys
+sys.stdin.read()
+envelope = {
+    "_provider_error": "api_call_failed: synthetic",
+}
+print(json.dumps(envelope))
+# secret-bearing stderr — runner should redact before persisting
+sys.stderr.write("logger leaked: Authorization: Bearer sk-stderr12345678901234abcdef\\n")
+sys.exit(1)
+'''
+        with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as fp:
+            fp.write(forge_src)
+            fp.flush()
+            forge_path = fp.name
+        env = dict(os.environ)
+        env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+        env["DIAGNOSIS_COMMAND"] = f"python3 {forge_path}"
+        # Add the api_call_failed prefix to v3's allowlist for this
+        # test only by passing --diagnoser-config to a copy of the
+        # v3 config with the prefix added. Simpler: use a temp config
+        # that opts into non-fatal so the row gets WRITTEN to manifest.
+        cfg_src = json.loads(
+            (repo / "configs" / "diagnosers" / "real-debugger-v3.json").read_text()
+        )
+        cfg_src.setdefault("provider_policy", {})[
+            "non_fatal_provider_error_prefixes"
+        ] = ["api_call_failed"]
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".json", delete=False
+        ) as cfp:
+            json.dump(cfg_src, cfp)
+            cfp.flush()
+            cfg_path = cfp.name
+        res = _sub.run(
+            ["python3", f"{repo}/tools/run_diagnosis.py",
+             "--split", "dev",
+             "--diagnoser", "command",
+             "--diagnoser-name", "real-debugger-v3",
+             "--command", env["DIAGNOSIS_COMMAND"],
+             "--context-method", "grep",
+             "--diagnoser-config", cfg_path,
+             "--no-cache"],
+            cwd=repo, capture_output=True, timeout=60, env=env,
+        )
+        # Inspect the freshly-written manifest for redaction.
+        manifest = diag_dir / "grep.jsonl"
+        if not manifest.exists():
+            # If the runner aborted before writing, fail with
+            # diagnostic info.
+            raise AssertionError(
+                f"manifest never written; rc={res.returncode}; "
+                f"stderr={res.stderr.decode()[:400]!r}"
+            )
+        for line in manifest.open():
+            row = json.loads(line)
+            md = row.get("metadata") or {}
+            detail = md.get("provider_error_detail") or ""
+            assert "sk-stderr12345678901234abcdef" not in detail, (
+                f"raw stderr secret leaked into provider_error_detail: "
+                f"{detail[:300]!r}"
+            )
+            # Should reference redacted form.
+            if detail:
+                assert "redacted-secret" in detail or "redacted-url" in detail, (
+                    f"runner did not redact stderr; detail={detail[:300]!r}"
+                )
+
+
 def test_openai_shim_http_error_summary_omits_body():
     """Per Codex 2026-06-15 F2 [high]: the HTTP error path uses
     `safe_http_error_summary` which records status code + body
@@ -4045,6 +4217,10 @@ def main() -> int:
         test_openai_shim_redacts_bearer_tokens_in_error_text,
         test_openai_shim_redacts_api_key_shape,
         test_openai_shim_http_error_summary_omits_body,
+        # Codex 2026-06-16 F1 (shim post-API redacts secrets)
+        test_openai_shim_post_api_error_redacts_bearer_payload,
+        # Codex 2026-06-16 F2 (runner redacts stderr before persistence)
+        test_runner_redacts_shim_stderr_in_provider_error_detail,
         # Codex 2026-06-12 F1 (fatal provider_error preserves manifests)
         test_fatal_provider_error_preserves_existing_method_artifacts,
         # Codex 2026-06-12 F2 (consistency check also asserts method set)

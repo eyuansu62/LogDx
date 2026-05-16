@@ -76,6 +76,54 @@ def sha256_text(s: str) -> str:
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
 
+# Per Codex 2026-06-16 F2 [high]: secret-shape redactors applied to
+# shim stderr (and JSONDecodeError stdout) BEFORE constructing
+# ShimCallError. Pre-fix, the runner persisted up to 600 bytes of
+# raw stderr in `metadata.provider_error_detail` — a shim that
+# sanitized its stdout but accidentally wrote credentials, tenant
+# URLs, or API payloads to stderr would still get those secrets
+# into committed artifacts. Mirrors the same regex set used in
+# `examples/diagnosis_shim_openai.py` so redaction is consistent
+# whichever side caught the leak.
+_URL_LIKE_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s'\"]+")
+_BEARER_RE = re.compile(r"(?i)(?:bearer|authorization\s*:)\s*[A-Za-z0-9._\-+/=]{8,}")
+_APIKEY_LIKE_RE = re.compile(r"\b(?:sk|pk|rk|api[_-]?key)[-_][A-Za-z0-9]{16,}\b")
+_LONG_TOKEN_RE = re.compile(r"\b[A-Za-z0-9_\-]{40,}\b")
+
+
+def redact_secrets_in_text(text: str) -> str:
+    """Scrub URL / bearer / API-key / long-opaque-token substrings
+    from free-form error messages. Replacement carries a sha256
+    prefix so an auditor can still distinguish leaked tokens.
+
+    Used on shim stderr / stdout before constructing ShimCallError —
+    otherwise a leaked secret in the shim's logs would land in
+    `metadata.provider_error_detail` despite shim-side redaction."""
+    if not text:
+        return text
+
+    def _sha_tag(raw: str) -> str:
+        return (
+            "<redacted-secret sha="
+            + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+            + "…>"
+        )
+
+    def _url_repl(m):
+        raw = m.group(0)
+        return (
+            "<redacted-url sha="
+            + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+            + "…>"
+        )
+
+    text = _URL_LIKE_RE.sub(_url_repl, text)
+    text = _BEARER_RE.sub(lambda m: _sha_tag(m.group(0)), text)
+    text = _APIKEY_LIKE_RE.sub(lambda m: _sha_tag(m.group(0)), text)
+    text = _LONG_TOKEN_RE.sub(lambda m: _sha_tag(m.group(0)), text)
+    return text
+
+
 def sha256_path(p: Path) -> str | None:
     """Read file bytes and return SHA256. Returns None if unreadable."""
     try:
@@ -456,18 +504,35 @@ def diagnose_command(
         # _model_info before failing on (e.g.) JSONDecodeError gets
         # to preserve provenance via this exception's `model_info`.
         partial = _extract_shim_stdout_metadata(res.stdout or b"")
+        # Per Codex 2026-06-16 F2 [high]: redact secrets from stderr
+        # BEFORE it lands in ShimCallError. The runner later
+        # persists this string into `metadata.provider_error_detail`
+        # — a shim that sanitized its stdout but accidentally logged
+        # credentials, tenant URLs, or API payloads to stderr would
+        # leak those secrets into committed artifacts. The 600-byte
+        # cap is preserved; redaction happens before truncation.
+        stderr_redacted = redact_secrets_in_text(
+            (res.stderr or b"").decode("utf-8", "replace")
+        )
         raise ShimCallError(
             f"diagnosis command exited {res.returncode}: "
-            f"{(res.stderr or b'').decode('utf-8', 'replace')[:600]}",
+            f"{stderr_redacted[:600]}",
             model_info=partial.get("_model_info"),
             provider_error_hint=partial.get("_provider_error"),
         )
     try:
         out = json.loads(res.stdout.decode("utf-8", errors="replace"))
     except json.JSONDecodeError as e:
+        # Per Codex 2026-06-16 F2 [high]: same redaction as the
+        # exit-non-zero path. A non-JSON stdout payload could
+        # contain credential-shaped substrings from a misbehaving
+        # shim.
+        stdout_redacted = redact_secrets_in_text(
+            (res.stdout or b"").decode("utf-8", "replace")
+        )
         raise ShimCallError(
             f"diagnosis command returned non-JSON: {e}. "
-            f"First 400 chars: {res.stdout[:400]!r}"
+            f"First 400 chars: {stdout_redacted[:400]!r}"
         ) from e
     # Best-effort normalization — fill in missing pieces with conservative
     # defaults so the schema is satisfied, but never overwrite what the shim

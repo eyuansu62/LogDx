@@ -454,7 +454,10 @@ def main() -> int:
         # so any URL-bearing exception text would leak the secret-
         # carrying value into committed artifacts. Scrub all URL-like
         # substrings before persisting AND before logging.
-        msg = redact_urls_in_text(f"{type(e).__name__}: {e}")
+        # Per Codex 2026-06-16 F1 [high]: also redact bearer / API-key
+        # / long-opaque-token shapes here; api_call_failed exceptions
+        # from urlopen can still carry credential-shaped substrings.
+        msg = redact_secrets_in_text(f"{type(e).__name__}: {e}")
         envelope = {
             "_provider_error": f"api_call_failed: {msg}",
         }
@@ -505,7 +508,15 @@ def main() -> int:
         # via tools/run_diagnosis.py:_extract_shim_stdout_metadata.
         # Per Codex 2026-06-04 F2 [high]: scrub URL-like substrings
         # from the exception text before persisting / logging.
-        msg = redact_urls_in_text(f"{type(e).__name__}: {e}")
+        # Per Codex 2026-06-16 F1 [high]: scrub BEARER / API-key /
+        # long-opaque-token shapes too. The post-API path can carry
+        # `json.dumps(wrapper)` (the full response body) when a
+        # compatible endpoint returns an OK status with no choices /
+        # empty content — without this, a malformed 200 response
+        # that echoes Authorization headers would leak into
+        # `metadata.provider_error` despite the 2026-06-15 F2 fix
+        # which only covered the HTTP-error path.
+        msg = redact_secrets_in_text(f"{type(e).__name__}: {e}")
         envelope = {
             "_model_info": model_info,
             "_provider_error": f"post_api_error: {msg}",
