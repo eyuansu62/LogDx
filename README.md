@@ -11,7 +11,9 @@
 [![Tests](https://img.shields.io/badge/tests-165%20passing-brightgreen)](tools/tests/)
 
 **Current release**: `v2-partial-2026-06-22` — see
-[`RELEASE_NOTES.md`](RELEASE_NOTES.md).
+[`RELEASE_NOTES.md`](RELEASE_NOTES.md). Project homepage with
+[leaderboard](https://eyuansu62.github.io/LogDx/leaderboard.html)
+at <https://eyuansu62.github.io/LogDx/>.
 
 LogDx-CI compares 10 context providers — raw, tail, grep, `rtk-*`,
 `llm-summary-*`, and hybrid routers — by handing the same CI failure
