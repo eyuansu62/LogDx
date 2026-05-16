@@ -4,10 +4,11 @@
 > diagnosis**. Does an LLM still have enough evidence to identify the
 > root cause after a CI log is filtered, summarized, or compressed?
 
-[![Tests](https://img.shields.io/badge/tests-165%20passing-brightgreen)](tools/tests/)
-[![Release gates](https://img.shields.io/badge/release%20gates-3%2F3%20OK-brightgreen)](#release-gates)
+[![CI](https://github.com/eyuansu62/LogDx/actions/workflows/ci.yml/badge.svg)](https://github.com/eyuansu62/LogDx/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/eyuansu62/LogDx?include_prereleases&label=release)](https://github.com/eyuansu62/LogDx/releases/latest)
 [![License: Apache-2.0 + CC-BY-4.0](https://img.shields.io/badge/license-Apache--2.0%20%2B%20CC--BY--4.0-blue)](LICENSE)
 [![Dataset on HF](https://img.shields.io/badge/data-eyuansu71%2Flogdx--ci-yellow)](https://huggingface.co/datasets/eyuansu71/logdx-ci)
+[![Tests](https://img.shields.io/badge/tests-165%20passing-brightgreen)](tools/tests/)
 
 **Current release**: `v2-partial-2026-06-22` — see
 [`RELEASE_NOTES.md`](RELEASE_NOTES.md).
