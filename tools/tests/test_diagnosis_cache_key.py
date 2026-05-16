@@ -2360,6 +2360,169 @@ def test_sanitize_base_url_redacts_tenant_hostname():
     assert f("http://127.0.0.1:8000/v1") == "http://127.0.0.1:8000/v1"
 
 
+def test_sanitize_base_url_is_idempotent_on_redacted_host():
+    """Per Codex 2026-06-20 F1 [high]: sanitize_base_url must
+    PASS THROUGH a URL whose hostname is already the
+    `<redacted-host sha=PREFIX>` placeholder. Pre-fix, re-sanitizing
+    a row's persisted base_url (e.g. during cache-hit validation)
+    would wrap the placeholder's bracket/equals/hex chars as a new
+    "hostname" and re-redact it to a DIFFERENT sha — rejecting the
+    row as un-sanitized and forcing a fresh call on every cache
+    hit for private-endpoint runs.
+    """
+    import importlib.util
+    repo = Path(__file__).resolve().parent.parent.parent
+    spec = importlib.util.spec_from_file_location(
+        "_shim_idem", repo / "examples" / "diagnosis_shim_openai.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    f = mod.sanitize_base_url
+
+    # Generate a fresh sanitized form for an Azure-style host.
+    once = f("https://my-resource.openai.azure.com/v1")
+    assert "redacted-host sha=" in once, once
+    # Re-sanitizing the SANITIZED form must yield the SAME string.
+    twice = f(once)
+    assert once == twice, (
+        f"sanitizer not idempotent: once={once!r}, twice={twice!r}"
+    )
+    # Same for runner-side helper.
+    runner_once = rd._sanitize_base_url_for_compare(
+        "https://tenant42.proxy.internal/v1"
+    )
+    runner_twice = rd._sanitize_base_url_for_compare(runner_once)
+    assert runner_once == runner_twice, (
+        f"runner sanitizer not idempotent: once={runner_once!r}, "
+        f"twice={runner_twice!r}"
+    )
+
+
+def test_private_endpoint_cache_hit_accepts_redacted_row():
+    """Per Codex 2026-06-20 F1 [high]: end-to-end, a row whose
+    `base_url` is the redacted form (`https://<redacted-host
+    sha=PREFIX>/v1`) must be ACCEPTED by `cache_hit_is_acceptable`
+    when the current run points at the corresponding private
+    endpoint. Pre-fix, the runner re-sanitized the redacted form
+    on each hit and rejected the row, breaking every private-
+    endpoint cache replay.
+    """
+    cfg = {
+        "model": {
+            "provider_name": "openai",
+            "model_name": "gpt-5-mini",
+            "env_var_name": "CILOGBENCH_OPENAI_MODEL",
+            "base_url": "https://tenant-a.proxy.internal/v1",
+            "base_url_env_var_name": "CILOGBENCH_OPENAI_BASE_URL",
+        },
+        "cache_key_env": ["CILOGBENCH_OPENAI_BASE_URL"],
+    }
+    # Compute the redacted form the shim would write for the private
+    # URL — that's what the runner re-validates on cache hit.
+    canonical_url = rd.effective_base_url(cfg)
+    sanitized = rd._sanitize_base_url_for_compare(canonical_url)
+    sha = rd._base_url_sha256_for_compare(canonical_url)
+    row = {
+        "metadata": {
+            "model_info": {
+                "provider_name": "openai",
+                "requested_model": "gpt-5-mini",
+                "resolved_model": None,  # legacy ok for this test
+                "base_url": sanitized,
+                "base_url_sha256": sha,
+            },
+        },
+    }
+    ok, reason = rd.cache_hit_is_acceptable(row, cfg)
+    assert ok, (
+        f"private-endpoint cache hit should accept redacted-host "
+        f"base_url; reason={reason!r}"
+    )
+
+
+def test_openai_shim_no_choices_emits_hash_only_summary():
+    """Per Codex 2026-06-20 F2 [high]: the post-API `no choices` and
+    empty-content paths used to embed `json.dumps(wrapper)[:400]`
+    or `json.dumps(choices[0])[:400]` verbatim in the error
+    message. A compatible 200 response with non-token-shape
+    sensitive content (prompt fragments, CI log text, tenant IDs)
+    would still leak. Fix: emit a hash + length + key-list
+    summary, no raw body content.
+    """
+    import importlib.util
+    repo = Path(__file__).resolve().parent.parent.parent
+    spec = importlib.util.spec_from_file_location(
+        "_shim_no_choices", repo / "examples" / "diagnosis_shim_openai.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    # Stand up a local server returning a malformed 200 with
+    # non-token-shape sensitive payload.
+    import http.server, threading, json, os
+    import subprocess as _sub
+    body = json.dumps({
+        "choices": [],  # triggers the no_choices path
+        "tenant": "internal-customer-id-12345",
+        "echoed_prompt": "PRIVATE CI LOG: build failed in foo/bar",
+        "id": "chatcmpl-test",
+    }).encode("utf-8")
+
+    class _Handler(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            length = int(self.headers.get("Content-Length", "0"))
+            self.rfile.read(length)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        def log_message(self, *_a, **_k):
+            pass
+
+    srv = http.server.HTTPServer(("127.0.0.1", 0), _Handler)
+    port = srv.server_port
+    t = threading.Thread(target=srv.serve_forever, daemon=True)
+    t.start()
+    try:
+        env = dict(os.environ)
+        env["OPENAI_API_KEY"] = "sk-test-not-real-but-long-enough-1234"
+        env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+        env["CILOGBENCH_OPENAI_BASE_URL"] = f"http://127.0.0.1:{port}/v1"
+        env["CILOGBENCH_OPENAI_MODEL"] = "gpt-5-mini"
+        for k in ("HTTP_PROXY", "http_proxy", "HTTPS_PROXY",
+                  "https_proxy", "ALL_PROXY", "all_proxy"):
+            env.pop(k, None)
+        env["NO_PROXY"] = "127.0.0.1,localhost"
+        env["no_proxy"] = "127.0.0.1,localhost"
+        payload = json.dumps({
+            "case_id": "synthetic", "context_method": "raw",
+            "prompt": "x", "context": "y",
+            "safe_case_metadata": {"case_id": "synthetic"},
+            "expected_output_schema": "schemas/diagnosis.schema.json",
+        })
+        res = _sub.run(
+            ["python3", f"{repo}/examples/diagnosis_shim_openai.py"],
+            input=payload.encode("utf-8"),
+            capture_output=True, timeout=30, env=env, cwd=repo,
+        )
+        stdout = res.stdout.decode("utf-8")
+        stderr = res.stderr.decode("utf-8")
+        # Sensitive content must NOT appear.
+        assert "internal-customer-id-12345" not in stdout, stdout[:400]
+        assert "internal-customer-id-12345" not in stderr, stderr[:400]
+        assert "PRIVATE CI LOG" not in stdout, stdout[:400]
+        assert "PRIVATE CI LOG" not in stderr, stderr[:400]
+        # Hash-only summary should be present.
+        assert "wrapper_sha256=" in stdout or "wrapper_sha256=" in stderr, (
+            f"expected hash-only summary; stdout={stdout[:400]!r}"
+        )
+        assert "post_api_error" in stdout, stdout[:400]
+    finally:
+        srv.shutdown()
+        t.join(timeout=3)
+
+
 def test_runner_sanitize_base_url_for_compare_mirrors_shim_redaction():
     """Per Codex 2026-06-19 F1 [high]: runner-side `_sanitize_base_url
     _for_compare` must agree with shim-side `sanitize_base_url` on
@@ -4585,6 +4748,11 @@ def main() -> int:
         # Codex 2026-06-19 F1 (hostname redaction for non-public hosts)
         test_sanitize_base_url_redacts_tenant_hostname,
         test_runner_sanitize_base_url_for_compare_mirrors_shim_redaction,
+        # Codex 2026-06-20 F1 (sanitizer idempotency for redacted hosts)
+        test_sanitize_base_url_is_idempotent_on_redacted_host,
+        test_private_endpoint_cache_hit_accepts_redacted_row,
+        # Codex 2026-06-20 F2 (no-choices hash-only summary)
+        test_openai_shim_no_choices_emits_hash_only_summary,
         test_sanitize_base_url_drops_tenant_key_first_segment,
         test_runner_sanitize_matches_shim_sanitize,
         # Codex 2026-05-22 F2 (cache gate uses row metadata)

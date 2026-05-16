@@ -1002,6 +1002,12 @@ _PUBLIC_HOST_ALLOWLIST = frozenset({
     "localhost", "127.0.0.1", "::1",
 })
 
+# Per Codex 2026-06-20 F1 [high]: idempotency-detection regex for
+# already-redacted host placeholders. See the shim's twin pattern.
+_REDACTED_HOST_NETLOC_RE = re.compile(
+    r"^<redacted-host sha=[0-9a-fA-F]{8,}>$"
+)
+
 
 def _redact_hostname(host: str) -> str:
     """Per Codex 2026-06-19 F1 [high]: replace non-allowlisted
@@ -1040,7 +1046,15 @@ def _sanitize_base_url_for_compare(url: str) -> str:
         return url
     parts = urllib.parse.urlsplit(url)
     host = parts.hostname or ""
-    if host.lower() in _PUBLIC_HOST_ALLOWLIST:
+    if _REDACTED_HOST_NETLOC_RE.fullmatch(host):
+        # Per Codex 2026-06-20 F1 [high]: idempotent on already-
+        # redacted hostnames. The runner sanitizes the row's
+        # persisted `metadata.model_info.base_url` during cache-hit
+        # validation; without this, the bracket / equals / hex
+        # chars would be treated as a new "hostname" and re-redacted
+        # to a different sha-prefixed placeholder.
+        netloc = host
+    elif host.lower() in _PUBLIC_HOST_ALLOWLIST:
         netloc = host
         if parts.port:
             netloc = f"{netloc}:{parts.port}"

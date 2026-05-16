@@ -87,6 +87,17 @@ _PUBLIC_HOST_ALLOWLIST = frozenset({
     "localhost", "127.0.0.1", "::1",
 })
 
+# Per Codex 2026-06-20 F1 [high]: detect the already-redacted host
+# placeholder so `sanitize_base_url` is idempotent. Without this,
+# re-sanitizing a previously-redacted URL (e.g. during cache-hit
+# validation against a row's persisted `metadata.model_info.base_url`)
+# wraps the bracket-marker characters as a new "hostname" and
+# produces a DIFFERENT sha-prefixed placeholder, then rejects the
+# row as un-sanitized.
+_REDACTED_HOST_NETLOC_RE = re.compile(
+    r"^<redacted-host sha=[0-9a-fA-F]{8,}>$"
+)
+
 
 def _redact_hostname(host: str) -> str:
     """Per Codex 2026-06-19 F1 [high]: non-allowlisted hostnames may
@@ -140,7 +151,16 @@ def sanitize_base_url(url: str) -> str:
         return url
     parts = urllib.parse.urlsplit(url)
     host = parts.hostname or ""
-    if host.lower() in _PUBLIC_HOST_ALLOWLIST:
+    if _REDACTED_HOST_NETLOC_RE.fullmatch(host):
+        # Per Codex 2026-06-20 F1 [high]: the input has already been
+        # redacted (e.g. we're re-sanitizing a row's persisted
+        # `metadata.model_info.base_url` during cache-hit validation).
+        # Pass through unchanged so the sanitizer is idempotent —
+        # without this, the bracket / equals / hex chars would be
+        # treated as a new "hostname" and re-redacted to a different
+        # sha-prefixed placeholder, then rejected as unsanitized.
+        netloc = host
+    elif host.lower() in _PUBLIC_HOST_ALLOWLIST:
         netloc = host
         if parts.port:
             netloc = f"{netloc}:{parts.port}"
@@ -513,14 +533,38 @@ def main() -> int:
     try:
         choices = wrapper.get("choices") or []
         if not choices:
+            # Per Codex 2026-06-20 F2 [high]: NEVER echo
+            # `json.dumps(wrapper)[:400]` in the error message. A
+            # compatible 200 response can carry prompt fragments,
+            # tenant IDs, CI log text, or non-token-shape sensitive
+            # strings that pass the bearer/api-key/long-token
+            # redactor. Emit a hash + length summary instead so an
+            # auditor can still distinguish two malformed wrappers
+            # without seeing the raw body.
+            wrapper_json = json.dumps(wrapper, ensure_ascii=False)
+            wrapper_sha = hashlib.sha256(
+                wrapper_json.encode("utf-8")
+            ).hexdigest()[:16]
             raise RuntimeError(
-                f"OpenAI returned no choices: {json.dumps(wrapper)[:400]!r}"
+                f"OpenAI returned no choices: "
+                f"wrapper_sha256={wrapper_sha}… "
+                f"wrapper_len={len(wrapper_json)} "
+                f"keys={sorted(wrapper.keys())}"
             )
         content = (choices[0].get("message") or {}).get("content") or ""
         if not content:
+            # Per Codex 2026-06-20 F2 [high]: same hash-only summary
+            # for empty-content errors. The choice payload may carry
+            # echoed prompt content or proxy-injected fields.
+            choice_json = json.dumps(choices[0], ensure_ascii=False)
+            choice_sha = hashlib.sha256(
+                choice_json.encode("utf-8")
+            ).hexdigest()[:16]
             raise RuntimeError(
                 f"OpenAI choice had empty content: "
-                f"{json.dumps(choices[0])[:400]!r}"
+                f"choice_sha256={choice_sha}… "
+                f"choice_len={len(choice_json)} "
+                f"keys={sorted(choices[0].keys()) if isinstance(choices[0], dict) else 'not-a-dict'}"
             )
         diag_raw = parse_diagnosis_json(content)
         diag = normalize(diag_raw)

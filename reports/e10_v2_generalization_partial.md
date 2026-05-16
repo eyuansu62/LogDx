@@ -3015,6 +3015,58 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > 146 → 148 (+2). `test_hybrid_router.py` unchanged at 10. All
 > 158 pass. All three release checks OK.
 
+> ⚠️ **Codex 2026-06-20 [high/high] fixes applied — private-
+> endpoint cache replay restored; post-API raw-body leak closed.**
+>
+> **F1 [high] (Sanitizer wasn't idempotent on already-redacted
+> hosts.)** The 2026-06-19 hostname-redaction passed
+> `<redacted-host sha=PREFIX>` through `urlsplit`, treated the
+> bracket / equals / hex chars as a new hostname, and re-redacted
+> them to a DIFFERENT sha-prefixed placeholder. The runner's
+> `_check_base_url_redaction` re-sanitizes the row's persisted
+> `metadata.model_info.base_url` on every cache hit — every
+> private-endpoint cache replay broke (the row was rejected as
+> un-sanitized AND a fresh API call was forced, then that call's
+> result was rejected too because its sanitized form differed
+> from the persisted row).
+> Fix:
+> - New `_REDACTED_HOST_NETLOC_RE = ^<redacted-host
+>   sha=[0-9a-fA-F]{8,}>$` (regex literal, defined in both shim
+>   and runner).
+> - In `sanitize_base_url` (both copies): when `parts.hostname`
+>   matches the regex, short-circuit and return the input
+>   unchanged. The path-segment / port logic still runs for
+>   non-redacted hosts.
+> - 2 new tests: idempotency on Azure / proxy hostnames (shim +
+>   runner), AND end-to-end cache-hit acceptance for a row whose
+>   persisted base_url is the redacted form (asserts no false-
+>   reject on private-endpoint canonical replays).
+>
+> **F2 [high] (Post-API no-choices / empty-content paths still
+> echoed raw JSON.)** The 2026-06-15 F2 hardening replaced HTTP-
+> error bodies with `safe_http_error_summary`, but two post-API
+> structural error paths (`no choices`, `empty content`) still
+> embedded `json.dumps(wrapper)[:400]` or
+> `json.dumps(choices[0])[:400]` verbatim in the `RuntimeError`
+> message. The 2026-06-16 / 2026-06-17 redactors caught URL /
+> bearer / API-key / long-token shapes, but non-token-shape
+> sensitive content (echoed prompt fragments, CI log text,
+> tenant IDs, short secrets) passed through.
+> Fix:
+> - Both paths now emit `wrapper_sha256={prefix}… wrapper_len={n}
+>   keys=[...]` (or `choice_sha256=...`) instead of slicing the
+>   raw JSON. Hash + length + structural-key-list is enough for
+>   an auditor to distinguish two malformed wrappers without
+>   seeing their bodies.
+> - 1 new end-to-end test: local server returns a 200 with
+>   `choices: []` and a sensitive-shape body (tenant ID + echoed
+>   prompt); asserts neither stdout nor stderr contains the raw
+>   sensitive strings and that `wrapper_sha256=` does appear.
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py`
+> 148 → 151 (+3). `test_hybrid_router.py` unchanged at 10. All
+> 161 pass. All three release checks OK.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**
