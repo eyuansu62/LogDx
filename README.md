@@ -1,57 +1,133 @@
-# CILogBench
+# LogDx-CI
 
-> CILogBench evaluates whether CI failure context strategies preserve enough
-> evidence for coding agents to identify the true root cause.
+> A reproducible benchmark for **failure-context strategies in CI log
+> diagnosis**. Does an LLM still have enough evidence to identify the
+> root cause after a CI log is filtered, summarized, or compressed?
 
-It compares raw logs, heuristic filters, RTK modes, LLM summaries, and
-hybrid routing by measuring:
+[![Tests](https://img.shields.io/badge/tests-165%20passing-brightgreen)](tools/tests/)
+[![Release gates](https://img.shields.io/badge/release%20gates-3%2F3%20OK-brightgreen)](#release-gates)
+[![License: Apache-2.0 + CC-BY-4.0](https://img.shields.io/badge/license-Apache--2.0%20%2B%20CC--BY--4.0-blue)](LICENSE)
+[![Dataset on HF](https://img.shields.io/badge/data-eyuansu71%2Flogdx--ci-yellow)](https://huggingface.co/datasets/eyuansu71/logdx-ci)
 
-- signal preservation
-- downstream diagnosis quality
+**Current release**: `v2-partial-2026-06-22` — see
+[`RELEASE_NOTES.md`](RELEASE_NOTES.md).
+
+LogDx-CI compares 10 context providers — raw, tail, grep, `rtk-*`,
+`llm-summary-*`, and hybrid routers — by handing the same CI failure
+log to three debuggers (Claude Haiku 4.5, Claude Sonnet 4.6, OpenAI
+gpt-5-mini) and scoring the resulting root-cause diagnoses against
+AI-drafted + author-verified ground truths.
+
+It measures:
+
+- signal preservation (raw-log evidence reaching the model)
+- downstream diagnosis quality (`diagnosis_score_v1_1` calibrated)
 - total token cost
-- abstention
-- confident-error behavior
-- dev/holdout/stress generalization
+- abstention + confident-error rates
+- dev / holdout / stress generalization
+- **cross-family stability** (Haiku / Sonnet / gpt-5-mini)
 
-Current frozen protocol: **`cilogbench-v1.3`** (16 cases, 8 locked
-context-provider baselines, calibrated primary score
-`diagnosis_score_v1_1`).
+## Headline finding (v2)
 
-## Headline result
+> **v2 produces cross-family-stable AND cross-run-stable benchmark
+> rankings; v1.3's stability is narrower.**
 
-A simple deterministic hybrid strategy, `hybrid-grep-4k-rtk-err-cat-v1`,
+On the 19-case v2 corpus, Sonnet 4.6 / Haiku 4.5 / gpt-5-mini all
+agree on **top-3 ∩ = `{hybrid-v2, hybrid-v3}`** and on the bottom-4
+set. On v1.3 the top-3 intersection narrows to `{hybrid-v1}` only —
+its 4k-token threshold is overfit to the v1.3 case distribution and
+does **not** generalize.
+
+| Corpus | Top-3 ∩ (all 3 debuggers) | Bottom-4 set | Stability |
+|---|---|---|---|
+| v1.3 (16 cases) | `{hybrid-v1}` only | raw, rtk-log, llm-summary-mock, rtk-read | narrow |
+| **v2 (19 cases)** | **`{hybrid-v2, hybrid-v3}`** | same bottom-4 | cross-family + cross-run |
+
+This is `v2-partial`: the cross-family direction is robust, but the
+corpus target is 34 cases and full release awaits Batches 7–8.
+Full caveats in [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md) §5.
+
+## Quick start
+
+```bash
+git clone https://github.com/eyuansu62/LogDx.git
+cd LogDx
+
+# (optional) pull cases corpus from the HF mirror
+huggingface-cli download --repo-type dataset \
+    eyuansu71/logdx-ci --local-dir cases-from-hf
+
+# run the 165-test suite
+python3 tools/tests/test_diagnosis_cache_key.py
+python3 tools/tests/test_hybrid_router.py
+
+# run the 3 release gates on canonical state
+python3 tools/validate_committed_diagnosis_provider_errors.py
+python3 tools/validate_eval_manifest_consistency.py
+python3 tools/validate_diagnosis_vs_context_consistency.py
+
+# validate the protocol lock
+python3 tools/validate_protocol_lock.py \
+    --protocol protocols/cilogbench-v2-checkpoint-19.lock.json
+```
+
+## What ships
+
+- **35 cases** total — 16 legacy v1.3 + 19 new v2 — under
+  [`cases/`](cases/) (also mirrored at
+  [`huggingface.co/datasets/eyuansu71/logdx-ci`](https://huggingface.co/datasets/eyuansu71/logdx-ci))
+- **10 context-provider baselines** with method-by-case manifests
+  under [`results/`](results/)
+- **3 diagnosers** (Anthropic ×2 + OpenAI ×1) with per-case JSONs
+- **Eval files** with macro-averaged metrics +
+  zero-score-abstention injection for documented historical
+  exclusions
+- **Protocol locks** SHA-pinning 14 schema / prompt / evaluator
+  hashes per release (see [`protocols/`](protocols/))
+- **Release gate scripts** for CI gating (see below)
+
+## Release gates
+
+Three CI-gateable invariant checks ensure reproducibility:
+
+| Script | Invariant |
+|---|---|
+| `validate_committed_diagnosis_provider_errors.py` | No non-allowlisted `provider_error` rows in committed `real-debugger-*` manifests |
+| `validate_eval_manifest_consistency.py` | Every `eval_diagnosis_*.json`'s per-method case-ID set matches its manifest, with strict zero-score verification for excluded rows |
+| `validate_diagnosis_vs_context_consistency.py` | Every diagnosis manifest's case set ⊆ source context manifest, with a documented exclusion list for transparent gaps |
+
+## Read more
+
+- **v2 headline report**:
+  [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md)
+- **Release notes**: [`RELEASE_NOTES.md`](RELEASE_NOTES.md)
+- **v1.3 carry-over**:
+  - One-pager: [`docs/reports/cilogbench_v1_3_one_pager.md`](docs/reports/cilogbench_v1_3_one_pager.md)
+  - Full technical report: [`docs/reports/cilogbench_v1_3_technical_report.md`](docs/reports/cilogbench_v1_3_technical_report.md)
+  - Limitations: [`docs/reports/cilogbench_v1_3_limitations.md`](docs/reports/cilogbench_v1_3_limitations.md)
+  - v1.3 protocol doc: [`docs/protocol/cilogbench_v1_3.md`](docs/protocol/cilogbench_v1_3.md)
+- **Citation**: [`CITATION.cff`](CITATION.cff)
+- **License**: code under [`LICENSE`](LICENSE) (Apache-2.0); cases /
+  reports / protocols / docs under [`LICENSE-DATA`](LICENSE-DATA)
+  (CC-BY-4.0)
+
+## v1.3 historical finding (carry-over)
+
+The original `hybrid-grep-4k-rtk-err-cat-v1` strategy
 **matched `grep` on diagnosis quality** at about **one third of `grep`'s
-token cost**, and **ranked #1 by automatic sv1.1 under both tested
-debuggers** (Claude Haiku 4.5 and Claude Sonnet 4.6) on this 16-case
-benchmark.
+token cost** on the 16-case v1.3 benchmark:
 
 | Debugger | hybrid sv1.1 | grep sv1.1 | hybrid total tok | grep total tok |
 |---|---:|---:|---:|---:|
 | Haiku 4.5 (E5) | **0.715** | 0.675 | 4.9k | 15.7k |
 | Sonnet 4.6 (E6) | **0.771** | 0.770 | 5.0k | 15.9k |
 
-Top-3 ranks under sv1.1 were identical across debuggers
+Top-3 ranks under sv1.1 were identical across debuggers on v1.3
 (`hybrid > grep > tail`). AI-assisted human review (E9) preferred grep
 **8-to-2 in head-to-head pairwise judgments** (with 6 ties) while rating
 both methods as essentially tied on absolute usefulness (means 3.875 vs
-3.938 on a 0–4 scale). The cost advantage is unchanged.
-
-**Important limitations.** This is a small benchmark (16 cases). sv1.1
-was calibrated by an LLM-as-judge reviewer (E2/E2b) and later
-**spot-checked by AI-assisted human review** (E9: 1 reviewer, project
-author of the hybrid baseline, verified all 48 items of a ChatGPT
-draft). This is *not* independent human review and *not* inter-rater-
-validated. Treat results as directional, not definitive. See
-[`docs/reports/cilogbench_v1_3_limitations.md`](docs/reports/cilogbench_v1_3_limitations.md).
-
-## Read more
-
-- One-pager: [`docs/reports/cilogbench_v1_3_one_pager.md`](docs/reports/cilogbench_v1_3_one_pager.md)
-- Full technical report: [`docs/reports/cilogbench_v1_3_technical_report.md`](docs/reports/cilogbench_v1_3_technical_report.md)
-- Limitations: [`docs/reports/cilogbench_v1_3_limitations.md`](docs/reports/cilogbench_v1_3_limitations.md)
-- Frozen protocol: [`protocols/cilogbench-v1.3.lock.json`](protocols/cilogbench-v1.3.lock.json) — validated by `tools/validate_protocol_lock.py`
-- v1.3 protocol doc: [`docs/protocol/cilogbench_v1_3.md`](docs/protocol/cilogbench_v1_3.md)
-- Per-experiment reports: `reports/e2_calibration_memo.md`, `reports/e2b_score_calibration_v1_1.md`, `reports/e3_real_llm_summary_cilogbench_v1_2_haiku.md`, `reports/e4_summary_failure_attribution_cilogbench_v1_2.md`, `reports/e5_hybrid_grep_fallback_cilogbench_v1_2.md`, `reports/e6_second_debugger_cilogbench_v1_3_real-debugger-v2.md`, `reports/e7_mcp_search_agent_cilogbench_v1_3_mcp-search-agent-v1-sonnet.md`, `reports/e8_hybrid_first_search_fallback_cilogbench_v1_3.md`, `reports/e9_human_verified_v1_3_review.md`
+3.938 on a 0–4 scale). v2 reveals the 4k-threshold doesn't generalize
+— see §3 of the v2 report.
 
 ---
 

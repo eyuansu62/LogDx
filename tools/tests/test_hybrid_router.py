@@ -252,15 +252,25 @@ def test_primary_missing_output_byte_size_fails_closed():
 
 
 def test_hybrid_provider_error_propagates_through_run_diagnosis():
-    """Per Codex 2026-05-10 [high] end-to-end fix: when the hybrid
-    router can't select any context (e.g. primary missing + fallback
+    """Per Codex 2026-05-10 → 2026-06-12 chain: when the hybrid router
+    can't select any context (e.g. primary missing + fallback
     missing), it emits an UNAVAILABLE placeholder + a method_row with
-    metadata.provider_error set. Pre-fix, run_diagnosis happily
-    evaluated the placeholder and produced a normal low-quality
-    diagnosis row with provider_error=null — hiding the data failure
-    behind a low sv1.1 score. Post-fix, run_diagnosis MUST detect the
-    upstream provider_error and emit a provider-error diagnosis row
-    with a context_provider_error message propagated.
+    metadata.provider_error set. The protection layered up over time:
+
+    - 2026-05-10: don't silently evaluate placeholder + produce a
+      provider_error=null low-score row.
+    - 2026-06-11 F2: context_provider_error must pass the same
+      `provider_policy.non_fatal_provider_error_prefixes` allowlist
+      as fresh diagnoser errors (default empty → fail-closed).
+    - 2026-06-12 F1: a non-allowlisted context_provider_error must
+      ALSO trigger the method-level flush block, so no manifest /
+      per-case writes pollute canonical artifacts.
+
+    Post-fix invariants under a no-allowlist config (mock provider,
+    no diagnoser config → empty allowlist):
+      (a) run_diagnosis exits non-zero
+      (b) stderr logs FAIL_PROVIDER_ERROR with "context-provider"
+      (c) NO diagnosis manifest is written (method-level skip)
     """
     import subprocess, os
     rd_tool = ROOT / "tools" / "run_diagnosis.py"
@@ -346,26 +356,30 @@ def test_hybrid_provider_error_propagates_through_run_diagnosis():
              "--context-method", method],
             capture_output=True, text=True, cwd=ROOT, env=env,
         )
-        assert r.returncode == 0, (
-            f"run_diagnosis exited {r.returncode}\nstderr: {r.stderr}"
+        # Codex 2026-06-12 F1: non-allowlisted context_provider_error
+        # fails the run AND blocks method-level flush.
+        assert r.returncode != 0, (
+            f"run_diagnosis should exit non-zero on context_provider_error "
+            f"with empty allowlist; got rc={r.returncode}\nstderr: {r.stderr}"
         )
-
+        assert "FAIL_PROVIDER_ERROR" in r.stderr, (
+            f"stderr should log FAIL_PROVIDER_ERROR; got {r.stderr[:600]!r}"
+        )
+        assert (
+            "context-provider" in r.stderr
+            or "context_provider_error" in r.stderr
+        ), (
+            f"stderr should reference upstream context-provider error; "
+            f"got {r.stderr[:600]!r}"
+        )
+        # Method-level flush block: no manifest / per-case files were
+        # written in this temp fixture (no prior state to preserve).
         diag_dir = results_dir / split / "diagnoses"
         diag_files = list(diag_dir.rglob(f"{method}.jsonl"))
-        assert diag_files, f"diagnosis manifest not written under {diag_dir}"
-        diag_rows = [json.loads(l) for l in diag_files[0].read_text().splitlines() if l.strip()]
-        assert len(diag_rows) == 1, f"expected 1 row, got {len(diag_rows)}"
-        diag_row = diag_rows[0]
-        # Post-fix: provider_error must be propagated.
-        pe = diag_row.get("metadata", {}).get("provider_error") or diag_row.get("provider_error")
-        assert pe, (f"provider_error not propagated; diag_row metadata="
-                    f"{diag_row.get('metadata')}")
-        assert "context_provider_error" in pe, (
-            f"provider_error doesn't reference upstream cause: {pe!r}"
+        assert not diag_files, (
+            f"manifest should NOT have been written on method-level "
+            f"provider_error failure; found {diag_files!r}"
         )
-        ok = (diag_row.get("root_cause_category") == "unknown"
-                and (diag_row.get("confidence") or 0.0) == 0.0)
-        assert ok, f"expected unknown/0.0 placeholder body, got {diag_row}"
         print("PASS test_hybrid_provider_error_propagates_through_run_diagnosis")
 
 
