@@ -1,7 +1,8 @@
 # LogDx-CI v2-partial — Release Notes
 
 **Tag**: `v2-partial-2026-06-22`
-**Protocol lock**: [`cilogbench-v2-checkpoint-19.lock.json`](protocols/cilogbench-v2-checkpoint-19.lock.json)
+**Project homepage**: <https://logdx-bench.github.io/>
+**Protocol lock**: [`protocols/logdx-ci-v2-partial-2026-06-22.lock.json`](protocols/logdx-ci-v2-partial-2026-06-22.lock.json)
 **Headline report**: [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md)
 **Cases corpus mirror**: [`huggingface.co/datasets/eyuansu71/logdx-ci`](https://huggingface.co/datasets/eyuansu71/logdx-ci)
 

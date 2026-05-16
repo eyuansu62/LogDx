@@ -41,6 +41,7 @@ A reproducible benchmark for **failure-context strategies in CI log
 diagnosis**. Does an LLM still have enough evidence to identify the
 true root cause after a CI log is filtered, summarized, or compressed?
 
+- **Homepage**: <https://logdx-bench.github.io/>
 - **Code & evaluator**: <https://github.com/eyuansu62/LogDx>
 - **Headline report**: [`reports/e10_v2_generalization_partial.md`](https://github.com/eyuansu62/LogDx/blob/main/reports/e10_v2_generalization_partial.md)
 - **Release notes**: [`RELEASE_NOTES.md`](https://github.com/eyuansu62/LogDx/blob/main/RELEASE_NOTES.md)
