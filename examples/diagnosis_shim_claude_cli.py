@@ -25,11 +25,49 @@ Optional env overrides:
     CILOGBENCH_CLAUDE_TIMEOUT  — seconds (default: 180)
 """
 
+import hashlib
 import json
 import os
 import re
 import subprocess
 import sys
+
+# Per Codex 2026-06-17 F1 [high]: secret-shape redactors mirror the
+# OpenAI shim's set. Applied to every error message that could land
+# in `_provider_error` or stderr — defense-in-depth so a Claude CLI
+# transient that prints credentials to its own stderr doesn't end
+# up persisted in committed diagnosis artifacts.
+_URL_LIKE_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^\s'\"]+")
+_BEARER_RE = re.compile(r"(?i)(?:bearer|authorization\s*:)\s*[A-Za-z0-9._\-+/=]{8,}")
+_APIKEY_LIKE_RE = re.compile(r"\b(?:sk|pk|rk|api[_-]?key)[-_][A-Za-z0-9]{16,}\b")
+_LONG_TOKEN_RE = re.compile(r"\b[A-Za-z0-9_\-]{40,}\b")
+
+
+def redact_secrets_in_text(text: str) -> str:
+    if not text:
+        return text
+
+    def _sha_tag(raw: str) -> str:
+        return (
+            "<redacted-secret sha="
+            + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+            + "…>"
+        )
+
+    def _url_repl(m):
+        raw = m.group(0)
+        return (
+            "<redacted-url sha="
+            + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+            + "…>"
+        )
+
+    text = _URL_LIKE_RE.sub(_url_repl, text)
+    text = _BEARER_RE.sub(lambda m: _sha_tag(m.group(0)), text)
+    text = _APIKEY_LIKE_RE.sub(lambda m: _sha_tag(m.group(0)), text)
+    text = _LONG_TOKEN_RE.sub(lambda m: _sha_tag(m.group(0)), text)
+    return text
+
 
 FORBIDDEN_KEYS = (
     "ground_truth", "failure_category", "required_signals",
@@ -113,19 +151,27 @@ def invoke_claude(system_prompt: str, user_message: str,
         argv, capture_output=True, text=True, timeout=timeout_s,
     )
     if res.returncode != 0:
+        # Per Codex 2026-06-17 F1 [high]: redact secret-shape
+        # substrings from `claude` CLI stderr before re-raising.
+        # The runner lifts our exception text into
+        # `metadata.provider_error_detail`; without redaction,
+        # credentials echoed in CLI errors could leak through.
+        stderr_redacted = redact_secrets_in_text(res.stderr or "")
         raise RuntimeError(
-            f"claude CLI exited {res.returncode}: {res.stderr[:400]!r}"
+            f"claude CLI exited {res.returncode}: {stderr_redacted[:400]!r}"
         )
     try:
         wrapper = json.loads(res.stdout)
     except json.JSONDecodeError as e:
+        stdout_redacted = redact_secrets_in_text(res.stdout or "")
         raise RuntimeError(
             f"claude CLI returned non-JSON envelope: {e}. "
-            f"First 400 chars: {res.stdout[:400]!r}"
+            f"First 400 chars: {stdout_redacted[:400]!r}"
         ) from e
     if wrapper.get("is_error"):
+        result_redacted = redact_secrets_in_text(wrapper.get("result", ""))
         raise RuntimeError(
-            f"claude CLI reported error: {wrapper.get('result', '')[:400]!r}"
+            f"claude CLI reported error: {result_redacted[:400]!r}"
         )
     return wrapper
 
@@ -227,7 +273,11 @@ def main() -> int:
     try:
         wrapper = invoke_claude(system_prompt, user_message, model, timeout_s)
     except Exception as e:
-        msg = f"{type(e).__name__}: {e}"
+        # Per Codex 2026-06-17 F1 [high]: even though invoke_claude
+        # already redacts CLI stdout/stderr, run the exception text
+        # through the redactor as belt-and-suspenders before it
+        # lands in our stderr (which the runner persists).
+        msg = redact_secrets_in_text(f"{type(e).__name__}: {e}")
         sys.stderr.write(f"diagnosis_shim_claude_cli: {msg}\n")
         return 1
 
@@ -257,7 +307,11 @@ def main() -> int:
         # model_info + the structured error string to stdout so the
         # runner can preserve provenance via
         # tools/run_diagnosis.py:_extract_shim_stdout_metadata.
-        msg = f"{type(e).__name__}: {e}"
+        # Per Codex 2026-06-17 F1 [high]: redact the exception text
+        # before it lands in _provider_error. The model's raw reply
+        # was the source of `e`; without redaction, any echoed
+        # credential / URL in that reply would be persisted.
+        msg = redact_secrets_in_text(f"{type(e).__name__}: {e}")
         envelope = {
             "_model_info": model_info,
             "_provider_error": f"post_cli_error: {msg}",

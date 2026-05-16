@@ -2878,6 +2878,58 @@ Phase 3 pass with **gpt-5-mini** (`real-debugger-v3`) across all
 > 140 → 142 (+2). `test_hybrid_router.py` unchanged at 10. All
 > 152 pass. All three release checks OK.
 
+> ⚠️ **Codex 2026-06-17 [high/high] fixes applied — two remaining
+> trust-boundary gaps closed.**
+>
+> **F1 [high] (Structured `_provider_error` from shim stdout bypassed
+> redaction.)** The 2026-06-16 fixes redacted shim stderr and
+> non-JSON stdout, but a shim that emitted a JSON envelope with
+> `_provider_error` set could still pass an arbitrary string
+> through. `tools/run_diagnosis.py:_extract_shim_stdout_metadata`
+> lifted the value verbatim into the runtime's diag_body, and
+> `build_row` promoted it directly into `metadata.provider_error`.
+> The Claude shim built `_provider_error` from raw model/CLI text
+> on parse failure — a model reply containing a Bearer token or
+> API key would leak.
+> - Fix in `tools/run_diagnosis.py`: both
+>   `_extract_shim_stdout_metadata` AND the success-path
+>   normalization in `diagnose_command` now run
+>   `redact_secrets_in_text` on `_provider_error` before
+>   returning. Non-string values get JSON-serialized first.
+> - Fix in `examples/diagnosis_shim_claude_cli.py`: added the
+>   same `redact_secrets_in_text` (URL + bearer + API-key + long-
+>   opaque-token) and applied it at every error-message
+>   construction (`invoke_claude` exits non-zero, non-JSON
+>   envelope, `is_error` reply, post-CLI parse failure).
+> - 1 new end-to-end test: forged shim emits a JSON envelope with
+>   `_provider_error: "api_call_failed: leaked Bearer
+>   sk-stdin... in reply"`; assert manifest row's
+>   `metadata.provider_error` does NOT contain raw secret AND
+>   carries the `redacted-secret` marker.
+>
+> **F2 [high] (Eval consistency gate accepted stale inflated
+> excluded rows.)** The 2026-06-15 F1 + 2026-06-16 work exempted
+> exclusion-listed cases from "in eval but not manifest" failures,
+> but only checked case-ID set membership. A stale or hand-edited
+> eval row for an excluded case could keep non-zero `diagnosis_
+> score_v1`, `category_accuracy`, etc. and still pass the gate —
+> macro means stayed inflated even though the gate said clean.
+> - Fix: `tools/validate_eval_manifest_consistency.py` now
+>   inspects the full eval row payload for each exclusion-exempt
+>   case. The row must (a) carry the `[historical exclusion]`
+>   marker in `provider_error`, (b) have `diagnosis_success=False`
+>   and `abstained=True`, and (c) zero out all numeric score
+>   fields (`diagnosis_score_v1`, `category_accuracy`, etc.).
+>   Any violation → reject with a specific reason.
+> - 1 new test: synthesize a tree where an excluded case's eval
+>   row has stale `diagnosis_success: True` and `diagnosis_score_v1:
+>   0.8`; assert the check rejects with "stale/inflated" in
+>   stderr.
+>
+> **Test counts (cumulative):** `test_diagnosis_cache_key.py`
+> 142 → 144 (+2). `test_hybrid_router.py` unchanged at 10. All
+> 154 pass. All three release checks OK on canonical state.
+
 ### Headline finding: v2 is cross-family stable; v1.3 has narrow agreement
 
 **v1.3 (16 cases, 3 splits):**

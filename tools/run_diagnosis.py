@@ -458,6 +458,16 @@ def _extract_shim_stdout_metadata(stdout_bytes: bytes) -> dict:
     metadata. Used on the non-zero-exit path so shims that succeeded
     enough to know their model identity can preserve it. Per Codex
     2026-05-16 F1.
+
+    Per Codex 2026-06-17 F1 [high]: redact secret-shape substrings
+    from the `_provider_error` value BEFORE returning. A shim that
+    built `_provider_error` from raw CLI / model text on parse
+    failure could otherwise hand back a string carrying a bearer
+    token, API key, tenant URL, or sensitive log fragment, which
+    `build_row` would lift directly into `metadata.provider_error`.
+    Defense-in-depth: shims SHOULD redact at their own boundary
+    (and the OpenAI shim now does), but the runner is the last
+    place where the row's persisted shape is decided.
     """
     try:
         body = json.loads(stdout_bytes.decode("utf-8", errors="replace"))
@@ -468,8 +478,17 @@ def _extract_shim_stdout_metadata(stdout_bytes: bytes) -> dict:
     out: dict = {}
     if isinstance(body.get("_model_info"), dict):
         out["_model_info"] = body["_model_info"]
-    if body.get("_provider_error"):
-        out["_provider_error"] = body["_provider_error"]
+    pe = body.get("_provider_error")
+    if pe:
+        if isinstance(pe, str):
+            out["_provider_error"] = redact_secrets_in_text(pe)
+        else:
+            # Non-string _provider_error (dict/list/etc.) — store the
+            # JSON representation through the same redactor so any
+            # credential-shaped substrings still get scrubbed.
+            out["_provider_error"] = redact_secrets_in_text(
+                json.dumps(pe, ensure_ascii=False)
+            )
     return out
 
 
@@ -559,7 +578,18 @@ def diagnose_command(
     if isinstance(out.get("_model_info"), dict):
         normalized["_model_info"] = out["_model_info"]
     if out.get("_provider_error"):
-        normalized["_provider_error"] = out["_provider_error"]
+        # Per Codex 2026-06-17 F1 [high]: same redaction as the
+        # exit-non-zero path — a shim that succeeded enough to emit
+        # JSON but still surfaced a `_provider_error` (e.g. shim
+        # wrote both a clean row AND a structured warning) can
+        # carry credential-shaped substrings.
+        pe = out["_provider_error"]
+        if isinstance(pe, str):
+            normalized["_provider_error"] = redact_secrets_in_text(pe)
+        else:
+            normalized["_provider_error"] = redact_secrets_in_text(
+                json.dumps(pe, ensure_ascii=False)
+            )
     return normalized
 
 

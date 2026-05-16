@@ -3284,6 +3284,166 @@ def test_openai_shim_post_api_error_redacts_bearer_payload():
         t.join(timeout=3)
 
 
+def test_runner_redacts_structured_provider_error_from_shim_stdout():
+    """Per Codex 2026-06-17 F1 [high]: shim-provided `_provider_error`
+    in stdout JSON envelopes is now redacted at the runner boundary
+    (`_extract_shim_stdout_metadata`) and in the success-path
+    normalization. A shim that built `_provider_error` from raw
+    model/CLI text on parse failure could otherwise hand back a
+    string carrying credentials, which `build_row` would lift
+    directly into `metadata.provider_error`.
+
+    End-to-end: forge a shim that writes a JSON envelope to stdout
+    carrying `_provider_error` with a credential-shaped substring.
+    Assert the manifest row's `metadata.provider_error` does NOT
+    contain the raw secret AND DOES contain the redaction marker.
+    """
+    import subprocess as _sub
+    import tempfile
+    import json
+    repo = Path(__file__).resolve().parent.parent.parent
+    diag_dir = repo / "results" / "dev" / "diagnoses" / "real-debugger-v3"
+    with _snapshot_restore_diag_dir(diag_dir):
+        forge_src = '''
+import json, sys
+sys.stdin.read()
+envelope = {
+    "_provider_error": "api_call_failed: leaked Bearer sk-stdin1234567890abcdef0123456 in reply",
+}
+print(json.dumps(envelope))
+sys.exit(1)
+'''
+        with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as fp:
+            fp.write(forge_src)
+            fp.flush()
+            forge_path = fp.name
+        env = dict(os.environ)
+        env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
+        env["DIAGNOSIS_COMMAND"] = f"python3 {forge_path}"
+        cfg_src = json.loads(
+            (repo / "configs" / "diagnosers" / "real-debugger-v3.json").read_text()
+        )
+        cfg_src.setdefault("provider_policy", {})[
+            "non_fatal_provider_error_prefixes"
+        ] = ["api_call_failed"]
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".json", delete=False
+        ) as cfp:
+            json.dump(cfg_src, cfp)
+            cfp.flush()
+            cfg_path = cfp.name
+        res = _sub.run(
+            ["python3", f"{repo}/tools/run_diagnosis.py",
+             "--split", "dev",
+             "--diagnoser", "command",
+             "--diagnoser-name", "real-debugger-v3",
+             "--command", env["DIAGNOSIS_COMMAND"],
+             "--context-method", "grep",
+             "--diagnoser-config", cfg_path,
+             "--no-cache"],
+            cwd=repo, capture_output=True, timeout=60, env=env,
+        )
+        manifest = diag_dir / "grep.jsonl"
+        assert manifest.exists(), (
+            f"manifest not written; rc={res.returncode}; "
+            f"stderr={res.stderr.decode()[:400]!r}"
+        )
+        for line in manifest.open():
+            row = json.loads(line)
+            pe = (row.get("metadata") or {}).get("provider_error") or ""
+            assert "sk-stdin1234567890abcdef0123456" not in pe, (
+                f"raw secret in provider_error: {pe[:200]!r}"
+            )
+            if pe:
+                assert "redacted-secret" in pe, (
+                    f"runner did not redact structured _provider_error; "
+                    f"pe={pe[:200]!r}"
+                )
+
+
+def test_eval_consistency_rejects_stale_excluded_row_with_inflated_score():
+    """Per Codex 2026-06-17 F2 [high]: an exclusion-exempt eval row
+    that lacks the `[historical exclusion]` marker OR carries
+    non-zero scores must be rejected. Pre-fix, the validator only
+    checked case-ID matching — a stale or hand-edited row keeping
+    inflated metrics could still pass the gate.
+    """
+    import subprocess as _sub
+    import tempfile
+    import json
+    repo = Path(__file__).resolve().parent.parent.parent
+    check = repo / "tools" / "validate_eval_manifest_consistency.py"
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        split = root / "dev"
+        diag_dir = split / "diagnoses" / "real-debugger-v3"
+        diag_dir.mkdir(parents=True)
+        # Manifest has just case-a; eval has case-a + case-b
+        # (excluded). case-b is exempted but its row has inflated
+        # scores — should reject.
+        (diag_dir / "grep.jsonl").write_text(
+            json.dumps({"case_id": "case-a", "context_method": "grep"}) + "\n",
+            encoding="utf-8",
+        )
+        eval_path = split / "eval_diagnosis_real-debugger-v3.json"
+        eval_path.write_text(
+            json.dumps({
+                "split": "dev",
+                "diagnoser": "real-debugger-v3",
+                "methods": [
+                    {
+                        "context_method": "grep",
+                        "cases": [
+                            {"case_id": "case-a"},
+                            {
+                                "case_id": "case-b",
+                                # No "[historical exclusion]" marker,
+                                # and inflated scores.
+                                "provider_error": "stale leftover",
+                                "diagnosis_success": True,
+                                "category_accuracy": 1.0,
+                                "diagnosis_score_v1": 0.8,
+                                "abstained": False,
+                            },
+                        ],
+                    },
+                ],
+            }),
+            encoding="utf-8",
+        )
+        # Exclusion file lists case-b → exemption attempted, but
+        # validator should still reject due to inflated row.
+        excl = root / "exclusions.json"
+        excl.write_text(
+            json.dumps({
+                "exclusions": [
+                    {
+                        "split": "dev",
+                        "diagnoser": "real-debugger-v3",
+                        "method": "grep",
+                        "case_id": "case-b",
+                        "provider_error_prefix": "synthetic",
+                        "note": "test",
+                    },
+                ],
+            }),
+            encoding="utf-8",
+        )
+        res = _sub.run(
+            ["python3", str(check),
+             "--results-dir", str(root),
+             "--exclusions", str(excl)],
+            cwd=repo, capture_output=True, timeout=30,
+        )
+        assert res.returncode != 0, (
+            f"check should reject stale excluded row; "
+            f"stdout={res.stdout.decode()[:300]!r}"
+        )
+        err = res.stderr.decode("utf-8")
+        assert "case-b" in err, err[:600]
+        assert "stale/inflated" in err or "exclusion-exempt" in err, err[:600]
+
+
 def test_runner_redacts_shim_stderr_in_provider_error_detail():
     """Per Codex 2026-06-16 F2 [high]: when a command shim exits
     non-zero, the runner stores up to 600 bytes of stderr in
@@ -4221,6 +4381,10 @@ def main() -> int:
         test_openai_shim_post_api_error_redacts_bearer_payload,
         # Codex 2026-06-16 F2 (runner redacts stderr before persistence)
         test_runner_redacts_shim_stderr_in_provider_error_detail,
+        # Codex 2026-06-17 F1 (runner redacts structured _provider_error)
+        test_runner_redacts_structured_provider_error_from_shim_stdout,
+        # Codex 2026-06-17 F2 (eval consistency rejects inflated excluded rows)
+        test_eval_consistency_rejects_stale_excluded_row_with_inflated_score,
         # Codex 2026-06-12 F1 (fatal provider_error preserves manifests)
         test_fatal_provider_error_preserves_existing_method_artifacts,
         # Codex 2026-06-12 F2 (consistency check also asserts method set)
