@@ -20,13 +20,33 @@ PUSH_MODE="${1:-}"
 echo "==> Cloning $SITE_REPO_SSH into $STAGING"
 git clone "$SITE_REPO_SSH" "$STAGING" 2>&1 | tail -5
 
-echo "==> Syncing docs/ → site repo root (preserve .git)"
-# Use rsync to mirror docs/ at the repo root. Preserve the site
-# repo's own .git directory.
-rsync -a --delete \
-    --exclude '.git' \
-    --exclude 'CNAME' \
-    "$REPO_ROOT/docs/" "$STAGING/"
+echo "==> Syncing homepage files → site repo root (preserve .git)"
+# The site is a landing page, NOT a mirror of all technical docs.
+# Technical sub-docs live in the code repo at
+# github.com/eyuansu62/LogDx/blob/main/docs/... and GitHub renders
+# them natively. Only the curated homepage pages are deployed here.
+#
+# The site ships exactly four files (plus the implicit Jekyll
+# theme remote-loaded by _config.yml):
+#   _config.yml      ← Jekyll config (theme, baseurl="", SEO)
+#   index.md         ← landing page
+#   leaderboard.md   ← v2 leaderboard
+#   cite.md          ← citation formats
+#
+# Adding a new homepage page? Add it to SITE_FILES below.
+SITE_FILES=( "_config.yml" "index.md" "leaderboard.md" "cite.md" )
+
+# Clean out any prior site content (preserves .git, CNAME, .nojekyll).
+find "$STAGING" -mindepth 1 -maxdepth 1 \
+    -not -name '.git' \
+    -not -name 'CNAME' \
+    -not -name '.nojekyll' \
+    -exec rm -rf {} +
+
+# Copy the curated set.
+for f in "${SITE_FILES[@]}"; do
+    cp "$REPO_ROOT/docs/$f" "$STAGING/$f"
+done
 
 # Carry the project README's high-level info into a CNAME-friendly
 # /index hint only if no Jekyll-default `index.md` exists yet (ours
