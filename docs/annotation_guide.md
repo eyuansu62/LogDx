@@ -4,8 +4,9 @@ How to write a correct `ground_truth.json` for a case.
 
 This project's credibility hinges on the ground truth being **faithful to
 the log** and **not tuned to any particular method**. A ground truth that
-drifts toward the simple_rules_legacy baseline (or toward a future LLM
-method) silently converts the benchmark into a confirmation exercise.
+drifts toward any specific baseline (e.g., grep's keyword set, a hybrid
+router's selection rule, or a future LLM method's bias) silently
+converts the benchmark into a confirmation exercise.
 
 ## Core rules
 
