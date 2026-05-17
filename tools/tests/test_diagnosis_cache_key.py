@@ -3504,10 +3504,74 @@ def test_shim_sha256_for_command_resolves_repo_local_path():
 
     # No .py → None
     assert rd.shim_sha256_for_command("some-binary --flag") is None
-    # Nonexistent .py → None
-    assert rd.shim_sha256_for_command("python3 /no/such/path.py") is None
+    # Nonexistent .py with no portable fallback → None
+    assert rd.shim_sha256_for_command(
+        "python3 /no/such/path/totally-not-real.py"
+    ) is None
     # None command → None
     assert rd.shim_sha256_for_command(None) is None
+
+
+def test_shim_path_from_command_falls_back_to_examples_dir():
+    """Per 2026-05-17 CI-portability fix: when the stored absolute
+    path doesn't exist (cross-machine cache replay), the helper
+    falls back to ROOT/examples/<basename>. Without this, manifest
+    rows recorded on a laptop can't be re-cached on a CI runner."""
+    import importlib as _il
+    repo = Path(__file__).resolve().parent.parent.parent
+    real_shim = repo / "examples" / "diagnosis_shim_openai.py"
+    # Fake-absolute path that doesn't exist on this machine, basename
+    # matches a real shim.
+    fake_cmd = "python3 /home/runner/work/LogDx/LogDx/examples/diagnosis_shim_openai.py"
+    resolved = rd.shim_path_from_command(fake_cmd)
+    assert resolved is not None, "fallback should resolve via ROOT/examples"
+    assert resolved.resolve() == real_shim.resolve(), resolved
+    # SHA should match the real shim.
+    import hashlib as _hl
+    expected = _hl.sha256(real_shim.read_bytes()).hexdigest()
+    assert rd.shim_sha256_for_command(fake_cmd) == expected
+
+
+def test_cache_key_portable_across_absolute_paths():
+    """Per 2026-05-17 CI-portability fix: same shim filename invoked
+    with different absolute paths produces the SAME cache_key. This
+    is what makes the migration-stamped cache files portable across
+    laptop checkouts, fresh clones, and CI runners — the cache key
+    only encodes the shim filename, not the directory it lives in.
+    Shim IDENTITY (file content) is captured separately by
+    metadata.shim_sha256 + validation in cache_hit_is_acceptable.
+    """
+    common = {
+        "case_id": "case-A", "context_method": "grep",
+        "context_sha": "ctx-sha", "prompt_sha": "prompt-sha",
+        "provider": "command", "diagnoser": "real-debugger-v3",
+        "env_values": {"X": "v"},
+    }
+    k_laptop = rd.cache_key_for(
+        **common,
+        command_str="python3 /Users/alice/.../examples/diagnosis_shim_openai.py",
+    )
+    k_ci = rd.cache_key_for(
+        **common,
+        command_str="python3 /home/runner/work/LogDx/LogDx/examples/diagnosis_shim_openai.py",
+    )
+    k_relative = rd.cache_key_for(
+        **common,
+        command_str="python3 examples/diagnosis_shim_openai.py",
+    )
+    assert k_laptop == k_ci == k_relative, (
+        f"cache_key not portable across path styles: laptop={k_laptop[:12]}…, "
+        f"ci={k_ci[:12]}…, relative={k_relative[:12]}…"
+    )
+    # Different shim FILENAME → different cache key (shim identity is
+    # still tracked).
+    k_other_shim = rd.cache_key_for(
+        **common,
+        command_str="python3 examples/diagnosis_shim_claude_cli.py",
+    )
+    assert k_other_shim != k_laptop, (
+        "different shim filenames must produce different cache keys"
+    )
 
 
 def test_fresh_row_writes_carry_config_and_shim_sha():
@@ -5001,6 +5065,9 @@ def main() -> int:
         test_cache_hit_rejects_when_shim_sha_changed,
         test_diagnoser_config_sha256_helper_returns_sha_of_loaded_file,
         test_shim_sha256_for_command_resolves_repo_local_path,
+        # 2026-05-17 CI portability fix
+        test_shim_path_from_command_falls_back_to_examples_dir,
+        test_cache_key_portable_across_absolute_paths,
         test_fresh_row_writes_carry_config_and_shim_sha,
         # Codex 2026-06-09 F2 (strict mode for canonical configs)
         test_cache_hit_rejects_legacy_null_under_canonical_config,

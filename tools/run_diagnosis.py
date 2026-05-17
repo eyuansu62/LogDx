@@ -153,17 +153,26 @@ def diagnoser_config_sha256(
 
 
 def shim_path_from_command(command_str: str | None) -> Path | None:
-    """Per Codex 2026-06-08 F2 [high]: best-effort parse of a shell
-    `command_str` to find the first existing .py file path. Returns
-    None when not parseable or no .py file found.
+    """Per Codex 2026-06-08 F2 + 2026-05-17 CI-portability fix:
+    best-effort parse of a shell `command_str` to find the first
+    existing .py file path. Returns None when not parseable or no
+    .py file found.
 
     This lets the runner fold shim-implementation identity into the
     cache key for the canonical repo-local shims (e.g.
     `python3 examples/diagnosis_shim_openai.py`) so editing the shim
     invalidates cached rows that used the old implementation.
-    Non-repo-local commands (e.g. an external binary) contribute
-    nothing here; the cache key still includes the literal command
-    string."""
+
+    Portability: when the stored command_str includes an absolute
+    path from a different machine (e.g. a manifest row recorded a
+    laptop's `/Users/foo/.../examples/diagnosis_shim_openai.py` and
+    we're now on a CI runner at `/home/runner/work/...`), the
+    absolute path resolution will fail. The fallback walks two
+    well-known repo-local locations (`ROOT` and `ROOT/examples`)
+    using just the basename — this is what makes cross-machine
+    cache hits work. Non-repo-local commands (e.g. an external
+    binary) contribute nothing here.
+    """
     if not command_str:
         return None
     try:
@@ -176,6 +185,15 @@ def shim_path_from_command(command_str: str | None) -> Path | None:
         p = Path(part)
         if p.is_file():
             return p
+        # Portability fallback: try basename relative to ROOT and
+        # ROOT/examples. This handles cross-machine cache replay
+        # where the stored path was an absolute path from a different
+        # checkout.
+        basename = p.name
+        for candidate_dir in (ROOT, ROOT / "examples"):
+            candidate = candidate_dir / basename
+            if candidate.is_file():
+                return candidate
     return None
 
 
@@ -1622,6 +1640,39 @@ def cache_hit_is_acceptable(
     return True, None
 
 
+def _normalize_command_for_key(command_str: str | None) -> str:
+    """Per 2026-05-17 CI-portability fix: strip absolute paths from
+    any .py file in `command_str` before folding into the cache key.
+
+    Background: cached rows record `metadata.command` verbatim
+    (e.g. `python3 /Users/foo/.../examples/diagnosis_shim_openai.py`).
+    The cache_key_for function used to fold that whole string in,
+    which made cache keys non-portable across machines: a fresh
+    clone of the repo on a CI runner would compute
+    `python3 /home/runner/work/LogDx/LogDx/examples/...` and miss
+    the cache entry that the migration tool just wrote under the
+    laptop-path key. The shim identity is already captured by
+    `metadata.shim_sha256`; the path itself adds no semantic value.
+
+    Strip every .py token's dirname, keep just the filename. Other
+    tokens pass through. Non-parseable command strings pass through
+    unchanged.
+    """
+    if not command_str:
+        return ""
+    try:
+        parts = shlex.split(command_str)
+    except ValueError:
+        return command_str
+    out = []
+    for p in parts:
+        if p.endswith(".py") and "/" in p:
+            out.append(Path(p).name)
+        else:
+            out.append(p)
+    return " ".join(out)
+
+
 def cache_key_for(
     *, case_id: str, context_method: str, context_sha: str, prompt_sha: str,
     provider: str, diagnoser: str, command_str: str | None,
@@ -1634,7 +1685,7 @@ def cache_key_for(
         "prompt_sha": prompt_sha,
         "provider": provider,
         "diagnoser": diagnoser,
-        "command": command_str or "",
+        "command": _normalize_command_for_key(command_str),
     }
     # Per Codex 2026-05-12 F2: when the diagnoser config opts in via
     # `cache_key_env`, fold those env-var values into the key so changing
