@@ -45,12 +45,12 @@ root-cause diagnosis?
 - **Code & evaluator**: <https://github.com/eyuansu62/LogDx>
 - **Headline report**: [`reports/e10_v2_generalization_partial.md`](https://github.com/eyuansu62/LogDx/blob/main/reports/e10_v2_generalization_partial.md)
 - **Release notes**: [`RELEASE_NOTES.md`](https://github.com/eyuansu62/LogDx/blob/main/RELEASE_NOTES.md)
-- **Current release**: `v2-partial-2026-06-22`
+- **Current release**: `v1.0`
 - **License**: CC-BY-4.0 (data, this repo); Apache-2.0 (code, GH repo)
 
 ## What this dataset contains
 
-**35 real GitHub Actions failure cases** across 6 splits, each with:
+**35 real GitHub Actions failure cases** across 3 splits, each with:
 
 | File | Purpose |
 |------|---------|
@@ -62,12 +62,12 @@ root-cause diagnosis?
 
 ## Split sizes
 
-| Split | v1.3 legacy | v2 new | Total |
-|-------|------------:|-------:|------:|
-| `dev` | 5 | 3 | 8 |
-| `holdout` | 5 | 10 | 15 |
-| `stress` | 6 | 6 | 12 |
-| **Total** | **16** | **19** | **35** |
+| Split | Cases |
+|-------|------:|
+| `dev` | 8 |
+| `holdout` | 15 |
+| `stress` | 12 |
+| **Total** | **35** |
 
 ## Coverage
 
@@ -83,22 +83,25 @@ argocd, prettier, mypy/pandas, tsc/typescript, cpython tcl,
 airflow pre-commit, nodejs+pubsub timeouts, biome pnpm-not-found,
 moby buildx-bake, pip + GitHub Actions network, go-redis pubsub.
 
-## Headline finding (v2)
+## Headline finding
 
-> **v2 produces cross-family-stable AND cross-run-stable benchmark
-> rankings; v1.3's stability is narrower.**
+> Across **35 real CI failure cases** and **3 model families**
+> (Claude Haiku 4.5, Claude Sonnet 4.6, OpenAI gpt-5-mini),
+> top-3 ∩ = `{hybrid-grep-120k-rtk-tail, hybrid-grep-120k-tail}`
+> and bottom-4 set are stable across all three families.
 
-On the 19-case v2 corpus, Sonnet 4.6 / Haiku 4.5 / gpt-5-mini all
-agree on **top-3 ∩ = `{hybrid-v2, hybrid-v3}`** and on the bottom-4
-set. On v1.3 the top-3 intersection narrows to `{hybrid-v1}` only.
+| Rank | Method | Overall (case-weighted) |
+|----:|--------|------------------------:|
+| 1 | `hybrid-grep-120k-rtk-tail` | **0.670** |
+| 2 | `hybrid-grep-120k-tail` | **0.666** |
+| 3 | `grep` | 0.639 |
+| 4 | `tail-200` | 0.614 |
+| ... | (see [the full leaderboard](https://logdx-bench.github.io/leaderboard.html)) | |
 
-| Corpus | Top-3 ∩ (all 3 debuggers) | Bottom-4 set | Stability |
-|---|---|---|---|
-| v1.3 (16) | `{hybrid-v1}` only | raw, rtk-log, llm-summary-mock, rtk-read | narrow |
-| **v2 (19)** | **`{hybrid-v2, hybrid-v3}`** | same bottom-4 | cross-family + cross-run |
-
-The v1.3-tuned `hybrid-grep-4k-rtk-err-cat-v1` does NOT generalize to
-v2 — its 4k-token threshold is overfit to the v1.3 case distribution.
+The top-2 hybrids replaced an earlier 4k-threshold hybrid that was
+overfit during methodology development. See the [technical
+report §3](https://github.com/eyuansu62/LogDx/blob/main/reports/e10_v2_generalization_partial.md)
+for the prototype-vs-formal corpus analysis.
 
 ## How to use
 
@@ -156,18 +159,20 @@ recorded across all 35 cases on the 2026-06-22 release pass.
 
 ## Caveats
 
-This is the **v2-partial preprint** release. The cross-family
-direction is robust to ship; the per-case magnitudes are preliminary.
-Headline limitations:
+This is the **v1.0 preprint** release. The cross-family direction
+is robust to ship; per-case magnitudes are preliminary. Headline
+limitations:
 
-1. **19 / 34 v2 cases** — Batches 7–8 pending to reach corpus target.
+1. **35 cases** — corpus target 50+ for v1.1.
 2. **Ground truth is AI-drafted (Claude Opus 4.7) + single-author
    verified** by the project author. Not independent human
    annotation.
 3. **Three model families tested.** Adding GPT-4o / Gemini / Llama
    variants is the most-leveraged follow-up.
-4. **No human review of v2 diagnoses yet.** v1.1 calibration is
-   re-used unchanged from v1.3.
+4. **No independent human review of v1.0 diagnoses** (an earlier
+   16-case prototype subset had E2/E2b model-as-judge + E9
+   AI-assisted human review; the full 35-case set has not been
+   re-scored).
 5. **20 historical exclusions** documented in
    `configs/historical_provider_error_exclusions.json` (in the
    code repo); the eval injects zero-score abstentions for those
@@ -185,7 +190,7 @@ for the full list.
   author = {Qin, Bowen},
   year   = {2026},
   howpublished = {\url{https://github.com/eyuansu62/LogDx}},
-  note   = {v2-partial release; cases corpus at
+  note   = {v1.0 release; cases corpus at
            \url{https://huggingface.co/datasets/eyuansu71/logdx-ci}},
 }
 ```

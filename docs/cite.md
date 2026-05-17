@@ -8,7 +8,7 @@ description: "How to cite LogDx-CI."
 [← Home](index.html) · [Leaderboard](leaderboard.html)
 
 If your work uses LogDx-CI's cases corpus, evaluation methodology,
-or context-strategy findings, please cite the v2-partial release:
+or log-reduction findings, please cite the v1.0 release:
 
 ## BibTeX
 
@@ -20,7 +20,7 @@ or context-strategy findings, please cite the v2-partial release:
   author = {Qin, Bowen},
   year   = {2026},
   howpublished = {\url{https://github.com/eyuansu62/LogDx}},
-  note   = {v2-partial release; cases corpus at
+  note   = {v1.0 release; cases corpus at
            \url{https://huggingface.co/datasets/eyuansu71/logdx-ci}},
 }
 ```
@@ -29,19 +29,19 @@ or context-strategy findings, please cite the v2-partial release:
 ## APA-style
 
 > Qin, B. (2026). *LogDx-CI: Benchmarking CI Log Reduction Tools
-> for LLM Root-Cause Diagnosis* (v2-partial)
+> for LLM Root-Cause Diagnosis* (v1.0)
 > [Computer software / dataset]. GitHub.
 > <https://github.com/eyuansu62/LogDx>
 
 ## IEEE-style
 
 > B. Qin, "LogDx-CI: Benchmarking CI Log Reduction Tools for
-> LLM Root-Cause Diagnosis," GitHub repository, v2-partial,
+> LLM Root-Cause Diagnosis," GitHub repository, v1.0,
 > 2026. [Online]. Available: <https://github.com/eyuansu62/LogDx>
 
 ## Plain text
 
-> LogDx-CI v2-partial (2026), Bowen Qin (NUS).
+> LogDx-CI v1.0 (2026), Bowen Qin (NUS).
 > Code: <https://github.com/eyuansu62/LogDx>.
 > Cases corpus: <https://huggingface.co/datasets/eyuansu71/logdx-ci>.
 > Licenses: Apache-2.0 (code), CC-BY-4.0 (data + reports).
@@ -52,14 +52,6 @@ GitHub's "Cite this repository" button reads
 [`CITATION.cff`](https://github.com/eyuansu62/LogDx/blob/main/CITATION.cff)
 directly. Click the right-hand panel on the repo page → **Cite this
 repository** → APA / BibTeX.
-
-## When you should also cite v1.3
-
-The v1.3 finding (`hybrid-grep-4k-rtk-err-cat-v1` matches grep at
-1/3 the cost on the 16-case v1.3 benchmark) stands on the v1.3
-corpus. If your work uses v1.3 results specifically (e.g. citing the
-hybrid-v1 cost-effectiveness claim), also cite the v1.3 reports
-listed at the bottom of the [project README](https://github.com/eyuansu62/LogDx/blob/main/README.md).
 
 ## Author
 

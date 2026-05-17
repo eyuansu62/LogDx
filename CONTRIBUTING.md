@@ -38,10 +38,19 @@ CI runs all of the above on every push; see
 
 ## Repo layout (high level)
 
+> **Note on internal naming**: the on-disk split paths
+> `cases/dev/`, `cases/holdout/`, `cases/stress/` (16 cases) and
+> `cases/v2/dev/`, `cases/v2/holdout/`, `cases/v2/stress/` (19
+> cases) reflect two **methodology-development waves** during
+> prototyping. Both are merged into the v1.0 corpus (35 cases
+> total). Same goes for the `v1.3` and `v2` labels in protocol
+> locks and hybrid baseline names. These are preserved for
+> reproducibility audit; the public release version is **v1.0**.
+
 ```
 cases/                  ← case corpus (committed; mirrored on HF)
-  dev/, holdout/, stress/    ← v1.3 legacy split (16 cases)
-  v2/                        ← v2 split (19 new cases)
+  dev/, holdout/, stress/    ← initial wave (16 cases)
+  v2/                        ← second wave (19 cases)
 
 configs/                ← diagnoser / summarizer / hybrid-router configs
   diagnosers/                ← real-debugger-v{1,2,3} + templates
@@ -88,7 +97,7 @@ docs/                   ← GH Pages site + technical sub-docs
   evaluation/, methods/, protocol/, corpus/, …
 
 reports/                ← findings reports
-  e10_v2_generalization_partial.md         ← v2-partial headline report
+  e10_v2_generalization_partial.md         ← v1.0 technical report
   e1..e9_*.md                              ← v1.3-era reports
 ```
 

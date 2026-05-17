@@ -19,21 +19,34 @@ author-verified ground truths.
 It optimizes for **method ranking stability** across model families,
 not "which LLM scored highest."
 
-## Headline finding (v2)
+## Headline finding
 
-> v2 produces cross-family-stable AND cross-run-stable rankings;
-> v1.3's stability is narrower.
+> Across **35 real CI failure cases** and **3 model families**
+> (Claude Haiku 4.5, Claude Sonnet 4.6, OpenAI gpt-5-mini),
+> the **top-3 ∩** of the per-family rankings is
+> `{hybrid-grep-120k-rtk-tail, hybrid-grep-120k-tail}`. Bottom-4
+> set is also stable across all three families.
 
-On the 19-case v2 corpus, Sonnet 4.6 / Haiku 4.5 / gpt-5-mini all
-agree on **top-3 ∩ = `{hybrid-v2, hybrid-v3}`** and on the bottom-4.
-On v1.3 the top-3 intersection narrows to `{hybrid-v1}` only — its
-4k-token threshold is overfit to the v1.3 case distribution and does
-**not** generalize.
+Macro `diagnosis_score_v1_1` aggregated case-count-weighted across
+the 35-case corpus:
 
-| Corpus | Top-3 ∩ (all 3 debuggers) | Stability |
-|---|---|---|
-| v1.3 (16 cases) | `{hybrid-v1}` only | narrow |
-| **v2 (19 cases)** | **`{hybrid-v2, hybrid-v3}`** | cross-family + cross-run |
+| Rank | Method | Haiku 4.5 | Sonnet 4.6 | gpt-5-mini | Overall |
+|----:|--------|----------:|----------:|----------:|--------:|
+| 1 | `hybrid-grep-120k-rtk-tail` | 0.624 | 0.679 | 0.706 | **0.670** |
+| 2 | `hybrid-grep-120k-tail`     | 0.610 | 0.730 | 0.658 | **0.666** |
+| 3 | `grep`                      | 0.578 | 0.684 | 0.655 | 0.639 |
+| 4 | `tail-200`                  | 0.595 | 0.624 | 0.623 | 0.614 |
+| 5 | `hybrid-grep-4k-rtk-err-cat`<br/><sub>*(earlier 4k-threshold hybrid; replaced)*</sub> | 0.552 | 0.597 | 0.571 | 0.573 |
+| 6 | `rtk-err-cat`               | 0.455 | 0.488 | 0.467 | 0.470 |
+| 7 | `raw`                       | 0.324 | 0.368 | 0.367 | 0.353 |
+| 8 | `rtk-read`                  | 0.329 | 0.369 | 0.349 | 0.349 |
+| 9 | `llm-summary-v1-mock`       | 0.343 | 0.348 | 0.294 | 0.328 |
+| 10 | `rtk-log`                  | 0.238 | 0.262 | 0.249 | 0.249 |
+
+The top-2 hybrids replaced an earlier 4k-threshold hybrid that was
+overfit during methodology development. See [§3 of the technical
+report](reports/e10_v2_generalization_partial.md) for the
+prototype-vs-formal corpus analysis.
 
 Full leaderboard at <https://logdx-bench.github.io/leaderboard.html>.
 
@@ -74,18 +87,20 @@ cache replay), see the [reproducibility section in
 
 ## Caveats
 
-This is a `v2-partial` preprint:
+This is a **v1.0** preprint release; we'll add cases + model
+families before calling it stable.
 
-- 19 / 34 v2 cases (Batches 7–8 pending)
+- 35 cases (target: 50+ with broader ecosystem coverage)
 - Ground truth is AI-drafted + single-author verified (not
   independent human annotation)
-- Three model families tested (Haiku / Sonnet / gpt-5-mini)
+- Three model families tested (Haiku / Sonnet / gpt-5-mini); GPT-4o
+  / Gemini / Llama are the most-leveraged follow-up
 - 20 documented historical exclusions in
   [`configs/historical_provider_error_exclusions.json`](configs/historical_provider_error_exclusions.json)
   appear as zero-score abstentions in the eval denominator
 
-Full §5 caveats in the
-[v2 report](reports/e10_v2_generalization_partial.md#5-caveats).
+Full caveats in the
+[technical report §5](reports/e10_v2_generalization_partial.md#5-caveats).
 
 ## Cite
 
@@ -96,7 +111,7 @@ Full §5 caveats in the
   author = {Qin, Bowen},
   year   = {2026},
   howpublished = {\url{https://github.com/eyuansu62/LogDx}},
-  note   = {v2-partial release; cases corpus at
+  note   = {v1.0 release; cases corpus at
            \url{https://huggingface.co/datasets/eyuansu71/logdx-ci}},
 }
 ```

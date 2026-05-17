@@ -1,33 +1,34 @@
-# LogDx-CI v2-partial — Release Notes
+# LogDx-CI v1.0 — Release Notes
 
-**Tag**: `v2-partial-2026-06-22`
+**Tag**: `v1.0`
 **Project homepage**: <https://logdx-bench.github.io/>
-**Protocol lock**: [`protocols/logdx-ci-v2-partial-2026-06-22.lock.json`](protocols/logdx-ci-v2-partial-2026-06-22.lock.json)
-**Headline report**: [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md)
+**Protocol lock**: [`protocols/logdx-ci-v2-partial-2026-06-22.lock.json`](protocols/logdx-ci-v2-partial-2026-06-22.lock.json) ([note](#a-note-on-internal-naming))
+**Technical report**: [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md)
 **Cases corpus mirror**: [`huggingface.co/datasets/eyuansu71/logdx-ci`](https://huggingface.co/datasets/eyuansu71/logdx-ci)
 
 ## TL;DR
 
-LogDx-CI evaluates whether CI log reduction tools (RTK, grep, tail,
-hybrid routers, LLM-summary) preserve enough evidence for coding
-agents to identify the true root cause.
-v2-partial extends the v1.3 frozen protocol (16 cases) with 19
-new v2 cases (target 34) across three model families and three
-splits, and ships three release-gate scripts that pin reproducibility
-across config / shim / cache drift and provider-error leakage.
+LogDx-CI v1.0 evaluates whether CI log reduction tools (RTK, grep,
+tail, hybrid routers, LLM-summary) preserve enough evidence for
+LLM-driven root-cause diagnosis. The benchmark ships **35 real
+GHA failure cases** across `dev` / `holdout` / `stress` splits,
+scored by **3 model families** (Claude Haiku 4.5, Claude Sonnet 4.6,
+OpenAI gpt-5-mini), with three CI-gateable release scripts that pin
+reproducibility against config / shim / cache drift and
+provider-error leakage.
 
 ## What's in this release
 
-**Corpus (35 cases total)**
+**Corpus**: 35 cases across 3 splits
 
-| Split | v1.3 legacy | v2 new | Total |
-|-------|------------:|-------:|------:|
-| `dev` | 5 | 3 | 8 |
-| `holdout` | 5 | 10 | 15 |
-| `stress` | 6 | 6 | 12 |
-| **All** | **16** | **19** | **35** |
+| Split | Cases |
+|-------|------:|
+| `dev` | 8 |
+| `holdout` | 15 |
+| `stress` | 12 |
+| **All** | **35** |
 
-v2 case coverage spans 8 failure categories (test_assertion,
+Case coverage spans 8 failure categories (test_assertion,
 compile_error, type_error, lint_failure, dependency_install,
 docker_build, timeout_or_oom, multi_failure, scattered) and 7+
 ecosystems (pytest, cargo, go test, Maven, pnpm, docker buildx,
@@ -147,30 +148,32 @@ documented historical exclusions (see
 7. **165 test cases** in `tools/tests/` covering unit / integration
    / end-to-end paths.
 
-## Caveats (carry over from v2-partial)
+## Caveats
 
-This is a **preprint** release; do not retire v1.3 yet. The
-v2 finding is robust to ship as preliminary results, but the
-following limitations are explicit:
+This is a **preprint** release. The cross-family ranking finding is
+robust to ship as preliminary results, but the following limitations
+are explicit:
 
-1. **19 / 34 v2 cases** — Batches 7–8 are pending. Per-case
-   variance at this scale means macro means can shift by ±0.05
-   at 34+ cases. Direction of the hybrid-v1 drop is robust;
-   magnitude is preliminary.
+1. **35 cases.** Per-case variance at this scale means macro means
+   can shift by ±0.05 with future expansion. The direction of the
+   top-3 ∩ finding is robust across three model families; absolute
+   magnitudes are preliminary.
 2. **Ground truth is AI-drafted (Claude Opus 4.7) + single-author
-   verified** by Bowen Qin (NUS). Plan-compliant with v1.3 but
-   not independent human annotation. Project-bias caveats apply.
+   verified** by Bowen Qin (NUS). Not independent human annotation.
 3. **Three model families tested.** Adding GPT-4o / Gemini /
    Llama variants is the most-leveraged follow-up for cross-family
    evidence.
-4. **`llm-summary-v1-mock`, not real summarizer** on the diagnosis
-   side. Real Haiku summarizer was excluded from the v1.3 lock for
-   cost reasons and not re-run on v2.
-5. **No human review of v2 diagnoses yet.** v1.3 had E2/E2b
-   model-as-judge + E9 AI-assisted human review; v2 has neither
-   yet. The `v1_1` calibration is re-used unchanged from v1.3.
-6. **v2/stress is partial** (no huge-log + no non-pytest stress
-   case at the moment). The full v2 release will fill these.
+4. **`llm-summary-v1-mock`, not a real summarizer**, on the
+   diagnosis side. A real Haiku summarizer (`llm-summary-v1-haiku`)
+   was run on a 16-case subset in early prototyping but not re-run
+   on the full 35-case corpus due to API cost; it isn't in the
+   headline leaderboard.
+5. **No human review of v1.0 diagnoses.** An earlier 16-case subset
+   had E2/E2b model-as-judge + E9 AI-assisted human review (see
+   the [technical report](reports/e10_v2_generalization_partial.md));
+   the full 35-case set has not yet been independently scored.
+6. **`stress` split is partial** (no huge-log + no non-pytest stress
+   case at the moment). The next release will fill these.
 7. **20 historical exclusions** (documented in
    `configs/historical_provider_error_exclusions.json`) are
    counted as zero-score abstentions in the eval denominator
@@ -180,14 +183,30 @@ following limitations are explicit:
    post_api_error) are not in the canonical allowlist.
 
 See `reports/e10_v2_generalization_partial.md` §5 for the full
-list and `docs/limitations/cilogbench_v1_3_limitations.md` for
-v1.3 carry-over caveats.
+caveat list including the prototype-vs-formal corpus analysis.
+
+## A note on internal naming
+
+Some files / paths in the repo carry internal names like
+`cilogbench-v1.3.lock.json`, `cases/v2/dev/`, or
+`hybrid-grep-4k-rtk-err-cat-v1`. These reflect two **methodology
+development waves** during prototyping:
+
+| Internal label | Meaning |
+|----------------|---------|
+| `v1.3` (also `cases/dev/`, `cases/holdout/`, `cases/stress/`) | First corpus wave — 16 cases collected during early calibration (E2/E2b LLM-as-judge + E9 AI-assisted human review) |
+| `v2` (also `cases/v2/<split>/`) | Second corpus wave — 19 cases added after methodology was frozen |
+
+Both waves together = the 35-case v1.0 corpus. The internal labels
+are preserved in protocol locks and on-disk schema for
+reproducibility audit; the public release is **v1.0**.
 
 ## Roadmap
 
-- **v2-stable** (target: +6 weeks) — Batches 7–8 to reach 34/34;
-  v2/stress 3/3; sample human-review of v2 diagnoses
-- **v3** — Train/holdout split decoupling, GPT-4o + Gemini family
+- **v1.1** (target: +6 weeks) — More cases (corpus target 50+);
+  fill the remaining `stress` gaps (huge log + non-pytest); sample
+  human-review of v1.0 diagnoses
+- **v2** — Train/holdout split decoupling, GPT-4o + Gemini family
   additions, `matrix_or_monorepo_failure` as a first-class
   canonical category
 
@@ -209,7 +228,7 @@ See [CITATION.cff](CITATION.cff). BibTeX:
   author = {Qin, Bowen},
   year   = {2026},
   howpublished = {\url{https://github.com/eyuansu62/LogDx}},
-  note   = {v2-partial release; cases corpus at
+  note   = {v1.0 release; cases corpus at
            \url{https://huggingface.co/datasets/eyuansu71/logdx-ci}},
 }
 ```

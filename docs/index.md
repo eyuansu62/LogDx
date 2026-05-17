@@ -14,10 +14,10 @@ description: "A benchmark for CI log reduction tools — do they preserve enough
 [![Release](https://img.shields.io/github/v/release/eyuansu62/LogDx?include_prereleases&label=release)](https://github.com/eyuansu62/LogDx/releases/latest)
 [![License](https://img.shields.io/badge/license-Apache--2.0%20%2B%20CC--BY--4.0-blue)](https://github.com/eyuansu62/LogDx/blob/main/LICENSE)
 
-**Current release**: `v2-partial-2026-06-22` ·
+**Current release**: `v1.0` ·
 [Leaderboard](leaderboard.html) ·
 [Citation](cite.html) ·
-[Full report](https://github.com/eyuansu62/LogDx/blob/main/reports/e10_v2_generalization_partial.md)
+[Technical report](https://github.com/eyuansu62/LogDx/blob/main/reports/e10_v2_generalization_partial.md)
 
 ## What it measures
 
@@ -32,40 +32,41 @@ It optimizes for **method ranking stability** — the question is not
 chance of finding the true root cause within a fixed token budget,
 ACROSS model families."
 
-## Headline finding (v2)
+## Headline finding
 
-> **v2 produces cross-family-stable AND cross-run-stable benchmark
-> rankings; v1.3's stability is narrower.**
+> Across **35 real CI failure cases** and **3 model families**
+> (Claude Haiku 4.5, Claude Sonnet 4.6, OpenAI gpt-5-mini), the
+> per-family top-3 sets agree on
+> `{hybrid-grep-120k-rtk-tail, hybrid-grep-120k-tail}`. The
+> bottom-4 set is also stable across all three families.
 
-| Corpus | Top-3 ∩ (all 3 debuggers) | Bottom-4 set | Stability |
-|---|---|---|---|
-| v1.3 (16 cases) | `{hybrid-v1}` only | raw, rtk-log, llm-summary-mock, rtk-read | narrow |
-| **v2 (19 cases)** | **`{hybrid-v2, hybrid-v3}`** | same bottom-4 | cross-family + cross-run |
+Case-count-weighted macro `diagnosis_score_v1_1` aggregated across
+the 35-case corpus:
 
-The v1.3-tuned `hybrid-grep-4k-rtk-err-cat-v1` does **not** generalize
-to v2 — its 4k-token threshold is overfit to the v1.3 case
-distribution. The replacement hybrids (`hybrid-v2` and `hybrid-v3`)
-use a 120k-token primary threshold with explicit `rtk_input_truncated`
-gating and recover most of the lost performance.
+| Rank | Method | Haiku 4.5 | Sonnet 4.6 | gpt-5-mini | Overall |
+|----:|--------|----------:|----------:|----------:|--------:|
+| 1 | `hybrid-grep-120k-rtk-tail` | 0.624 | 0.679 | 0.706 | **0.670** |
+| 2 | `hybrid-grep-120k-tail`     | 0.610 | 0.730 | 0.658 | **0.666** |
+| 3 | `grep`                      | 0.578 | 0.684 | 0.655 | 0.639 |
+| 4 | `tail-200`                  | 0.595 | 0.624 | 0.623 | 0.614 |
+| 5 | `hybrid-grep-4k-rtk-err-cat` <sub>(*replaced; see report*)</sub> | 0.552 | 0.597 | 0.571 | 0.573 |
+| 6 | `rtk-err-cat`               | 0.455 | 0.488 | 0.467 | 0.470 |
+| 7 | `raw`                       | 0.324 | 0.368 | 0.367 | 0.353 |
+| 8 | `rtk-read`                  | 0.329 | 0.369 | 0.349 | 0.349 |
+| 9 | `llm-summary-v1-mock`       | 0.343 | 0.348 | 0.294 | 0.328 |
+| 10 | `rtk-log`                  | 0.238 | 0.262 | 0.249 | 0.249 |
 
-## Leaderboard (top 6, v2 corpus)
+The top-2 hybrids replaced an earlier 4k-threshold hybrid that was
+overfit during methodology development (see the [technical report
+§3](https://github.com/eyuansu62/LogDx/blob/main/reports/e10_v2_generalization_partial.md)
+for the prototype-vs-formal corpus analysis).
 
-| Rank | Method | Avg score |
-|----:|--------|----------:|
-| 1 | **`hybrid-grep-120k-rtk-tail-v3`** | **0.646** |
-| 2 | `hybrid-grep-120k-tail-v2` | 0.638 |
-| 3 | `tail-200` | 0.576 |
-| 4 | `grep` | 0.571 |
-| 5 | `rtk-err-cat` | 0.474 |
-| 6 | `hybrid-grep-4k-rtk-err-cat-v1` (v1.3 winner) | 0.455 |
-
-Full breakdown by debugger family and split → **[leaderboard](leaderboard.html)**.
+Full per-split + per-debugger breakdown → **[leaderboard](leaderboard.html)**.
 
 ## Corpus
 
-**35 cases total** — 16 legacy v1.3 + 19 new v2 — across `dev`,
-`holdout`, and `stress` splits (each with a parallel `v2/*` split for
-the new corpus). Coverage:
+**35 real GitHub Actions failure cases** across `dev` (8), `holdout`
+(15), and `stress` (12) splits. Coverage:
 
 - **8 failure categories**: `test_assertion`, `compile_error`,
   `type_error`, `lint_failure`, `dependency_install`, `docker_build`,
@@ -122,18 +123,19 @@ Every release carries:
 
 ## Caveats
 
-This is a **v2-partial preprint** release; do not retire the v1.3
-finding yet.
+This is a **v1.0 preprint** release.
 
-1. **19 / 34 v2 cases** — Batches 7–8 pending. The direction of the
-   hybrid-v1 drop is robust; per-case magnitudes are preliminary.
+1. **35 cases.** Per-case variance can shift macro means by ±0.05
+   with future corpus expansion. The direction of the top-3 ∩
+   finding is robust; absolute magnitudes are preliminary.
 2. **Ground truth is AI-drafted (Claude Opus 4.7) + single-author
-   verified** by Bowen Qin (NUS). Plan-compliant with v1.3 but not
-   independent human annotation.
+   verified** by Bowen Qin (NUS). Not independent human annotation.
 3. **Three model families tested.** Adding GPT-4o / Gemini / Llama
    is the most-leveraged follow-up.
-4. **No human review of v2 diagnoses yet.** v1.1 calibration is
-   re-used unchanged from v1.3.
+4. **No independent human review of v1.0 diagnoses** (an earlier
+   16-case prototype subset had E2/E2b model-as-judge + E9
+   AI-assisted human review; the full 35-case set has not been
+   re-scored).
 5. **20 historical exclusions** documented in
    `configs/historical_provider_error_exclusions.json`; the eval
    injects zero-score abstentions for those tuples so the
@@ -144,9 +146,10 @@ for the complete list.
 
 ## Roadmap
 
-- **v2-stable** — Batches 7–8 to reach 34/34 cases; v2/stress 3/3;
-  spot-checked human review of v2 diagnoses
-- **v3** — Train/holdout split decoupling, GPT-4o + Gemini family
+- **v1.1** — Corpus expansion (target 50+); fill remaining
+  `stress` gaps (huge log + non-pytest); spot-checked human
+  review of v1.0 diagnoses
+- **v2** — Train/holdout split decoupling, GPT-4o + Gemini family
   additions, `matrix_or_monorepo_failure` as a first-class canonical
   category, optional Gradio leaderboard space on HF
 
@@ -160,7 +163,7 @@ for the complete list.
   author = {Qin, Bowen},
   year   = {2026},
   howpublished = {\url{https://github.com/eyuansu62/LogDx}},
-  note   = {v2-partial release; cases corpus at
+  note   = {v1.0 release; cases corpus at
            \url{https://huggingface.co/datasets/eyuansu71/logdx-ci}},
 }
 ```
