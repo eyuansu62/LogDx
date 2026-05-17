@@ -15,8 +15,8 @@ or context-strategy findings, please cite the v2-partial release:
 {% raw %}
 ```bibtex
 @misc{qin2026logdx,
-  title  = {{LogDx-CI}: A Reproducible Benchmark for
-           Failure-Context Strategies in CI Log Diagnosis},
+  title  = {{LogDx-CI}: Benchmarking CI Log Reduction Tools
+           for LLM Root-Cause Diagnosis},
   author = {Qin, Bowen},
   year   = {2026},
   howpublished = {\url{https://github.com/eyuansu62/LogDx}},
@@ -28,15 +28,15 @@ or context-strategy findings, please cite the v2-partial release:
 
 ## APA-style
 
-> Qin, B. (2026). *LogDx-CI: A Reproducible Benchmark for
-> Failure-Context Strategies in CI Log Diagnosis* (v2-partial)
+> Qin, B. (2026). *LogDx-CI: Benchmarking CI Log Reduction Tools
+> for LLM Root-Cause Diagnosis* (v2-partial)
 > [Computer software / dataset]. GitHub.
 > <https://github.com/eyuansu62/LogDx>
 
 ## IEEE-style
 
-> B. Qin, "LogDx-CI: A Reproducible Benchmark for Failure-Context
-> Strategies in CI Log Diagnosis," GitHub repository, v2-partial,
+> B. Qin, "LogDx-CI: Benchmarking CI Log Reduction Tools for
+> LLM Root-Cause Diagnosis," GitHub repository, v2-partial,
 > 2026. [Online]. Available: <https://github.com/eyuansu62/LogDx>
 
 ## Plain text

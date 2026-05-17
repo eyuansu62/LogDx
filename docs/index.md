@@ -1,13 +1,13 @@
 ---
 title: "LogDx-CI"
-description: "A reproducible benchmark for failure-context strategies in CI log diagnosis."
+description: "A benchmark for CI log reduction tools — do they preserve enough evidence for LLM root-cause diagnosis?"
 ---
 
 # LogDx-CI
 
-> A reproducible benchmark for **failure-context strategies in CI log
-> diagnosis**. Does an LLM still have enough evidence to identify the
-> true root cause after a CI log is filtered, summarized, or compressed?
+> A benchmark for **CI log reduction tools** (RTK, grep, tail,
+> hybrid routers, LLM-summary) — do they preserve enough evidence
+> for LLM root-cause diagnosis?
 
 [![GitHub](https://img.shields.io/badge/code-eyuansu62%2FLogDx-181717?logo=github)](https://github.com/eyuansu62/LogDx)
 [![HF](https://img.shields.io/badge/data-eyuansu71%2Flogdx--ci-yellow?logo=huggingface)](https://huggingface.co/datasets/eyuansu71/logdx-ci)
@@ -28,8 +28,8 @@ Sonnet 4.6, OpenAI gpt-5-mini) and scoring the resulting root-cause
 diagnoses against AI-drafted + author-verified ground truth.
 
 It optimizes for **method ranking stability** — the question is not
-"which LLM is smartest" but "what context strategy gives an LLM the
-best chance of finding the true root cause within a fixed token budget,
+"which LLM is smartest" but "which log reducer gives an LLM the best
+chance of finding the true root cause within a fixed token budget,
 ACROSS model families."
 
 ## Headline finding (v2)
@@ -155,8 +155,8 @@ for the complete list.
 {% raw %}
 ```bibtex
 @misc{qin2026logdx,
-  title  = {{LogDx-CI}: A Reproducible Benchmark for
-           Failure-Context Strategies in CI Log Diagnosis},
+  title  = {{LogDx-CI}: Benchmarking CI Log Reduction Tools
+           for LLM Root-Cause Diagnosis},
   author = {Qin, Bowen},
   year   = {2026},
   howpublished = {\url{https://github.com/eyuansu62/LogDx}},

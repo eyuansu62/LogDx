@@ -1,8 +1,8 @@
 # LogDx-CI
 
-> A reproducible benchmark for **failure-context strategies in CI log
-> diagnosis**. Does an LLM still have enough evidence to identify the
-> root cause after a CI log is filtered, summarized, or compressed?
+> A benchmark for **CI log reduction tools** (RTK, grep, tail,
+> hybrid routers, LLM-summary) — do they preserve enough evidence
+> for LLM root-cause diagnosis?
 
 [![CI](https://github.com/eyuansu62/LogDx/actions/workflows/ci.yml/badge.svg)](https://github.com/eyuansu62/LogDx/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/eyuansu62/LogDx?include_prereleases&label=release)](https://github.com/eyuansu62/LogDx/releases/latest)
@@ -91,8 +91,8 @@ Full §5 caveats in the
 
 ```bibtex
 @misc{qin2026logdx,
-  title  = {{LogDx-CI}: A Reproducible Benchmark for
-           Failure-Context Strategies in CI Log Diagnosis},
+  title  = {{LogDx-CI}: Benchmarking CI Log Reduction Tools
+           for LLM Root-Cause Diagnosis},
   author = {Qin, Bowen},
   year   = {2026},
   howpublished = {\url{https://github.com/eyuansu62/LogDx}},

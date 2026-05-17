@@ -8,8 +8,9 @@
 
 ## TL;DR
 
-LogDx-CI evaluates whether CI failure-context strategies preserve
-enough evidence for coding agents to identify the true root cause.
+LogDx-CI evaluates whether CI log reduction tools (RTK, grep, tail,
+hybrid routers, LLM-summary) preserve enough evidence for coding
+agents to identify the true root cause.
 v2-partial extends the v1.3 frozen protocol (16 cases) with 19
 new v2 cases (target 34) across three model families and three
 splits, and ships three release-gate scripts that pin reproducibility
@@ -203,8 +204,8 @@ See [CITATION.cff](CITATION.cff). BibTeX:
 
 ```bibtex
 @misc{qin2026logdx,
-  title  = {{LogDx-CI}: A Reproducible Benchmark for
-           Failure-Context Strategies in CI Log Diagnosis},
+  title  = {{LogDx-CI}: Benchmarking CI Log Reduction Tools
+           for LLM Root-Cause Diagnosis},
   author = {Qin, Bowen},
   year   = {2026},
   howpublished = {\url{https://github.com/eyuansu62/LogDx}},

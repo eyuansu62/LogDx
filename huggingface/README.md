@@ -1,15 +1,15 @@
 ---
 license: cc-by-4.0
-pretty_name: "LogDx-CI: Reproducible Benchmark for CI Log Diagnosis Context Strategies"
+pretty_name: "LogDx-CI: Benchmark for CI Log Reduction Tools"
 language:
   - en
 tags:
   - benchmark
   - ci-cd
   - log-analysis
+  - log-reduction
   - root-cause-analysis
-  - context-engineering
-  - retrieval
+  - rtk
   - coding-agents
   - llm-evaluation
 task_categories:
@@ -37,9 +37,9 @@ configs:
 
 # LogDx-CI
 
-A reproducible benchmark for **failure-context strategies in CI log
-diagnosis**. Does an LLM still have enough evidence to identify the
-true root cause after a CI log is filtered, summarized, or compressed?
+A benchmark for **CI log reduction tools** (RTK, grep, tail, hybrid
+routers, LLM-summary) — do they preserve enough evidence for LLM
+root-cause diagnosis?
 
 - **Homepage**: <https://logdx-bench.github.io/>
 - **Code & evaluator**: <https://github.com/eyuansu62/LogDx>
@@ -180,8 +180,8 @@ for the full list.
 
 ```bibtex
 @misc{qin2026logdx,
-  title  = {{LogDx-CI}: A Reproducible Benchmark for
-           Failure-Context Strategies in CI Log Diagnosis},
+  title  = {{LogDx-CI}: Benchmarking CI Log Reduction Tools
+           for LLM Root-Cause Diagnosis},
   author = {Qin, Bowen},
   year   = {2026},
   howpublished = {\url{https://github.com/eyuansu62/LogDx}},
