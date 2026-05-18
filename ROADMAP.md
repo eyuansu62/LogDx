@@ -1,0 +1,247 @@
+# LogDx-CI Roadmap
+
+Status as of 2026-05-18.
+
+| Release | Status | Highlights |
+|---|---|---|
+| **v1.0** | shipped 2026-05-18 | 35-case corpus × 3 model families. [Release notes](RELEASE_NOTES.md) · [Homepage](https://logdx-bench.github.io/) |
+| **v1.0.1** | shipped 2026-05-18 | Added `confident_error_rate_v1_1` as a separate leaderboard column. |
+| **v1.1** | targeted ~2026-07 | See P0/P1/P2 items below. |
+| **v1.2 / v2** | exploratory | Train/holdout decoupling, GPT-4o + Gemini families, `fix_action` evaluation. |
+
+This roadmap is informed by the RTK community's
+"signal-loss-during-aggressive-compression" issue cluster
+(see [the analysis post](docs/analysis/why-rtk-underperforms-on-ci-diagnosis.md)).
+Each item below names the community thread or finding that motivates
+it, so contributors can trace the design decision.
+
+## Priorities
+
+The six v1.1 items below are ordered by **structural impact on
+benchmark credibility**, not by implementation effort.
+
+```
+P0 (shipped)  : #3 confident_error_rate column
+P0 (v1.1)     : #1 multi-turn / agent-loop benchmark
+                #2 cost + latency reporting
+P1 (v1.1)     : #4 configured-RTK baseline
+                #5 vitest / dotnet / Playwright corpus expansion
+P2 (v1.1)     : #6 decision-making (fix_action) evaluation dimension
+```
+
+P0 items are required for v1.1 release. P1 items ship if time permits.
+P2 items are stretch goals; they may slip to v1.2.
+
+## #3 — confident_error_rate as a separate column · DONE in v1.0.1
+
+**Motivation**: [rtk-ai/rtk#1599](https://github.com/rtk-ai/rtk/issues/1599)
+("go build reports 'Success' when it failed") and
+[rtk-ai/rtk#827](https://github.com/rtk-ai/rtk/issues/827)
+("LLM takes decisions on incomplete diffs") name a specific failure
+mode that's more dangerous than "missed diagnosis": a method that
+produces *confidently wrong* output. v1.0 had the metric in eval
+JSON but folded into `diagnosis_score_v1_1`, hiding the safety
+distinction.
+
+**Done**: Added `confident_error_rate_v1_1` as a column on
+[`docs/index.md`](docs/index.md) and
+[`docs/leaderboard.md`](docs/leaderboard.md). Methodology lives in
+[`tools/evaluate_diagnosis.py`](tools/evaluate_diagnosis.py) (already)
+and aggregation is reproducible via
+[`tools/aggregate_confident_error.py`](tools/aggregate_confident_error.py).
+
+**Key finding surfaced**: top-3 methods produce zero or near-zero
+confident misdiagnoses; `rtk-log` and `llm-summary-v1-mock` produce
+13.3% each. Safety and quality rank together, not in tension.
+
+## #1 — Multi-turn / agent-loop benchmark · P0 for v1.1
+
+**Motivation**: Community evidence that single-shot results don't
+predict real-agent results.
+- [rtk-ai/rtk#690](https://github.com/rtk-ai/rtk/issues/690): Playwright
+  agents need *"3-5x more iterations"* to debug E2E failures with RTK.
+- [rtk-ai/rtk#1351](https://github.com/rtk-ai/rtk/issues/1351): public
+  terminal-bench 2.0 run shows RTK *increases* codex token usage —
+  agent has to retry repeatedly because compressed output lacks
+  the signal needed for action.
+
+**Gap in v1.0**: LogDx-CI runs every method as `log → reducer →
+single LLM call → score`. Real Claude Code / Codex usage is
+`log → reducer → LLM → tool calls (grep/read_file/tail) → LLM →
+...`. A method that scores 0.7 single-shot but forces 5 iterations
+of follow-up tool calls is **worse** in practice than one scoring
+0.6 in a single shot.
+
+**Scope for v1.1**:
+
+1. New diagnoser variant `real-agent-v1` that supports tool calls
+   (`grep`, `read_file`, `tail`, `view_log_lines`).
+2. Iteration cap: 5 turns. Token budget: same as current.
+3. New metrics:
+   - `turns_to_diagnosis`: turns used before the agent issues
+     a final root-cause answer.
+   - `total_input_tokens_consumed`: cumulative LLM input tokens
+     across all turns (proxy for cost).
+   - `tool_call_count`: number of tool invocations.
+4. Re-run all 10 baselines through `real-agent-v1` on Sonnet 4.6
+   (Haiku and gpt-5-mini if budget allows).
+5. New leaderboard section: **agent-loop leaderboard** alongside
+   the single-shot one. Hypothesis: hybrid routers' advantage
+   should *increase* in agent-loop because they front-load the
+   signal-rich grep output, reducing follow-up grep calls.
+
+**Effort**: medium-large. The harness exists in `tools/run_diagnosis.py`
+but needs a tool-call loop; `examples/diagnosis_shim_claude_cli.py`
+already supports tool definitions. Mostly evaluator + protocol work,
+not new model work.
+
+## #2 — Cost + latency reporting · P0 for v1.1
+
+**Motivation**: The community's central RTK debate is about **cost**,
+not about diagnosis quality in isolation. Examples:
+- [rtk-ai/rtk#582](https://github.com/rtk-ai/rtk/issues/582):
+  "RTK Hook Increases Claude Code Costs by 18%" (disputed; maintainers
+  ran rebuttal benchmarks).
+- [rtk-ai/rtk#839](https://github.com/rtk-ai/rtk/issues/839):
+  "Empirical benchmark: 5 repos, 2,100 measurements — how do actual
+  savings compare to claims?"
+- [rtk-ai/rtk#1351](https://github.com/rtk-ai/rtk/issues/1351):
+  terminal-bench data showing increased token use.
+
+**Gap in v1.0**: Eval JSON already records `macro_context_tokens` and
+`macro_diagnosis_tokens` per method, but they're not on the
+leaderboard. Latency is recorded per-row but not aggregated.
+
+**Scope for v1.1**:
+
+1. Add columns to the leaderboard:
+   - `context_tokens` (input cost driver)
+   - `diagnosis_tokens` (output cost driver)
+   - `reducer_runtime_ms` (latency of the reducer itself)
+2. Produce a **cost-quality Pareto plot**: x-axis = total tokens
+   per case (reducer output + LLM diagnosis), y-axis =
+   `diagnosis_score_v1_1`. Methods on the Pareto frontier are the
+   ones worth using.
+3. Optional sidebar: USD cost per case at posted Anthropic/OpenAI
+   list prices. Pin the price snapshot date.
+
+**Effort**: small. Data already exists; this is rendering work.
+
+## #4 — Configured-RTK baseline · P1 for v1.1
+
+**Motivation**: v1.0 uses stock `rtk` invocations
+(`rtk read`, `rtk log`, `rtk err cat`). Multiple community threads
+imply that power users tune RTK significantly:
+- [rtk-ai/rtk#1313](https://github.com/rtk-ai/rtk/issues/1313):
+  RKelln audited 47+ `.take(N)` truncation sites; says they're
+  controllable.
+- The current `docs/methods/rtk.md` already notes "no modification
+  of the user's RTK config" as an intentional scope decision.
+
+**Gap in v1.0**: Comparing stock RTK to grep is **structurally
+unfair** if a tuned RTK can close the gap. The "RTK loses on CI
+diagnosis" claim is only as strong as the configuration we tested.
+
+**Scope for v1.1**:
+
+1. New baseline: `rtk-tuned-for-ci` using a community-recommended
+   `.rtkrc` or `--rules` set focused on preserving failure patterns.
+2. Reach out to RTK maintainers via [rtk-ai/rtk#1313](https://github.com/rtk-ai/rtk/issues/1313)
+   for their recommended CI-diagnosis configuration. Pin and ship
+   the exact config under `configs/baselines/rtk-tuned-for-ci.json`.
+3. Include `rtk-tuned-for-ci` in the v1.1 leaderboard. If it closes
+   the gap to `grep`, the v1.0 framing of "RTK underperforms stand-
+   alone" gets a major qualifier added: *"out of the box."*
+
+**Effort**: medium. Mostly waiting on RTK maintainer input + one
+new baseline runner. Risk: if maintainers don't engage, we ship
+with our best-effort tuning + an open invitation.
+
+## #5 — Test-runner / ecosystem corpus expansion · P1 for v1.1
+
+**Motivation**: Community issues name concrete test runners that RTK
+handles poorly:
+- [rtk-ai/rtk#1813](https://github.com/rtk-ai/rtk/issues/1813):
+  vitest *"shows 5 of 49 failures, hides the rest."*
+- [rtk-ai/rtk#1882](https://github.com/rtk-ai/rtk/issues/1882):
+  go test failure details hidden.
+- [rtk-ai/rtk#1574](https://github.com/rtk-ai/rtk/issues/1574):
+  dotnet test summary cut off.
+- [rtk-ai/rtk#690](https://github.com/rtk-ai/rtk/issues/690):
+  Playwright E2E test agents can't see failure detail.
+
+**Gap in v1.0**: 35-case corpus covers pytest / cargo / `go test` /
+mvn / pnpm-jest / gradle / biome, but is light on `vitest` (0 cases),
+**`dotnet test`** (0 cases), and **E2E test runners** (0 cases).
+
+**Scope for v1.1**:
+
+1. Add **+5 vitest cases**, **+3 dotnet test cases**, **+2 Playwright
+   or Cypress E2E cases**. Total: 35 → 45 cases.
+2. Re-evaluate all 10 baselines (single-shot) and all agent-loop
+   baselines (from #1).
+3. Verify the headline finding (top-3 ∩ stable across families)
+   survives the corpus expansion.
+
+**Effort**: medium. Each case is ~2-4 hours wall-clock (find a
+public failing CI run + privacy audit + AI-draft ground truth +
+single-author verify). 10 cases ≈ 1 person-week.
+
+## #6 — Decision-making (fix_action) evaluation dimension · P2 for v1.1
+
+**Motivation**: [rtk-ai/rtk#827](https://github.com/rtk-ai/rtk/issues/827)
+specifically frames this as
+*"LLM takes **decisions** on incomplete diffs."* Diagnosing the root
+cause and choosing the right next action are different tasks; the
+latter is what real agents do.
+
+**Gap in v1.0**: We score "did the LLM identify the right root cause"
+but not "did the LLM choose the right fix command."
+
+**Scope for v1.1**:
+
+1. For each ground truth case, add a `fix_action` field documenting
+   the canonical next action (e.g., `pip install foo==1.2.3`,
+   `gh secret set GITHUB_TOKEN`, `kubectl rollout undo deployment/x`).
+2. New eval dimension `fix_action_match_score` — LLM prompted to
+   output the next shell command; scored against the canonical
+   action via category + argument overlap.
+3. Optional: separate `fix_action_leaderboard` if scores differ
+   meaningfully from diagnosis scores.
+
+**Effort**: medium-large. Adding `fix_action` to 45 cases is
+non-trivial (these are higher-information ground-truth annotations
+than category). May ship as P2 deferred to v1.2 if #1, #2, #4, #5
+already fill the v1.1 window.
+
+## Out-of-scope for v1.1 (recorded for v1.2+)
+
+- **Other compression tools**: `terminal-output-summarizer`,
+  `llm-aware-tee`, custom GPT-4o summarizers running real (not mock).
+- **Beyond CI**: git diff compression, JSON output triage, cloud-CLI
+  output (`eks describe-cluster` — [rtk-ai/rtk#1466](https://github.com/rtk-ai/rtk/issues/1466)).
+  These are RTK's main use cases; LogDx-CI scope explicitly excludes them.
+- **Train/holdout decoupling**: v1.0 uses the same 35-case corpus
+  for both calibration and reporting. v2 wants a strict held-out
+  split that none of the hybrid thresholds were tuned on.
+- **Additional model families**: GPT-4o, Gemini 2.5 Pro, Llama 3.3.
+  Cost-budget-constrained; consider crowd-sourcing via the
+  homepage's "Submit your model" pipeline (not yet built).
+
+## How to contribute
+
+The corpus and protocol are designed for forkability. To add a case
+or a baseline:
+
+1. Follow [`docs/corpus/cilogbench_v2_annotation_guide.md`](docs/corpus/cilogbench_v2_annotation_guide.md)
+   to import a case.
+2. Run [`tools/validate_cases.py`](tools/validate_cases.py) +
+   [`tools/validate_case_tags.py`](tools/validate_case_tags.py)
+   before opening a PR.
+3. New baselines should match the existing baseline shape
+   (input `raw.log`, output `<case_id>.txt` + metadata). See
+   `tools/run_baseline.py` for the simplest example.
+
+[Issues and PRs welcome](https://github.com/eyuansu62/LogDx/issues).
+For changes to the eval methodology, please open an issue first
+to discuss whether it's a v1.x calibration tweak or a v2 break.
