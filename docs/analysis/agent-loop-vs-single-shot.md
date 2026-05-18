@@ -6,11 +6,10 @@
 >
 > **Headline finding**: in agent-loop usage, the choice of context
 > method matters far less for *quality* than in single-shot — the
-> score range collapses from 0.42 to 0.069. Cost differences
-> persist (1.8× spread in agent-loop vs 530× single-shot), and the
-> v1.0 single-shot winner (`hybrid-grep-120k-rtk-tail`) now carries
-> the **highest agent-loop confident_error rate** (5.7%) — one of
-> only two methods to have a non-zero rate.
+> score range collapses from 0.42 to 0.074. Cost differences
+> persist (1.5× spread in agent-loop vs 530× single-shot), and the
+> v1.0 single-shot winner (`hybrid-grep-120k-rtk-tail`) drops to
+> agent-loop rank 8 with a non-zero confident_error rate (2.9%).
 
 ## TL;DR
 
@@ -24,33 +23,35 @@ across up to 5 turns.
 
 Four findings on the 35-case corpus × Sonnet 4.6 agent:
 
-1. **Every method gains. The quality gap collapses 6×.** Single-shot
+1. **Every method gains. The quality gap collapses ~6×.** Single-shot
    `diagnosis_score_v1_1` ranges from **0.249** (`rtk-log`, worst)
    to **0.670** (`hybrid-grep-120k-rtk-tail`, best) — a 0.42 spread.
-   Agent-loop scores compress to **[0.658, 0.727]**, a 0.069 spread.
-   `rtk-log` gains the most (+0.41) by being rescued via tool calls;
+   Agent-loop scores compress to **[0.666, 0.740]**, a 0.074 spread.
+   `rtk-log` gains the most (+0.42) by being rescued via tool calls;
    no method loses score.
-2. **Confident-error collapses to ~0.** v1.0 surfaced that `rtk-log`
-   and `llm-summary-v1-mock` produce confidently-wrong diagnoses on
-   **~13%** of cases (the failure mode
+2. **Confident-error mostly collapses.** v1.0 surfaced that
+   `rtk-log` and `llm-summary-v1-mock` produce confidently-wrong
+   diagnoses on **~13%** of cases (the failure mode
    [discussed in rtk-ai/rtk#1599](https://github.com/rtk-ai/rtk/issues/1599)).
-   In agent-loop, 8 of 10 methods sit at **0%** confident_error —
-   the multi-turn loop lets the agent verify before committing, so
-   even when it ends up at "unknown" it does so via abstention.
-   The highest agent confident_error (5.7%) is on
-   `hybrid-grep-120k-rtk-tail` — ironically the v1.0 single-shot
-   winner.
+   In agent-loop, 7 of 10 methods sit at **0%** confident_error,
+   including `rtk-log` itself. The three exceptions are
+   `raw` (5.7%), `llm-summary-v1-mock` (2.9%), and
+   `hybrid-grep-120k-rtk-tail` (2.9%) — methods that deliver
+   either over-comprehensive content (`raw`'s 275k tokens of full
+   log) or pre-structured output that encourages premature
+   confidence.
 3. **Rankings reshuffle.** v1.0's #1 (`hybrid-grep-120k-rtk-tail`)
-   drops to rank 7 in agent-loop. The new winner is
+   drops to rank 8 in agent-loop. The new winner is
    `hybrid-grep-120k-tail` (single-shot rank 2, agent rank 1, agent
-   confident_error 0%). `tail-200` jumps from rank 4 (single-shot)
-   to rank 2 (agent) at the lowest cost in the top 3.
-4. **Cost compresses ~300×, but doesn't vanish.** Single-shot
+   confident_error 0%); `grep` jumps from single-shot rank 3 to
+   agent rank 2 (0.738, 0% confident_error). `tail-200` settles at
+   agent rank 4, narrowly trailing.
+4. **Cost compresses ~350×, but doesn't vanish.** Single-shot
    input tokens range from 810 (`rtk-log`) to 432k
    (`llm-summary-v1-mock` end-to-end) — a 530× max/min ratio.
-   Agent-loop ranges from 50.5k to 89.2k — a 1.8× ratio (so the
-   spread shrinks by 530 / 1.8 ≈ 300×). The agent adds a roughly
-   fixed ~50–90k token cost regardless of starting context.
+   Agent-loop ranges from 48.3k to 71.5k — a 1.5× ratio (so the
+   spread shrinks by 530 / 1.5 ≈ 350×). The agent adds a roughly
+   fixed ~48–72k token cost regardless of starting context.
 
 ## Setup
 
@@ -75,16 +76,16 @@ Sorted by single-shot score (matches the v1.0 leaderboard order).
 
 | Method | single-shot | agent-loop | Δ | conf_err (agent) | tools / case | tokens / case |
 |---|---:|---:|---:|---:|---:|---:|
-| `hybrid-grep-120k-rtk-tail` | **0.670** | 0.689 | +0.019 | 0.057 | 3.23 |  74,535 |
-| `hybrid-grep-120k-tail` | 0.666 | **0.727** | +0.061 | **0.000** | 3.03 |  66,767 |
-| `grep` | 0.639 | 0.699 | +0.061 | **0.000** | 3.11 |  69,808 |
-| `tail-200` | 0.614 | **0.720** | +0.106 | **0.000** | 2.91 |  57,763 |
-| `hybrid-grep-4k-rtk-err-cat` | 0.573 | 0.689 | +0.116 | **0.000** | 3.43 |  62,450 |
-| `rtk-err-cat` | 0.470 | 0.696 | +0.226 | **0.000** | 3.51 |  61,014 |
-| `raw` | 0.353 | 0.675 | +0.322 | 0.029 | 3.49 |  84,161 |
-| `rtk-read` | 0.349 | 0.700 | +0.351 | **0.000** | 3.43 |  89,184 |
-| `llm-summary-v1-mock` | 0.328 | 0.679 | +0.351 | **0.000** | 3.60 |  52,186 |
-| `rtk-log` | **0.249** | 0.658 | **+0.409** | **0.000** | 4.03 |  50,521 |
+| `hybrid-grep-120k-rtk-tail` | **0.670** | 0.702 | +0.033 | 0.029 | 2.86 |  60,530 |
+| `hybrid-grep-120k-tail` | 0.666 | **0.740** | +0.074 | **0.000** | 2.71 |  56,777 |
+| `grep` | 0.639 | 0.738 | +0.099 | **0.000** | 2.80 |  61,394 |
+| `tail-200` | 0.614 | 0.722 | +0.108 | **0.000** | 2.80 |  59,047 |
+| `hybrid-grep-4k-rtk-err-cat` | 0.573 | 0.720 | +0.147 | **0.000** | 3.20 |  55,287 |
+| `rtk-err-cat` | 0.470 | 0.708 | +0.238 | **0.000** | 3.28 |  57,552 |
+| `raw` | 0.353 | 0.700 | +0.347 | 0.057 | 2.94 |  71,411 |
+| `rtk-read` | 0.349 | 0.726 | +0.377 | **0.000** | 2.89 |  71,450 |
+| `llm-summary-v1-mock` | 0.328 | 0.703 | +0.375 | 0.029 | 3.40 |  48,826 |
+| `rtk-log` | **0.249** | 0.666 | **+0.417** | **0.000** | 3.97 |  48,334 |
 
 ![Agent flattens methods](../figures/agent_flattens_methods.png)
 
@@ -97,13 +98,13 @@ heavily compressed, missing most of the original signal. Single-shot,
 the LLM sees the rubbed-out summary and **confidently misdiagnoses
 13% of the time** (per the v1.0.1 confident_error column); it also
 abstains on ~20% of cases. In agent-loop, the same starting context
-triggers **4.03 tool calls per case** (the highest of any method);
+triggers **3.97 tool calls per case** (the highest of any method);
 the agent immediately recognizes that the rtk-log output is too
 lossy and falls back to `tail(200)` or a targeted `grep` on the
 raw log. **By the time the agent diagnoses, it has effectively
 reconstructed the grep-style context on the fly.**
 
-Same mechanism for `llm-summary-v1-mock` (3.60 tool calls per case
+Same mechanism for `llm-summary-v1-mock` (3.40 tool calls per case
 in agent-loop): the mock summary is deterministic and unhelpful, so
 the agent supplements via grep/tail on the raw log.
 
@@ -115,23 +116,22 @@ appeared to lose 0.10–0.19 score in agent-loop. But the full
 method loses.** The smoke effect was a 5-case sampling artifact.
 
 That said, the **gains are smallest** for already-strong methods:
-- `hybrid-grep-120k-rtk-tail` (single-shot #1): +0.019
-- `hybrid-grep-120k-tail` (single-shot #2): +0.061
-- `grep` (single-shot #3): +0.061
+- `hybrid-grep-120k-rtk-tail` (single-shot #1): +0.033
+- `hybrid-grep-120k-tail` (single-shot #2): +0.074
+- `grep` (single-shot #3): +0.099
 
-And a related effect emerges: two of the three methods that
-deliver large amounts of raw-looking content
-(`hybrid-grep-120k-rtk-tail` and `raw`) are the **only methods with
-a non-zero agent-loop confident_error rate** (5.7% and 2.9%
-respectively); every other method is at 0%. The mechanism: when
-the front-loaded context already looks comprehensive (a 19k-token
-hybrid output that includes both grep matches AND a tail fallback,
-or 275k tokens of raw log), the agent sometimes reads it
+And a related effect emerges: three methods that deliver
+comprehensive or pre-structured starting contexts
+(`raw`, `hybrid-grep-120k-rtk-tail`, `llm-summary-v1-mock`) are the
+**only methods with non-zero agent-loop confident_error rates**
+(5.7%, 2.9%, 2.9% respectively); the other seven methods sit at
+0%. The mechanism: when the front-loaded context already looks
+comprehensive (275k tokens of raw log, a 3-layer hybrid output, or
+a pre-digested LLM summary), the agent sometimes reads it
 confidently, skips tool verification, and commits to a wrong
-category. Front-loading **too much** structure (3-layer hybrid,
-or full raw) appears to be slightly counter-productive in
-agent-loop, where the agent's own tool surface already provides
-the fallback.
+category. Front-loading **too much** structure appears to be
+slightly counter-productive in agent-loop, where the agent's own
+tool surface already provides the fallback.
 
 This is consistent with Sonnet's tool-use bias: it is **trained to
 be helpful by exploring**, even when exploration is not informative.
@@ -153,11 +153,12 @@ In agent-loop, the same starting point triggers tool calls. After
 tool exploration, the agent either (a) finds the signal and emits a
 correct, high-confidence answer, or (b) doesn't find anything and
 abstains with `category: unknown, confidence: 0`. **The path to
-"confident AND wrong" mostly closes** — for 8 of 10 methods,
+"confident AND wrong" mostly closes** — for 7 of 10 methods,
 the multi-turn verification fully eats the failure mode (0%
-confident_error). The two exceptions (`hybrid-grep-120k-rtk-tail` at
-5.7%, `raw` at 2.9%) are the methods that deliver enough surface
-detail to encourage premature confidence — see §2 above.
+confident_error). The three exceptions (`raw` 5.7%,
+`llm-summary-v1-mock` 2.9%, `hybrid-grep-120k-rtk-tail` 2.9%) are
+the methods that deliver enough surface detail to encourage
+premature confidence — see §2 above.
 
 This is the v1.1 release's clearest safety win for downstream agent
 users: if you're using RTK-log or LLM-summary inside a Claude
@@ -169,22 +170,22 @@ Code–style agent, you are unlikely to be **misled** by the reducer
 
 Single-shot input cost ranges from 810 tokens (`rtk-log`) to 432k
 (`llm-summary-v1-mock` end-to-end with reducer cost) — a **530×**
-spread. Agent-loop costs are much narrower: 50.5k to 89.2k — a
-**1.8×** spread. The agent adds a roughly fixed 50–80k token cost
+spread. Agent-loop costs are much narrower: 48.3k to 71.5k — a
+**1.5×** spread. The agent adds a roughly fixed 48–72k token cost
 regardless of starting context.
 
 | Method | single-shot total | agent-loop total | agent / single-shot |
 |---|---:|---:|---:|
-| `rtk-log`                    |       810 |  50,521 |   62× |
-| `llm-summary-v1-mock`        |   432,076 |  52,186 |  0.12× (single-shot was dominated by reducer LLM cost) |
-| `tail-200`                   |     6,108 |  57,763 |    9× |
-| `rtk-err-cat`                |    19,850 |  61,014 |    3× |
-| `hybrid-grep-4k-rtk-err-cat` |    19,892 |  62,450 |    3× |
-| `hybrid-grep-120k-tail`      |    19,753 |  66,767 |    3× |
-| `grep`                       |    88,355 |  69,808 |    0.8× |
-| `hybrid-grep-120k-rtk-tail`  |    19,844 |  74,535 |    4× |
-| `raw`                        |   275,248 |  84,161 |    0.3× |
-| `rtk-read`                   |   274,289 |  89,184 |    0.3× |
+| `rtk-log`                    |       810 |  48,334 |   60× |
+| `llm-summary-v1-mock`        |   432,076 |  48,826 |  0.11× (single-shot was dominated by reducer LLM cost) |
+| `tail-200`                   |     6,108 |  59,047 |   10× |
+| `rtk-err-cat`                |    19,850 |  57,552 |    3× |
+| `hybrid-grep-4k-rtk-err-cat` |    19,892 |  55,287 |    3× |
+| `hybrid-grep-120k-tail`      |    19,753 |  56,777 |    3× |
+| `grep`                       |    88,355 |  61,394 |    0.7× |
+| `hybrid-grep-120k-rtk-tail`  |    19,844 |  60,530 |    3× |
+| `raw`                        |   275,248 |  71,411 |    0.3× |
+| `rtk-read`                   |   274,289 |  71,450 |    0.3× |
 
 For tiny static contexts (`rtk-log`, `tail-200`,
 `llm-summary-mock`), the agent's tool calls **dwarf** the static
@@ -196,10 +197,11 @@ drops 3-fold.
 
 The takeaway: in agent-loop, *the static reducer's input size
 matters less than its signal density.* `hybrid-grep-120k-tail`
-delivers signal-rich context at 19k tokens and wins. `raw` and
-`rtk-read` deliver 275k tokens of which the agent uses ~30%
-effectively. `rtk-log`'s 325 tokens are too compressed and force
-the most expensive agent recovery (4.0 tool calls average).
+delivers signal-rich context at 19k tokens and wins both quality
+(0.740) and cost (56.8k agent-loop total). `raw` and `rtk-read`
+deliver 275k tokens of which the agent uses ~25% effectively.
+`rtk-log`'s 325 tokens are too compressed and force the most
+expensive agent recovery (4.0 tool calls average).
 
 ## Caveats
 
@@ -210,8 +212,14 @@ the most expensive agent recovery (4.0 tool calls average).
    view_log_lines) match Claude Code's real shell tools by design,
    but a different surface (e.g., Cursor's or Codex's) would change
    the dynamic.
-3. **5-turn cap.** Real-world agent traces can be 10+ turns. Our
-   cap reflects budget control, not user behavior.
+3. **5-turn cap + 180k-token cap are soft caps.** The token cap is
+   checked at the start of each tool-using turn; a single high-cost
+   turn (typical for huge-log cases like the v2/stress argocd race-
+   conditions case) can push cumulative input above 180k by up to
+   ~75k tokens before the loop exits to the forced-final no-tools
+   call. 6 of 350 v1.1 rows landed above 180k (max 254,688
+   total_input_tokens_consumed). Real-world agent traces can also
+   exceed both caps.
 4. **35 cases.** Per-case variance still ±0.05 on the macro means
    at this scale.
 5. **No real LLM summarizer in agent-loop.** Same as v1.0 —

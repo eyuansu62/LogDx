@@ -750,6 +750,22 @@ def run_agent_loop(
     turn = 0
 
     for turn in range(1, agent_config["max_iterations"] + 1):
+        # HARD BUDGET STOP. Per Codex 2026-05-18 [high]: before
+        # consuming another tool-using turn, check that we are still
+        # under the cumulative input cap. If we have already exceeded
+        # it (typically because the previous turn's tool observations
+        # pushed us over), stop calling the model with tools enabled.
+        # The post-loop forced-final block below will make ONE last
+        # call with tools=[] disabled so the agent must emit JSON. The
+        # cap is therefore a hard ceiling on **tool-using** turns; the
+        # final no-tools cleanup call may add a small overhead beyond
+        # that. Without this check the loop would happily keep paying
+        # for tool-using turns until max_iterations even though
+        # budget_exhausted was already set true.
+        if total_input >= agent_config["max_total_input_tokens"]:
+            budget_exhausted = True
+            break
+
         resp = anthropic_post(
             messages,
             system_prompt,
@@ -833,20 +849,14 @@ def run_agent_loop(
                 })
 
             # Append assistant response, then user-role tool_results.
+            # The budget enforcement at the TOP of the next loop iteration
+            # will fail-closed if total_input now exceeds the cap. We do
+            # NOT add a "no more tool calls" user-prompt nudge here —
+            # that was a soft suggestion the model could ignore, and
+            # tools=specs was still passed, so the next turn could (and
+            # often did) issue more tool_use blocks.
             messages.append({"role": "assistant", "content": content})
             messages.append({"role": "user", "content": tool_results})
-
-            # Budget check — if we'd exceed the cap on the next turn,
-            # force a final-answer turn.
-            if total_input >= agent_config["max_total_input_tokens"]:
-                messages.append({
-                    "role": "user",
-                    "content": (
-                        "Budget exhausted. Emit your best "
-                        "final_diagnosis JSON now — no more tool calls."
-                    ),
-                })
-                budget_exhausted = True
             continue
 
         # stop_reason in {"end_turn", "stop_sequence", "max_tokens", ...}
@@ -881,11 +891,63 @@ def run_agent_loop(
             break
 
     if final is None:
-        final = unknown_body(
-            "agent exhausted iteration budget without emitting final JSON"
-        )
-        final_turn = agent_config["max_iterations"]
+        # Forced final no-tools cleanup call. Per Codex 2026-05-18 [high]:
+        # when we exit the main loop without a final answer (budget
+        # exhausted, max_iterations hit, or non-JSON streak), try ONE
+        # last call with tools=[] disabled so the agent must emit JSON
+        # rather than another tool_use block. This preserves the chance
+        # of getting a final diagnosis even when the tool-using loop
+        # ran out of budget. The forced-final call itself consumes some
+        # input tokens beyond the configured cap — that is documented
+        # in the diagnoser config as "tool-using turns capped".
         budget_exhausted = True
+        try:
+            messages.append({
+                "role": "user",
+                "content": (
+                    "Budget exhausted; tools are now disabled. Emit your "
+                    "best final_diagnosis JSON only, based on what you "
+                    "have already observed. Strict JSON, no prose."
+                ),
+            })
+            forced_resp = anthropic_post(
+                messages,
+                system_prompt,
+                agent_config["max_output_tokens_per_turn"],
+                [],  # tools disabled — model must respond with text only
+                model,
+                timeout_s,
+                api_key,
+            )
+            last_response = forced_resp
+            usage = forced_resp.get("usage") or {}
+            total_input += int(usage.get("input_tokens") or 0)
+            total_output += int(usage.get("output_tokens") or 0)
+            forced_content = forced_resp.get("content") or []
+            forced_text = " ".join(
+                b.get("text", "")
+                for b in forced_content
+                if b.get("type") == "text"
+            )
+            try:
+                final = normalize(parse_diagnosis_json(forced_text))
+                # Use max_iterations+1 to signal "forced cleanup turn"
+                # in agent_metadata.final_diagnosis_turn.
+                final_turn = agent_config["max_iterations"] + 1
+            except Exception:
+                final = unknown_body(
+                    "agent exhausted budget; forced no-tools final call "
+                    "returned non-JSON"
+                )
+                final_turn = agent_config["max_iterations"] + 1
+        except Exception:
+            # Forced-final API call itself failed (network, 4xx). Fall
+            # back to unknown_body without further retries.
+            final = unknown_body(
+                "agent exhausted iteration budget without emitting "
+                "final JSON"
+            )
+            final_turn = agent_config["max_iterations"]
 
     # Resolved model (best-effort — `model` field of the last response).
     resolved_model = None

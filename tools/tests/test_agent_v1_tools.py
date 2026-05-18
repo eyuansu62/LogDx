@@ -16,6 +16,7 @@ Run:
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 import tempfile
@@ -396,6 +397,106 @@ def test_tool_specs_have_input_schemas():
 # ---------------------------------------------------------------------------
 
 
+def test_budget_cap_is_hard_stop():
+    """Per Codex 2026-05-18 adversarial-review [high]: when
+    total_input_tokens_consumed exceeds max_total_input_tokens, the
+    agent loop must STOP issuing tool-using API calls. Prior to the
+    fix, the loop appended a 'no more tool calls' user message and
+    continued with tools=specs, letting the model keep calling tools
+    indefinitely — 24 committed rows went over the 180k cap, one at
+    330,941.
+
+    We test by monkey-patching anthropic_post to (a) report every
+    tool-using call's input_tokens (so we can sum), (b) emit tool_use
+    blocks until budget reached, (c) emit final answer text when
+    tools=[] (i.e., the forced-final call). The test asserts:
+      - the tool-using call count stops at the iteration where the
+        cumulative input first crosses the cap
+      - exactly ONE call with tools=[] is made after the budget breach
+      - the final diagnosis JSON makes it through
+    """
+    log_path = _write_synthetic_log()
+    try:
+        call_log: list[dict] = []
+        # Simulate: each tool-using turn returns one tool_use block
+        # whose observation will add 70k input tokens to the next turn.
+        # Tool budget = 180k so the loop should breach after ~3 turns.
+        def fake_anthropic_post(messages, system_prompt, max_output_tokens,
+                                tools, model, timeout_s, api_key):
+            call_log.append({"tools_empty": tools == [], "messages_len": len(messages)})
+            if not tools:
+                # Forced-final call: return a parseable diagnosis JSON.
+                return {
+                    "id": "msg_final",
+                    "model": "claude-sonnet-4-6",
+                    "stop_reason": "end_turn",
+                    "content": [{"type": "text", "text": json.dumps({
+                        "summary": "synthetic forced-final answer",
+                        "root_cause_category": "unknown",
+                        "root_cause": "budget exhausted",
+                        "confidence": 0.1,
+                        "relevant_files": [],
+                        "relevant_tests": [],
+                        "evidence": [],
+                        "suggested_fix": "",
+                    })}],
+                    "usage": {"input_tokens": 5000, "output_tokens": 50},
+                }
+            # Tool-using call. Pretend each request grows input by 70k
+            # (well above the 180k cap divided by, say, 3 turns).
+            return {
+                "id": f"msg_{len(call_log)}",
+                "model": "claude-sonnet-4-6",
+                "stop_reason": "tool_use",
+                "content": [
+                    {"type": "text", "text": "thinking..."},
+                    {"type": "tool_use", "id": f"tu_{len(call_log)}",
+                     "name": "grep", "input": {"pattern": "FAIL"}},
+                ],
+                "usage": {"input_tokens": 70_000, "output_tokens": 100},
+            }
+
+        import json as _json
+        import diagnosis_shim_claude_agent as _ag
+        orig = _ag.anthropic_post
+        _ag.anthropic_post = fake_anthropic_post
+        try:
+            payload = {
+                "case_id": "test", "context_method": "grep",
+                "prompt": "agent_v1 system prompt", "context": "small ctx",
+                "safe_case_metadata": {}, "raw_log_path": log_path,
+            }
+            os.environ["CILOGBENCH_AGENT_V1_MAX_ITERATIONS"] = "5"
+            os.environ["CILOGBENCH_AGENT_V1_MAX_TOTAL_INPUT_TOKENS"] = "180000"
+            final, am, _model = _ag.run_agent_loop(
+                payload, "system", log_path,
+                "claude-sonnet-4-6", 60, "test-key",
+            )
+        finally:
+            _ag.anthropic_post = orig
+
+        # Assertions
+        tool_calls = [c for c in call_log if not c["tools_empty"]]
+        forced_calls = [c for c in call_log if c["tools_empty"]]
+        # 3 tool-using turns at 70k each = 210k > 180k, so loop should
+        # break BEFORE issuing a 4th tool-using turn.
+        assert len(tool_calls) == 3, (
+            f"expected 3 tool-using turns before budget breach, got "
+            f"{len(tool_calls)} (call_log: {call_log})"
+        )
+        # Exactly one forced-final no-tools call.
+        assert len(forced_calls) == 1, (
+            f"expected exactly 1 forced-final no-tools call, got "
+            f"{len(forced_calls)}"
+        )
+        # Final answer should be the parsed forced-final JSON.
+        assert final is not None
+        assert final["summary"] == "synthetic forced-final answer"
+        assert am["budget_exhausted"] is True
+    finally:
+        os.unlink(log_path)
+
+
 def test_estimate_tokens_matches_runner_heuristic():
     """estimate_tokens uses `ceil(len(text)/4)` per the runner. The
     shim's estimate must match so observation_tokens_estimate
@@ -441,6 +542,7 @@ def main() -> int:
         test_dispatch_routes_all_four_tools,
         test_tool_specs_lists_all_four_tools,
         test_tool_specs_have_input_schemas,
+        test_budget_cap_is_hard_stop,
         test_estimate_tokens_matches_runner_heuristic,
     ]
     failed = 0
