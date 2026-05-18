@@ -41,6 +41,7 @@ PROMPT_KEYS: list[tuple[str, str]] = [
     ("llm_summary_map_v1",    "prompts/llm_summary_v1_map.md"),
     ("llm_summary_reduce_v1", "prompts/llm_summary_v1_reduce.md"),
     ("debugger_v1",           "prompts/debugger_v1.md"),
+    ("agent_v1",              "prompts/agent_v1.md"),
 ]
 
 EVALUATOR_KEYS: list[tuple[str, str]] = [

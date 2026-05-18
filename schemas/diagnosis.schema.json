@@ -82,6 +82,34 @@
         "command":       {"type": ["string", "null"]}
       },
       "additionalProperties": true
+    },
+    "agent_metadata": {
+      "type": "object",
+      "description": "Present only for agent-loop diagnosers (e.g. real-agent-v1). Captures the iteration count, tool calls, and cumulative token consumption across the entire agent loop. Single-shot diagnosers omit this field entirely.",
+      "required": ["iterations", "tool_call_count", "total_input_tokens_consumed", "total_output_tokens_consumed", "budget_exhausted"],
+      "properties": {
+        "iterations":                    {"type": "integer", "minimum": 1},
+        "tool_call_count":               {"type": "integer", "minimum": 0},
+        "tool_calls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["tool", "args"],
+            "properties": {
+              "tool":                        {"type": "string"},
+              "args":                        {"type": "object"},
+              "observation_tokens_estimate": {"type": "integer", "minimum": 0},
+              "runtime_ms":                  {"type": "number", "minimum": 0},
+              "error":                       {"type": ["string", "null"]}
+            }
+          }
+        },
+        "total_input_tokens_consumed":   {"type": "integer", "minimum": 0},
+        "total_output_tokens_consumed":  {"type": "integer", "minimum": 0},
+        "budget_exhausted":              {"type": "boolean"},
+        "final_diagnosis_turn":          {"type": ["integer", "null"], "minimum": 1}
+      },
+      "additionalProperties": true
     }
   }
 }

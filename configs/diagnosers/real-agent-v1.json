@@ -1,0 +1,63 @@
+{
+  "diagnoser_name": "real-agent-v1",
+  "provider": "command",
+  "command_env_var": "DIAGNOSIS_COMMAND",
+  "command_override": null,
+  "prompt_path": "prompts/agent_v1.md",
+
+  "model": {
+    "provider_name": "anthropic",
+    "model_name": "claude-sonnet-4-6",
+    "model_version": "2026-04-25",
+    "requested_alias": "sonnet",
+    "requested_alias_note": "real-agent-v1 starts with Sonnet 4.6; Haiku 4.5 and gpt-5-mini variants ship as real-agent-v1-haiku.json and real-agent-v1-gpt5mini.json after the Sonnet smoke test passes.",
+    "env_var_name": "CILOGBENCH_CLAUDE_MODEL",
+    "temperature": 0,
+    "top_p": 1.0,
+    "max_output_tokens": 1500,
+    "json_mode": false,
+    "deterministic": false,
+    "tool_use": true,
+    "web_access": false
+  },
+
+  "agent_config": {
+    "tool_surface": ["grep", "read_file", "tail", "view_log_lines"],
+    "max_iterations": 5,
+    "max_total_input_tokens": 180000,
+    "max_output_tokens_per_turn": 1500,
+    "tool_observation_max_tokens": 8000,
+    "starts_with_context_method_output": true,
+    "tool_surface_note": "All four tools are deterministic CPU-bound operations on the case's raw.log. The `grep` tool reuses the static `grep` baseline's regex and before/after window logic, so a method that 'wins' via agent grep is using the same operation as the static grep baseline — making the cost comparison clean. `read_file` is a literal line range read; `tail` is the trailing N lines; `view_log_lines` is read_file with line-number prefix annotation for stack-frame inspection."
+  },
+
+  "context_policy": {
+    "allow_raw_context": true,
+    "max_context_tokens": null,
+    "on_context_too_large": "mark_unsupported",
+    "allow_truncation": false
+  },
+
+  "privacy": {
+    "requires_explicit_external_llm_opt_in": true,
+    "redaction_mode": "audit_only",
+    "allow_secret_values_in_results": false
+  },
+
+  "provider_policy": {
+    "non_fatal_provider_error_prefixes": [
+      "unsupported_context_too_large",
+      "tool_use_budget_exhausted",
+      "runtime_tool_dispatch_error",
+      "token_limit_exceeded"
+    ],
+    "non_fatal_provider_error_prefixes_note": "Agent variant can hit three additional non-fatal classes beyond the single-shot shim's: (1) tool_use_budget_exhausted when the agent burns max_iterations or max_total_input_tokens before emitting final_diagnosis; (2) runtime_tool_dispatch_error when one of the 4 tools receives malformed args; (3) token_limit_exceeded if a single LLM response would exceed Anthropic's per-turn output cap. All three are documented states, not unexpected provider failures."
+  },
+
+  "cache_key_env": [
+    "CILOGBENCH_CLAUDE_MODEL",
+    "CILOGBENCH_AGENT_V1_MAX_ITERATIONS",
+    "CILOGBENCH_AGENT_V1_MAX_TOTAL_INPUT_TOKENS"
+  ],
+  "cache_key_env_note": "Three env vars participate in the cache key: model alias (mirrors real-debugger-v2), and the two agent budget overrides. Bumping either budget invalidates existing cached rows by design — a larger budget should not silently replay a row from a smaller budget."
+}

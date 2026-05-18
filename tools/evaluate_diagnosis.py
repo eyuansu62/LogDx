@@ -312,6 +312,18 @@ def score_case(
     context_tokens = int((diagnosis.get("input") or {}).get("context_tokens_estimate") or 0)
     diag_tokens = int((diagnosis.get("usage") or {}).get("output_tokens_estimate") or 0)
 
+    # Agent-loop diagnosers (real-agent-v1 and variants) record their
+    # iteration count + tool calls + cumulative LLM consumption under
+    # `agent_metadata`. Single-shot diagnosers omit the block entirely,
+    # in which case all four extracted fields stay None and the macro()
+    # aggregator skips them cleanly.
+    agent_meta = diagnosis.get("agent_metadata") or {}
+    agent_iterations = agent_meta.get("iterations")
+    agent_tool_call_count = agent_meta.get("tool_call_count")
+    agent_total_input = agent_meta.get("total_input_tokens_consumed")
+    agent_total_output = agent_meta.get("total_output_tokens_consumed")
+    agent_budget_exhausted = agent_meta.get("budget_exhausted")
+
     per_case: dict = {
         "case_id": case_id,
         "diagnosis_success": diagnosis_success,
@@ -340,6 +352,11 @@ def score_case(
         "missed_signals": missed_signals,
         "context_tokens": context_tokens,
         "diagnosis_tokens": diag_tokens,
+        "agent_iterations": agent_iterations,
+        "agent_tool_call_count": agent_tool_call_count,
+        "agent_total_input_tokens_consumed": agent_total_input,
+        "agent_total_output_tokens_consumed": agent_total_output,
+        "agent_budget_exhausted": agent_budget_exhausted,
     }
 
     per_case["diagnosis_score_v1"] = round(diagnosis_score_v1(per_case), 4)
@@ -408,11 +425,14 @@ def macro(values: Iterable[float | None]) -> float | None:
     return round(sum(pool) / len(pool), 4)
 
 
-def macro_mean_int(values: Iterable[int]) -> float | None:
-    arr = list(values)
-    if not arr:
+def macro_mean_int(values: Iterable[int | None]) -> float | None:
+    # Skip None entries so single-shot rows (which don't carry the
+    # agent-loop fields) don't poison the average for agent-loop
+    # diagnosers, and so legacy callers that pass only ints still work.
+    pool = [v for v in values if v is not None]
+    if not pool:
         return None
-    return round(sum(arr) / len(arr), 2)
+    return round(sum(pool) / len(pool), 2)
 
 
 def _load_historical_exclusions() -> list[dict]:
@@ -537,6 +557,16 @@ def evaluate_method(
     forbidden_any = [1 if c["forbidden_claim_violations"] else 0 for c in cases]
     forbidden_rate = (sum(forbidden_any) / n) if n else None
 
+    # budget_exhausted_rate: only counts agent-loop rows. Single-shot
+    # rows return None and are filtered out of both the numerator and
+    # denominator, so the rate is computed across agent rows only.
+    agent_rows = [c for c in cases if c.get("agent_iterations") is not None]
+    n_agent = len(agent_rows)
+    budget_exhausted_rate = (
+        None if n_agent == 0 else
+        round(sum(1 for c in agent_rows if c.get("agent_budget_exhausted")) / n_agent, 4)
+    )
+
     return {
         "context_method": diag_path.stem,
         "diagnosis_success_rate":
@@ -568,6 +598,18 @@ def evaluate_method(
             macro(c.get("category_match_score_v1_1") for c in cases),
         "diagnosis_score_v1": macro(c["diagnosis_score_v1"] for c in cases),
         "diagnosis_score_v1_1": macro(c.get("diagnosis_score_v1_1") for c in cases),
+        # Agent-loop metrics. macro_mean_int / macro skip None values, so
+        # these come out null for single-shot diagnosers (no agent_metadata
+        # in the per-case rows) and populated for real-agent-v1 / variants.
+        "macro_agent_iterations":
+            macro_mean_int(c.get("agent_iterations") for c in cases),
+        "macro_agent_tool_call_count":
+            macro_mean_int(c.get("agent_tool_call_count") for c in cases),
+        "macro_agent_total_input_tokens_consumed":
+            macro_mean_int(c.get("agent_total_input_tokens_consumed") for c in cases),
+        "macro_agent_total_output_tokens_consumed":
+            macro_mean_int(c.get("agent_total_output_tokens_consumed") for c in cases),
+        "budget_exhausted_rate": budget_exhausted_rate,
         "cases": cases,
     }
 

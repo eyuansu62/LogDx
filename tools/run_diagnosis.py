@@ -514,6 +514,7 @@ def diagnose_command(
     *, context_text: str, safe_metadata: dict, case_id: str,
     context_method: str, command: str, prompt_text: str,
     env: dict[str, str] | None = None,
+    raw_log_path: str | None = None,
 ) -> dict:
     payload = {
         "case_id": case_id,
@@ -523,6 +524,15 @@ def diagnose_command(
         "safe_case_metadata": safe_metadata,
         "expected_output_schema": "schemas/diagnosis.schema.json",
     }
+    # The agent-loop shim (real-agent-v1) needs access to the case's
+    # full raw.log to dispatch its grep/read_file/tail/view_log_lines
+    # tools. Single-shot shims (real-debugger-v*) ignore this field —
+    # they do not read raw.log directly. We pass an absolute path
+    # rather than asking the shim to resolve case_id->raw.log itself,
+    # because the runner already has the context manifest row that
+    # carries the canonical raw_log_path relative to ROOT.
+    if raw_log_path is not None:
+        payload["raw_log_path"] = raw_log_path
     argv = shlex.split(command)
     res = subprocess.run(
         argv,
@@ -648,6 +658,12 @@ def build_row(
                         if not k.startswith("_")}
     model_info = diagnosis_body.get("_model_info")
     shim_provider_error = diagnosis_body.get("_provider_error")
+    # Agent-loop shims (real-agent-v1) emit a `_agent_metadata` block
+    # alongside `_model_info`. Lift it to a top-level `agent_metadata`
+    # field so the evaluator can read iteration / tool_call_count /
+    # cumulative-token data without parsing the body. Single-shot shims
+    # do not emit this and the row simply omits the field.
+    shim_agent_metadata = diagnosis_body.get("_agent_metadata")
     row = {
         "case_id": case_id,
         "context_method": context_method,
@@ -711,6 +727,8 @@ def build_row(
             "shim_sha256": shim_sha256_value,
         },
     }
+    if isinstance(shim_agent_metadata, dict):
+        row["agent_metadata"] = shim_agent_metadata
     return row
 
 
@@ -2076,11 +2094,22 @@ def run(
                             raise ValueError(
                                 "--command is required when --diagnoser command"
                             )
+                        # The context manifest row carries the raw_log_path
+                        # of the source case (relative to ROOT). Forward as
+                        # an absolute path so the agent-loop shim can run
+                        # its 4 tools (grep/read_file/tail/view_log_lines)
+                        # against the original raw.log. Single-shot shims
+                        # ignore this field.
+                        m_raw = m_row.get("raw_log_path")
+                        abs_raw = (
+                            str((ROOT / m_raw).resolve()) if m_raw else None
+                        )
                         diag_body = diagnose_command(
                             context_text=ctx_text, safe_metadata=safe_meta,
                             case_id=case_id, context_method=method,
                             command=command_str, prompt_text=prompt_text,
                             env=shim_env,
+                            raw_log_path=abs_raw,
                         )
                         # Per Codex 2026-05-15 F1 [high]: validate the
                         # fresh row's model identity BEFORE writing the

@@ -63,10 +63,16 @@ def main():
         help="Root of committed results to scan."
     )
     ap.add_argument(
-        "--diagnoser-prefix", default="real-debugger-",
-        help="Only check directories whose diagnoser_name matches this prefix."
+        "--diagnoser-prefix",
+        default="real-debugger-,real-agent-",
+        help="Comma-separated list of diagnoser_name prefixes to check. "
+             "Defaults to both real-debugger-* (single-shot) and "
+             "real-agent-* (multi-turn agent-loop variant added in v1.1)."
     )
     args = ap.parse_args()
+    allowed_prefixes = tuple(
+        p.strip() for p in args.diagnoser_prefix.split(",") if p.strip()
+    )
 
     findings: list[tuple[str, str, str]] = []
     # Per Codex 2026-06-10 F1 [high]: walk recursively for ALL
@@ -84,7 +90,7 @@ def main():
             if not diag_dir.is_dir():
                 continue
             name = diag_dir.name
-            if not name.startswith(args.diagnoser_prefix):
+            if not name.startswith(allowed_prefixes):
                 continue
             try:
                 config = rd.load_diagnoser_config(name)
@@ -127,7 +133,7 @@ def main():
         return 1
 
     print("OK: no non-allowlisted provider_error rows under "
-          f"real-debugger-* manifests in {args.results_dir}.")
+          f"{args.diagnoser_prefix} manifests in {args.results_dir}.")
     return 0
 
 
