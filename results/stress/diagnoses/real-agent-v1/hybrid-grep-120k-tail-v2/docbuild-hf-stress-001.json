@@ -1,0 +1,97 @@
+{
+  "case_id": "docbuild-hf-stress-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The `doc_build_status_check` job is a gate that checks whether an upstream documentation build job succeeded. The condition evaluates the upstream job's result as `\"failure\"` (first condition) and `\"skipped\"` (second condition). Since `\"failure\"` is neither `\"success\"` nor `\"skipped\"`, the condition fails and the script exits with code 1.",
+  "root_cause_category": "github_actions_config",
+  "root_cause": "The status-check gate script received `\"failure\"` as the result of the upstream doc-build job. The bash condition `[[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]]` evaluates to false, so the script falls through to `exit 1`, failing the job. The upstream documentation build job itself failed, causing this gate job to report failure.",
+  "confidence": 0.88,
+  "relevant_files": [],
+  "relevant_tests": [
+    "doc_build_status_check"
+  ],
+  "evidence": [
+    {
+      "quote": "if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\",
+      "reason": "The upstream doc-build job result is `\"failure\"`, which satisfies neither `\"success\"` nor `\"skipped\"`, so the condition is false."
+    },
+    {
+      "quote": "exit 1",
+      "reason": "Because the condition is false, the script executes `exit 1`, failing the job."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the job exited with a non-zero code due to the failed upstream build status."
+    }
+  ],
+  "suggested_fix": "Investigate and fix the upstream documentation build job that produced a `\"failure\"` result; once it succeeds, this gate job will pass automatically.",
+  "input": {
+    "context_path": "results/stress/hybrid-grep-120k-tail-v2/docbuild-hf-stress-001.txt",
+    "context_tokens_estimate": 274
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 629
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 14008.932,
+    "cache_key": "bbdeafaaefed47d7e468e7e59c960b858caf161e2d4d22263f279c4da70bb2e4",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 4954,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 410,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 2,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "failure|error|exit code|skipped|success",
+          "after": 5,
+          "max_matches": 30
+        },
+        "observation_tokens_estimate": 271,
+        "runtime_ms": 1.327583973761648,
+        "error": null
+      },
+      {
+        "tool": "tail",
+        "args": {
+          "n": 100
+        },
+        "observation_tokens_estimate": 653,
+        "runtime_ms": 0.016542006051167846,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 7885,
+    "total_output_tokens_consumed": 542,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

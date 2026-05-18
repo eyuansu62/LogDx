@@ -605,6 +605,13 @@ def diagnose_command(
     # though the F1 fix now makes shims exit non-zero for hard errors.
     if isinstance(out.get("_model_info"), dict):
         normalized["_model_info"] = out["_model_info"]
+    # Agent-loop shims (real-agent-v1) carry an `_agent_metadata` block
+    # in their stdout. Preserve it through `diagnose_command` so
+    # `build_row` can lift it to top-level `agent_metadata`. Single-shot
+    # shims do not emit this field and `out.get` returns None, so the
+    # branch is a no-op for them.
+    if isinstance(out.get("_agent_metadata"), dict):
+        normalized["_agent_metadata"] = out["_agent_metadata"]
     if out.get("_provider_error"):
         # Per Codex 2026-06-17 F1 [high]: same redaction as the
         # exit-non-zero path — a shim that succeeded enough to emit

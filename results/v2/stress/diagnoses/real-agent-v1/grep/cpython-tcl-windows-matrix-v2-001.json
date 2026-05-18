@@ -1,0 +1,133 @@
+{
+  "case_id": "cpython-tcl-windows-matrix-v2-001",
+  "context_method": "grep",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Two tests in test_tcl failed with AssertionError: the Tcl eval functions returned surrogate pairs ('\\ud83d\\udcbb') instead of the expected Unicode character ('\\U0001f4bb', the laptop emoji). The tests test_eval_surrogates_in_result and test_evalfile_surrogates_in_result both failed consistently on re-run.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The Tcl/Tk integration on Windows returns a surrogate pair string '<\\ud83d\\udcbb>' when the test expects the properly decoded Unicode character '<\\U0001f4bb>'. The tests assert that surrogate pairs in Tcl results are decoded to proper Unicode code points, but the actual behavior leaves them as surrogate pairs.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "D:\\a\\cpython\\cpython\\Lib\\test\\test_tcl.py"
+  ],
+  "relevant_tests": [
+    "test.test_tcl.TclTest.test_eval_surrogates_in_result",
+    "test.test_tcl.TclTest.test_evalfile_surrogates_in_result"
+  ],
+  "evidence": [
+    {
+      "quote": "test_tcl failed (2 failures)",
+      "reason": "The test suite reports test_tcl as the single failing test module with 2 failures."
+    },
+    {
+      "quote": "AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ'»>'",
+      "reason": "The assertion error shows the actual value is a surrogate pair while the expected value is the properly decoded emoji character U+1F4BB."
+    },
+    {
+      "quote": "self.assertEqual(tcl.eval(r'set a \"<\\ud83d\\udcbb>\"'), '<\\U0001f4bb>')",
+      "reason": "The test at line 57 of test_tcl.py expects Tcl to return the surrogate pair decoded as a proper Unicode character, but it is not being decoded."
+    },
+    {
+      "quote": "1 test failed again:\n    test_tcl",
+      "reason": "The failure persisted on re-run, confirming it is not a flaky/transient failure."
+    },
+    {
+      "quote": "1 test failed:\n    test_tcl",
+      "reason": "Final summary confirms test_tcl is the only failing test."
+    },
+    {
+      "quote": "patchlevel = 9.0.3",
+      "reason": "The Tcl version in use is 9.0.3, which may handle surrogate pairs differently from what the test expects."
+    }
+  ],
+  "suggested_fix": "Investigate how Tcl 9.0.3 handles surrogate pairs in string results compared to earlier versions, and update the test assertions in Lib/test/test_tcl.py (lines 57 and 292) or fix the Tcl result decoding logic to properly convert surrogate pairs to their corresponding Unicode code points.",
+  "input": {
+    "context_path": "results/v2/stress/grep/cpython-tcl-windows-matrix-v2-001.txt",
+    "context_tokens_estimate": 73515
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 892
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 33327.679,
+    "cache_key": "51df3a15ff83af17195b11142624fa488b2a25e2654031b7ddacd0cb45a915bc",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 42882,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 795,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 4,
+    "tool_call_count": 4,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "error|failed|failure|FAILED|Error",
+          "max_matches": 30
+        },
+        "observation_tokens_estimate": 7974,
+        "runtime_ms": 24.261959013529122,
+        "error": null
+      },
+      {
+        "tool": "tail",
+        "args": {
+          "n": 100
+        },
+        "observation_tokens_estimate": 2281,
+        "runtime_ms": 0.08904098649509251,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "test_tcl|AssertionError|FAIL.*test_tcl",
+          "max_matches": 20,
+          "before": 5,
+          "after": 15
+        },
+        "observation_tokens_estimate": 1362,
+        "runtime_ms": 36.885500012431294,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 4200,
+          "radius": 60
+        },
+        "observation_tokens_estimate": 4326,
+        "runtime_ms": 0.24074999964796007,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 123057,
+    "total_output_tokens_consumed": 1138,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 4
+  }
+}

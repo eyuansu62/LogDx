@@ -1,0 +1,95 @@
+{
+  "case_id": "cleanup-tsc-stress-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Cleanup artifacts' job failed because the GitHub CLI (`gh`) received an HTTP 403 'Resource not accessible by integration' error when attempting to delete artifacts via the GitHub API. The token used (GH_TOKEN/GITHUB_TOKEN) does not have sufficient permissions to delete artifacts for the run.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GitHub token used by the workflow lacks the required permissions to delete artifacts via the GitHub Actions API, resulting in an HTTP 403 'Resource not accessible by integration' error from `gh api -X DELETE /repos/microsoft/TypeScript/actions/artifacts/<id>`.",
+  "confidence": 0.92,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "The gh CLI explicitly reports a 403 Forbidden error, indicating the token does not have permission to access/delete the artifact resource."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "The process exited with a non-zero code due to the 403 error, causing the CI job to fail."
+    },
+    {
+      "quote": "-X DELETE \\\n    -H \"Accept: application/vnd.github+json\" \\\n    /repos/microsoft/TypeScript/actions/artifacts/\"$artifact_id\"",
+      "reason": "The command being executed is a DELETE request to the GitHub Actions artifacts API, which requires specific permissions (e.g., `actions: write`) that the current token does not have."
+    }
+  ],
+  "suggested_fix": "Grant the workflow's token the `actions: write` permission in the workflow YAML (e.g., `permissions: actions: write`) so that the GitHub token can delete artifacts via the API.",
+  "input": {
+    "context_path": "results/stress/hybrid-grep-120k-tail-v2/cleanup-tsc-stress-001.txt",
+    "context_tokens_estimate": 127
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 644
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 13077.675,
+    "cache_key": "1503bba6ad98784720964e786c73597484de8a69d4268b67387f230c2dd2db00",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 4824,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 459,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 2,
+    "tool_calls": [
+      {
+        "tool": "tail",
+        "args": {
+          "n": 50
+        },
+        "observation_tokens_estimate": 848,
+        "runtime_ms": 1.5102500037755817,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "403|error|failed|exit code",
+          "before": 5,
+          "after": 5
+        },
+        "observation_tokens_estimate": 151,
+        "runtime_ms": 0.8019999950192869,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 7441,
+    "total_output_tokens_consumed": 586,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

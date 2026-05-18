@@ -1,0 +1,117 @@
+{
+  "case_id": "pytest-sklearn-stress-002",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "A doctest in `doc/callbacks.rst` at line 48 failed because `estimator.fit(X, y)` returned `LogisticRegression()` instead of the expected progress-bar output string. The progress bar callback was not active during the doctest run, so the fit method returned the estimator repr instead of displaying the progress bar.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The doctest in doc/callbacks.rst line 48 expects `estimator.fit(X, y)` to print a Rich progress bar line (`LogisticRegression - fit ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:03:12`), but the actual output is `LogisticRegression()` (the default repr), indicating the progress bar callback was not triggered during the doctest execution.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "doc/callbacks.rst"
+  ],
+  "relevant_tests": [
+    "../doc/callbacks.rst::callbacks.rst"
+  ],
+  "evidence": [
+    {
+      "quote": "048     >>> estimator.fit(X, y)\n Expected:\n     LogisticRegression - fit ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:03:12\n Got:\n     LogisticRegression()",
+      "reason": "This is the exact doctest mismatch: the expected output is a progress bar display, but the actual output is the plain estimator repr, meaning the callback/progress bar was not active."
+    },
+    {
+      "quote": "/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst:48: DocTestFailure",
+      "reason": "Pytest reports a DocTestFailure at line 48 of callbacks.rst, confirming this is the failing test location."
+    },
+    {
+      "quote": "FAILED ../doc/callbacks.rst::callbacks.rst",
+      "reason": "The short test summary confirms the only failing test is the callbacks.rst doctest."
+    },
+    {
+      "quote": "1 failed, 41 passed, 2 skipped, 59 warnings in 95.39s (0:01:35)",
+      "reason": "Only one test failed in the doc-test run, confirming this is the sole root cause of the CI failure."
+    },
+    {
+      "quote": "039     >>> estimator.set_callbacks(progress_bar) # doctest: +SKIP",
+      "reason": "The `set_callbacks` call is marked `# doctest: +SKIP`, so the progress bar is never actually registered on the estimator before the `fit` call in the doctest, causing the mismatch."
+    }
+  ],
+  "suggested_fix": "Either add a `# doctest: +SKIP` directive to the `estimator.fit(X, y)` line in `doc/callbacks.rst` (line 48) to skip the progress-bar output check, or restructure the doctest so the callback is properly registered before `fit` is called (removing the `+SKIP` on `set_callbacks`).",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-mock/pytest-sklearn-stress-002.txt",
+    "context_tokens_estimate": 976
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 870
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 24490.167,
+    "cache_key": "098b973e2e0af47ae665af93064a55f181e550a41fb91aae1a7ad9601e5c31bd",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 13261,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 829,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 3,
+    "tool_call_count": 3,
+    "tool_calls": [
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 5601,
+          "radius": 50
+        },
+        "observation_tokens_estimate": 3010,
+        "runtime_ms": 8.652582997456193,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 5618,
+          "radius": 30
+        },
+        "observation_tokens_estimate": 1741,
+        "runtime_ms": 0.06762499106116593,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "FAILED|DocTestFailure",
+          "after": 2
+        },
+        "observation_tokens_estimate": 392,
+        "runtime_ms": 45.20041597425006,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 29901,
+    "total_output_tokens_consumed": 1083,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 3
+  }
+}

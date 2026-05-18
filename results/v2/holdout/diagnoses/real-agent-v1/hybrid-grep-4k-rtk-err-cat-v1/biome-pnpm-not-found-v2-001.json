@@ -1,0 +1,108 @@
+{
+  "case_id": "biome-pnpm-not-found-v2-001",
+  "context_method": "hybrid-grep-4k-rtk-err-cat-v1",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because `pnpm` was not installed on the runner. When the `gen-all` recipe invoked `pnpm format`, the shell reported `pnpm: not found` (exit code 127), causing the recipe to fail and the job to exit with a non-zero code.",
+  "root_cause_category": "dependency_install",
+  "root_cause": "`pnpm` was not available on the CI runner. The command `pnpm format` exited with code 127 ('not found'), causing the `format` recipe (line 221) and the parent `gen-all` recipe (line 32) to fail.",
+  "confidence": 0.97,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "pnpm format\nsh: 1: pnpm: not found",
+      "reason": "The shell could not find the `pnpm` executable, indicating it was not installed on the runner."
+    },
+    {
+      "quote": "error: Recipe `format` failed on line 221 with exit code 127",
+      "reason": "Exit code 127 is the POSIX code for 'command not found', confirming pnpm was missing."
+    },
+    {
+      "quote": "error: Recipe `gen-all` failed on line 32 with exit code 127",
+      "reason": "The parent recipe `gen-all` also failed because its sub-recipe `format` failed due to the missing pnpm."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 127.",
+      "reason": "GitHub Actions reported the overall job failure with exit code 127, confirming the root cause."
+    }
+  ],
+  "suggested_fix": "Install `pnpm` on the runner before the `gen-all` / `format` step runs, e.g., by adding a `npm install -g pnpm` or `corepack enable && corepack prepare pnpm@<version> --activate` step in the workflow before the code-generation step.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-4k-rtk-err-cat-v1/biome-pnpm-not-found-v2-001.txt",
+    "context_tokens_estimate": 29028
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 659
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 19463.936,
+    "cache_key": "738bda8e1e3c42b6d07cf6dee7056186f989aa3f4107834214cf01574499c288",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 43520,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 517,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 3,
+    "tool_call_count": 3,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "error|failed|failure|FAILED|Error",
+          "max_matches": 30
+        },
+        "observation_tokens_estimate": 5813,
+        "runtime_ms": 20.402416994329542,
+        "error": null
+      },
+      {
+        "tool": "tail",
+        "args": {
+          "n": 100
+        },
+        "observation_tokens_estimate": 7311,
+        "runtime_ms": 0.10529198334552348,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 15765,
+          "radius": 5
+        },
+        "observation_tokens_estimate": 4354,
+        "runtime_ms": 0.05662499461323023,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 92031,
+    "total_output_tokens_consumed": 739,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 3
+  }
+}

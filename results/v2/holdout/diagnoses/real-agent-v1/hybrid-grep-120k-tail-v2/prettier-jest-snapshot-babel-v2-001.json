@@ -1,0 +1,128 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest snapshot tests for Babel-based parsers failed because the error messages produced by the Babel parser changed. The snapshots expect old error text (e.g. 'Unexpected token (1:8)' or 'Cannot use new with import(...)') but the parser now emits different messages (e.g. '`import()` requires exactly one or two arguments. (1:1)' or 'Cannot use new with import()'). 13 snapshots across 3 test suites are now stale.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The Babel parser (used by the babel, babel-flow, and babel-ts parsers) changed its error messages for invalid import() expressions and related constructs. The stored Jest snapshots still contain the old error text, so toThrowErrorMatchingSnapshot() fails when the received error no longer matches the snapshot.",
+  "confidence": 0.93,
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js",
+    "tests/config/format-test/test-format.js"
+  ],
+  "relevant_tests": [
+    "snippet: #0 > format[babel]",
+    "snippet: #0 > format[babel-flow]",
+    "snippet: #0 > format[babel-ts]",
+    "snippet: #1 > format[babel]",
+    "snippet: #1 > format[babel-flow]",
+    "snippet: #1 > format[babel-ts]",
+    "snippet: #2 > format[babel]",
+    "snippet: #2 > format[babel-flow]",
+    "constructorOverloadsWithDefaultValues.ts > format[babel-ts]",
+    "snippet: #0 > format[babel-ts]"
+  ],
+  "evidence": [
+    {
+      "quote": "- Unexpected token (1:8)\n     + `import()` requires exactly one or two arguments. (1:1)",
+      "reason": "Shows the snapshot has the old Babel error message while the parser now emits a different message, causing the snapshot mismatch."
+    },
+    {
+      "quote": "- Cannot use new with import(...). (1:5)\n     + Cannot use new with import(). (1:5)",
+      "reason": "Another snapshot mismatch: the stored snapshot says 'import(...)' but the new Babel version says 'import()'."
+    },
+    {
+      "quote": "- An implementation cannot be declared in ambient contexts. (1:1)\n     + An implementation cannot be declared in ambient contexts. (1:24)",
+      "reason": "Error message text is the same but the reported column/position changed, indicating a Babel parser update shifted error location reporting."
+    },
+    {
+      "quote": "13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "Jest's own summary confirms the root cause is stale snapshots and suggests updating them with -u."
+    },
+    {
+      "quote": "Test Suites: 3 failed, 1500 passed, 1503 total\nTests:       14 failed, 5 skipped, 29634 passed, 29653 total\nSnapshots:   13 failed, 12086 passed, 12099 total",
+      "reason": "Confirms the scope: only 3 suites failed, all failures are snapshot mismatches, not logic errors."
+    }
+  ],
+  "suggested_fix": "Update the stale snapshots by running jest with the -u flag (e.g. `yarn test --testPathPattern='tests/format/js/_errors_/import|constructorParameters|declare-function-with-body' -u`) to regenerate the snapshots to match the new Babel parser error messages.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-tail-v2/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 20980
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1042
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 32412.147,
+    "cache_key": "e7e2e2128a663843e8e7823b836a72d804e8c2a4a1db55b5684332b7ce63c83c",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 20009,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 1007,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 3,
+    "tool_call_count": 3,
+    "tool_calls": [
+      {
+        "tool": "tail",
+        "args": {
+          "n": 100
+        },
+        "observation_tokens_estimate": 2562,
+        "runtime_ms": 2.9041669913567603,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "FAIL tests/",
+          "after": 3
+        },
+        "observation_tokens_estimate": 966,
+        "runtime_ms": 3.8905419933144003,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "snapshots failed|Snapshot Summary",
+          "after": 5
+        },
+        "observation_tokens_estimate": 449,
+        "runtime_ms": 10.815500019816682,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 52066,
+    "total_output_tokens_consumed": 1221,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 3
+  }
+}

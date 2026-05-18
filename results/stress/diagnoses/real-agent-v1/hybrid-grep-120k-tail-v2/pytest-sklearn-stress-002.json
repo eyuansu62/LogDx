@@ -1,0 +1,103 @@
+{
+  "case_id": "pytest-sklearn-stress-002",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "A doctest in doc/callbacks.rst fails because the expected output includes a progress bar display ('LogisticRegression - fit ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:03:12') but the actual output is just 'LogisticRegression()'. The progress bar callback is registered with `# doctest: +SKIP` on the `set_callbacks` line, so the callback is never actually set, causing `estimator.fit(X, y)` to return the plain estimator repr without any progress bar output.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The doctest in doc/callbacks.rst at line 48 expects a progress bar output when calling estimator.fit(X, y), but the set_callbacks call on line 39 is marked with '# doctest: +SKIP', so the progress bar is never registered. The actual output is just 'LogisticRegression()' instead of the expected progress bar string.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "doc/callbacks.rst"
+  ],
+  "relevant_tests": [
+    "../doc/callbacks.rst::callbacks.rst"
+  ],
+  "evidence": [
+    {
+      "quote": "039     >>> estimator.set_callbacks(progress_bar) # doctest: +SKIP",
+      "reason": "The set_callbacks call is skipped during doctest execution, so the progress bar is never registered on the estimator."
+    },
+    {
+      "quote": "Expected:\n    LogisticRegression - fit ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:03:12\nGot:\n    LogisticRegression()",
+      "reason": "The doctest expects a progress bar output but gets only the plain estimator repr, confirming the callback was not active during fit."
+    },
+    {
+      "quote": "/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst:48: DocTestFailure",
+      "reason": "Identifies the exact file and line where the doctest assertion fails."
+    },
+    {
+      "quote": "FAILED ../doc/callbacks.rst::callbacks.rst",
+      "reason": "Confirms the test that failed is the doctest in callbacks.rst."
+    }
+  ],
+  "suggested_fix": "Either remove the '# doctest: +SKIP' from the set_callbacks line so the callback is actually registered before fit is called, or add '# doctest: +SKIP' to the estimator.fit(X, y) line as well (and update the expected output accordingly) to avoid testing the progress bar output in the doctest.",
+  "input": {
+    "context_path": "results/stress/hybrid-grep-120k-tail-v2/pytest-sklearn-stress-002.txt",
+    "context_tokens_estimate": 4950
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 769
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 20625.548,
+    "cache_key": "5496e90058b8a441d9fb594bfb0c3a75b94631d5ca384ae1406e045146f23fab",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 22827,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 825,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 3,
+    "tool_call_count": 2,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "FAILED|DocTestFailure|callbacks\\.rst",
+          "after": 10
+        },
+        "observation_tokens_estimate": 6640,
+        "runtime_ms": 59.368290996644646,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 5610,
+          "radius": 20
+        },
+        "observation_tokens_estimate": 1031,
+        "runtime_ms": 0.2752500004135072,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 54474,
+    "total_output_tokens_consumed": 988,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 3
+  }
+}

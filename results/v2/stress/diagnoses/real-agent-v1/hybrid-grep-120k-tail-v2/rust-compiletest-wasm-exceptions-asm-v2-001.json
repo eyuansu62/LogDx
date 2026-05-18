@@ -1,0 +1,135 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The assembly test `tests/assembly-llvm/wasm_exceptions.rs` failed because the generated WebAssembly assembly uses `catch_all_ref` (inside a `try_table`) instead of the `catch_all` instruction that the FileCheck directives expect. Similarly, the `catch` check at line 62 was not found because the new exception-handling encoding uses `try_table (catch __cpp_exception 0)` rather than a bare `catch` instruction.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The FileCheck directives in `tests/assembly-llvm/wasm_exceptions.rs` expect `catch_all` (line 38) and `catch` (line 62) in the generated WebAssembly assembly, but the compiler now emits `try_table (catch_all_ref 0)` and `try_table (catch __cpp_exception 0)` respectively, so neither CHECK pattern is found in the output.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "relevant_tests": [
+    "[assembly] tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:38:12: error: CHECK: expected string not found in input\n // CHECK: catch_all",
+      "reason": "FileCheck reports that the `catch_all` pattern at line 38 of the test file was not found in the generated assembly output."
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:62:12: error: CHECK: expected string not found in input\n // CHECK: catch",
+      "reason": "FileCheck reports that the `catch` pattern at line 62 of the test file was not found in the generated assembly output."
+    },
+    {
+      "quote": "31:  try_table (catch_all_ref 0)",
+      "reason": "The actual generated assembly uses `try_table (catch_all_ref 0)` instead of the expected `catch_all` instruction, explaining why the CHECK pattern fails."
+    },
+    {
+      "quote": "66:  try_table (catch __cpp_exception 0)",
+      "reason": "The actual generated assembly uses `try_table (catch __cpp_exception 0)` rather than a bare `catch` instruction, explaining the second CHECK failure."
+    },
+    {
+      "quote": "test result: FAILED. 550 passed; 1 failed; 103 ignored; 0 measured; 0 filtered out; finished in 15.38s",
+      "reason": "Confirms exactly one test failed in the assembly-llvm suite."
+    },
+    {
+      "quote": "Some tests failed in compiletest suite=assembly-llvm mode=assembly host=x86_64-unknown-linux-gnu target=wasm32-wasip1",
+      "reason": "Confirms the failure is in the assembly-llvm compiletest suite targeting wasm32-wasip1."
+    }
+  ],
+  "suggested_fix": "Update the FileCheck directives in `tests/assembly-llvm/wasm_exceptions.rs` at lines 38 and 62 to match the new WebAssembly exception-handling encoding: replace `// CHECK: catch_all` with a pattern matching `try_table (catch_all_ref` and replace `// CHECK: catch` with a pattern matching `try_table (catch`.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-120k-tail-v2/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 3961
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1007
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 30406.158,
+    "cache_key": "97f0f7aa020f1c9b52f1b768fcc4e2b773a239b148b6be79169c05960d6b9921",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 20265,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 973,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 4,
+    "tool_call_count": 4,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "wasm_exceptions",
+          "before": 5,
+          "after": 20,
+          "max_matches": 10
+        },
+        "observation_tokens_estimate": 2799,
+        "runtime_ms": 53.90320799779147,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "check:62",
+          "before": 10,
+          "after": 5,
+          "max_matches": 5
+        },
+        "observation_tokens_estimate": 428,
+        "runtime_ms": 22.646541998255998,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 30469,
+          "radius": 30
+        },
+        "observation_tokens_estimate": 1651,
+        "runtime_ms": 0.10991701856255531,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 30540,
+          "radius": 30
+        },
+        "observation_tokens_estimate": 1040,
+        "runtime_ms": 0.07724997703917325,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 63309,
+    "total_output_tokens_consumed": 1358,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 4
+  }
+}

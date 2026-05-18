@@ -1,0 +1,102 @@
+{
+  "case_id": "lint-react-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Run prettier' CI job failed because the file `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` was not formatted with prettier. The prettier check script detected unformatted code and exited with code 1.",
+  "root_cause_category": "formatting_failure",
+  "root_cause": "The file `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` was not formatted with prettier before being committed. The `yarn prettier-check` script (`node ./scripts/prettier/index.js`) detected the formatting violation and exited with code 1.",
+  "confidence": 0.98,
+  "relevant_files": [
+    "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "This project uses prettier to format all JavaScript code.\n    Please run yarn prettier-all and add changes to files listed below to your commit:",
+      "reason": "The prettier check script explicitly reported that one or more files need formatting."
+    },
+    {
+      "quote": "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+      "reason": "This is the specific file identified by the prettier check as not being properly formatted."
+    },
+    {
+      "quote": "error Command failed with exit code 1.",
+      "reason": "The yarn prettier-check command exited with code 1, indicating the formatting check failed."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions recorded the job as failed due to the non-zero exit code from the prettier check."
+    }
+  ],
+  "suggested_fix": "Run `yarn prettier-all` locally, then add the reformatted `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` to the commit, as instructed by the error message.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-mock/lint-react-001.txt",
+    "context_tokens_estimate": 134
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 654
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 13145.137,
+    "cache_key": "cb65a7e3fa3c2ffc5330f44cbd6960d02b8c09232deb3c4068e908282938d15e",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 11108,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 514,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 2,
+    "tool_calls": [
+      {
+        "tool": "tail",
+        "args": {
+          "n": 100
+        },
+        "observation_tokens_estimate": 3796,
+        "runtime_ms": 1.5808749885763973,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "prettier|format|error|failed",
+          "before": 3,
+          "after": 5,
+          "max_matches": 30
+        },
+        "observation_tokens_estimate": 1145,
+        "runtime_ms": 1.919417001772672,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 13707,
+    "total_output_tokens_consumed": 674,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

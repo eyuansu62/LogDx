@@ -1,0 +1,108 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "tail",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The pytest run crashed with a fatal segmentation fault while executing the test `test_datetime_nat_argsort_stability` in `numpy/_core/tests/test_datetime.py`. The crash occurred inside `numpy._core.fromnumeric.argsort` / `_wrapfunc`, causing the entire test process to exit with code 245.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "A segmentation fault (fatal Python error) occurred in numpy's `argsort` implementation when called from `test_datetime_nat_argsort_stability`, crashing the test process.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "numpy/_core/tests/test_datetime.py",
+    "numpy/_core/fromnumeric.py"
+  ],
+  "relevant_tests": [
+    "numpy/_core/tests/test_datetime.py::test_datetime_nat_argsort_stability"
+  ],
+  "evidence": [
+    {
+      "quote": "Fatal Python error: Segmentation fault",
+      "reason": "The test process crashed with a segfault, not a normal test assertion failure."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 54 in _wrapfunc",
+      "reason": "The crash originated inside numpy's _wrapfunc, called by argsort."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 1231 in argsort",
+      "reason": "The argsort function was the direct caller that triggered the segfault."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
+      "reason": "Identifies the specific test function and line that triggered the crash."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 245.",
+      "reason": "Exit code 245 confirms the process was killed by a signal (segfault), not a normal test failure."
+    }
+  ],
+  "suggested_fix": "Investigate the `argsort` implementation for datetime/NaT handling in `numpy/_core/src/npysort/` or the relevant sort code path, as calling `argsort` on datetime arrays containing NaT values causes a segmentation fault.",
+  "input": {
+    "context_path": "results/v2/stress/tail/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 11078
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 751
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 19624.048,
+    "cache_key": "6ffa071c19566af65b333dadc639a49d716a8add115333687ac1f1d37e212d51",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 34977,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 806,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 2,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "FAILED|ERROR|segfault|signal|killed|Segmentation",
+          "after": 10,
+          "max_matches": 20
+        },
+        "observation_tokens_estimate": 4893,
+        "runtime_ms": 39.20504200505093,
+        "error": null
+      },
+      {
+        "tool": "tail",
+        "args": {
+          "n": 100
+        },
+        "observation_tokens_estimate": 4041,
+        "runtime_ms": 0.06316599319688976,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 52878,
+    "total_output_tokens_consumed": 958,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

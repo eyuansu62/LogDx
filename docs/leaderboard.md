@@ -131,6 +131,117 @@ versioned in the protocol lock for reproducibility. This will
 land in v1.1 alongside the multi-turn / agent-loop benchmark
 (see [`ROADMAP.md`](https://github.com/eyuansu62/LogDx/blob/main/ROADMAP.md#2--cost--latency-reporting--p0-for-v11)).
 
+## Agent-loop leaderboard  (v1.1)
+
+The single-shot leaderboard above tests **`log → reducer → single LLM
+call → answer`**. Real Claude Code / Codex usage looks different: the
+model can call follow-up tools when its initial context is missing
+something. v1.1 adds the **agent-loop** measurement using a new
+diagnoser `real-agent-v1` (Sonnet 4.6, max 5 turns × 4 deterministic
+tools: `grep`, `read_file`, `tail`, `view_log_lines` operating on the
+raw log).
+
+![Agent-loop narrows the gap between methods](figures/agent_flattens_methods.png)
+
+**Every context method gains in agent-loop, and the score range
+collapses 6× — from 0.42 (single-shot) to 0.069 (agent-loop).** Weak
+single-shot methods are rescued by the agent's tool calls; rtk-log
+gains a massive **+0.41** by being supplemented with on-the-fly
+grep / tail. Confident-error rates drop to **0%** on 8 of 10 methods
+(the multi-turn loop lets the agent verify before committing —
+single-shot's 13% rate for `rtk-log` and `llm-summary-v1-mock`
+collapses entirely).
+
+### Agent-loop rankings (Sonnet 4.6, 35-case macro)
+
+Sorted by agent-loop `diagnosis_score_v1_1`.
+
+| Rank | Method | single-shot score | agent score | Δ | conf_err | iters/case | tools/case | tokens/case |
+|----:|--------|---:|---:|---:|---:|---:|---:|---:|
+| 1 | `hybrid-grep-120k-tail`     | 0.666 | **0.727** | +0.061 | **0.000** | 2.94 | 3.03 |  66,767 |
+| 2 | `tail-200`                  | 0.614 | **0.720** | +0.106 | **0.000** | 2.94 | 2.91 |  **57,763** |
+| 3 | `rtk-read`                  | 0.349 | 0.700 | **+0.351** | **0.000** | 3.17 | 3.43 |  89,184 |
+| 4 | `grep`                      | 0.639 | 0.699 | +0.061 | **0.000** | 2.97 | 3.11 |  69,808 |
+| 5 | `rtk-err-cat`               | 0.470 | 0.696 | **+0.226** | **0.000** | 3.00 | 3.51 |  61,014 |
+| 6 | `hybrid-grep-4k-rtk-err-cat`| 0.573 | 0.689 | +0.116 | **0.000** | 3.14 | 3.43 |  62,450 |
+| 7 | `hybrid-grep-120k-rtk-tail` | **0.670** (single-shot #1) | 0.689 | +0.019 | 0.057 | 3.03 | 3.23 |  74,535 |
+| 8 | `llm-summary-v1-mock`       | 0.328 | 0.679 | **+0.351** | **0.000** | 3.14 | 3.60 |  **52,186** |
+| 9 | `raw`                       | 0.353 | 0.675 | **+0.322** | 0.029 | 3.11 | 3.49 |  84,161 |
+| 10 | `rtk-log`                  | **0.249** (single-shot #10) | 0.658 | **+0.409** | **0.000** | 3.46 | 4.03 |  **50,521** |
+
+Five layers of finding:
+
+1. **Quality flattens.** Agent-loop scores cluster in [0.658, 0.727]
+   — a 0.069 spread. Single-shot's 0.42 spread is gone; the agent
+   rescues weak contexts via tool calls.
+2. **Safety collapses to ~0.** Single-shot's "rtk-log and
+   llm-summary-v1-mock confidently mislead 13% of the time" effect
+   disappears entirely in agent-loop (both at 0% confident_error).
+   The new highest agent confident_error is 5.7% on
+   `hybrid-grep-120k-rtk-tail` — ironically the v1.0 single-shot
+   winner.
+3. **Rankings reshuffle.** v1.0 single-shot #1 `hybrid-grep-120k-rtk-tail`
+   drops to rank 7 in agent-loop. The new winner is
+   `hybrid-grep-120k-tail` (single-shot rank 2, agent rank 1, agent
+   confident_error 0%). **This method is the v1.1 recommendation
+   for both static and agent settings.**
+4. **Cost differs by 1.8×.** Cheapest agent-loop method is `rtk-log`
+   at 50.5k tokens/case; most expensive is `rtk-read` at 89.2k. The
+   range is 1.8× — far smaller than the 530× single-shot range
+   (1k–432k), but still meaningful for a fleet of agents.
+5. **Tool calls correlate inversely with single-shot quality.** The
+   methods that needed the most rescuing (`rtk-log` 4.0 tools,
+   `llm-summary-v1-mock` 3.6, `raw` and `rtk-read` 3.5) are the
+   ones with the worst single-shot starting context. `tail-200`
+   and `hybrid-grep-120k-tail` (best single-shot non-hybrid) only
+   need ~3.0 tool calls.
+
+### Agent-loop cost-quality Pareto frontier
+
+![Agent-loop cost-quality Pareto](figures/agent_cost_quality_pareto.png)
+
+In agent-loop, the Pareto frontier compresses dramatically (the
+score range is only 0.069 wide). The frontier is essentially:
+
+- `rtk-log` — cheapest (50.5k tokens/case) but lowest score (0.658)
+- `llm-summary-v1-mock` — second-cheapest (52.2k) but mid-pack score
+- `tail-200` — sweet spot at 57.8k tokens and 0.720 score
+- `hybrid-grep-120k-tail` — top score (0.727) at 66.8k tokens
+
+`tail-200` and `hybrid-grep-120k-tail` are the **practical
+recommendations for agent users** — high quality, low cost, zero
+confident_error.
+
+### What this means
+
+- **If your downstream is single-shot LLM** (no tools): stick with
+  the v1.0 leaderboard. `hybrid-grep-120k-rtk-tail` wins.
+- **If your downstream is a tool-using agent** (Claude Code, Codex):
+  the choice of static reducer matters much less for *quality*.
+  Use `hybrid-grep-120k-tail` (best agent-loop) or `tail-200`
+  (cheapest agent-loop while staying in the top 2).
+- **Don't use `rtk-log` or `llm-summary-v1-mock` standalone** — they
+  remain dangerous in single-shot (13% confident misclassification
+  rate). In agent-loop they're safe but force the agent into
+  4 tool calls/case as rescue.
+
+For the full mechanism analysis (why agents rescue weak methods
+without hurting strong ones, why confident_error vanishes), see
+[`docs/analysis/agent-loop-vs-single-shot.md`](analysis/agent-loop-vs-single-shot.md).
+
+### Agent-loop caveats
+
+- **Sonnet 4.6 only**. Haiku 4.5 and gpt-5-mini agent variants are
+  v1.2 follow-ups in [ROADMAP](https://github.com/eyuansu62/LogDx/blob/main/ROADMAP.md).
+  The "every method gains" finding may be specific to Sonnet's
+  tool-use bias and could narrow for smaller models.
+- **5-turn cap, 180k cumulative input cap.** Real-world traces can
+  exceed both; our caps reflect budget control.
+- **Same 35-case corpus** as single-shot. No corpus expansion in v1.1.
+- **Non-determinism**: Sonnet 4.6 at temperature=0 still has small
+  variance in tool selection across runs. The macro means above are
+  stable to ~±0.02; individual case scores can shift more.
+
 ## Headline cross-family agreement
 
 The **top-3** under each debugger family separately:

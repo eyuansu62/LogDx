@@ -1,0 +1,147 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "rtk-read",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest snapshot tests failed because the Babel parser changed its error messages for invalid `import()` and `babel-ts` constructs. The stored snapshots contain old error text (e.g. 'Unexpected token', 'Cannot use new with import(...)') while the parser now emits different messages (e.g. '`import()` requires exactly one or two arguments', 'Cannot use new with import()'), causing 13 snapshot mismatches across 3 test suites.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Jest snapshot assertions in tests for JS/TS error formatting fail because the Babel parser (used via babel, babel-flow, and babel-ts parsers) now produces different error messages and/or error positions than those stored in the existing snapshots. For example, `import()` now yields '`import()` requires exactly one or two arguments' instead of 'Unexpected token', and error column positions have shifted.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js",
+    "tests/config/format-test/test-format.js"
+  ],
+  "relevant_tests": [
+    "snippet: #0 > format[babel]",
+    "snippet: #0 > format[babel-flow]",
+    "snippet: #0 > format[babel-ts]",
+    "snippet: #1 > format[babel]",
+    "snippet: #1 > format[babel-flow]",
+    "snippet: #1 > format[babel-ts]",
+    "snippet: #2 > format[babel]",
+    "snippet: #2 > format[babel-flow]",
+    "snippet: #2 > format[babel-ts]",
+    "snippet: #3 > format[babel]",
+    "snippet: #3 > format[babel-flow]",
+    "snippet: #3 > format[babel-ts]",
+    "constructorOverloadsWithDefaultValues.ts > format[babel-ts]"
+  ],
+  "evidence": [
+    {
+      "quote": "13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "Confirms 13 snapshot mismatches are the direct cause of the CI failure."
+    },
+    {
+      "quote": "- Unexpected token (1:8)\n    + `import()` requires exactly one or two arguments. (1:1)",
+      "reason": "Shows the Babel parser now emits a different error message for `import()` than what the snapshot recorded."
+    },
+    {
+      "quote": "- Cannot use new with import(...). (1:5)\n    + Cannot use new with import(). (1:5)",
+      "reason": "Shows another error message change in the Babel parser for `new import(...)` constructs."
+    },
+    {
+      "quote": "- An implementation cannot be declared in ambient contexts. (1:1)\n    + An implementation cannot be declared in ambient contexts. (1:24)",
+      "reason": "Shows the error column position changed for babel-ts parser on declare-function-with-body test."
+    },
+    {
+      "quote": "Test Suites: 3 failed, 1500 passed, 1503 total\nTests:       14 failed, 5 skipped, 29634 passed, 29653 total",
+      "reason": "Confirms the overall test run result: 3 suites and 14 tests failed."
+    },
+    {
+      "quote": "FAIL tests/format/js/_errors_/import/format.test.js",
+      "reason": "Identifies the primary failing test suite related to import error snapshots."
+    }
+  ],
+  "suggested_fix": "Update the Jest snapshots to match the new Babel parser error messages by running `jest --updateSnapshot` (or `jest -u`) for the failing test suites: `tests/format/js/_errors_/import/format.test.js`, `tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js`, and `tests/format/typescript/_errors_/declare-function-with-body/format.test.js`.",
+  "input": {
+    "context_path": "results/v2/holdout/rtk-read/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 48106
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1165
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 34028.883,
+    "cache_key": "007b2fc5855f9fc2bbd5d6d5ca3f0128cc7c249e706669c1c86583eb8a0e43d3",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 33914,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 1112,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 4,
+    "tool_call_count": 4,
+    "tool_calls": [
+      {
+        "tool": "tail",
+        "args": {
+          "n": 200
+        },
+        "observation_tokens_estimate": 4576,
+        "runtime_ms": 3.2740420137997717,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "FAIL|failed|Error|snapshot",
+          "after": 10,
+          "max_matches": 30
+        },
+        "observation_tokens_estimate": 3223,
+        "runtime_ms": 4.297209001379088,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "FAIL tests/",
+          "after": 5,
+          "max_matches": 20
+        },
+        "observation_tokens_estimate": 1155,
+        "runtime_ms": 8.006666990695521,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 399,
+          "radius": 60
+        },
+        "observation_tokens_estimate": 2571,
+        "runtime_ms": 0.19995900220237672,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 103614,
+    "total_output_tokens_consumed": 1425,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 4
+  }
+}

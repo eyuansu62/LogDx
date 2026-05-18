@@ -1,0 +1,115 @@
+{
+  "case_id": "pip-pytest-network-github-v2-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The functional test `test_no_truststore_can_install[GitHub]` failed because pip could not download a package from GitHub due to repeated HTTP 502 errors. The test was retried 3 times and failed each time with the same network error.",
+  "root_cause_category": "network_or_flaky",
+  "root_cause": "GitHub's servers returned repeated 502 errors when pip attempted to download `https://github.com/pypa/pip-test-package/archive/refs/heads/master.zip`, causing the test to fail after exhausting all retries.",
+  "confidence": 0.97,
+  "relevant_files": [
+    "tests/functional/test_truststore.py",
+    "tests/lib/__init__.py"
+  ],
+  "relevant_tests": [
+    "tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]"
+  ],
+  "evidence": [
+    {
+      "quote": "ERROR: Could not install packages due to an OSError: HTTPSConnectionPool(host='github.com', port=443): Max retries exceeded with url: /pypa/pip-test-package/archive/refs/heads/master.zip (Caused by ResponseError('too many 502 error responses'))",
+      "reason": "This is the exact error message from pip's stderr, showing that GitHub returned 502 errors on every attempt to download the test package."
+    },
+    {
+      "quote": "RERUN tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]\nREUN tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]\nREUN tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]",
+      "reason": "The test was retried 3 times (via pytest-rerunfailures) and failed all 3 times, confirming a persistent transient network issue rather than a code bug."
+    },
+    {
+      "quote": "[gw1] [ 99%] FAILED tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]",
+      "reason": "Final FAILED status after all reruns were exhausted."
+    },
+    {
+      "quote": "return code: 1",
+      "reason": "pip exited with a non-zero return code on each attempt, confirming the network failure caused the subprocess to fail."
+    }
+  ],
+  "suggested_fix": "This is a transient GitHub network failure (502 errors). Re-running the CI job should resolve it. If it recurs frequently, consider increasing the rerun count or marking the test to be skipped when GitHub is unreachable.",
+  "input": {
+    "context_path": "results/v2/dev/rtk-err-cat/pip-pytest-network-github-v2-001.txt",
+    "context_tokens_estimate": 12439
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 819
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 28481.734,
+    "cache_key": "5c4ed70c31a8e90422b0dcc30f05e822e8c77f16554700047c9fbcf25327066b",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 42498,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 710,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 3,
+    "tool_call_count": 3,
+    "tool_calls": [
+      {
+        "tool": "tail",
+        "args": {
+          "n": 100
+        },
+        "observation_tokens_estimate": 3358,
+        "runtime_ms": 9.513916011201218,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "FAILED|ERROR|failed|error",
+          "max_matches": 30
+        },
+        "observation_tokens_estimate": 3944,
+        "runtime_ms": 4.911582975182682,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "test_no_truststore_can_install",
+          "before": 5,
+          "after": 30,
+          "max_matches": 20
+        },
+        "observation_tokens_estimate": 7974,
+        "runtime_ms": 26.554834010312334,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 83938,
+    "total_output_tokens_consumed": 978,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 3
+  }
+}

@@ -1,0 +1,169 @@
+{
+  "case_id": "airflow-precommit-tsc-middle-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The pre-commit hook 'ts-compile-lint-ui' (Compile / format / lint UI) failed with exit code 1 because it modified files during the check run. The hook reformatted/auto-fixed a large number of TypeScript, TSX, and JSON files under src/airflow/ui/, indicating that the committed code was not properly formatted before being pushed.",
+  "root_cause_category": "formatting_failure",
+  "root_cause": "The 'ts-compile-lint-ui' pre-commit hook (which runs TypeScript compilation, formatting, and linting for the Airflow UI) detected that files were not properly formatted. The hook auto-modified hundreds of files under src/airflow/ui/ and exited with code 1 because 'files were modified by this hook', meaning the PR's UI source files were not formatted according to the project's formatter (prettier) before being committed.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "src/airflow/ui/src/layouts/Nav/BrowseButton.tsx",
+    "src/airflow/ui/src/queries/useRefreshOnNewDagRuns.ts",
+    "src/airflow/ui/openapi-gen/requests/core/request.ts",
+    "src/airflow/ui/openapi-gen/requests/schemas.gen.ts",
+    "src/airflow/ui/openapi-gen/requests/types.gen.ts",
+    "src/airflow/ui/pnpm-lock.yaml",
+    "src/airflow/ui/tsconfig.json",
+    "src/airflow/ui/eslint.config.js",
+    "src/airflow/ui/rules/prettier.js"
+  ],
+  "relevant_tests": [
+    "ts-compile-lint-ui"
+  ],
+  "evidence": [
+    {
+      "quote": "Compile / format / lint UI................................................................................\u001b[41mFailed\u001b[49m",
+      "reason": "The hook named 'ts-compile-lint-ui' explicitly failed, shown in red."
+    },
+    {
+      "quote": "- hook id: ts-compile-lint-ui",
+      "reason": "Identifies the specific pre-commit hook that failed."
+    },
+    {
+      "quote": "- exit code: 1",
+      "reason": "The hook exited with a non-zero code indicating failure."
+    },
+    {
+      "quote": "- files were modified by this hook",
+      "reason": "This is the canonical pre-commit message indicating the formatter/linter auto-modified files, meaning the committed code was not pre-formatted."
+    },
+    {
+      "quote": "Original files: ['src/airflow/ui/src/layouts/Nav/BrowseButton.tsx', 'src/airflow/ui/src/queries/useRefreshOnNewDagRuns.ts'",
+      "reason": "Shows a large list of UI source files that were processed and modified by the hook, confirming widespread formatting issues."
+    }
+  ],
+  "suggested_fix": "Run the UI formatter locally before committing: navigate to src/airflow/ui and run the prettier/eslint formatter (e.g., 'pnpm run format' or the equivalent command used by the ts-compile-lint-ui hook), then commit the reformatted files.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-120k-tail-v2/airflow-precommit-tsc-middle-v2-001.txt",
+    "context_tokens_estimate": 100908
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1122
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 42626.178,
+    "cache_key": "4327ab812c392b98d88fe7fb896b7f2315776eea43c046f34d179866186c7b48",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 107534,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 816,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 5,
+    "tool_call_count": 7,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "error TS|TypeError|tsc|ts-compile|Failed|exit code",
+          "after": 10,
+          "max_matches": 30
+        },
+        "observation_tokens_estimate": 7974,
+        "runtime_ms": 36.526541982311755,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "ts-compile-lint-ui|hook id: ts-compile",
+          "after": 20,
+          "max_matches": 10
+        },
+        "observation_tokens_estimate": 7974,
+        "runtime_ms": 18.303749995538965,
+        "error": null
+      },
+      {
+        "tool": "tail",
+        "args": {
+          "n": 200
+        },
+        "observation_tokens_estimate": 7974,
+        "runtime_ms": 0.5010830063838512,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "files were modified|prettier|format|diff",
+          "after": 15,
+          "max_matches": 10
+        },
+        "observation_tokens_estimate": 7068,
+        "runtime_ms": 22.78741597547196,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 2069,
+          "radius": 50
+        },
+        "observation_tokens_estimate": 7974,
+        "runtime_ms": 0.2968749904539436,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "pnpm-lock|openapi-gen|generated|diff --git|@@|^\\+\\+\\+|^---",
+          "after": 5,
+          "max_matches": 20
+        },
+        "observation_tokens_estimate": 7974,
+        "runtime_ms": 32.39049998228438,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "Modified files|Reformatted|formatted|lint error|eslint|prettier.*error",
+          "after": 10,
+          "max_matches": 15
+        },
+        "observation_tokens_estimate": 7974,
+        "runtime_ms": 23.45549999154173,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 310080,
+    "total_output_tokens_consumed": 1511,
+    "budget_exhausted": true,
+    "final_diagnosis_turn": 5
+  }
+}

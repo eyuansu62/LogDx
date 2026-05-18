@@ -15,10 +15,18 @@ description: "A benchmark for CI log reduction tools — do they preserve enough
 [![Release](https://img.shields.io/github/v/release/eyuansu62/LogDx?include_prereleases&label=release)](https://github.com/eyuansu62/LogDx/releases/latest)
 [![License](https://img.shields.io/badge/license-Apache--2.0%20%2B%20CC--BY--4.0-blue)](https://github.com/eyuansu62/LogDx/blob/main/LICENSE)
 
-**Current release**: `v1.0` ·
+**Current release**: `v1.1` (adds agent-loop leaderboard) ·
 [Leaderboard](leaderboard.html) ·
 [Citation](cite.html) ·
 [Technical report](https://github.com/eyuansu62/LogDx/blob/main/reports/e10_v2_generalization_partial.md)
+
+> **v1.1 highlight**: in multi-turn agent usage (Claude Code /
+> Codex–style tool loops), the choice of context method matters
+> far less for *quality* — the agent rescues weak contexts via
+> tool calls. See the
+> [agent-loop leaderboard](leaderboard.html#agent-loop-leaderboard--v11)
+> and the
+> [agent-loop vs single-shot analysis](https://github.com/eyuansu62/LogDx/blob/main/docs/analysis/agent-loop-vs-single-shot.md).
 
 ## What it measures
 

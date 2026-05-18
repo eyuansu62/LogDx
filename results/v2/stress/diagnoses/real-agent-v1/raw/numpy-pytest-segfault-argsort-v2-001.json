@@ -1,0 +1,137 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "raw",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The pytest run crashes with a fatal segmentation fault during the test `test_datetime_nat_argsort_stability` in `numpy/_core/tests/test_datetime.py`. The crash occurs inside `numpy._core.fromnumeric.argsort` (via `_wrapfunc`), killing the entire test process with exit code 245.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "A segmentation fault occurs at runtime when `numpy.argsort` is called on datetime NaT values in `test_datetime_nat_argsort_stability`, crashing the Python interpreter with 'Fatal Python error: Segmentation fault' and terminating the test process.",
+  "confidence": 0.97,
+  "relevant_files": [
+    "numpy/_core/tests/test_datetime.py",
+    "numpy/_core/fromnumeric.py"
+  ],
+  "relevant_tests": [
+    "numpy/_core/tests/test_datetime.py::test_datetime_nat_argsort_stability"
+  ],
+  "evidence": [
+    {
+      "quote": "Fatal Python error: Segmentation fault",
+      "reason": "The Python interpreter reports a fatal segmentation fault, which terminates the entire test process."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 1231 in argsort",
+      "reason": "The crash occurs inside numpy's argsort function, identifying the faulty code path."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
+      "reason": "The specific test that triggered the segfault is test_datetime_nat_argsort_stability at line 226."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 245.",
+      "reason": "The GitHub Actions step reports a non-zero exit code (245, which corresponds to SIGSEGV on Linux), confirming the job failed due to the segfault."
+    }
+  ],
+  "suggested_fix": "Investigate and fix the argsort implementation for datetime arrays containing NaT values in `numpy/_core/fromnumeric.py` (around line 1231) and the underlying C extension `numpy._core._multiarray_umath` to prevent the segmentation fault triggered by `test_datetime_nat_argsort_stability`.",
+  "input": {
+    "context_path": "results/v2/stress/raw/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 120563
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 925
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 36693.165,
+    "cache_key": "09c5918c0a7bb363c236b4ddc615d51bb877e705b68b2f0ad5df0cd9329e15f7",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 75647,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 688,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 5,
+    "tool_call_count": 5,
+    "tool_calls": [
+      {
+        "tool": "tail",
+        "args": {
+          "n": 200
+        },
+        "observation_tokens_estimate": 7974,
+        "runtime_ms": 7.094500004313886,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "FAILED|ERROR|error|segfault|signal|killed|fatal",
+          "max_matches": 30
+        },
+        "observation_tokens_estimate": 5881,
+        "runtime_ms": 37.412332982057706,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "FAILED|short test summary|passed|failed|error|Segmentation fault|signal 11|argsort",
+          "before": 2,
+          "after": 5,
+          "max_matches": 30
+        },
+        "observation_tokens_estimate": 3837,
+        "runtime_ms": 44.67287502484396,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "short test summary|= FAILED|passed.*failed|Segmentation fault|Process.*killed|exit code [1-9]|##\\[error\\]",
+          "before": 3,
+          "after": 10,
+          "max_matches": 20
+        },
+        "observation_tokens_estimate": 1234,
+        "runtime_ms": 52.31250001816079,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 5462,
+          "radius": 40
+        },
+        "observation_tokens_estimate": 7874,
+        "runtime_ms": 0.24120899615809321,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 240825,
+    "total_output_tokens_consumed": 1239,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 5
+  }
+}

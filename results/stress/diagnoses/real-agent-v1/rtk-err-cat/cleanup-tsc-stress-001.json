@@ -1,0 +1,98 @@
+{
+  "case_id": "cleanup-tsc-stress-001",
+  "context_method": "rtk-err-cat",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Cleanup artifacts' job failed because the GitHub CLI (`gh`) received an HTTP 403 'Resource not accessible by integration' error when attempting to delete artifacts via the GitHub API. The GITHUB_TOKEN does not have sufficient permissions to delete artifacts for the workflow run.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GITHUB_TOKEN used by the job lacks the necessary permissions to delete artifacts via the GitHub Actions REST API. The `gh api -X DELETE /repos/microsoft/TypeScript/actions/artifacts/<id>` call returned HTTP 403 with the message 'Resource not accessible by integration'.",
+  "confidence": 0.95,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "This is the direct error returned by the GitHub CLI when attempting to delete an artifact, indicating the token does not have permission to perform this operation."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "The process exited with a non-zero exit code immediately after the HTTP 403 error, confirming the job failed due to the permission denial."
+    },
+    {
+      "quote": "Secret source: None",
+      "reason": "The secret source is 'None', which may indicate the token in use is a default GITHUB_TOKEN without elevated permissions needed for artifact deletion."
+    },
+    {
+      "quote": "Actions: write",
+      "reason": "Although the GITHUB_TOKEN has 'Actions: write' permission listed, the API still returned 403, suggesting the token's scope is insufficient for cross-run artifact deletion or the token configuration is otherwise restricted."
+    }
+  ],
+  "suggested_fix": "Ensure the workflow grants the GITHUB_TOKEN the `actions: write` permission explicitly in the job or workflow-level permissions block, and verify that the token is not restricted by organization or repository settings that block artifact deletion via integrations. If using a fine-grained PAT, confirm it includes the 'Actions' read/write permission for the repository.",
+  "input": {
+    "context_path": "results/stress/rtk-err-cat/cleanup-tsc-stress-001.txt",
+    "context_tokens_estimate": 12
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 746
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 15622.798,
+    "cache_key": "bf3af3e9cb0d3586f931f3d434fc428dcb67eba9fccae7a49b149cc81da58622",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 5654,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 531,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 2,
+    "tool_calls": [
+      {
+        "tool": "tail",
+        "args": {
+          "n": 200
+        },
+        "observation_tokens_estimate": 1381,
+        "runtime_ms": 1.133999990997836,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "error|failed|failure|traceback|exception|assert|panic|exit code",
+          "after": 10
+        },
+        "observation_tokens_estimate": 121,
+        "runtime_ms": 0.7310840010177344,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 8090,
+    "total_output_tokens_consumed": 667,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "case_id": "gh-cli-go-test-prompter-v2-001",
+  "context_method": "rtk-log",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "A single Go test in the `internal/prompter` package failed because `form.Run()` did not complete within the allotted time, causing the overall test suite to exit with code 1. The failing test is `TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query`.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The test `TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query` in `huh_prompter_test.go` timed out waiting for `form.Run()` to complete (reported as 'form.Run() did not complete in time' at line 478), causing the `github.com/cli/cli/v2/internal/prompter` package tests to fail.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "huh_prompter_test.go"
+  ],
+  "relevant_tests": [
+    "TestHuhPrompterMultiSelectWithSearchPersistence",
+    "TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query"
+  ],
+  "evidence": [
+    {
+      "quote": "--- FAIL: TestHuhPrompterMultiSelectWithSearchPersistence (5.19s)",
+      "reason": "Identifies the top-level test that failed in the prompter package."
+    },
+    {
+      "quote": "--- FAIL: TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query (5.13s)",
+      "reason": "Identifies the specific sub-test that failed, with a 5-second duration suggesting a timeout."
+    },
+    {
+      "quote": "huh_prompter_test.go:478: form.Run() did not complete in time",
+      "reason": "Explicit error message showing the test timed out waiting for the form to finish running."
+    },
+    {
+      "quote": "FAIL\tgithub.com/cli/cli/v2/internal/prompter\t8.475s",
+      "reason": "Confirms the package that failed and caused the overall test run to exit with code 1."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the CI job failed due to the test failure."
+    }
+  ],
+  "suggested_fix": "Investigate the `TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query` test in `huh_prompter_test.go` around line 478 to determine why `form.Run()` is not completing in time — either increase the timeout, fix a deadlock/race condition in the prompter logic, or make the test more resilient to timing issues on macOS CI runners.",
+  "input": {
+    "context_path": "results/v2/holdout/rtk-log/gh-cli-go-test-prompter-v2-001.txt",
+    "context_tokens_estimate": 76
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 826
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 25112.08,
+    "cache_key": "eef1bc087951ee51e5e00beeb9ecb4d2c287efb3358ace13068247750b02ded9",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 10695,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 729,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 3,
+    "tool_call_count": 3,
+    "tool_calls": [
+      {
+        "tool": "tail",
+        "args": {
+          "n": 100
+        },
+        "observation_tokens_estimate": 2586,
+        "runtime_ms": 3.315457986900583,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "error|failed|failure|FAIL|panic|exit code",
+          "after": 5,
+          "max_matches": 30
+        },
+        "observation_tokens_estimate": 545,
+        "runtime_ms": 10.749957989901304,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 244,
+          "radius": 20
+        },
+        "observation_tokens_estimate": 965,
+        "runtime_ms": 0.11387502308934927,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 21965,
+    "total_output_tokens_consumed": 950,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 3
+  }
+}

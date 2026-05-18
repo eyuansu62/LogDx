@@ -1,0 +1,112 @@
+{
+  "case_id": "biome-pnpm-not-found-v2-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because `pnpm` is not installed on the runner. The `gen-all` justfile recipe invokes a `format` recipe that calls `pnpm format`, but the shell reports `pnpm: not found`, causing exit code 127 and failing the entire job.",
+  "root_cause_category": "dependency_install",
+  "root_cause": "`pnpm` is not available on the depot-ubuntu-24.04-arm-16 runner. When the `format` recipe (line 221) executed `pnpm format`, the shell returned `sh: 1: pnpm: not found` with exit code 127, which propagated to fail the `gen-all` recipe.",
+  "confidence": 0.97,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "pnpm format",
+      "reason": "This is the command that was attempted as part of the `format` recipe."
+    },
+    {
+      "quote": "sh: 1: pnpm: not found",
+      "reason": "The shell could not find the `pnpm` binary, confirming it is not installed on the runner."
+    },
+    {
+      "quote": "error: Recipe `format` failed on line 221 with exit code 127",
+      "reason": "Exit code 127 is the standard shell code for 'command not found', confirming pnpm is missing."
+    },
+    {
+      "quote": "error: Recipe `gen-all` failed on line 32 with exit code 127",
+      "reason": "The failure cascaded from the `format` recipe to the parent `gen-all` recipe."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 127.",
+      "reason": "GitHub Actions recorded the final failure with exit code 127, confirming the job failed due to the missing pnpm command."
+    }
+  ],
+  "suggested_fix": "Add a step to install `pnpm` on the runner before the `gen-all` / `format` recipe is executed, for example by adding `npm install -g pnpm` or using the `pnpm/action-setup` GitHub Action in the workflow configuration.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-rtk-tail-v3/biome-pnpm-not-found-v2-001.txt",
+    "context_tokens_estimate": 98701
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 689
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 20354.61,
+    "cache_key": "c788f1140e042d7a82737a3aa8ba7f78fa62b1fcdf0804230467b09fb4d39f05",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 49259,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 545,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 3,
+    "tool_call_count": 3,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "error|failed|FAILED|panic|pnpm",
+          "max_matches": 50
+        },
+        "observation_tokens_estimate": 7974,
+        "runtime_ms": 27.91575001901947,
+        "error": null
+      },
+      {
+        "tool": "tail",
+        "args": {
+          "n": 100
+        },
+        "observation_tokens_estimate": 7311,
+        "runtime_ms": 0.10483298683539033,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 15765,
+          "radius": 5
+        },
+        "observation_tokens_estimate": 4354,
+        "runtime_ms": 0.06729198503307998,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 105736,
+    "total_output_tokens_consumed": 769,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 3
+  }
+}

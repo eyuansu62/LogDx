@@ -1,0 +1,97 @@
+{
+  "case_id": "prettier-react-stress-001",
+  "context_method": "raw",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Run prettier' CI job failed because two files in the PR were not formatted with prettier. The prettier check script detected unformatted code and instructed the author to run 'yarn prettier-all' and commit the changes.",
+  "root_cause_category": "formatting_failure",
+  "root_cause": "Two files were not formatted with prettier: 'packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js' and 'compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts'. The 'yarn prettier-check' command (node ./scripts/prettier/index.js) detected the formatting violations and exited with code 1.",
+  "confidence": 0.98,
+  "relevant_files": [
+    "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+    "compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "This project uses prettier to format all JavaScript code.\n    Please run yarn prettier-all and add changes to files listed below to your commit:",
+      "reason": "The prettier check script explicitly reported that files are not properly formatted and instructed the fix."
+    },
+    {
+      "quote": "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+      "reason": "This file was identified by the prettier check as needing formatting."
+    },
+    {
+      "quote": "compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts",
+      "reason": "This file was identified by the prettier check as needing formatting."
+    },
+    {
+      "quote": "error Command failed with exit code 1.",
+      "reason": "The yarn prettier-check command exited with code 1, causing the CI job to fail."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions reported the step as failed due to the non-zero exit code from the prettier check."
+    }
+  ],
+  "suggested_fix": "Run 'yarn prettier-all' locally, then add the reformatted versions of 'packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js' and 'compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts' to the commit.",
+  "input": {
+    "context_path": "results/stress/raw/prettier-react-stress-001.txt",
+    "context_tokens_estimate": 4470
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 727
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 14139.046,
+    "cache_key": "91ca328975a9d0ba462b65590f291471bb1d5681ec563f4084d47362fbc62e37",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 11775,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 654,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 1,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "prettier|error|failed|exit code",
+          "after": 5,
+          "max_matches": 20
+        },
+        "observation_tokens_estimate": 708,
+        "runtime_ms": 4.639082995709032,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 22154,
+    "total_output_tokens_consumed": 761,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

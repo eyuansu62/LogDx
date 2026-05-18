@@ -6,7 +6,8 @@ Status as of 2026-05-18.
 |---|---|---|
 | **v1.0** | shipped 2026-05-18 | 35-case corpus × 3 model families. [Release notes](RELEASE_NOTES.md) · [Homepage](https://logdx-bench.github.io/) |
 | **v1.0.1** | shipped 2026-05-18 | Added `confident_error_rate_v1_1` and `total_tokens` columns to the leaderboard, plus a cost-quality Pareto plot. |
-| **v1.1** | targeted ~2026-07 | See P0/P1/P2 items below. |
+| **v1.1** | shipped 2026-05-18 | Adds the agent-loop leaderboard. Every method gains in agent-loop, the quality range collapses 6× (0.42 → 0.069), confident-error rates drop to 0% on 8 of 10 methods. See [analysis/agent-loop-vs-single-shot.md](docs/analysis/agent-loop-vs-single-shot.md). |
+| **v1.2** | exploratory | Haiku + gpt-5-mini agent variants; configured-RTK baseline; corpus expansion. |
 | **v1.2 / v2** | exploratory | Train/holdout decoupling, GPT-4o + Gemini families, `fix_action` evaluation. |
 
 This roadmap is informed by the RTK community's
@@ -23,11 +24,12 @@ benchmark credibility**, not by implementation effort.
 ```
 P0 (shipped in v1.0.1)  : #3 confident_error_rate column
                           #2 cost + latency reporting (token columns + Pareto plot)
-P0 (v1.1)               : #1 multi-turn / agent-loop benchmark
-                          #2-followup USD pricing snapshot + reducer runtime for grep/tail
-P1 (v1.1)               : #4 configured-RTK baseline
+P0 (shipped in v1.1)    : #1 multi-turn / agent-loop benchmark (Sonnet 4.6, 35 cases)
+P0 (deferred to v1.2)   : #2-followup USD pricing snapshot + reducer runtime for grep/tail
+P1 (deferred to v1.2)   : #1-followup agent-loop on Haiku 4.5 + gpt-5-mini
+                          #4 configured-RTK baseline
                           #5 vitest / dotnet / Playwright corpus expansion
-P2 (v1.1)               : #6 decision-making (fix_action) evaluation dimension
+P2 (deferred to v1.2)   : #6 decision-making (fix_action) evaluation dimension
 ```
 
 P0 items are required for v1.1 release. P1 items ship if time permits.

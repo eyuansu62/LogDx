@@ -1,0 +1,125 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "raw",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "13 Jest snapshot tests fail because the Babel parser now produces different error messages and column positions than those stored in the snapshots. For example, parsing `import()` now throws \"`import()` requires exactly one or two arguments. (1:1)\" instead of the snapshotted \"Unexpected token (1:8)\", and similar position/message shifts occur for `babel-ts` error tests.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The Babel parser (babel, babel-flow, babel-ts) changed its error messages and/or error positions for invalid syntax constructs. The existing Jest snapshots record the old error text and column numbers, so `toThrowErrorMatchingSnapshot()` assertions fail when the received error no longer matches the stored snapshot.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/config/format-test/test-format.js"
+  ],
+  "relevant_tests": [
+    "snippet: #0 format[babel] 1",
+    "snippet: #0 format[babel-flow] 1",
+    "snippet: #3 format[babel-ts] 1",
+    "snippet: #0 format[babel-ts] 1",
+    "constructorOverloadsWithDefaultValues.ts > format[babel-ts]"
+  ],
+  "evidence": [
+    {
+      "quote": "- Unexpected token (1:8)\n     + `import()` requires exactly one or two arguments. (1:1)",
+      "reason": "The snapshot expected 'Unexpected token' at column 8 but Babel now throws a different error message at a different column, causing the snapshot assertion to fail."
+    },
+    {
+      "quote": "- An implementation cannot be declared in ambient contexts. (1:1)\n     + An implementation cannot be declared in ambient contexts. (1:24)",
+      "reason": "Same error message but different column position between snapshot and received value, indicating Babel changed where it reports the error."
+    },
+    {
+      "quote": "13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "Jest's own summary confirms 13 snapshot mismatches and suggests updating snapshots with -u flag."
+    },
+    {
+      "quote": "Test Suites: 3 failed, 1500 passed, 1503 total\nTests:       14 failed, 5 skipped, 29634 passed, 29653 total\nSnapshots:   13 failed, 12086 passed, 12099 total",
+      "reason": "Confirms the scope of failure: 13 snapshot failures across 3 test suites, all related to error-message matching."
+    },
+    {
+      "quote": "Error: expect(received).rejects.toThrowErrorMatchingSnapshot()",
+      "reason": "The test assertion method is snapshot-based error matching, confirming this is a snapshot mismatch failure."
+    }
+  ],
+  "suggested_fix": "Update the Jest snapshots to match the new Babel error messages and positions by running `jest -u` (or `yarn test -- -u`) for the affected test files, then commit the updated snapshot files.",
+  "input": {
+    "context_path": "results/v2/holdout/raw/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 48106
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 989
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 27693.21,
+    "cache_key": "4776a44f2db9dadf192f792a215f7211f34a481b563340ef995339bb28d9e219",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 28210,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 958,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 3,
+    "tool_call_count": 3,
+    "tool_calls": [
+      {
+        "tool": "tail",
+        "args": {
+          "n": 100
+        },
+        "observation_tokens_estimate": 2562,
+        "runtime_ms": 4.461834003450349,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "FAIL|failed|Error|snapshot",
+          "after": 5,
+          "max_matches": 30
+        },
+        "observation_tokens_estimate": 2833,
+        "runtime_ms": 6.100583996158093,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "FAIL tests/",
+          "after": 20,
+          "max_matches": 10
+        },
+        "observation_tokens_estimate": 3078,
+        "runtime_ms": 3.6280419735703617,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 64185,
+    "total_output_tokens_consumed": 1197,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 3
+  }
+}

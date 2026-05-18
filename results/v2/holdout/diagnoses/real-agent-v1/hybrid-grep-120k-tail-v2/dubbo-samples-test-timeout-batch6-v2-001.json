@@ -1,0 +1,132 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The integration test for `dubbo-samples-test-11137` timed out after 602 seconds while waiting for its test container to become ready. This caused the overall CI job to report 1 failed test and exit with code 1.",
+  "root_cause_category": "timeout_or_oom",
+  "root_cause": "The test `dubbo-samples-test-11137` exceeded the container wait timeout (602 s). The test runner reported 'wait for container is timeout: 602 s' and then 'Run tests timeout', and all expected Docker containers (zookeeper, nacos-mysql, nacos, and the test container itself) were not found when cleanup was attempted, indicating they never started successfully within the allowed time.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "99-integration/dubbo-samples-test-11137/target/logs",
+    "test/jobs/testjob_3.txt"
+  ],
+  "relevant_tests": [
+    "dubbo-samples-test-11137"
+  ],
+  "evidence": [
+    {
+      "quote": "wait for container is timeout: 602 s",
+      "reason": "Explicitly states the test container wait exceeded the 602-second timeout limit."
+    },
+    {
+      "quote": "[dubbo-samples-test-11137] :ErrorMsg: Run tests timeout",
+      "reason": "The test runner flagged the test as timed out."
+    },
+    {
+      "quote": "[2/23] [dubbo-samples-test-11137:1/1] TEST FAILURE: Run tests timeout, version: -Ddubbo.version=3.3.7-SNAPSHOT -Dspring.version=5.3.24 -Djava.version=21, please check logs: /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
+      "reason": "Confirms the test failure is specifically a timeout for this test case and version."
+    },
+    {
+      "quote": "Failed tests: 1\n[2/23] [dubbo-samples-test-11137:1/1] TEST FAILURE: Run tests timeout",
+      "reason": "Summary confirms exactly 1 test failed and it is the timeout of dubbo-samples-test-11137."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "The CI job exited with a non-zero code due to the test failure."
+    },
+    {
+      "quote": "Error response from daemon: No such container: dubbo-samples-test-11137--zookeeper-1",
+      "reason": "Required dependency containers (zookeeper, nacos-mysql, nacos) were not running when cleanup was attempted, indicating the test environment never fully started."
+    }
+  ],
+  "suggested_fix": "Investigate why the Docker containers for `dubbo-samples-test-11137` (zookeeper, nacos-mysql, nacos, and the test container) failed to start within 602 seconds. Check the logs at `/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs` (uploaded as artifact `integration-test-logs-3-java21`) for startup errors. Consider increasing the container wait timeout or fixing any resource contention/startup issue in the test's Docker Compose configuration.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-tail-v2/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 17017
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 976
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 31078.827,
+    "cache_key": "ba11d69aa54d9031289ae56d49760fc27194e2ea15062c17e553b944da5ad887",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 40801,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 849,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 4,
+    "tool_call_count": 4,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "TEST FAIL|FAILED|ERROR|failed|timeout|Timeout",
+          "max_matches": 30
+        },
+        "observation_tokens_estimate": 7974,
+        "runtime_ms": 51.269291987409815,
+        "error": null
+      },
+      {
+        "tool": "tail",
+        "args": {
+          "n": 100
+        },
+        "observation_tokens_estimate": 2536,
+        "runtime_ms": 0.05720899207517505,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "dubbo-samples-test-11137",
+          "max_matches": 20,
+          "after": 10
+        },
+        "observation_tokens_estimate": 2384,
+        "runtime_ms": 10.211458982666954,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 4880,
+          "radius": 20
+        },
+        "observation_tokens_estimate": 1085,
+        "runtime_ms": 0.08312499267049134,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 127866,
+    "total_output_tokens_consumed": 1197,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 4
+  }
+}

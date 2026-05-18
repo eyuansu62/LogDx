@@ -1,0 +1,119 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The pytest run crashes with a fatal segmentation fault while executing `test_datetime_nat_argsort_stability` in `numpy/_core/tests/test_datetime.py`. The crash occurs inside `numpy._core.fromnumeric.argsort` (line 1231), causing Python to abort and exit with code 245.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "A segmentation fault occurs at runtime during the test `test_datetime_nat_argsort_stability` in `numpy/_core/tests/test_datetime.py` (line 226), triggered by a call to `numpy.argsort` via `numpy._core.fromnumeric._wrapfunc`. The process terminates with 'Fatal Python error: Segmentation fault' and exit code 245.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "numpy/_core/tests/test_datetime.py",
+    "numpy/_core/fromnumeric.py"
+  ],
+  "relevant_tests": [
+    "numpy/_core/tests/test_datetime.py::test_datetime_nat_argsort_stability"
+  ],
+  "evidence": [
+    {
+      "quote": "Fatal Python error: Segmentation fault",
+      "reason": "The Python interpreter itself crashed with a segfault during the test run, not a normal test assertion failure."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
+      "reason": "Identifies the exact test function and line number where the segfault was triggered."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 1231 in argsort",
+      "reason": "Shows the numpy argsort function was the immediate call site of the crash."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 245.",
+      "reason": "Exit code 245 confirms the process was killed by a fatal signal (segfault), not a normal test failure."
+    },
+    {
+      "quote": "numpy/_core/tests/test_datetime.py ...............Fatal Python error: Segmentation fault",
+      "reason": "Shows the segfault occurred partway through running test_datetime.py tests, after 13 passing tests."
+    }
+  ],
+  "suggested_fix": "Investigate the `argsort` implementation for datetime/NaT arrays for a memory safety bug (e.g., out-of-bounds access or use-after-free) that causes the segfault in `test_datetime_nat_argsort_stability`. Run the test in isolation under a memory checker (e.g., valgrind or AddressSanitizer) to pinpoint the exact memory error.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-mock/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 1326
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 864
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 26445.609,
+    "cache_key": "dac4358f95c24fb12b438669ef8136e4ba75379299c1dd22379a3cc78116888c",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 30092,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 841,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 3,
+    "tool_call_count": 3,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "Python\\.h|exit code|error.*Python|cmake.*fail|meson.*fail",
+          "before": 3,
+          "after": 5,
+          "max_matches": 20
+        },
+        "observation_tokens_estimate": 2642,
+        "runtime_ms": 33.86637501535006,
+        "error": null
+      },
+      {
+        "tool": "tail",
+        "args": {
+          "n": 100
+        },
+        "observation_tokens_estimate": 4041,
+        "runtime_ms": 0.07654199725948274,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 5462,
+          "radius": 20
+        },
+        "observation_tokens_estimate": 4429,
+        "runtime_ms": 0.16891697305254638,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 52663,
+    "total_output_tokens_consumed": 1113,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 3
+  }
+}

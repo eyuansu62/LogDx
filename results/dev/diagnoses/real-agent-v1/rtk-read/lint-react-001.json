@@ -1,0 +1,101 @@
+{
+  "case_id": "lint-react-001",
+  "context_method": "rtk-read",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Run prettier' CI job failed because the file `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` was not formatted with prettier. The prettier check script detected unformatted code and exited with code 1.",
+  "root_cause_category": "formatting_failure",
+  "root_cause": "The file `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` was not formatted with prettier, causing `yarn prettier-check` (which runs `node ./scripts/prettier/index.js`) to fail with exit code 1.",
+  "confidence": 0.98,
+  "relevant_files": [
+    "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "Please run yarn prettier-all and add changes to files listed below to your commit:",
+      "reason": "The prettier check script explicitly states that the listed files need to be reformatted."
+    },
+    {
+      "quote": "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+      "reason": "This is the specific file identified by prettier as not conforming to the project's formatting rules."
+    },
+    {
+      "quote": "error Command failed with exit code 1.",
+      "reason": "The yarn prettier-check command exited with a non-zero exit code, causing the CI job to fail."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions confirms the step failed with exit code 1."
+    }
+  ],
+  "suggested_fix": "Run `yarn prettier-all` locally, then add the reformatted `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` to the commit.",
+  "input": {
+    "context_path": "results/dev/rtk-read/lint-react-001.txt",
+    "context_tokens_estimate": 7054
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 608
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 13294.759,
+    "cache_key": "f2246f936b2916b7c61a2dab563b88d7013407af19a38f9625c78d9305308f3e",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 20768,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 491,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 2,
+    "tool_calls": [
+      {
+        "tool": "tail",
+        "args": {
+          "n": 100
+        },
+        "observation_tokens_estimate": 3796,
+        "runtime_ms": 2.741417003562674,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "prettier|error|failed|Error",
+          "after": 5,
+          "max_matches": 30
+        },
+        "observation_tokens_estimate": 698,
+        "runtime_ms": 4.3880000011995435,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 33764,
+    "total_output_tokens_consumed": 634,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

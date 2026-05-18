@@ -1,0 +1,98 @@
+{
+  "case_id": "cleanup-tsc-stress-001",
+  "context_method": "tail",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Cleanup artifacts' job failed when attempting to delete GitHub Actions artifacts via the GitHub API. The `gh api -X DELETE` call received an HTTP 403 'Resource not accessible by integration' error, indicating the GITHUB_TOKEN used by this job does not have sufficient permissions to delete artifacts.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GITHUB_TOKEN available to the job only has 'Actions: write' and 'Metadata: read' permissions (as shown in the token permissions section), but the DELETE call to `/repos/microsoft/TypeScript/actions/artifacts/{id}` was rejected with HTTP 403 'Resource not accessible by integration', meaning the token lacks the required permission to delete artifacts.",
+  "confidence": 0.92,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "Actions: write\n2026-04-23T07:54:32.1242330Z Metadata: read",
+      "reason": "The GITHUB_TOKEN permissions listed for this job are limited to Actions:write and Metadata:read, which may be insufficient for deleting artifacts via the API."
+    },
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "The GitHub CLI returned an HTTP 403 error when attempting to delete an artifact, confirming the token does not have the required access."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "The job failed with exit code 1 as a direct result of the 403 permission error from the artifact deletion step."
+    },
+    {
+      "quote": "Secret source: None",
+      "reason": "No external secret source is configured; the job relies solely on the built-in GITHUB_TOKEN, which lacks the necessary permissions for this operation."
+    }
+  ],
+  "suggested_fix": "Grant the workflow job the `actions: write` permission explicitly in the workflow YAML under `permissions`, and ensure the token scope includes artifact deletion. If the GITHUB_TOKEN is insufficient, use a Personal Access Token (PAT) with the `repo` scope stored as a repository secret instead.",
+  "input": {
+    "context_path": "results/stress/tail/cleanup-tsc-stress-001.txt",
+    "context_tokens_estimate": 1291
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 730
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 14538.845,
+    "cache_key": "1e38c4e8f09333bc2a58734be06d38692a5b29cda12ffe600b42be640bb54d64",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 8967,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 474,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 2,
+    "tool_calls": [
+      {
+        "tool": "tail",
+        "args": {
+          "n": 50
+        },
+        "observation_tokens_estimate": 848,
+        "runtime_ms": 0.7027079991530627,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "403|not accessible|permission|secret|token",
+          "after": 5
+        },
+        "observation_tokens_estimate": 1025,
+        "runtime_ms": 0.9227089758496732,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 13953,
+    "total_output_tokens_consumed": 599,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

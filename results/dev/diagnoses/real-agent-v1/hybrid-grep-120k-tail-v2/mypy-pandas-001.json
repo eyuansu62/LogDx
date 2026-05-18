@@ -1,0 +1,151 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because both pyright and mypy type-checkers (run as pre-commit hooks) reported numerous errors related to pyarrow.compute attributes not being recognized. Functions like 'is_null', 'if_else', 'utf8_lower', 'utf8_upper', 'Expression', 'FileSystem', etc. are flagged as unknown or unexported attributes/symbols in pyarrow modules. mypy found 279 errors across 9 files, and pyright found 4 and 69 errors in two separate hook runs.",
+  "root_cause_category": "type_error",
+  "root_cause": "pyarrow type stubs do not export or declare many compute functions (e.g., 'is_null', 'if_else', 'utf8_lower', 'Expression', 'FileSystem') that pandas code uses, causing both mypy and pyright to report type errors. This is likely due to a pyarrow version upgrade that changed or removed type stub declarations for pyarrow.compute and pyarrow.fs.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "pandas/compat/pyarrow.py",
+    "pandas/core/arrays/_arrow_string_mixins.py",
+    "pandas/core/arrays/arrow/accessors.py",
+    "pandas/core/arrays/arrow/extension_types.py",
+    "pandas/core/arrays/string_arrow.py",
+    "pandas/core/strings/accessor.py",
+    "pandas/io/orc.py",
+    "pandas/io/parquet.py",
+    "pandas/io/feather_format.py",
+    "pandas/tests/reshape/test_get_dummies.py"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "pyright..................................................................[41mFailed[m\n- hook id: pyright\n- duration: 45.04s\n- exit code: 1",
+      "reason": "pyright pre-commit hook failed with exit code 1"
+    },
+    {
+      "quote": "\"Expression\" is not exported from module \"pyarrow.compute\" (reportPrivateImportUsage)",
+      "reason": "pyright reports pyarrow.compute does not export 'Expression', indicating missing/changed type stubs"
+    },
+    {
+      "quote": "\"FileSystem\" is not exported from module \"pyarrow.fs\" (reportPrivateImportUsage)",
+      "reason": "pyright reports pyarrow.fs does not export 'FileSystem', another missing type stub"
+    },
+    {
+      "quote": "69 errors, 0 warnings, 0 informations",
+      "reason": "pyright reportGeneralTypeIssues hook found 69 errors, all related to pyarrow.compute attribute access"
+    },
+    {
+      "quote": "mypy.....................................................................[41mFailed[m\n- hook id: mypy\n- duration: 108.37s\n- exit code: 1",
+      "reason": "mypy pre-commit hook also failed with exit code 1"
+    },
+    {
+      "quote": "pandas/compat/pyarrow.py:76: error: Module has no attribute \"is_null\"  [attr-defined]",
+      "reason": "mypy confirms pyarrow.compute does not have 'is_null' attribute per its type stubs"
+    },
+    {
+      "quote": "Found 279 errors in 9 files (checked 1458 source files)",
+      "reason": "mypy found 279 type errors, the majority being pyarrow.compute attribute access issues"
+    },
+    {
+      "quote": "mypy (stubtest)..........................................................[41mFailed[m\n- hook id: stubtest\n- exit code: 1\nerror: not checking stubs due to mypy build errors:",
+      "reason": "stubtest also failed because mypy itself had build errors, cascading from the same pyarrow type issues"
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Final process exit code confirms the overall job failure"
+    }
+  ],
+  "suggested_fix": "Update the pyarrow type stubs (or pin pyarrow to a version whose stubs include the compute functions used by pandas) so that attributes like 'is_null', 'if_else', 'utf8_lower', 'Expression', 'FileSystem', etc. are properly declared in pyarrow.compute and pyarrow.fs. Alternatively, add type: ignore comments or update the pandas pyarrow compatibility layer to use the correct typed API.",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-120k-tail-v2/mypy-pandas-001.txt",
+    "context_tokens_estimate": 27292
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1206
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 37008.723,
+    "cache_key": "4bd0f592a559b08ae7037b5fd5d9d8cc0c10c53763a7773c084027286afb65c7",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 24740,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 1273,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 4,
+    "tool_call_count": 4,
+    "tool_calls": [
+      {
+        "tool": "tail",
+        "args": {
+          "n": 100
+        },
+        "observation_tokens_estimate": 2823,
+        "runtime_ms": 2.317665988812223,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "errors?,.*warnings?|Failed|exit code",
+          "after": 3,
+          "max_matches": 20
+        },
+        "observation_tokens_estimate": 1238,
+        "runtime_ms": 18.804666004143655,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "Found \\d+ errors|errors, \\d+ warnings",
+          "after": 2,
+          "max_matches": 10
+        },
+        "observation_tokens_estimate": 588,
+        "runtime_ms": 12.08420901093632,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 4150,
+          "radius": 30
+        },
+        "observation_tokens_estimate": 2527,
+        "runtime_ms": 0.05733300349675119,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 77247,
+    "total_output_tokens_consumed": 1595,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 4
+  }
+}

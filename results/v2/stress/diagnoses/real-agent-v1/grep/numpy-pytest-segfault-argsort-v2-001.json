@@ -1,0 +1,113 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "grep",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The pytest smoke test job failed because a segmentation fault occurred inside numpy's `argsort` implementation when running `test_datetime_nat_argsort_stability` in `numpy/_core/tests/test_datetime.py`. Python reported a fatal `Segmentation fault` and the process exited with code 245.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "A segmentation fault (SIGSEGV) was triggered in numpy's C extension `numpy._core._multiarray_umath` during `numpy.argsort` called from `test_datetime_nat_argsort_stability` at test_datetime.py line 226, causing the Python interpreter to crash with exit code 245.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "numpy/_core/tests/test_datetime.py",
+    "numpy/_core/fromnumeric.py"
+  ],
+  "relevant_tests": [
+    "numpy/_core/tests/test_datetime.py::test_datetime_nat_argsort_stability"
+  ],
+  "evidence": [
+    {
+      "quote": "Fatal Python error: Segmentation fault",
+      "reason": "The Python interpreter itself crashed with a segfault, indicating a bug in a C extension rather than a Python-level assertion failure."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
+      "reason": "The crash traceback identifies the exact test function and file that triggered the segfault."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 1231 in argsort",
+      "reason": "The crash occurred inside numpy's argsort function, pointing to a bug in the argsort implementation for datetime NaT values."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 245.",
+      "reason": "Exit code 245 corresponds to a process killed by SIGSEGV (signal 11, 256-11=245), confirming the segfault caused the CI job to fail."
+    }
+  ],
+  "suggested_fix": "Investigate the argsort implementation for datetime arrays containing NaT values in `numpy/_core/src/npysort/` or the datetime comparison logic in `numpy._core._multiarray_umath` to fix the null pointer dereference or out-of-bounds memory access that causes the segfault in `test_datetime_nat_argsort_stability`.",
+  "input": {
+    "context_path": "results/v2/stress/grep/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 28011
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 819
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 23939.432,
+    "cache_key": "3e1784ecaa3f1d9fddecaa7f1ed93f4aad3ec897f0113630a251493c1f4c94cd",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 44034,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 704,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 3,
+    "tool_call_count": 3,
+    "tool_calls": [
+      {
+        "tool": "tail",
+        "args": {
+          "n": 100
+        },
+        "observation_tokens_estimate": 4041,
+        "runtime_ms": 6.945416011149064,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "FAILED|ERROR|Segmentation fault|signal|killed|Fatal|fatal",
+          "max_matches": 30
+        },
+        "observation_tokens_estimate": 5884,
+        "runtime_ms": 46.39029098325409,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 5462,
+          "radius": 20
+        },
+        "observation_tokens_estimate": 4429,
+        "runtime_ms": 0.1584579877089709,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 88944,
+    "total_output_tokens_consumed": 957,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 3
+  }
+}

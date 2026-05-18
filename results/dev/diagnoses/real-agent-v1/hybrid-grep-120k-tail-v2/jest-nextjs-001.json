@@ -1,0 +1,156 @@
+{
+  "case_id": "jest-nextjs-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "All example test files fail because Jest's configured `roots` does not include the `examples/` directory. Every test invocation reports 'No tests found, exiting with code 1' since the pattern (e.g., `examples/with-jest/__tests__/index.test.tsx`) matches 0 files within the configured roots (`/work/test`, `/work/packages/next/src`, etc.). After exhausting 2 retries each, the job exits with code 1.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Jest's `roots` configuration does not include the `examples/` directory, so all example test files (e.g., `examples/with-jest/__tests__/index.test.tsx`, `examples/with-jest-babel/__tests__/index.test.tsx`, `examples/with-zones/home/test/next-config.test.ts`, etc.) are not found by Jest. Every run exits with code 1 ('No tests found') and no results JSON is produced.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest-babel/__tests__/index.test.tsx",
+    "examples/with-jest/app/blog/[slug]/page.test.tsx",
+    "examples/with-jest/app/counter.test.tsx",
+    "examples/with-jest/app/page.test.tsx",
+    "examples/with-jest/app/utils/add.test.ts",
+    "examples/with-mocha/test/index.test.js",
+    "examples/with-typescript-graphql/test/index.test.tsx",
+    "examples/with-vitest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts"
+  ],
+  "relevant_tests": [
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest-babel/__tests__/index.test.tsx",
+    "examples/with-jest/app/blog/[slug]/page.test.tsx",
+    "examples/with-jest/app/counter.test.tsx",
+    "examples/with-jest/app/page.test.tsx",
+    "examples/with-jest/app/utils/add.test.ts",
+    "examples/with-mocha/test/index.test.js",
+    "examples/with-typescript-graphql/test/index.test.tsx",
+    "examples/with-vitest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts"
+  ],
+  "evidence": [
+    {
+      "quote": "No tests found, exiting with code 1",
+      "reason": "Every example test invocation exits with this message, indicating Jest cannot locate the test files."
+    },
+    {
+      "quote": "roots: /work/test, /work/packages/next/src, /work/packages/next-codemod, /work/packages/eslint-plugin-internal, /work/packages/font/src, /work/packages/next-routing - 14634 matches",
+      "reason": "The Jest roots configuration does not include the `examples/` directory, so example test files are outside the search scope."
+    },
+    {
+      "quote": "Pattern: examples/with-jest/__tests__/index.test.tsx - 0 matches",
+      "reason": "Jest explicitly reports 0 matches for the example test file pattern, confirming the files are not found within the configured roots."
+    },
+    {
+      "quote": "examples/with-zones/home/test/next-config.test.ts failed due to Error: failed with code: 1",
+      "reason": "After all retries are exhausted, the test is marked as failed with exit code 1."
+    },
+    {
+      "quote": "Failed to load test output Error: ENOENT: no such file or directory, open 'examples/with-zones/home/test/next-config.test.ts.results.json'",
+      "reason": "Because Jest exits before running any tests, no results JSON is written, causing a secondary ENOENT error in the test runner."
+    },
+    {
+      "quote": "Some tests failed\nexiting with code 1",
+      "reason": "The overall job exits with code 1 due to the accumulated test failures."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions records the job as failed due to the non-zero exit code."
+    }
+  ],
+  "suggested_fix": "Add the `examples/` directory to Jest's `roots` configuration (or the equivalent `testPathPattern` / `rootDir` setting used by the test runner script) so that example test files are discoverable when Jest is invoked with a pattern like `examples/with-jest/__tests__/index.test.tsx`.",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-120k-tail-v2/jest-nextjs-001.txt",
+    "context_tokens_estimate": 60313
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1246
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 37854.252,
+    "cache_key": "9150c3230286082f4503f560a742c79a864c5e3e4f7cba3469e7f788f82f86a3",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 39528,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 1327,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 4,
+    "tool_call_count": 4,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "FAIL|FAILED|Error|failed|error",
+          "max_matches": 30
+        },
+        "observation_tokens_estimate": 3932,
+        "runtime_ms": 16.754709009546787,
+        "error": null
+      },
+      {
+        "tool": "tail",
+        "args": {
+          "n": 100
+        },
+        "observation_tokens_estimate": 2932,
+        "runtime_ms": 0.04558401997201145,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "No tests found",
+          "max_matches": 20,
+          "before": 5,
+          "after": 5
+        },
+        "observation_tokens_estimate": 7504,
+        "runtime_ms": 13.647165993461385,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "roots:.*14634 matches",
+          "max_matches": 3,
+          "before": 2,
+          "after": 5
+        },
+        "observation_tokens_estimate": 634,
+        "runtime_ms": 13.738834008108824,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 116243,
+    "total_output_tokens_consumed": 1713,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 4
+  }
+}

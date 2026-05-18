@@ -1,0 +1,94 @@
+{
+  "case_id": "docbuild-hf-stress-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The `doc_build_status_check` job failed because an upstream documentation build job reported a status of 'failure' (not 'success' or 'skipped'). The status-check script evaluated `\"failure\" == \"success\"` and `\"failure\" == \"skipped\"` as both false, causing it to execute `exit 1`.",
+  "root_cause_category": "github_actions_config",
+  "root_cause": "The status-check step checks that a prerequisite job result equals 'success' or 'skipped', but the upstream doc build job returned 'failure'. The condition `[[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]]` evaluated to false, so the script ran `exit 1`, failing the job.",
+  "confidence": 0.9,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\",
+      "reason": "Shows the upstream job result was 'failure', which satisfies neither 'success' nor 'skipped', causing the condition to be false."
+    },
+    {
+      "quote": "exit 1",
+      "reason": "The else branch executes exit 1 when the upstream job did not succeed or was not skipped, directly causing the CI failure."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the job exited with code 1 as a result of the failed condition check."
+    }
+  ],
+  "suggested_fix": "Investigate and fix the upstream documentation build job that reported 'failure' so that it completes successfully; once the upstream job passes, this status-check job will also pass.",
+  "input": {
+    "context_path": "results/stress/hybrid-grep-120k-rtk-tail-v3/docbuild-hf-stress-001.txt",
+    "context_tokens_estimate": 275
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 603
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 12330.604,
+    "cache_key": "857c0f0f705c20e6851738fa0f178fcd44878287409de197f6977a36d55fd3e7",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 4940,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 449,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 2,
+    "tool_calls": [
+      {
+        "tool": "tail",
+        "args": {
+          "n": 100
+        },
+        "observation_tokens_estimate": 653,
+        "runtime_ms": 2.201291994424537,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "failure|error|exit code|skipped|success",
+          "max_matches": 30
+        },
+        "observation_tokens_estimate": 271,
+        "runtime_ms": 0.9196660248562694,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 7874,
+    "total_output_tokens_consumed": 564,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

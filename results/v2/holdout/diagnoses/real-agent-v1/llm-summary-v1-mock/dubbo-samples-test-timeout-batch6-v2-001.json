@@ -1,0 +1,157 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The integration test `dubbo-samples-test-11137` timed out after 602 seconds because the zookeeper Docker container failed to start. The container pull encountered an HTTP 500 Internal Server Error from the Docker daemon during image download, preventing the test containers from ever becoming ready.",
+  "root_cause_category": "timeout_or_oom",
+  "root_cause": "The test `dubbo-samples-test-11137` exceeded its 600-second timeout because the zookeeper Docker image pull failed with 'received unexpected HTTP status: 500 Internal Server Error', so the required containers (zookeeper, nacos-mysql, nacos) were never started, and the test container never became ready.",
+  "confidence": 0.9,
+  "relevant_files": [
+    "99-integration/dubbo-samples-test-11137/target/docker-compose.yml",
+    "99-integration/dubbo-samples-test-11137/target/logs"
+  ],
+  "relevant_tests": [
+    "[2/23] [dubbo-samples-test-11137:1/1]"
+  ],
+  "evidence": [
+    {
+      "quote": "wait for container is timeout: 602 s",
+      "reason": "Confirms the test container wait exceeded the configured 600-second timeout limit."
+    },
+    {
+      "quote": "[dubbo-samples-test-11137] :ErrorMsg: Run tests timeout",
+      "reason": "The test framework explicitly recorded a timeout error for the dubbo-samples-test-11137 test."
+    },
+    {
+      "quote": "zookeeper Error received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "The zookeeper Docker image pull failed with an HTTP 500 error, which is why the container never started and the test timed out."
+    },
+    {
+      "quote": "[2/23] [dubbo-samples-test-11137:1/1] TEST FAILURE: Run tests timeout, version: -Ddubbo.version=3.3.7-SNAPSHOT -Dspring.version=5.3.24 -Djava.version=21, please check logs: /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
+      "reason": "Final test result confirming the failure was due to timeout."
+    },
+    {
+      "quote": "Failed tests: 1\n[2/23] [dubbo-samples-test-11137:1/1] TEST FAILURE: Run tests timeout",
+      "reason": "Summary shows exactly 1 failed test, which is the timed-out dubbo-samples-test-11137."
+    },
+    {
+      "quote": "Error response from daemon: No such container: dubbo-samples-test-11137--zookeeper-1",
+      "reason": "Confirms the zookeeper container was never successfully created/started, consistent with the image pull failure."
+    }
+  ],
+  "suggested_fix": "Retry the CI job, as the root cause is a transient Docker registry HTTP 500 error during the zookeeper image pull. If the issue recurs, consider pre-pulling the zookeeper image or using a Docker registry mirror to avoid registry availability issues.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-mock/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 1031
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1072
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 30962.979,
+    "cache_key": "f39ef02742d8c53aa1df481c4613f3ece912f81444462231b709230977d778f4",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 21169,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 880,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 4,
+    "tool_call_count": 6,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "Error response from daemon: invalid filter",
+          "before": 5,
+          "after": 5,
+          "max_matches": 3
+        },
+        "observation_tokens_estimate": 1078,
+        "runtime_ms": 12.930333003168926,
+        "error": null
+      },
+      {
+        "tool": "tail",
+        "args": {
+          "n": 100
+        },
+        "observation_tokens_estimate": 2536,
+        "runtime_ms": 0.07750000804662704,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "dubbo-samples-test-11137.*timeout|TEST FAILURE.*11137|timeout.*11137",
+          "before": 5,
+          "after": 5,
+          "max_matches": 10
+        },
+        "observation_tokens_estimate": 1562,
+        "runtime_ms": 23.877874977188185,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 3675,
+          "radius": 30
+        },
+        "observation_tokens_estimate": 1486,
+        "runtime_ms": 0.03191700670868158,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "zookeeper.*500 Internal Server Error|received unexpected HTTP status.*500",
+          "before": 10,
+          "after": 5,
+          "max_matches": 5
+        },
+        "observation_tokens_estimate": 480,
+        "runtime_ms": 24.846082989824936,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 4880,
+          "radius": 40
+        },
+        "observation_tokens_estimate": 1992,
+        "runtime_ms": 0.08475000504404306,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 53007,
+    "total_output_tokens_consumed": 1401,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 4
+  }
+}

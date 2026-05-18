@@ -1,0 +1,99 @@
+{
+  "case_id": "cleanup-tsc-stress-001",
+  "context_method": "llm-summary-v1-mock",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Cleanup artifacts' job failed because the GITHUB_TOKEN used to call the GitHub API did not have sufficient permissions to delete artifacts. The `gh api -X DELETE` call returned HTTP 403 'Resource not accessible by integration', causing the script to exit with code 1.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GITHUB_TOKEN (or GH_TOKEN) used by the `gh api` DELETE call to `/repos/microsoft/TypeScript/actions/artifacts/<id>` lacks the required permissions, resulting in an HTTP 403 'Resource not accessible by integration' error.",
+  "confidence": 0.95,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "This is the direct error returned by the GitHub CLI when attempting to delete an artifact, indicating the token does not have the necessary permissions."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "The script exited with code 1 immediately after the HTTP 403 error, confirming the permission failure caused the job to fail."
+    },
+    {
+      "quote": "Secret source: None",
+      "reason": "Indicates no external secret source is configured; the job relies solely on the built-in GITHUB_TOKEN, which may not have write permissions to delete artifacts in this context."
+    },
+    {
+      "quote": "Actions: write\nMetadata: read",
+      "reason": "The GITHUB_TOKEN permissions show only 'Actions: write' and 'Metadata: read', which may be insufficient for deleting artifacts via the REST API in this repository or workflow context."
+    }
+  ],
+  "suggested_fix": "Grant the workflow job the `actions: write` permission explicitly in the workflow YAML (under `permissions:`) and ensure the token has access to delete artifacts for the target repository. If using a fork or a restricted context, consider using a PAT with the appropriate scopes instead of the default GITHUB_TOKEN.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-mock/cleanup-tsc-stress-001.txt",
+    "context_tokens_estimate": 112
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 707
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 15250.779,
+    "cache_key": "63e663777f8d3f713c6be1ba5f0400048b0f6cd42c6bad3cd088ea7709df7a2b",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 5839,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 536,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 2,
+    "tool_calls": [
+      {
+        "tool": "tail",
+        "args": {
+          "n": 200
+        },
+        "observation_tokens_estimate": 1381,
+        "runtime_ms": 0.7773339748382568,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "error|failed|failure|exit code",
+          "before": 5,
+          "after": 10
+        },
+        "observation_tokens_estimate": 140,
+        "runtime_ms": 0.8102919964585453,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 8405,
+    "total_output_tokens_consumed": 678,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

@@ -1,0 +1,161 @@
+{
+  "case_id": "jest-nextjs-001",
+  "context_method": "raw",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Multiple example test files (with-jest, with-jest-babel, with-vitest, with-zones, with-mocha, with-typescript-graphql) all fail with 'No tests found, exiting with code 1' because Jest's configured roots do not include the examples/ directory, so the test files are outside Jest's search scope. Every test retried 2 times and still failed, causing the job to exit with code 1.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Jest's configured 'roots' (/work/test, /work/packages/next/src, /work/packages/next-codemod, /work/packages/eslint-plugin-internal, /work/packages/font/src, /work/packages/next-routing) do not include the examples/ directory, so when the test runner invokes Jest with a pattern like 'examples/with-jest/__tests__/index.test.tsx', Jest finds 0 matches and exits with code 1 ('No tests found').",
+  "confidence": 0.95,
+  "relevant_files": [
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest-babel/__tests__/index.test.tsx",
+    "examples/with-jest/app/blog/[slug]/page.test.tsx",
+    "examples/with-jest/app/counter.test.tsx",
+    "examples/with-jest/app/page.test.tsx",
+    "examples/with-jest/app/utils/add.test.ts",
+    "examples/with-mocha/test/index.test.js",
+    "examples/with-typescript-graphql/test/index.test.tsx",
+    "examples/with-vitest/__tests__/Home.test.tsx",
+    "examples/with-vitest/app/blog/[slug]/page.test.tsx",
+    "examples/with-vitest/app/counter.test.tsx",
+    "examples/with-vitest/app/page.test.tsx",
+    "examples/with-vitest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts"
+  ],
+  "relevant_tests": [
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest-babel/__tests__/index.test.tsx",
+    "examples/with-jest/app/blog/[slug]/page.test.tsx",
+    "examples/with-jest/app/counter.test.tsx",
+    "examples/with-jest/app/page.test.tsx",
+    "examples/with-jest/app/utils/add.test.ts",
+    "examples/with-mocha/test/index.test.js",
+    "examples/with-typescript-graphql/test/index.test.tsx",
+    "examples/with-vitest/__tests__/Home.test.tsx",
+    "examples/with-vitest/app/blog/[slug]/page.test.tsx",
+    "examples/with-vitest/app/counter.test.tsx",
+    "examples/with-vitest/app/page.test.tsx",
+    "examples/with-vitest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts"
+  ],
+  "evidence": [
+    {
+      "quote": "No tests found, exiting with code 1",
+      "reason": "Every example test invocation reports this message, indicating Jest cannot locate the test files."
+    },
+    {
+      "quote": "roots: /work/test, /work/packages/next/src, /work/packages/next-codemod, /work/packages/eslint-plugin-internal, /work/packages/font/src, /work/packages/next-routing - 14634 matches",
+      "reason": "Jest's configured roots do not include the examples/ directory, so test files under examples/ are outside the search scope."
+    },
+    {
+      "quote": "Pattern: examples/with-jest/__tests__/index.test.tsx - 0 matches",
+      "reason": "Jest explicitly reports 0 matches for the example test file pattern, confirming the root cause."
+    },
+    {
+      "quote": "examples/with-jest/__tests__/index.test.tsx failed to pass within 2 retries",
+      "reason": "The failure persists across all retries, confirming it is a configuration issue rather than a transient error."
+    },
+    {
+      "quote": "Some tests failed\nexiting with code 1",
+      "reason": "The overall test run exits with code 1, causing the CI job to fail."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions marks the job as failed due to the non-zero exit code."
+    }
+  ],
+  "suggested_fix": "Add the examples/ directory to Jest's 'roots' configuration (in jest.config.js or equivalent) so that test files under examples/ are included in Jest's search scope, or configure the test runner to invoke Jest from within each example's own directory using that example's local Jest configuration.",
+  "input": {
+    "context_path": "results/dev/raw/jest-nextjs-001.txt",
+    "context_tokens_estimate": 282817
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1274
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 29599.594,
+    "cache_key": "6db7a9139a87f077eac3e219ec53ca9ea9acb8c303ad23af8fa5fe7cef660b5d",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 40652,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 1394,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 3,
+    "tool_call_count": 4,
+    "tool_calls": [
+      {
+        "tool": "tail",
+        "args": {
+          "n": 200
+        },
+        "observation_tokens_estimate": 5765,
+        "runtime_ms": 8.628667012089863,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "FAIL|FAILED|Error|failed|error|assert|expect",
+          "after": 5,
+          "max_matches": 30
+        },
+        "observation_tokens_estimate": 2998,
+        "runtime_ms": 18.73904198873788,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "No tests found",
+          "before": 5,
+          "after": 5,
+          "max_matches": 10
+        },
+        "observation_tokens_estimate": 3811,
+        "runtime_ms": 17.493749997811392,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "failed to pass within|Some tests failed",
+          "before": 2,
+          "after": 3,
+          "max_matches": 20
+        },
+        "observation_tokens_estimate": 2345,
+        "runtime_ms": 36.53870799462311,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 84882,
+    "total_output_tokens_consumed": 1745,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 3
+  }
+}

@@ -1,0 +1,132 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "raw",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The trybuild test `compile_fail_full` in `tests-build::macros` failed because the actual compiler error output from Rust 1.95.0 does not match the expected (blessed) output in `tests/fail/macros_type_mismatch.rs`. The new compiler emits additional `error[E0271]` diagnostics about async block future resolution that were not present in the stored expected output.",
+  "root_cause_category": "compile_error",
+  "root_cause": "The trybuild snapshot for `tests/fail/macros_type_mismatch.rs` is out of date: Rust 1.95.0 now emits extra `error[E0271]` errors (e.g. 'expected `{async block@...}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`') that are absent from the expected output file, causing a mismatch.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "tests-build/tests/fail/macros_type_mismatch.rs",
+    "tests-build/tests/macros.rs"
+  ],
+  "relevant_tests": [
+    "tests-build::macros::compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "test tests/fail/macros_type_mismatch.rs [should fail to compile] ... mismatch",
+      "reason": "The trybuild test reports a mismatch between expected and actual compiler output for this specific file."
+    },
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
+      "reason": "This is in the ACTUAL OUTPUT section — a new error code E0271 emitted by Rust 1.95.0 that is not present in the EXPECTED output, causing the mismatch."
+    },
+    {
+      "quote": "stable-x86_64-unknown-linux-gnu updated - rustc 1.95.0 (59807616e 2026-04-14) (from rustc 1.94.1 (e408947bf 2026-03-25))",
+      "reason": "The Rust toolchain was updated to 1.95.0, which changed the compiler diagnostics for type mismatches in async functions."
+    },
+    {
+      "quote": "note: If the actual output is the correct output you can bless it by rerunning your test with the environment variable TRYBUILD=overwrite",
+      "reason": "The trybuild framework itself suggests the fix: re-bless the test snapshots with TRYBUILD=overwrite."
+    },
+    {
+      "quote": "thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13: 1 of 10 tests failed",
+      "reason": "Confirms the panic location in trybuild and that exactly 1 of 10 compile-fail tests failed."
+    },
+    {
+      "quote": "FAIL [   9.875s] (396/396) tests-build::macros compile_fail_full",
+      "reason": "The failing test identifier as reported by the test runner."
+    }
+  ],
+  "suggested_fix": "Re-bless the trybuild snapshots by running the tests with `TRYBUILD=overwrite` to update `tests-build/tests/fail/macros_type_mismatch.rs.stderr` to match the output produced by Rust 1.95.0.",
+  "input": {
+    "context_path": "results/dev/raw/cargo-tokio-001.txt",
+    "context_tokens_estimate": 99259
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 992
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 35686.702,
+    "cache_key": "1bebc234c7382a1b11fe023e9b3d6e604a8f8ec7c258b341e348bfb7df9d4a6f",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "claude-sonnet-4-6",
+      "resolved_model": "claude-sonnet-4-6",
+      "base_url": "https://api.anthropic.com/v1",
+      "usage": {
+        "input_tokens": 34405,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 1059,
+        "service_tier": "standard",
+        "inference_geo": "global"
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
+    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+  },
+  "agent_metadata": {
+    "iterations": 4,
+    "tool_call_count": 4,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "error\\[|error:|FAILED|test result: FAILED|^error",
+          "after": 10,
+          "max_matches": 20
+        },
+        "observation_tokens_estimate": 5290,
+        "runtime_ms": 36.99733299436048,
+        "error": null
+      },
+      {
+        "tool": "tail",
+        "args": {
+          "n": 100
+        },
+        "observation_tokens_estimate": 2603,
+        "runtime_ms": 0.07795801502652466,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 2780,
+          "radius": 30
+        },
+        "observation_tokens_estimate": 1377,
+        "runtime_ms": 0.05579099524766207,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 2905,
+          "radius": 30
+        },
+        "observation_tokens_estimate": 1207,
+        "runtime_ms": 0.09824999142438173,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 109321,
+    "total_output_tokens_consumed": 1410,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 4
+  }
+}
