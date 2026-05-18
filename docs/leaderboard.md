@@ -163,8 +163,8 @@ Sorted by agent-loop `diagnosis_score_v1_1`.
 | 3 | `rtk-read`                  | 0.349 | 0.700 | **+0.351** | **0.000** | 3.17 | 3.43 |  89,184 |
 | 4 | `grep`                      | 0.639 | 0.699 | +0.061 | **0.000** | 2.97 | 3.11 |  69,808 |
 | 5 | `rtk-err-cat`               | 0.470 | 0.696 | **+0.226** | **0.000** | 3.00 | 3.51 |  61,014 |
-| 6 | `hybrid-grep-4k-rtk-err-cat`| 0.573 | 0.689 | +0.116 | **0.000** | 3.14 | 3.43 |  62,450 |
-| 7 | `hybrid-grep-120k-rtk-tail` | **0.670** (single-shot #1) | 0.689 | +0.019 | 0.057 | 3.03 | 3.23 |  74,535 |
+| 6 | `hybrid-grep-4k-rtk-err-cat`| 0.573 | 0.6893 | +0.116 | **0.000** | 3.14 | 3.43 |  62,450 |
+| 7 | `hybrid-grep-120k-rtk-tail` | **0.670** (single-shot #1) | 0.6890 | +0.019 | 0.057 | 3.03 | 3.23 |  74,535 |
 | 8 | `llm-summary-v1-mock`       | 0.328 | 0.679 | **+0.351** | **0.000** | 3.14 | 3.60 |  **52,186** |
 | 9 | `raw`                       | 0.353 | 0.675 | **+0.322** | 0.029 | 3.11 | 3.49 |  84,161 |
 | 10 | `rtk-log`                  | **0.249** (single-shot #10) | 0.658 | **+0.409** | **0.000** | 3.46 | 4.03 |  **50,521** |
@@ -193,8 +193,8 @@ Five layers of finding:
    methods that needed the most rescuing (`rtk-log` 4.0 tools,
    `llm-summary-v1-mock` 3.6, `raw` and `rtk-read` 3.5) are the
    ones with the worst single-shot starting context. `tail-200`
-   and `hybrid-grep-120k-tail` (best single-shot non-hybrid) only
-   need ~3.0 tool calls.
+   and `hybrid-grep-120k-tail` — the two strongest agent-loop
+   performers — only need ~3.0 tool calls.
 
 ### Agent-loop cost-quality Pareto frontier
 
@@ -222,8 +222,9 @@ confident_error.
   (cheapest agent-loop while staying in the top 2).
 - **Don't use `rtk-log` or `llm-summary-v1-mock` standalone** — they
   remain dangerous in single-shot (13% confident misclassification
-  rate). In agent-loop they're safe but force the agent into
-  4 tool calls/case as rescue.
+  rate). In agent-loop they're safe (0% confident_error), but they
+  force the agent into 4.0 and 3.6 tool calls per case respectively
+  to recover the lost signal.
 
 For the full mechanism analysis (why agents rescue weak methods
 without hurting strong ones, why confident_error vanishes), see
