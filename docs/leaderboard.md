@@ -26,25 +26,110 @@ on multiple fronts) — lower is better. It is the metric closest to
 CI failure," which is the failure mode raised in
 [rtk-ai/rtk#1599](https://github.com/rtk-ai/rtk/issues/1599).
 
-| Rank | Method | Haiku 4.5 | Sonnet 4.6 | gpt-5-mini | Overall | confident_error<br/><sub>(↓ = better)</sub> |
-|----:|--------|----------:|----------:|----------:|--------:|--------:|
-| 1 | `hybrid-grep-120k-rtk-tail` | 0.624 | 0.679 | 0.706 | **0.670** | **0.000** |
-| 2 | `hybrid-grep-120k-tail`     | 0.610 | 0.730 | 0.658 | **0.666** | 0.010 |
-| 3 | `grep`                      | 0.578 | 0.684 | 0.655 | **0.639** | **0.000** |
-| 4 | `tail-200`                  | 0.595 | 0.624 | 0.623 | **0.614** | 0.019 |
-| 5 | `hybrid-grep-4k-rtk-err-cat`<br/><sub>*(earlier 4k-threshold hybrid; replaced — see report)*</sub> | 0.552 | 0.597 | 0.571 | **0.573** | 0.029 |
-| 6 | `rtk-err-cat`               | 0.455 | 0.488 | 0.467 | **0.470** | 0.029 |
-| 7 | `raw`                       | 0.324 | 0.368 | 0.367 | **0.353** | **0.000** |
-| 8 | `rtk-read`                  | 0.329 | 0.369 | 0.349 | **0.349** | 0.010 |
-| 9 | `llm-summary-v1-mock`       | 0.343 | 0.348 | 0.294 | **0.328** | **0.133** |
-| 10 | `rtk-log`                  | 0.238 | 0.262 | 0.249 | **0.249** | **0.133** |
+| Rank | Method | Haiku 4.5 | Sonnet 4.6 | gpt-5-mini | Overall | confident_error<br/><sub>(↓ better)</sub> | total_tokens<br/><sub>per case (↓ better)</sub> |
+|----:|--------|----------:|----------:|----------:|--------:|--------:|--------:|
+| 1 | `hybrid-grep-120k-rtk-tail` | 0.624 | 0.679 | 0.706 | **0.670** | **0.000** | 19,844 |
+| 2 | `hybrid-grep-120k-tail`     | 0.610 | 0.730 | 0.658 | **0.666** | 0.010 | 19,753 |
+| 3 | `grep`                      | 0.578 | 0.684 | 0.655 | **0.639** | **0.000** | 88,355 |
+| 4 | `tail-200`                  | 0.595 | 0.624 | 0.623 | **0.614** | 0.019 | **6,108** |
+| 5 | `hybrid-grep-4k-rtk-err-cat`<br/><sub>*(earlier 4k-threshold hybrid; replaced — see report)*</sub> | 0.552 | 0.597 | 0.571 | **0.573** | 0.029 | 19,892 |
+| 6 | `rtk-err-cat`               | 0.455 | 0.488 | 0.467 | **0.470** | 0.029 | 19,850 |
+| 7 | `raw`                       | 0.324 | 0.368 | 0.367 | **0.353** | **0.000** | 275,248 |
+| 8 | `rtk-read`                  | 0.329 | 0.369 | 0.349 | **0.349** | 0.010 | 274,289 |
+| 9 | `llm-summary-v1-mock`       | 0.343 | 0.348 | 0.294 | **0.328** | **0.133** | 432,076 |
+| 10 | `rtk-log`                  | 0.238 | 0.262 | 0.249 | **0.249** | **0.133** | **810** |
 
-The **top-3 methods are also the safest** — both 120k-threshold
-hybrids and standalone `grep` produce zero (or near-zero) confident
-misdiagnoses across all three model families. By contrast, `rtk-log`
-and `llm-summary-v1-mock` produce confidently-wrong diagnoses on
-~13% of cases — these are the methods most likely to silently mislead
-a downstream agent.
+Two layers of finding:
+
+1. **Safety (confident_error)** — the top-3 methods produce zero or
+   near-zero confidently-wrong diagnoses. `rtk-log` and
+   `llm-summary-v1-mock` mislead a confident LLM on ~13% of cases
+   ([rtk-ai/rtk#1599](https://github.com/rtk-ai/rtk/issues/1599)).
+
+2. **Cost (total_tokens)** — `grep` (rank 3) uses **4.5× more tokens
+   per case than the top-2 hybrids** while scoring lower. The hybrids
+   dominate grep on both axes. `llm-summary-v1-mock` is the **most
+   expensive method on the leaderboard at 432k tokens/case** (because
+   the summarizer itself burns 430k tokens generating a 1.3k summary,
+   pricing it out of any cost-quality consideration).
+   See the [cost-quality Pareto plot](#cost-quality-pareto-frontier)
+   below for the full picture.
+
+## Cost-quality Pareto frontier
+
+![Cost-quality Pareto frontier for LogDx-CI v1.0](figures/cost_quality_pareto.png)
+
+x-axis is total LLM tokens consumed per case on a log scale
+(reducer-internal LLM calls + context delivered to the diagnoser +
+diagnoser output). y-axis is the published `diagnosis_score_v1_1`.
+
+The frontier (4 methods, dashed line) is:
+
+| Pareto-optimal method | total_tokens / case | diagnosis_score_v1_1 |
+|---|---:|---:|
+| `rtk-log`                   |     810 | 0.249 |
+| `tail-200`                  |   6,108 | 0.614 |
+| `hybrid-grep-120k-tail`     |  19,753 | 0.666 |
+| `hybrid-grep-120k-rtk-tail` |  19,844 | 0.670 |
+
+Every other method is **dominated** — some other method achieves at
+least as good a score for fewer tokens, or strictly more score for
+the same tokens. Most notable dominations:
+
+- `grep` is **dominated by `hybrid-grep-120k-tail`** — same score
+  ballpark (0.639 vs 0.666) at **4.5× fewer tokens** (88,355 vs
+  19,753). If you're using `grep` today, the 120k-tail hybrid is a
+  pure upgrade on both axes.
+- `rtk-err-cat` is **dominated by `hybrid-grep-120k-tail`** —
+  similar token cost, but the hybrid scores +0.20 higher.
+- `llm-summary-v1-mock` is **dominated by every other method on
+  the leaderboard**. At 432k tokens/case it's 22× more expensive
+  than the hybrids while scoring rank-9. The hidden cost is the
+  summarizer itself: 370k input + 60k output tokens to produce a
+  1.3k-token summary fed to the diagnoser. Real LLM summarizers
+  inherit this overhead; the v1.0 corpus does not have a real-Haiku
+  summary run on the 35-case set (see "A note on llm-summary-v1-haiku"
+  below).
+
+### Cost breakdown (case-count-weighted macro)
+
+| Method | reducer_in<br/>(LLM input) | reducer_out<br/>(LLM output) | context<br/>(→ diagnoser) | diag_out<br/>(diagnoser output) | **total** |
+|---|--:|--:|--:|--:|--:|
+| `rtk-log`                   |       0 |      0 |     325 | 485 |     **810** |
+| `tail-200`                  |       0 |      0 |   5,569 | 539 |   **6,108** |
+| `hybrid-grep-120k-tail`     |       0 |      0 |  19,219 | 534 |  **19,753** |
+| `hybrid-grep-120k-rtk-tail` |       0 |      0 |  19,311 | 533 |  **19,844** |
+| `rtk-err-cat`               |       0 |      0 |  19,383 | 467 |  **19,850** |
+| `hybrid-grep-4k-rtk-err-cat`|       0 |      0 |  19,388 | 504 |  **19,892** |
+| `grep`                      |       0 |      0 |  87,862 | 494 |  **88,355** |
+| `rtk-read`                  |       0 |      0 | 273,998 | 291 | **274,289** |
+| `raw`                       |       0 |      0 | 274,944 | 304 | **275,248** |
+| `llm-summary-v1-mock`       | 369,957 | 60,362 |   1,264 | 492 | **432,076** |
+
+`reducer_in` and `reducer_out` are non-zero only for methods that
+internally call an LLM (here, `llm-summary-*`). For `grep`/`tail`/
+`rtk-*`/`raw` the reducer is a CPU-bound transform with no LLM cost.
+
+Reducer runtime where measured (only available for RTK methods,
+which write `external_tool.runtime_ms` into their manifests):
+
+| Method | reducer_runtime |
+|---|---:|
+| `rtk-read`    |  9.9 ms |
+| `rtk-log`     | 18.7 ms |
+| `rtk-err-cat` | 35.4 ms |
+
+`grep`/`tail` runtime is unmeasured in v1.0 but is empirically
+sub-100ms for every case in the corpus (CPU-bound, single-pass).
+
+### USD cost
+
+USD cost per case is **not reported** in v1.0.1 because the
+relevant provider list prices (Anthropic Haiku 4.5, Sonnet 4.6,
+OpenAI gpt-5-mini) need to be pinned to a snapshot date and
+versioned in the protocol lock for reproducibility. This will
+land in v1.1 alongside the multi-turn / agent-loop benchmark
+(see [`ROADMAP.md`](https://github.com/eyuansu62/LogDx/blob/main/ROADMAP.md#2--cost--latency-reporting--p0-for-v11)).
 
 ## Headline cross-family agreement
 

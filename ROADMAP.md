@@ -5,7 +5,7 @@ Status as of 2026-05-18.
 | Release | Status | Highlights |
 |---|---|---|
 | **v1.0** | shipped 2026-05-18 | 35-case corpus × 3 model families. [Release notes](RELEASE_NOTES.md) · [Homepage](https://logdx-bench.github.io/) |
-| **v1.0.1** | shipped 2026-05-18 | Added `confident_error_rate_v1_1` as a separate leaderboard column. |
+| **v1.0.1** | shipped 2026-05-18 | Added `confident_error_rate_v1_1` and `total_tokens` columns to the leaderboard, plus a cost-quality Pareto plot. |
 | **v1.1** | targeted ~2026-07 | See P0/P1/P2 items below. |
 | **v1.2 / v2** | exploratory | Train/holdout decoupling, GPT-4o + Gemini families, `fix_action` evaluation. |
 
@@ -21,12 +21,13 @@ The six v1.1 items below are ordered by **structural impact on
 benchmark credibility**, not by implementation effort.
 
 ```
-P0 (shipped)  : #3 confident_error_rate column
-P0 (v1.1)     : #1 multi-turn / agent-loop benchmark
-                #2 cost + latency reporting
-P1 (v1.1)     : #4 configured-RTK baseline
-                #5 vitest / dotnet / Playwright corpus expansion
-P2 (v1.1)     : #6 decision-making (fix_action) evaluation dimension
+P0 (shipped in v1.0.1)  : #3 confident_error_rate column
+                          #2 cost + latency reporting (token columns + Pareto plot)
+P0 (v1.1)               : #1 multi-turn / agent-loop benchmark
+                          #2-followup USD pricing snapshot + reducer runtime for grep/tail
+P1 (v1.1)               : #4 configured-RTK baseline
+                          #5 vitest / dotnet / Playwright corpus expansion
+P2 (v1.1)               : #6 decision-making (fix_action) evaluation dimension
 ```
 
 P0 items are required for v1.1 release. P1 items ship if time permits.
@@ -95,7 +96,7 @@ but needs a tool-call loop; `examples/diagnosis_shim_claude_cli.py`
 already supports tool definitions. Mostly evaluator + protocol work,
 not new model work.
 
-## #2 — Cost + latency reporting · P0 for v1.1
+## #2 — Cost + latency reporting · Mostly DONE in v1.0.1
 
 **Motivation**: The community's central RTK debate is about **cost**,
 not about diagnosis quality in isolation. Examples:
@@ -108,24 +109,36 @@ not about diagnosis quality in isolation. Examples:
 - [rtk-ai/rtk#1351](https://github.com/rtk-ai/rtk/issues/1351):
   terminal-bench data showing increased token use.
 
-**Gap in v1.0**: Eval JSON already records `macro_context_tokens` and
-`macro_diagnosis_tokens` per method, but they're not on the
-leaderboard. Latency is recorded per-row but not aggregated.
+**Done in v1.0.1**:
 
-**Scope for v1.1**:
+1. Added `total_tokens` column to the leaderboard on
+   [`docs/index.md`](docs/index.md) and
+   [`docs/leaderboard.md`](docs/leaderboard.md).
+2. Added a [cost-quality Pareto plot](docs/figures/cost_quality_pareto.png)
+   to the leaderboard. 4 methods on the Pareto frontier:
+   `rtk-log` / `tail-200` / `hybrid-grep-120k-tail` /
+   `hybrid-grep-120k-rtk-tail`.
+3. Added full cost breakdown table to the leaderboard:
+   `reducer_in` + `reducer_out` + `context` + `diag_out` + `total`.
+   Surfaces that `llm-summary-v1-mock` consumes 432k tokens/case
+   end-to-end (370k input + 60k output to produce a 1.3k summary)
+   — the most expensive method on the board.
+4. Aggregation lives in
+   [`tools/aggregate_cost_metrics.py`](tools/aggregate_cost_metrics.py);
+   plot generation in
+   [`tools/make_pareto_plot.py`](tools/make_pareto_plot.py).
 
-1. Add columns to the leaderboard:
-   - `context_tokens` (input cost driver)
-   - `diagnosis_tokens` (output cost driver)
-   - `reducer_runtime_ms` (latency of the reducer itself)
-2. Produce a **cost-quality Pareto plot**: x-axis = total tokens
-   per case (reducer output + LLM diagnosis), y-axis =
-   `diagnosis_score_v1_1`. Methods on the Pareto frontier are the
-   ones worth using.
-3. Optional sidebar: USD cost per case at posted Anthropic/OpenAI
-   list prices. Pin the price snapshot date.
+**Deferred to v1.1**:
 
-**Effort**: small. Data already exists; this is rendering work.
+- **USD cost per case**. Need a pinned price snapshot
+  (Anthropic Haiku 4.5, Sonnet 4.6, OpenAI gpt-5-mini list prices
+  with a snapshot date in the protocol lock) before publishing
+  USD figures.
+- **Reducer runtime for grep / tail / hybrid baselines.** v1.0 only
+  records `external_tool.runtime_ms` for RTK methods (via the
+  external-tool wrapper). For non-LLM, non-RTK methods, runtime
+  needs to be measured by a re-run with timing instrumentation —
+  small but requires a baseline re-run.
 
 ## #4 — Configured-RTK baseline · P1 for v1.1
 
