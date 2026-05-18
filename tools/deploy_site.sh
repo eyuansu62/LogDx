@@ -36,6 +36,9 @@ echo "==> Syncing homepage files → site repo root (preserve .git)"
 # Adding a new homepage page? Add it to SITE_FILES below.
 SITE_FILES=( "_config.yml" "index.md" "leaderboard.md" "cite.md" )
 
+# Jekyll directories to copy wholesale if present (theme overrides, etc).
+SITE_DIRS=( "_layouts" "_includes" )
+
 # Clean out any prior site content (preserves .git, CNAME, .nojekyll).
 find "$STAGING" -mindepth 1 -maxdepth 1 \
     -not -name '.git' \
@@ -46,6 +49,13 @@ find "$STAGING" -mindepth 1 -maxdepth 1 \
 # Copy the curated set.
 for f in "${SITE_FILES[@]}"; do
     cp "$REPO_ROOT/docs/$f" "$STAGING/$f"
+done
+
+# Copy theme-override directories if they exist in docs/.
+for d in "${SITE_DIRS[@]}"; do
+    if [ -d "$REPO_ROOT/docs/$d" ]; then
+        cp -R "$REPO_ROOT/docs/$d" "$STAGING/$d"
+    fi
 done
 
 # Carry the project README's high-level info into a CNAME-friendly
