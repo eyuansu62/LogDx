@@ -8,9 +8,10 @@
 
 ## TL;DR
 
-LogDx-CI v1.0 evaluates whether CI log reduction tools (RTK, grep,
-tail, hybrid routers, LLM-summary) preserve enough evidence for
-LLM-driven root-cause diagnosis. The benchmark ships **35 real
+LogDx-CI v1.0 evaluates whether CI log reduction tools
+([RTK](https://github.com/rtk-ai/rtk), grep, tail, hybrid routers,
+LLM-summary) preserve enough evidence for LLM-driven root-cause
+diagnosis. The benchmark ships **35 real
 GHA failure cases** across `dev` / `holdout` / `stress` splits,
 scored by **3 model families** (Claude Haiku 4.5, Claude Sonnet 4.6,
 OpenAI gpt-5-mini), with three CI-gateable release scripts that pin

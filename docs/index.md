@@ -5,9 +5,10 @@ description: "A benchmark for CI log reduction tools — do they preserve enough
 
 # LogDx-CI
 
-> A benchmark for **CI log reduction tools** (RTK, grep, tail,
-> hybrid routers, LLM-summary) — do they preserve enough evidence
-> for LLM root-cause diagnosis?
+> A benchmark for **CI log reduction tools**
+> ([RTK](https://github.com/rtk-ai/rtk), grep, tail, hybrid routers,
+> LLM-summary) — do they preserve enough evidence for LLM root-cause
+> diagnosis?
 
 [![GitHub](https://img.shields.io/badge/code-eyuansu62%2FLogDx-181717?logo=github)](https://github.com/eyuansu62/LogDx)
 [![HF](https://img.shields.io/badge/data-eyuansu71%2Flogdx--ci-yellow?logo=huggingface)](https://huggingface.co/datasets/eyuansu71/logdx-ci)
@@ -22,10 +23,12 @@ description: "A benchmark for CI log reduction tools — do they preserve enough
 ## What it measures
 
 LogDx-CI compares **10 context providers** — `raw`, `tail`, `grep`,
-`rtk-*`, `llm-summary-*`, and hybrid routers — by handing the same CI
-failure log to three debugger families (Claude Haiku 4.5, Claude
-Sonnet 4.6, OpenAI gpt-5-mini) and scoring the resulting root-cause
-diagnoses against AI-drafted + author-verified ground truth.
+three [RTK](https://github.com/rtk-ai/rtk) modes (`rtk-read`,
+`rtk-log`, `rtk-err-cat`), `llm-summary-*`, and three hybrid
+routers — by handing the same CI failure log to three debugger
+families (Claude Haiku 4.5, Claude Sonnet 4.6, OpenAI gpt-5-mini)
+and scoring the resulting root-cause diagnoses against AI-drafted +
+author-verified ground truth.
 
 It optimizes for **method ranking stability** — the question is not
 "which LLM is smartest" but "which log reducer gives an LLM the best
@@ -170,6 +173,25 @@ for the complete list.
 {% endraw %}
 
 Plain text → **[cite](cite.html)**.
+
+## Acknowledgements
+
+LogDx-CI benchmarks third-party log-reduction tools alongside its
+own baselines. Specifically:
+
+- **[RTK (Rust Token Killer)](https://github.com/rtk-ai/rtk)** by
+  rtk-ai — the `rtk-read`, `rtk-log`, and `rtk-err-cat` baselines
+  are three different invocations of the `rtk` CLI binary. The
+  hybrid routers `hybrid-grep-120k-rtk-tail` and
+  `hybrid-grep-4k-rtk-err-cat` use rtk's `err-cat` mode as an
+  intermediate / fallback context provider. See
+  [`docs/methods/rtk.md`](https://github.com/eyuansu62/LogDx/blob/main/docs/methods/rtk.md)
+  for setup + invocation details.
+
+CI failure logs are sourced from publicly visible
+[GitHub Actions](https://github.com/features/actions) runs.
+Diagnoses are produced by [Claude](https://www.anthropic.com)
+(Anthropic) and [gpt-5-mini](https://openai.com) (OpenAI).
 
 ## Contact
 

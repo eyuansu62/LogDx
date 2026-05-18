@@ -37,9 +37,10 @@ configs:
 
 # LogDx-CI
 
-A benchmark for **CI log reduction tools** (RTK, grep, tail, hybrid
-routers, LLM-summary) — do they preserve enough evidence for LLM
-root-cause diagnosis?
+A benchmark for **CI log reduction tools**
+([RTK](https://github.com/rtk-ai/rtk), grep, tail, hybrid routers,
+LLM-summary) — do they preserve enough evidence for LLM root-cause
+diagnosis?
 
 - **Homepage**: <https://logdx-bench.github.io/>
 - **Code & evaluator**: <https://github.com/eyuansu62/LogDx>
@@ -194,6 +195,18 @@ for the full list.
            \url{https://huggingface.co/datasets/eyuansu71/logdx-ci}},
 }
 ```
+
+## Acknowledgements
+
+- **[RTK (Rust Token Killer)](https://github.com/rtk-ai/rtk)** by
+  rtk-ai — `rtk-read`, `rtk-log`, `rtk-err-cat` baselines + the
+  intermediate / fallback step in the `hybrid-grep-120k-rtk-tail`
+  and `hybrid-grep-4k-rtk-err-cat` routers all invoke the `rtk` CLI
+  binary.
+- CI failure logs sourced from publicly visible
+  [GitHub Actions](https://github.com/features/actions) runs.
+- Diagnoses produced by [Claude](https://www.anthropic.com)
+  (Anthropic) and [gpt-5-mini](https://openai.com) (OpenAI).
 
 ## Contact
 

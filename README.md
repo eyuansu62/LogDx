@@ -1,8 +1,9 @@
 # LogDx-CI
 
-> A benchmark for **CI log reduction tools** (RTK, grep, tail,
-> hybrid routers, LLM-summary) — do they preserve enough evidence
-> for LLM root-cause diagnosis?
+> A benchmark for **CI log reduction tools**
+> ([RTK](https://github.com/rtk-ai/rtk), grep, tail, hybrid routers,
+> LLM-summary) — do they preserve enough evidence for LLM root-cause
+> diagnosis?
 
 [![CI](https://github.com/eyuansu62/LogDx/actions/workflows/ci.yml/badge.svg)](https://github.com/eyuansu62/LogDx/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/eyuansu62/LogDx?include_prereleases&label=release)](https://github.com/eyuansu62/LogDx/releases/latest)
@@ -10,8 +11,9 @@
 [![Dataset on HF](https://img.shields.io/badge/data-eyuansu71%2Flogdx--ci-yellow)](https://huggingface.co/datasets/eyuansu71/logdx-ci)
 
 LogDx-CI compares 10 context providers (`raw`, `tail`, `grep`, three
-`rtk-*` modes, an `llm-summary`, and three hybrid routers) by handing
-the same CI failure log to three debugger families
+[RTK](https://github.com/rtk-ai/rtk) modes (`rtk-read`, `rtk-log`,
+`rtk-err-cat`), an `llm-summary`, and three hybrid routers) by
+handing the same CI failure log to three debugger families
 (Claude Haiku 4.5, Claude Sonnet 4.6, OpenAI gpt-5-mini) and scoring
 the resulting root-cause diagnoses against AI-drafted +
 author-verified ground truths.
@@ -123,6 +125,25 @@ Full caveats in the
 - **Data + reports + protocol locks** (`cases/`, `results/`,
   `reports/`, `protocols/`, `docs/`) — CC-BY-4.0
   ([LICENSE-DATA](LICENSE-DATA))
+
+## Acknowledgements
+
+LogDx-CI benchmarks third-party log-reduction tools alongside its
+own baselines. Specifically:
+
+- **[RTK (Rust Token Killer)](https://github.com/rtk-ai/rtk)** by
+  rtk-ai — the `rtk-read`, `rtk-log`, and `rtk-err-cat` baselines
+  are three different invocations of the `rtk` CLI binary. The
+  hybrid routers `hybrid-grep-120k-rtk-tail` and
+  `hybrid-grep-4k-rtk-err-cat` use rtk's `err-cat` mode as an
+  intermediate / fallback context provider. See
+  [`docs/methods/rtk.md`](docs/methods/rtk.md) for setup +
+  invocation details.
+
+CI failure logs are sourced from publicly visible
+[GitHub Actions](https://github.com/features/actions) runs.
+Diagnoses are produced by [Claude](https://www.anthropic.com)
+(Anthropic) and [gpt-5-mini](https://openai.com) (OpenAI).
 
 ## Contributing
 

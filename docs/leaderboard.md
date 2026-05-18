@@ -117,4 +117,20 @@ artificially shrink, inflating the macro means. The
 every excluded eval row has `diagnosis_success=False` + zeroed
 score fields.
 
+## Method references
+
+Methods in the leaderboard are implemented as follows. Methods with
+external dependencies are linked to their upstream projects.
+
+| Method | Implementation |
+|--------|----------------|
+| `raw` | full log handed to the model |
+| `tail-200` | last 200 lines |
+| `grep` | regex-filtered failure-pattern lines + 3/8 context, see [`docs/methods/diagnosis.md`](https://github.com/eyuansu62/LogDx/blob/main/docs/methods/diagnosis.md) |
+| `rtk-read`, `rtk-log`, `rtk-err-cat` | three modes of **[RTK (Rust Token Killer)](https://github.com/rtk-ai/rtk)** by rtk-ai. See [`docs/methods/rtk.md`](https://github.com/eyuansu62/LogDx/blob/main/docs/methods/rtk.md) for setup. |
+| `llm-summary-v1-mock` | mock summarizer (deterministic stub; the corresponding real-Haiku run is `llm-summary-v1-haiku`, prototype-only) |
+| `hybrid-grep-4k-rtk-err-cat` | earlier 4k-threshold hybrid using grep primary + rtk-err-cat fallback (replaced by the 120k hybrids) |
+| `hybrid-grep-120k-tail` | grep ≤ 120k tokens else tail-200 |
+| `hybrid-grep-120k-rtk-tail` | grep ≤ 120k tokens else rtk-err-cat (if not truncated and ≤ 120k) else tail-200 |
+
 [← Home](index.html) · [Citation](cite.html)
