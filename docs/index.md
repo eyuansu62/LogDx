@@ -10,10 +10,6 @@ description: "A benchmark for CI log reduction tools — do they preserve enough
 > LLM-summary) — do they preserve enough evidence for LLM root-cause
 > diagnosis?
 
-**[Bowen Qin](https://github.com/eyuansu62)**
-&nbsp;·&nbsp; National University of Singapore
-&nbsp;·&nbsp; [@eyuansu62](https://github.com/eyuansu62)
-
 [![GitHub](https://img.shields.io/badge/code-eyuansu62%2FLogDx-181717?logo=github)](https://github.com/eyuansu62/LogDx)
 [![HF](https://img.shields.io/badge/data-eyuansu71%2Flogdx--ci-yellow?logo=huggingface)](https://huggingface.co/datasets/eyuansu71/logdx-ci)
 [![Release](https://img.shields.io/github/v/release/eyuansu62/LogDx?include_prereleases&label=release)](https://github.com/eyuansu62/LogDx/releases/latest)
