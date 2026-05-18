@@ -46,18 +46,25 @@ ACROSS model families."
 Case-count-weighted macro `diagnosis_score_v1_1` aggregated across
 the 35-case corpus:
 
-| Rank | Method | Haiku 4.5 | Sonnet 4.6 | gpt-5-mini | Overall |
-|----:|--------|----------:|----------:|----------:|--------:|
-| 1 | `hybrid-grep-120k-rtk-tail` | 0.624 | 0.679 | 0.706 | **0.670** |
-| 2 | `hybrid-grep-120k-tail`     | 0.610 | 0.730 | 0.658 | **0.666** |
-| 3 | `grep`                      | 0.578 | 0.684 | 0.655 | 0.639 |
-| 4 | `tail-200`                  | 0.595 | 0.624 | 0.623 | 0.614 |
-| 5 | `hybrid-grep-4k-rtk-err-cat` <sub>(*replaced; see report*)</sub> | 0.552 | 0.597 | 0.571 | 0.573 |
-| 6 | `rtk-err-cat`               | 0.455 | 0.488 | 0.467 | 0.470 |
-| 7 | `raw`                       | 0.324 | 0.368 | 0.367 | 0.353 |
-| 8 | `rtk-read`                  | 0.329 | 0.369 | 0.349 | 0.349 |
-| 9 | `llm-summary-v1-mock`       | 0.343 | 0.348 | 0.294 | 0.328 |
-| 10 | `rtk-log`                  | 0.238 | 0.262 | 0.249 | 0.249 |
+| Rank | Method | Haiku 4.5 | Sonnet 4.6 | gpt-5-mini | Overall | confident_error<br/><sub>(↓ better)</sub> |
+|----:|--------|----------:|----------:|----------:|--------:|--------:|
+| 1 | `hybrid-grep-120k-rtk-tail` | 0.624 | 0.679 | 0.706 | **0.670** | **0.000** |
+| 2 | `hybrid-grep-120k-tail`     | 0.610 | 0.730 | 0.658 | **0.666** | 0.010 |
+| 3 | `grep`                      | 0.578 | 0.684 | 0.655 | 0.639 | **0.000** |
+| 4 | `tail-200`                  | 0.595 | 0.624 | 0.623 | 0.614 | 0.019 |
+| 5 | `hybrid-grep-4k-rtk-err-cat` <sub>(*replaced; see report*)</sub> | 0.552 | 0.597 | 0.571 | 0.573 | 0.029 |
+| 6 | `rtk-err-cat`               | 0.455 | 0.488 | 0.467 | 0.470 | 0.029 |
+| 7 | `raw`                       | 0.324 | 0.368 | 0.367 | 0.353 | **0.000** |
+| 8 | `rtk-read`                  | 0.329 | 0.369 | 0.349 | 0.349 | 0.010 |
+| 9 | `llm-summary-v1-mock`       | 0.343 | 0.348 | 0.294 | 0.328 | **0.133** |
+| 10 | `rtk-log`                  | 0.238 | 0.262 | 0.249 | 0.249 | **0.133** |
+
+The top-3 methods are also the safest:
+`hybrid-grep-120k-rtk-tail`, `hybrid-grep-120k-tail`, and `grep`
+produce zero or near-zero **confidently-wrong** diagnoses
+across all 3 model families. `rtk-log` and `llm-summary-v1-mock`
+mislead a confident LLM on ~13% of cases — the failure mode
+[discussed in rtk-ai/rtk#1599](https://github.com/rtk-ai/rtk/issues/1599).
 
 The top-2 hybrids replaced an earlier 4k-threshold hybrid that was
 overfit during methodology development (see the [technical report
