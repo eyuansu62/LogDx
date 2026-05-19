@@ -266,6 +266,22 @@ without hurting strong ones, why confident_error vanishes), see
   variance beyond Sonnet's inherent temp=0 drift; differences in
   individual rows are within ±5% on token counts and the same
   category in 2/3 cases.
+- **Known v1.2 patch items** (caught by codex review #3,
+  zero impact on v1.1 published numbers):
+  1. `CILOGBENCH_AGENT_V1_BASE_URL` participates in cache_key only
+     when the user sets it explicitly; the shim's default choice
+     (OpenRouter vs Anthropic-direct based on which API key is
+     present) is NOT reflected in cache identity. If you re-run
+     LogDx-CI against different endpoints, clear `.cache/diagnosis/`
+     manually or set `CILOGBENCH_AGENT_V1_BASE_URL` explicitly.
+  2. The forced-final no-tools cleanup call can swallow API errors
+     into a `budget_exhausted=True` + `category=unknown` row with no
+     `provider_error`. **Audited v1.1**: 14 rows hit
+     `budget_exhausted=True`, 0 silently became unknown — the bug
+     did not fire in the published data. Future runs that exhaust
+     budget AND fail the cleanup call would land in this bucket.
+     v1.2 will surface a structured `tool_use_budget_exhausted`
+     provider_error instead.
 - **Same 35-case corpus** as single-shot. No corpus expansion in v1.1.
 - **Non-determinism**: Sonnet 4.6 at temperature=0 still has small
   variance in tool selection across runs. The macro means above are

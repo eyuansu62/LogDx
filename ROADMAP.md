@@ -8,7 +8,8 @@ Status as of 2026-05-18.
 | **v1.0.1** | shipped 2026-05-18 | Added `confident_error_rate_v1_1` and `total_tokens` columns to the leaderboard, plus a cost-quality Pareto plot. |
 | **v1.1** | shipped 2026-05-18 | Adds the agent-loop leaderboard. Every method gains in agent-loop, the quality range collapses 6× (0.42 → 0.069), confident-error rates drop to 0% on 8 of 10 methods. See [analysis/agent-loop-vs-single-shot.md](docs/analysis/agent-loop-vs-single-shot.md). |
 | **v1.2** | exploratory | Haiku + gpt-5-mini agent variants; configured-RTK baseline; corpus expansion. |
-| **v1.2 / v2** | exploratory | Train/holdout decoupling, GPT-4o + Gemini families, `fix_action` evaluation. |
+| **v1.2** | exploratory | Patches caught by codex review #3 on v1.1 (endpoint-cache binding, forced-final error surfacing), Haiku + gpt-5-mini agent variants. |
+| **v2** | exploratory | Train/holdout decoupling, GPT-4o + Gemini families, `fix_action` evaluation. |
 
 This roadmap is informed by the RTK community's
 "signal-loss-during-aggressive-compression" issue cluster
@@ -228,6 +229,36 @@ but not "did the LLM choose the right fix command."
 non-trivial (these are higher-information ground-truth annotations
 than category). May ship as P2 deferred to v1.2 if #1, #2, #4, #5
 already fill the v1.1 window.
+
+## v1.2 — patches caught by codex review #3
+
+Surfaced during v1.1's third adversarial review. Zero impact on
+v1.1 published numbers (audit confirmed 0 affected rows), but
+both are real bugs that future v1.1+ runs should not inherit.
+
+### #7 — Bind endpoint into cache identity
+
+Currently `CILOGBENCH_AGENT_V1_BASE_URL` participates in cache_key
+only when set; when unset, the shim chooses its default endpoint
+from `OPENROUTER_API_KEY` vs `ANTHROPIC_API_KEY` and that choice
+is NOT reflected in cache identity. Result: an OpenRouter cache
+row could replay when the next invocation routes to Anthropic
+direct. Patch: pin `model.base_url` in the diagnoser config and
+validate `metadata.model_info.base_url` against it (mirror the
+OpenAI shim's `model.base_url_env_var_name` pattern). Effort: ~1
+day of code; no API spend.
+
+### #8 — Surface forced-final failure as structured provider_error
+
+The post-loop forced-final no-tools call's `except` block swallows
+API errors (network, token-cap from the provider) into an
+`unknown_body` row with `budget_exhausted=True` but no
+`provider_error`. The runner then accepts it as a normal "unknown"
+diagnosis. Patch: route the exception to a `tool_use_budget_
+exhausted` provider_error envelope (already in the
+non_fatal_provider_error_prefixes allowlist). Add regression test
+where the forced-final call raises and assert provider_error
+surfaces. Effort: ~½ day; no API spend.
 
 ## Out-of-scope for v1.1 (recorded for v1.2+)
 
