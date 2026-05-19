@@ -1,0 +1,96 @@
+{
+  "case_id": "gh-cli-go-test-prompter-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Test `TestHuhPrompterMultiSelectWithSearchPersistence` timed out because `form.Run()` did not complete, indicating a hang or deadlock in the multi-select form with search persistence logic.",
+  "root_cause_category": "timeout_or_oom",
+  "root_cause": "The test blocked indefinitely in `form.Run()` during the subtest `selections_persist_after_changing_search_query`, likely due to a deadlock or race condition in the multi-select search persistence code path.",
+  "confidence": 0.9,
+  "relevant_files": [
+    "huh_prompter_test.go"
+  ],
+  "relevant_tests": [
+    "TestHuhPrompterMultiSelectWithSearchPersistence",
+    "TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query"
+  ],
+  "evidence": [
+    {
+      "quote": "form.Run() did not complete in time",
+      "reason": "Explicitly states the operation timed out while waiting for form.Run() to return."
+    },
+    {
+      "quote": "huh_prompter_test.go:478",
+      "reason": "Identifies the file and line number where the failing test is located."
+    },
+    {
+      "quote": "selections_persist_after_changing_search_query",
+      "reason": "Identifies the specific subtest that triggered the timeout."
+    },
+    {
+      "quote": "5.13s",
+      "reason": "Subtest duration shows the test ran but did not complete within its timeout window."
+    },
+    {
+      "quote": "The form operation appears to hang or block indefinitely during test execution, likely due to a deadlock, race condition, or missing signal",
+      "reason": "Context explicitly identifies the hang as the failure mechanism."
+    }
+  ],
+  "suggested_fix": "Investigate the form.Run() implementation and multi-select search persistence logic in huh_prompter_test.go around line 478 for deadlocks, blocked channels, or race conditions that could cause indefinite blocking.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-haiku/gh-cli-go-test-prompter-v2-001.txt",
+    "context_tokens_estimate": 393
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 611
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 27382.412,
+    "cache_key": "bca71d901d51e01a0690074cf2516e3cd6bc945649a52bdee26524388b53d283",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "haiku",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 9,
+        "cache_creation_input_tokens": 3242,
+        "cache_read_input_tokens": 44848,
+        "output_tokens": 1485,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 3242,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 9,
+            "output_tokens": 1485,
+            "cache_read_input_tokens": 44848,
+            "cache_creation_input_tokens": 3242,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 3242
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "464ba191-8f57-4325-a9d6-40126af869f1"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "ade4ac2160bff920d4d00a0acc2289b3e3cf8de3a70e06ecd399e7cb5a0bb356",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

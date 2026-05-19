@@ -1,0 +1,88 @@
+{
+  "case_id": "biome-pnpm-not-found-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because `pnpm` is not installed or not available in the PATH of the CI environment. When the `format` recipe attempted to run `pnpm format`, the shell returned exit code 127 ('command not found'), which cascaded to failure of the `gen-all` recipe.",
+  "root_cause_category": "dependency_install",
+  "root_cause": "The `pnpm` package manager was not installed or not present in the CI environment's PATH when the `format` recipe attempted to invoke `pnpm format`. The shell returned exit code 127 ('command not found').",
+  "confidence": 0.92,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "sh: 1: pnpm: not found",
+      "reason": "Direct shell error confirming pnpm binary is not available in the CI environment's PATH."
+    },
+    {
+      "quote": "exit code 127",
+      "reason": "Exit code 127 is the standard Unix exit code for 'command not found', confirming pnpm was not installed."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 127.",
+      "reason": "GitHub Actions error annotation confirming the process failed with the 'command not found' exit code."
+    },
+    {
+      "quote": "Failed command: `pnpm format`",
+      "reason": "Identifies the exact command that failed due to pnpm not being available."
+    },
+    {
+      "quote": "Recipe `format` (line 221)",
+      "reason": "The format recipe at line 221 failed, which then caused the gen-all recipe at line 32 to also fail in a cascade."
+    }
+  ],
+  "suggested_fix": "Add a step to install pnpm before the recipe execution, e.g., using `npm install -g pnpm` or the official `pnpm/action-setup` GitHub Action (e.g., `uses: pnpm/action-setup@v2` with `version: latest`) in the workflow file prior to the step that runs `gen-all` or `format`.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-haiku/biome-pnpm-not-found-v2-001.txt",
+    "context_tokens_estimate": 382
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 625
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 11515.94,
+    "cache_key": "c699e63706f9d2e9d964cfd40edeb9ee17adb46565e8a83b431c12478262a5e6",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 3723,
+        "output_tokens": 590,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard",
+        "cost": 0.020019,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.020019,
+          "upstream_inference_prompt_cost": 0.011169,
+          "upstream_inference_completions_cost": 0.00885
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 1,
+    "tool_call_count": 0,
+    "tool_calls": [],
+    "total_input_tokens_consumed": 3723,
+    "total_output_tokens_consumed": 590,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 1
+  }
+}

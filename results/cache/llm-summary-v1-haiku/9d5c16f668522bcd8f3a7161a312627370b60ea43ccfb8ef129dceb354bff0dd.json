@@ -1,0 +1,25 @@
+{
+  "key_parts": {
+    "case_id": "gh-cli-go-test-prompter-v2-001",
+    "raw_sha": "faaf053a8e02080f531436891330fad49733d4c7a3fa2905be74747ff685538c",
+    "prompt_version": "llm_summary_v1",
+    "prompt_sha": "e3739738b7136af3956f3712e7b76babd9224b6854dcc60ff16546a3fbb16702",
+    "provider": "command",
+    "method": "llm-summary-v1-haiku",
+    "chunk_index": -1,
+    "chunk_sha": "cf67e3c6d6b3c3ddb6881b6855bade157c6d7ba55e1b6c6ed532a38470f4eaf9",
+    "temperature": 0.0,
+    "max_output_chars": 12000,
+    "stage": "reduce"
+  },
+  "response": {
+    "content": "# CI Failure Summary\n\n## Primary Failure\n\nA Go test in the CLI prompter package timed out. The test `TestHuhPrompterMultiSelectWithSearchPersistence` failed because `form.Run()` did not complete in time, indicating a hang or race condition in the multi-select form with search persistence logic.\n\n## Critical Evidence\n\n- `form.Run() did not complete in time` (L000245)\n- Test location: `huh_prompter_test.go:478` (L000245)\n- Test subtest: `selections_persist_after_changing_search_query` (L000244)\n- Subtest duration: `5.13s` (L000244)\n\n## Failed Tests / Checks\n\n- `TestHuhPrompterMultiSelectWithSearchPersistence`\n- `TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query`\n\n## Relevant Files and Locations\n\n- `huh_prompter_test.go:478`\n\n## Commands and Exit Codes\n\n- `go test github.com/cli/cli/v2/internal/prompter` – `FAIL` exit code `1` (L000511)\n\n## Possible Root Cause\n\nThe form operation appears to hang or block indefinitely during test execution, likely due to a deadlock, race condition, or missing signal in the multi-select search persistence code path. The test timeout was triggered while waiting for `form.Run()` to return.\n\n## Uncertainties / Missing Context\n\n- Configured test timeout duration is not shown.\n- No indication whether this is a new regression or pre-existing flaky test.\n- Whether other tests in the `internal/prompter` package also failed.\n- Actual error message or panic, if any, beyond the timeout assertion.\n- System resource state (CPU, memory, file descriptor limits) at test execution time.",
+    "provider": "claude-cli",
+    "model": "haiku",
+    "usage": {
+      "input_tokens": 47288,
+      "output_tokens": 1245,
+      "total_cost_usd": 0.014311850000000001
+    }
+  }
+}

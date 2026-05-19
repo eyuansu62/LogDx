@@ -1,0 +1,85 @@
+{
+  "case_id": "prettier-react-stress-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Run prettier' CI job failed because two files do not conform to the project's Prettier formatting configuration. Running `yarn prettier-check` detected formatting inconsistencies in `ReactDOMFragmentRefs-test.js` and `CodegenReactiveFunction.ts`, causing the command to exit with code 1.",
+  "root_cause_category": "formatting_failure",
+  "root_cause": "Two files have code formatting that does not match the project's Prettier configuration: `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` and `compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts`. The `yarn prettier-check` command detected these inconsistencies and exited with code 1.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+    "compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts"
+  ],
+  "relevant_tests": [
+    "Run prettier"
+  ],
+  "evidence": [
+    {
+      "quote": "Please run yarn prettier-all and add changes to files listed below to your commit:",
+      "reason": "This message explicitly identifies that the listed files need to be reformatted with Prettier before the CI check will pass."
+    },
+    {
+      "quote": "error Command failed with exit code 1.",
+      "reason": "Confirms that the `yarn prettier-check` command failed, which is the direct cause of the CI job failure."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions error annotation confirming the job exited with a non-zero exit code, marking the CI run as failed."
+    }
+  ],
+  "suggested_fix": "Run `yarn prettier-all` locally to reformat all files, then commit and push the changes to `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` and `compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts`.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-haiku/prettier-react-stress-001.txt",
+    "context_tokens_estimate": 355
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 661
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 11011.311,
+    "cache_key": "e427f8c2895de8162b3123efd6cce56b03ab902a9ac0aaca91b35dab3bcd0130",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 3634,
+        "output_tokens": 707,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.021507,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.021507,
+          "upstream_inference_prompt_cost": 0.010902,
+          "upstream_inference_completions_cost": 0.010605
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 1,
+    "tool_call_count": 0,
+    "tool_calls": [],
+    "total_input_tokens_consumed": 3634,
+    "total_output_tokens_consumed": 707,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 1
+  }
+}

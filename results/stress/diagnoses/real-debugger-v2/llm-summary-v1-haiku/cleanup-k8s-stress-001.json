@@ -1,0 +1,79 @@
+{
+  "case_id": "cleanup-k8s-stress-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because a GitHub CLI (`gh`) command received an HTTP 403 Forbidden response, indicating the integration token lacks sufficient permissions to access the required resource. The process exited with code 1 as a result.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GitHub Actions integration token does not have sufficient permissions to perform the `gh` command operation, resulting in HTTP 403 Forbidden.",
+  "confidence": 0.82,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "This explicitly states the `gh` CLI call was rejected with a 403 Forbidden error due to insufficient integration permissions."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the job terminated with a non-zero exit code caused by the permission failure."
+    }
+  ],
+  "suggested_fix": "Grant the required permissions to the GitHub Actions token (e.g., add `permissions: write-all` or the specific needed scope such as `contents: write` or `actions: write` to the workflow YAML), or ensure the PAT/GitHub App token used has the necessary scopes for the resource being accessed.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-haiku/cleanup-k8s-stress-001.txt",
+    "context_tokens_estimate": 302
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 488
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 17257.472,
+    "cache_key": "b791e2d3373ceb58d507fbabaa76e4cc8fbefadc721b2792477b7d3ffe736e75",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 15421,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 330,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 15421,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 330,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 15421,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 15421
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "b6dfd099-07f3-44d6-a9b1-3633546f8165"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

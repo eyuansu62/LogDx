@@ -1,0 +1,94 @@
+{
+  "case_id": "airflow-precommit-tsc-middle-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "TypeScript compilation failed with 3 errors across 3 files during the 'Compile / format / lint UI' pre-commit hook. The errors include unused declarations ('ColorMode', 'ParamsSpec') and a type mismatch ('SetupServer' missing properties from 'SetupServerApi'), all caught by strict TypeScript checking via `pnpm tsc`.",
+  "root_cause_category": "compile_error",
+  "root_cause": "TypeScript strict checking (noUnusedLocals/noUnusedParameters) rejected unused imports and a type mismatch: 'ColorMode' is declared but never used in UserSettingsButton.tsx, 'ParamsSpec' is declared but never read in ConnectionForm.tsx, and 'SetupServer' is missing properties '#private' and 'network' from 'SetupServerApi' in testsSetup.ts. The `pnpm tsc` command exited with status 2, causing the ts-compile-lint-ui hook to fail with exit code 1.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "src/layouts/Nav/UserSettingsButton.tsx",
+    "src/pages/Connections/ConnectionForm.tsx",
+    "testsSetup.ts"
+  ],
+  "relevant_tests": [
+    "ts-compile-lint-ui"
+  ],
+  "evidence": [
+    {
+      "quote": "error TS6196: 'ColorMode' is declared but never used.",
+      "reason": "Unused import/type declaration caught by TypeScript strict checking in UserSettingsButton.tsx:55:6"
+    },
+    {
+      "quote": "error TS6133: 'ParamsSpec' is declared but its value is never read.",
+      "reason": "Unused declaration caught by TypeScript strict checking in ConnectionForm.tsx:33:1"
+    },
+    {
+      "quote": "error TS2739: Type 'SetupServer' is missing the following properties from type 'SetupServerApi': #private, network",
+      "reason": "Type mismatch error in testsSetup.ts:78:3 indicating an incompatible type assignment"
+    },
+    {
+      "quote": "Found 3 errors in 3 files.",
+      "reason": "TypeScript compiler summary confirming the compilation failed with exactly 3 errors"
+    },
+    {
+      "quote": "subprocess.CalledProcessError: Command '['pnpm', 'tsc', '--p', '/home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json']' returned non-zero exit status 2.",
+      "reason": "Confirms the pnpm tsc command failed with exit status 2, propagating the failure to the pre-commit hook"
+    }
+  ],
+  "suggested_fix": "Remove or utilize the unused 'ColorMode' import in UserSettingsButton.tsx and the unused 'ParamsSpec' declaration in ConnectionForm.tsx. For testsSetup.ts, update the type annotation or cast to use 'SetupServerApi' instead of 'SetupServer' to satisfy the type compatibility requirement.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-haiku/airflow-precommit-tsc-middle-v2-001.txt",
+    "context_tokens_estimate": 603
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 798
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 12966.437,
+    "cache_key": "6d308faf963c1c78fc735c93a6bc8da1a8379075d6f15a22c90262131194c745",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 4042,
+        "output_tokens": 904,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.025686,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.025686,
+          "upstream_inference_prompt_cost": 0.012126,
+          "upstream_inference_completions_cost": 0.01356
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 1,
+    "tool_call_count": 0,
+    "tool_calls": [],
+    "total_input_tokens_consumed": 4042,
+    "total_output_tokens_consumed": 904,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 1
+  }
+}

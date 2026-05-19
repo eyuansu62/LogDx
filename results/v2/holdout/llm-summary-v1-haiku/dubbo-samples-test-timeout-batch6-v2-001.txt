@@ -1,0 +1,37 @@
+# CI Failure Summary
+
+## Primary Failure
+
+Dubbo integration test suite failed with 1 out of 23 tests timing out. The test `dubbo-samples-test-11137` waited 602 seconds for a container to become ready and then timed out, causing the process to exit with code 1. Multiple Docker daemon errors about invalid filter 'reference' recurred throughout execution, and a 500 Internal Server Error from zookeeper/HTTP was encountered during container startup.
+
+## Critical Evidence
+
+- `wait for container is timeout: 602 s` (L004880)
+- `[dubbo-samples-test-11137:1/1] TEST FAILURE: Run tests timeout` (L004891, L006000)
+- `Error response from daemon: received unexpected HTTP status: 500 Internal Server Error` (L004949)
+- `Error response from daemon: invalid filter 'reference'` (L003679, L003786, L004341, L004444, L004557, L004664, L004775, L005259, L005373, L005483, L005609)
+- `zookeeper Error received unexpected HTTP status: 500 Internal Server Error` (L004948)
+
+## Failed Tests / Checks
+
+- `[2/23] [dubbo-samples-test-11137:1/1] TEST FAILURE: Run tests timeout, version: -Ddubbo.version=3.3.7-SNAPSHOT -Dspring.version=5.3.24 -Djava.version=21`
+
+## Relevant Files and Locations
+
+- `/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs`
+
+## Commands and Exit Codes
+
+- Process exited with code 1 (L006010)
+- Docker daemon invocations returned `Error response from daemon: invalid filter 'reference'` and `Error response from daemon: received unexpected HTTP status: 500 Internal Server Error`
+
+## Possible Root Cause
+
+Container startup failed to complete within 602 seconds, likely triggered by a 500 Internal Server Error from zookeeper or a dependent service. The repeated Docker daemon "invalid filter 'reference'" errors suggest either a Docker/container orchestration version incompatibility or malformed filter arguments in the test harness, running in parallel with the timeout condition.
+
+## Uncertainties / Missing Context
+
+- Root cause of the 500 Internal Server Error from zookeeper not documented in the output.
+- Cause of "invalid filter 'reference'" Docker errors unclear—may indicate API version mismatch or misconfigured container filter syntax.
+- Actual container startup/initialization logs not included; check `/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs` for detailed failure modes.
+- Whether 602-second timeout is the expected threshold or if it increased due to external infrastructure issues.

@@ -1,0 +1,84 @@
+{
+  "case_id": "gh-cli-go-test-prompter-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "A Go test hung: form.Run() did not complete during TestHuhPrompterMultiSelectWithSearchPersistence (subtest selections_persist_after_changing_search_query), causing the test to time out and fail.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The call to form.Run() in TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query did not return within the test timeout, indicating a hang (likely a deadlock, race, or missing signal) in the multi-select form search-persistence code path.",
+  "confidence": 0.8,
+  "relevant_files": [
+    "huh_prompter_test.go:478"
+  ],
+  "relevant_tests": [
+    "TestHuhPrompterMultiSelectWithSearchPersistence",
+    "TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query"
+  ],
+  "evidence": [
+    {
+      "quote": "form.Run() did not complete in time",
+      "reason": "Direct failure message showing the operation under test hung and triggered the timeout."
+    },
+    {
+      "quote": "huh_prompter_test.go:478",
+      "reason": "Pinpoints the test source location where the timeout occurred."
+    },
+    {
+      "quote": "TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query",
+      "reason": "Identifies the specific subtest that timed out, indicating the failing scenario (search persistence)."
+    },
+    {
+      "quote": "go test github.com/cli/cli/v2/internal/prompter",
+      "reason": "Shows the package under test where the hanging form.Run() was exercised."
+    },
+    {
+      "quote": "The form operation appears to hang or block indefinitely during test execution, likely due to a deadlock, race condition, or missing signal in the multi-select search persistence code path.",
+      "reason": "The context's own diagnosis that the hang is likely due to deadlock/race/missing signal in the multi-select search persistence logic."
+    }
+  ],
+  "suggested_fix": "Reproduce the failure locally by running the specific test (e.g. go test github.com/cli/cli/v2/internal/prompter -run TestHuhPrompterMultiSelectWithSearchPersistence -v). Add debugging/logging around form.Run() and the multi-select search-persistence code to observe where it blocks, and inspect the code for deadlocks or missing termination signals. Once located, ensure form.Run() receives the expected input or cancellation signal (or remove the deadlock), and consider adding an explicit timeout/cancellation in the form or making the test drive the termination condition deterministically.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-haiku/gh-cli-go-test-prompter-v2-001.txt",
+    "context_tokens_estimate": 393
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 750
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 26892.49,
+    "cache_key": "34f68837bf720bfce8f436e0f3f1efba20764f795fae1728e8d9f99ebb31757d",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
+    "model_info": {
+      "provider_name": "openai",
+      "requested_model": "gpt-5-mini",
+      "resolved_model": "gpt-5-mini-2025-08-07",
+      "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
+      "max_completion_tokens": 4096,
+      "system_fingerprint": null,
+      "usage": {
+        "prompt_tokens": 1486,
+        "completion_tokens": 1493,
+        "total_tokens": 2979,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 896,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8d5f6bb1e7382f07124c3096574e449b1db3361a9edfee83a2cea21aa4e1246b",
+    "shim_sha256": "bdb194f15bf4f87108aa71863384c07d14b106caa712d398ec48c98ff391e573"
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "case_id": "pytest-sklearn-stress-002",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "A doctest in `doc/callbacks.rst` fails because the expected progress bar output (`LogisticRegression - fit ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:03:12`) does not match the actual output (`LogisticRegression()`). The progress bar callback is not producing output in the doctest environment, so only the object's default `__repr__` is captured.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The doctest at `doc/callbacks.rst:48` expects a formatted progress bar string but receives only the `__repr__` of the `LogisticRegression` object. The callback machinery either does not execute or its output is suppressed in the doctest context, causing an output mismatch.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "doc/callbacks.rst"
+  ],
+  "relevant_tests": [
+    "../doc/callbacks.rst::callbacks.rst"
+  ],
+  "evidence": [
+    {
+      "quote": "Expected: LogisticRegression - fit ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:03:12",
+      "reason": "This is the expected doctest output — a formatted progress bar string from the callback."
+    },
+    {
+      "quote": "Got: LogisticRegression()",
+      "reason": "This is the actual output — only the default `__repr__` of the estimator, indicating the callback did not produce any output."
+    },
+    {
+      "quote": "DocTestFailure` location: `/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst:48`",
+      "reason": "Pinpoints the exact file and line where the doctest mismatch occurs."
+    },
+    {
+      "quote": "FAILED ../doc/callbacks.rst::callbacks.rst",
+      "reason": "Confirms the test identifier that failed in the pytest run."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the CI job exited with a non-zero code due to this test failure."
+    }
+  ],
+  "suggested_fix": "Investigate why the progress bar callback does not produce output in the doctest environment. Either fix the callback initialization so it runs during doctests, add a `# doctest: +SKIP` directive to the failing example if it cannot be made deterministic, or mock/stub the callback output in the doctest to produce a stable expected value.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-haiku/pytest-sklearn-stress-002.txt",
+    "context_tokens_estimate": 736
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 712
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 13036.288,
+    "cache_key": "c27f20fd408b17a93cca500cf0a2874fcd88b3a9750d3f6f30122ef33ad7d734",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 4254,
+        "output_tokens": 770,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.024312,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.024312,
+          "upstream_inference_prompt_cost": 0.012762,
+          "upstream_inference_completions_cost": 0.01155
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 1,
+    "tool_call_count": 0,
+    "tool_calls": [],
+    "total_input_tokens_consumed": 4254,
+    "total_output_tokens_consumed": 770,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 1
+  }
+}

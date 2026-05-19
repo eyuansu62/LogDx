@@ -1,0 +1,40 @@
+# CI Failure Summary
+
+## Primary Failure
+
+The `go test` suite in the go-redis repository failed due to a timeout in the PubSub test suite. One test (`PubSub [It] should ChannelMessage`) timed out after 1.001s while waiting to receive a message on a channel. The test step completed with `FAIL! -- 1223 Passed | 1 Failed | 0 Pending | 50 Skipped`, and the `make test.ci` target subsequently exited with code 2.
+
+## Critical Evidence
+
+- `[FAILED] Timed out after 1.001s.` (L001106)
+- `to receive something.` (L001109)
+- `<<-chan *redis.Message | len:0, cap:10>: 0xc0012d96c0` (L001108) — channel contains 0 messages despite expected delivery
+- `FAIL! -- 1223 Passed | 1 Failed | 0 Pending | 50 Skipped` (L001171)
+- `make: *** [Makefile:46: test.ci] Error 1` (L002680)
+- `##[error]Process completed with exit code 2.` (L002681)
+
+## Failed Tests / Checks
+
+- `PubSub [It] should ChannelMessage`
+
+## Relevant Files and Locations
+
+- `/home/runner/work/go-redis/go-redis/pubsub_test.go:645`
+- `/home/runner/work/go-redis/go-redis/pubsub_test.go:661`
+- `Makefile:46` (test.ci target)
+
+## Commands and Exit Codes
+
+- `go test` (Ginkgo suite): `TestGinkgoSuite (179.28s)` — 1 failure among 1223 passed tests
+- `make test.ci`: exit code 1, then process exit code 2
+
+## Possible Root Cause
+
+The PubSub message channel is not receiving expected messages within the 1-second timeout window, causing the assertion to fail. This suggests either a timing issue in message delivery during test execution or a change in PubSub subscription behavior that prevents messages from reaching the channel.
+
+## Uncertainties / Missing Context
+
+- Why the message is not arriving on the channel (subscription failure, message loss, race condition, or infrastructure issue?)
+- Whether this is a flaky test or a deterministic regression
+- What changed recently in PubSub or message handling logic
+- Whether the Docker/Redis container setup in chunk 0 properly initialized the PubSub service

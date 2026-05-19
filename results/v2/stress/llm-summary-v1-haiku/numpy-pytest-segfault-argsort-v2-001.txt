@@ -1,0 +1,61 @@
+# CI Failure Summary
+
+## Primary Failure
+
+NumPy build failure during Meson configuration and C/C++ compilation. The build system cannot locate required linear algebra libraries (MKL, OpenBLAS, BLIS, BLAS, LAPACK) and encounters multiple C/C++ compiler issues: standard math functions (`isfinite`, `isinf`, `isnan`, `signbit`) are undeclared; C++ standard library detection fails (`_LIBCPP_VERSION` undeclared); and thread-local storage and other compiler features do not compile. A partial build that reaches testing segfaults in `test_datetime_nat_argsort_stability` with exit code 245.
+
+## Critical Evidence
+
+- `Run-time dependency mkl found: NO (tried pkgconfig and system)` (L001845)
+- `Run-time dependency openblas found: NO (tried pkgconfig, pkgconfig, pkgconfig, system and cmake)` (L001918)
+- `Run-time dependency blas found: NO (tried pkgconfig and system)` (L001969)
+- `Run-time dependency lapack found: NO (tried pkgconfig and system)` (L002010)
+- `/usr/bin/ld: cannot find -lmkl_rt: No such file or directory` (L001812)
+- `/usr/bin/ld: cannot find -lopenblas: No such file or directory` (L001877)
+- `/usr/bin/ld: cannot find -lblas: No such file or directory` (L001966)
+- `/usr/bin/ld: cannot find -llapack: No such file or directory` (L002007)
+- `error: 'isfinite' undeclared (first use in this function)` (L002586)
+- `error: 'isinf' undeclared (first use in this function); did you mean 'sinf'?` (L002654)
+- `error: 'isnan' undeclared (first use in this function); did you mean 'nan'?` (L002723)
+- `error: 'signbit' undeclared (first use in this function)` (L002792)
+- `error: '_LIBCPP_VERSION' was not declared in this scope` (L004007)
+- `error: expected nested-name-specifier before '_LIBCPP_VERSION'` (L004021)
+- `Fatal Python error: Segmentation fault` (L005462)
+- `##[error]Process completed with exit code 245.` (L005502)
+
+## Failed Tests / Checks
+
+- `test_datetime_nat_argsort_stability` (L005467)
+
+## Relevant Files and Locations
+
+- `/home/runner/work/numpy/numpy/build/meson-private/tmpati5_57k/testfile.c:9` (L002586)
+- `/home/runner/work/numpy/numpy/build/meson-private/tmpktaptscn/testfile.c:9` (L002654)
+- `/home/runner/work/numpy/numpy/build/meson-private/tmp_plgfkr4/testfile.c:9` (L002723)
+- `/home/runner/work/numpy/numpy/build/meson-private/tmpmfkk_fp3/testfile.c:9` (L002792)
+- `/home/runner/work/numpy/numpy/build/meson-private/tmpri6wbstk/testfile.c:5` (L002859)
+- `/home/runner/work/numpy/numpy/build/meson-private/tmp_0k3de_9/testfile.cpp:6:17` (L004007)
+- `/home/runner/work/numpy/numpy/build/meson-private/tmp20xp4f8c/testfile.cpp:3:15` (L004021)
+- `/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py:226` (L005467)
+- `/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py:1231` (L005466)
+
+## Commands and Exit Codes
+
+- `cc ... -lmkl_rt -Wl,--allow-shlib-undefined` → exit code 1 (L001810)
+- `cc ... -lopenblas -Wl,--allow-shlib-undefined` → exit code 1 (L001875)
+- `cc ... -D_FILE_OFFSET_BITS=64 -O0 -std=c11 -lm` → exit code 1 (L002583, L002651, L002720, L002789)
+- `c++ ... -D_FILE_OFFSET_BITS=64 -O0 -fpermissive` → exit code 1 (L004004, L004019)
+- `Preliminary CMake check failed. Aborting.` (L001917, L001931, L001983, L001986)
+- Process completed with exit code 245 (L005502)
+
+## Possible Root Cause
+
+The CI environment lacks required BLAS/LAPACK system libraries (MKL, OpenBLAS, BLIS, BLAS, LAPACK), causing linker failures. Additionally, the C compiler environment is misconfigured: standard C99 math functions are undeclared despite `-lm` being linked, and C++ standard library detection is broken (libc++ headers missing or improperly configured, `_LIBCPP_VERSION` unavailable). The combination prevents successful NumPy compilation; a partial build that reaches testing triggers a segmentation fault in datetime sorting logic.
+
+## Uncertainties / Missing Context
+
+- Exact GCC/Clang version and C++ standard library variant (libc++, libstdc++, MSVCRT) in use
+- CI runner image version and whether BLAS/LAPACK libraries are installed
+- Why standard C math headers (math.h) are not providing `isfinite`, `isinf`, `isnan`, `signbit`—typically a consequence of missing include or incorrect compiler flags
+- Whether the segfault in `test_datetime_nat_argsort_stability` is a direct consequence of the broken build or an independent runtime bug
+- Whether Meson build configuration specifies explicit library paths that may be incorrect for the runner environment

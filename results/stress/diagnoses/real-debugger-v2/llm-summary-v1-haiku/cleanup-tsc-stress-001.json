@@ -1,0 +1,83 @@
+{
+  "case_id": "cleanup-tsc-stress-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Cleanup artifacts' CI step failed because the GitHub Actions integration token lacks permission to delete artifacts in the microsoft/TypeScript repository. The gh CLI returned a 403 HTTP error when attempting to call the GitHub API DELETE endpoint for artifact cleanup.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GitHub Actions integration token does not have authorization to delete artifacts via the GitHub API, resulting in a 403 'Resource not accessible by integration' error.",
+  "confidence": 0.88,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "This is the direct error message from the gh CLI, confirming the token/integration lacks the required permission to perform the DELETE operation on the artifact."
+    },
+    {
+      "quote": "gh api \\\n  --silent \\\n  -X DELETE \\\n  -H \"Accept: application/vnd.github+json\" \\\n  /repos/microsoft/TypeScript/actions/artifacts/\"$artifact_id\"",
+      "reason": "This is the exact command that failed, showing the DELETE request to the artifacts endpoint that was rejected with 403."
+    },
+    {
+      "quote": "Process exit code 1",
+      "reason": "Confirms the gh command exited with a non-zero status, indicating failure and causing the CI step to fail."
+    }
+  ],
+  "suggested_fix": "Grant the GitHub Actions workflow the `actions: write` permission in the workflow YAML (under `permissions:`) so that the integration token is authorized to delete artifacts via the GitHub API.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-haiku/cleanup-tsc-stress-001.txt",
+    "context_tokens_estimate": 355
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 565
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 19979.602,
+    "cache_key": "0c67a9a5d801103ba4be51f23e5eb77db7375fb191726a23265d3bb7ae7809b5",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 3936,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 411,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 3936,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 411,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 3936,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 3936
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "96d2f0a4-4d6a-4fb8-9f65-38281e6a39c7"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

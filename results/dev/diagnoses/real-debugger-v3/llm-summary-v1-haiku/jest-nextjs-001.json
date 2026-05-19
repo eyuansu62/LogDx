@@ -1,0 +1,98 @@
+{
+  "case_id": "jest-nextjs-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest could not discover any test files for many example projects (pattern matching returned 0 matches for explicitly passed file paths), causing Jest to exit with code 1 and leaving no results JSON files for run-tests.js to read.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Jest returned \"No tests found, exiting with code 1\" because pattern matching found 0 matches for the explicitly-specified test file paths; as a result the expected results JSON files were not written and run-tests.js failed with ENOENT when attempting to read them.",
+  "confidence": 0.84,
+  "relevant_files": [
+    "/work/run-tests.js:927:29",
+    "/work/run-tests.js:975:19",
+    "/work/run-tests.js:991:9"
+  ],
+  "relevant_tests": [
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest/app/utils/add.test.ts",
+    "examples/with-jest-babel/__tests__/index.test.tsx",
+    "examples/with-jest/app/blog/[slug]/page.test.tsx",
+    "examples/with-jest/app/counter.test.tsx",
+    "examples/with-jest/app/page.test.tsx",
+    "examples/with-mocha/test/index.test.js",
+    "examples/with-typescript-graphql/test/index.test.tsx",
+    "examples/with-vitest/__tests__/Home.test.tsx",
+    "examples/with-vitest/app/blog/[slug]/page.test.tsx",
+    "examples/with-vitest/app/counter.test.tsx",
+    "examples/with-vitest/app/page.test.tsx",
+    "examples/with-vitest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts"
+  ],
+  "evidence": [
+    {
+      "quote": "No tests found, exiting with code 1",
+      "reason": "Direct failure message from Jest indicating no tests were discovered and Jest exited with a failing code."
+    },
+    {
+      "quote": "Pattern: examples/with-jest/__tests__/index.test.tsx - 0 matches",
+      "reason": "Shows pattern matching returned zero matches for an explicitly-specified test path."
+    },
+    {
+      "quote": "ENOENT: no such file or directory, open 'examples/with-jest/__tests__/index.test.tsx.results.json'",
+      "reason": "run-tests.js attempted to read a results JSON that was never created because the test run failed, causing ENOENT."
+    },
+    {
+      "quote": "/work/run-tests.js:927:29",
+      "reason": "Stack location where readFileSync attempted to open the missing results file, linking the ENOENT to the test-run orchestration script."
+    },
+    {
+      "quote": "/work/node_modules/.bin/jest '--runInBand' '--forceExit' '--no-cache' '--verbose' '--json' '--outputFile=examples/with-jest/app/utils/add.test.ts.results.json' 'examples/with-jest/app/utils/add.test.ts' — exit code 1",
+      "reason": "Shows Jest was invoked with an explicit file path and output file, but the invocation exited with code 1 (no tests found)."
+    }
+  ],
+  "suggested_fix": "Verify that the test files actually exist at the specified paths in the CI workspace (e.g., ls examples/with-*/**/*.test.*) and that the release/build step included the example directories; if files are present, check Jest configuration (testMatch/testPathIgnorePatterns, extensions, or transforms) or the TypeScript/Babel transpilation step so Jest can discover/execute the tests. Re-run tests after ensuring files are present and configuration/transpilation is correct.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-haiku/jest-nextjs-001.txt",
+    "context_tokens_estimate": 888
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 906
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 27646.125,
+    "cache_key": "6ceeaaa215becaaa88f6d8430ed747614dbc6de34018547fb3bd43f6e0c98f95",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
+    "model_info": {
+      "provider_name": "openai",
+      "requested_model": "gpt-5-mini",
+      "resolved_model": "gpt-5-mini-2025-08-07",
+      "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
+      "max_completion_tokens": 4096,
+      "system_fingerprint": null,
+      "usage": {
+        "prompt_tokens": 2066,
+        "completion_tokens": 1776,
+        "total_tokens": 3842,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 960,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8d5f6bb1e7382f07124c3096574e449b1db3361a9edfee83a2cea21aa4e1246b",
+    "shim_sha256": "bdb194f15bf4f87108aa71863384c07d14b106caa712d398ec48c98ff391e573"
+  }
+}

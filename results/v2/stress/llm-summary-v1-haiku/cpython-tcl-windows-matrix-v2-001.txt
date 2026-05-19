@@ -1,0 +1,48 @@
+# CI Failure Summary
+
+## Primary Failure
+
+The CPython test suite's `test_tcl` module failed with 2 test failures during execution, both related to Unicode surrogate character handling in Tcl integration. Additionally, the build produced C4244 compiler warnings about int64-to-int conversions in generated code. Despite a re-run, `test_tcl` failed again, with 4 total failures across 50,658 tests run.
+
+## Critical Evidence
+
+- `AssertionError: '<\ud83d\udcbb>' != '<ðŸ'»>'` (L004028, L004040) — expected emoji representation `<\U0001f4bb>` but received raw Unicode surrogates
+- `warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data` (L001146, L001149, L001789, L001792)
+- `self.assertEqual(tcl.eval(r'set a "<\ud83d\udcbb>"'), '<\U0001f4bb>')` (L004026) — assertion that failed
+- `self.assertEqual(tcl.eval('set b'), '<\U0001f4bb>')` (L004038) — assertion that failed
+- `test_tcl failed (2 failures)` (L003969, L004235)
+- `Result: FAILURE then FAILURE` (L004323)
+
+## Failed Tests / Checks
+
+- `test.test_tcl.TclTest.test_eval_surrogates_in_result`
+- `test.test_tcl.TclTest.test_evalfile_surrogates_in_result`
+- `test_tcl` (re-run also failed)
+
+## Relevant Files and Locations
+
+- `Lib\test\test_tcl.py:57` (test_eval_surrogates_in_result entry point)
+- `Lib\test\test_tcl.py:292` (test_evalfile_surrogates_in_result entry point)
+- `Python\generated_cases.c.h:7948,46` and `13056,46` (C4244 warnings)
+- `Modules\_testinternalcapi\test_cases.c.h:7949,46` and `13059,46` (C4244 warnings)
+- `Python\bytecodes.c` (source for code generation)
+- `Python\optimizer_bytecodes.c`
+
+## Commands and Exit Codes
+
+- `py -3.14 Tools\cases_generator\tier1_generator.py Python\bytecodes.c` (L000951)
+- `py -3.14 Tools\cases_generator\tier2_generator.py Python\bytecodes.c` (L000952)
+- `py -3.14 Tools\cases_generator\optimizer_generator.py Python\optimizer_bytecodes.c Python\bytecodes.c` (L000953)
+- Exit code: `2` (L004324) — `Process completed with exit code 2`
+
+## Possible Root Cause
+
+A regression in Unicode surrogate pair handling within the Tcl/Python integration layer. The test expects Tcl's `eval()` to return properly encoded emoji (U+1F4BB), but is instead returning raw UTF-16 surrogate pairs, indicating a character encoding conversion failure. This may be related to changes in the bytecode generation pipeline, though the C4244 warnings suggest unrelated type conversion issues in generated code.
+
+## Uncertainties / Missing Context
+
+- Whether the C4244 compiler warnings directly cause or contribute to the test failures
+- Whether these are new regressions or pre-existing test failures
+- The specific changes made to bytecodes.c or the code generators in this build
+- Whether other Unicode/Tcl-related tests in the suite passed
+- The Python version string and platform context beyond "py -3.14"

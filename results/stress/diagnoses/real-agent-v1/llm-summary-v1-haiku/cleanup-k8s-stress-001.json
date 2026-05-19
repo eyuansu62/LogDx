@@ -1,0 +1,91 @@
+{
+  "case_id": "cleanup-k8s-stress-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Cleanup artifacts' CI job failed because the `gh api` DELETE call to `/repos/kubernetes/kubernetes/actions/artifacts/<id>` returned HTTP 403 (Forbidden). The token used (GH_TOKEN / GITHUB_TOKEN) does not have the required permissions to delete Actions artifacts for the kubernetes/kubernetes repository.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GitHub token (GH_TOKEN/GITHUB_TOKEN) used by the workflow lacks the `actions:write` (or equivalent) permission needed to delete artifacts via the GitHub API endpoint `DELETE /repos/kubernetes/kubernetes/actions/artifacts/{artifact_id}`, resulting in HTTP 403 'Resource not accessible by integration'.",
+  "confidence": 0.92,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "Explicit HTTP 403 error from the GitHub API indicating the token lacks permission for the requested operation."
+    },
+    {
+      "quote": "-X DELETE \\\n    -H \"Accept: application/vnd.github+json\" \\\n    /repos/kubernetes/kubernetes/actions/artifacts/\"$artifact_id\"",
+      "reason": "Shows the exact gh API call that failed — a DELETE request to remove an Actions artifact, which requires write permissions on Actions."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the step exited with a non-zero code, causing the job to fail."
+    }
+  ],
+  "suggested_fix": "Grant the workflow's GITHUB_TOKEN the `actions: write` permission by adding `permissions: actions: write` to the job or workflow definition, or replace the token with a PAT/GitHub App token that has the `repo` and `actions:write` scopes for the kubernetes/kubernetes repository.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-haiku/cleanup-k8s-stress-001.txt",
+    "context_tokens_estimate": 302
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 668
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 14748.311,
+    "cache_key": "846844d85ab7ae04af0b4b36836c7bbb62557040307b0c76298bd4dc906ea3d9",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 4817,
+        "output_tokens": 477,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.021606,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.021606,
+          "upstream_inference_prompt_cost": 0.014451,
+          "upstream_inference_completions_cost": 0.007155
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 1,
+    "tool_calls": [
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 81,
+          "radius": 30
+        },
+        "observation_tokens_estimate": 571,
+        "runtime_ms": 1.7588750342838466,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 8400,
+    "total_output_tokens_consumed": 552,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

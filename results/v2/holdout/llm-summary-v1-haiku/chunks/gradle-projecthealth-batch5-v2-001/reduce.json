@@ -1,0 +1,10 @@
+{
+  "content": "# CI Failure Summary\n\n## Primary Failure\n\nGradle build task `:platform-base:projectHealth` failed due to an incorrect dependency configuration. The task expects `domainObjectCollections` to be declared as `implementation` but it is currently declared as `api`.\n\n## Critical Evidence\n\n- `Task :platform-base:projectHealth FAILED` (L012757)\n- `Execution failed for task ':platform-base:projectHealth'.` (L012775)\n- `implementation(projects.domainObjectCollections) (was api)` (L012778)\n- `Existing dependencies which should be modified to be as indicated:` (L012777)\n- `##[error]Process completed with exit code 1.` (L012792)\n\n## Failed Tests / Checks\n\n- `:platform-base:projectHealth`\n\n## Relevant Files and Locations\n\n- `/home/runner/work/gradle/gradle/platforms/software/platform-base/build.gradle.kts`\n\n## Commands and Exit Codes\n\n- `FAILURE: Build failed with an exception.` (L012772)\n- Exit code 1 (L012792)\n\n## Possible Root Cause\n\nThe `domainObjectCollections` dependency is exported via the public API surface of `platform-base` (using `api`) when the project's health check requires internal dependencies to use `implementation` scope to prevent transitive exposure. This is a dependency visibility constraint violation.\n\n## Uncertainties / Missing Context\n\n- Whether this is a newly enforced check or a pre-existing constraint\n- The full list of other dependencies that may have the same issue\n- The purpose/rationale for the `projectHealth` task's visibility requirements\n- Relationship between chunk 4's Java documentation warning and this build failure (likely unrelated)",
+  "provider": "claude-cli",
+  "model": "haiku",
+  "usage": {
+    "input_tokens": 66156,
+    "output_tokens": 1038,
+    "total_cost_usd": 0.01528785
+  }
+}

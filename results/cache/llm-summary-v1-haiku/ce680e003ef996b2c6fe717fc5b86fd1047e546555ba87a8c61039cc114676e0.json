@@ -1,0 +1,25 @@
+{
+  "key_parts": {
+    "case_id": "biome-pnpm-not-found-v2-001",
+    "raw_sha": "de1ee132d54904d7797f65f5fa6749051743ed057acd8e86a2f7c36f29ec2dc3",
+    "prompt_version": "llm_summary_v1",
+    "prompt_sha": "e3739738b7136af3956f3712e7b76babd9224b6854dcc60ff16546a3fbb16702",
+    "provider": "command",
+    "method": "llm-summary-v1-haiku",
+    "chunk_index": -1,
+    "chunk_sha": "2bffafa6c087eccc9e44e4d8167a1db173ceb896d689af98a5779adede1dce5d",
+    "temperature": 0.0,
+    "max_output_chars": 12000,
+    "stage": "reduce"
+  },
+  "response": {
+    "content": "# CI Failure Summary\n\n## Primary Failure\n\nGitHub Actions build failed during a recipe-based build process. The `pnpm format` command encountered a \"command not found\" error (exit code 127), causing the `format` recipe to fail on line 221, which then cascaded to failure of the `gen-all` recipe on line 32.\n\n## Critical Evidence\n\n- `sh: 1: pnpm: not found` (L015764)\n- `exit code 127` (L015765, L015766) — standard Unix \"command not found\" exit code\n- `##[error]Process completed with exit code 127.` (L015767)\n- Failed command: `pnpm format` (L015763)\n\n## Failed Tests / Checks\n\n- Recipe `format` (line 221)\n- Recipe `gen-all` (line 32)\n\n## Relevant Files and Locations\n\n- Recipe definitions referenced at lines 221 and 32 _(exact file path not provided in logs)_\n\n## Commands and Exit Codes\n\n- `pnpm format` — exit code 127\n- GitHub Actions process exit — exit code 127\n\n## Possible Root Cause\n\nThe `pnpm` package manager is not installed or not present in the CI environment's PATH. No setup step appears to have installed pnpm before the recipe execution attempted to invoke it.\n\n## Uncertainties / Missing Context\n\n- Whether a Node.js/npm setup step ran before `pnpm format` was called\n- Whether pnpm installation should have been a prerequisite (e.g., via `npm install -g pnpm` or similar)\n- The location and content of the recipe definition file\n- Whether this is a recent regression (pnpm was previously available in the CI environment)\n- Whether a lock file (pnpm-lock.yaml) exists and whether it should be committed",
+    "provider": "claude-cli",
+    "model": "haiku",
+    "usage": {
+      "input_tokens": 47226,
+      "output_tokens": 1048,
+      "total_cost_usd": 0.013249350000000002
+    }
+  }
+}

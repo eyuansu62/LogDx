@@ -1,0 +1,96 @@
+{
+  "case_id": "gh-cli-go-test-prompter-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The Go test `TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query` timed out in `huh_prompter_test.go` at line 478 because `form.Run()` did not complete within the allowed time. This indicates a hang, deadlock, or race condition in the multi-select form with search persistence logic.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The test subtest `selections_persist_after_changing_search_query` timed out after 5.13s waiting for `form.Run()` to return, suggesting the multi-select form with search persistence hangs or deadlocks during execution.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "huh_prompter_test.go"
+  ],
+  "relevant_tests": [
+    "TestHuhPrompterMultiSelectWithSearchPersistence",
+    "TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query"
+  ],
+  "evidence": [
+    {
+      "quote": "form.Run() did not complete in time",
+      "reason": "This is the explicit timeout failure message from line L000245, confirming the hang occurred inside the form.Run() call."
+    },
+    {
+      "quote": "huh_prompter_test.go:478",
+      "reason": "Identifies the exact file and line where the timeout assertion was triggered."
+    },
+    {
+      "quote": "selections_persist_after_changing_search_query",
+      "reason": "Names the specific subtest that failed, narrowing the root cause to the search query change + persistence code path."
+    },
+    {
+      "quote": "5.13s",
+      "reason": "The subtest ran for 5.13 seconds before timing out, consistent with a blocking/deadlock scenario rather than an immediate assertion failure."
+    },
+    {
+      "quote": "go test github.com/cli/cli/v2/internal/prompter",
+      "reason": "Confirms the failing package and that the test suite exited with a non-zero status due to this failure."
+    }
+  ],
+  "suggested_fix": "Investigate the `form.Run()` call path in the `selections_persist_after_changing_search_query` subtest in `huh_prompter_test.go` around line 478 for a deadlock or missing channel signal. Add logging or use `go test -race` to detect race conditions. If this is a known flaky test, consider adding a retry mechanism or increasing the timeout while the underlying hang is diagnosed.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-haiku/gh-cli-go-test-prompter-v2-001.txt",
+    "context_tokens_estimate": 393
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 716
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 24603.574,
+    "cache_key": "7ce496aa054d93d8d1afb7fd3e7cf899a42aa3f5ff65da4bf94e982cb23a2d3e",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 4033,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 649,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 4033,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 649,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 4033,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 4033
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "8649b7a3-200a-4a02-879f-f966f80802de"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

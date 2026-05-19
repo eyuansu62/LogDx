@@ -1,0 +1,103 @@
+{
+  "case_id": "pytest-sklearn-stress-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "A pytest doctest in `doc/callbacks.rst` failed because the expected progress bar output from a LogisticRegression fitting callback was not produced. Instead of the formatted progress bar string, the doctest received only `LogisticRegression()` (the model repr), indicating the callback/progress bar output is not being rendered or captured in the doctest environment.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The doctest at `doc/callbacks.rst:48` expects `estimator.fit(X, y)` to display a rich progress bar (`LogisticRegression - fit ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:03:12`), but the callback output is not being produced in the doctest environment. Instead, only the default estimator repr `LogisticRegression()` is returned, causing a DocTestFailure.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "doc/callbacks.rst"
+  ],
+  "relevant_tests": [
+    "../doc/callbacks.rst::callbacks.rst"
+  ],
+  "evidence": [
+    {
+      "quote": "Expected:\n    LogisticRegression - fit ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:03:12\nGot:\n    LogisticRegression()",
+      "reason": "This is the direct doctest mismatch: the progress bar output was expected but the callback did not produce it, only the model repr was returned."
+    },
+    {
+      "quote": "/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst:48: DocTestFailure",
+      "reason": "Confirms the exact file and line where the doctest assertion failed."
+    },
+    {
+      "quote": "FAILED ../doc/callbacks.rst::callbacks.rst",
+      "reason": "Identifies the failing test as the callbacks.rst doctest."
+    },
+    {
+      "quote": "1 failed, 41 passed, 2 skipped, 59 warnings in 71.85s",
+      "reason": "Shows this is the sole test failure in the run, isolating the root cause to the callbacks doctest."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the CI job failed due to this test failure."
+    }
+  ],
+  "suggested_fix": "Either add `# doctest: +SKIP` to the `estimator.fit(X, y)` line in `doc/callbacks.rst` (similar to the `set_callbacks` line above it which already has `# doctest: +SKIP`), or fix the callback/progress bar mechanism so it correctly outputs to stdout in the doctest environment (e.g., ensure the progress bar writes to `sys.stdout` rather than a terminal-only stream).",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-haiku/pytest-sklearn-stress-001.txt",
+    "context_tokens_estimate": 524
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 799
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 19460.973,
+    "cache_key": "b7609170c11c6a5ca6808c435529626bba9b5c0e96d65d2599c469a7a7b3c60a",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 5775,
+        "output_tokens": 765,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard",
+        "cost": 0.0288,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.0288,
+          "upstream_inference_prompt_cost": 0.017325,
+          "upstream_inference_completions_cost": 0.011475
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 1,
+    "tool_calls": [
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 5660,
+          "radius": 20
+        },
+        "observation_tokens_estimate": 1036,
+        "runtime_ms": 7.747124996967614,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 9678,
+    "total_output_tokens_consumed": 864,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

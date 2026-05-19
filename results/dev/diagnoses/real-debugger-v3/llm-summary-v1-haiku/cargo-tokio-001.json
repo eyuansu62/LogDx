@@ -1,0 +1,88 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "A trybuild snapshot test failed: the compile_fail_full test in tests-build::macros found that the actual compiler output for tests/fail/macros_type_mismatch.rs does not match the expected snapshot.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "trybuild snapshot mismatch: the expected compiler error messages for tests/fail/macros_type_mismatch.rs do not match the actual rustc output, causing the compile_fail_full test to fail.",
+  "confidence": 0.78,
+  "relevant_files": [
+    "tests/fail/macros_type_mismatch.rs:5:5",
+    "tests/fail/macros_type_mismatch.rs:10:5",
+    "tests/fail/macros_type_mismatch.rs:23:5",
+    "tests/fail/macros_type_mismatch.rs:40:5",
+    "tests/fail/macros_type_mismatch.rs:57:11",
+    "tests/fail/macros_type_mismatch.rs:66:5"
+  ],
+  "relevant_tests": [
+    "tests-build::macros compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.87s",
+      "reason": "Shows the test run produced exactly one failing test, indicating a test assertion/expectation failure."
+    },
+    {
+      "quote": "Expected vs actual output mismatch in trybuild test (L002845–L003084)",
+      "reason": "Explicitly states the failure is due to a mismatch between expected and actual compiler output in a trybuild test."
+    },
+    {
+      "quote": "The expected compiler error messages in the trybuild snapshot no longer match the actual Rust compiler output from `tests/fail/macros_type_mismatch.rs`.",
+      "reason": "Describes the root mismatch between the saved snapshot and the current compiler output for the indicated test file."
+    },
+    {
+      "quote": "If the actual output is the correct output you can bless it by rerunning your test with the environment variable TRYBUILD=overwrite",
+      "reason": "Provides the remediation hint that the snapshot can be updated if the new compiler output is intended, confirming this is a trybuild snapshot mismatch."
+    },
+    {
+      "quote": "Exit code 100 (L003121)",
+      "reason": "Indicates the job exited with a non-zero exit code due to the failing test."
+    }
+  ],
+  "suggested_fix": "If the new compiler output is correct, rerun the test with TRYBUILD=overwrite to update the trybuild snapshot (per the remediation hint). Otherwise, update the test expectations or fix the macro implementation so the compiler errors match the saved snapshot.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-haiku/cargo-tokio-001.txt",
+    "context_tokens_estimate": 519
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 720
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 33915.629,
+    "cache_key": "310f63f48d0d95e47cb285d2cfbee26a56139ad0dfcbc3deb00b914cec00173f",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
+    "model_info": {
+      "provider_name": "openai",
+      "requested_model": "gpt-5-mini",
+      "resolved_model": "gpt-5-mini-2025-08-07",
+      "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
+      "max_completion_tokens": 4096,
+      "system_fingerprint": null,
+      "usage": {
+        "prompt_tokens": 1629,
+        "completion_tokens": 2077,
+        "total_tokens": 3706,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1472,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8d5f6bb1e7382f07124c3096574e449b1db3361a9edfee83a2cea21aa4e1246b",
+    "shim_sha256": "bdb194f15bf4f87108aa71863384c07d14b106caa712d398ec48c98ff391e573"
+  }
+}

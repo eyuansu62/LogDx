@@ -62,28 +62,33 @@ the 35-case corpus:
 | 1 | `hybrid-grep-120k-rtk-tail` | 0.624 | 0.679 | 0.706 | **0.670** | **0.000** | 19,844 |
 | 2 | `hybrid-grep-120k-tail`     | 0.610 | 0.730 | 0.658 | **0.666** | 0.010 | 19,753 |
 | 3 | `grep`                      | 0.578 | 0.684 | 0.655 | 0.639 | **0.000** | 88,355 |
-| 4 | `tail-200`                  | 0.595 | 0.624 | 0.623 | 0.614 | 0.019 | **6,108** |
-| 5 | `hybrid-grep-4k-rtk-err-cat` <sub>(*replaced; see report*)</sub> | 0.552 | 0.597 | 0.571 | 0.573 | 0.029 | 19,892 |
-| 6 | `rtk-err-cat`               | 0.455 | 0.488 | 0.467 | 0.470 | 0.029 | 19,850 |
-| 7 | `raw`                       | 0.324 | 0.368 | 0.367 | 0.353 | **0.000** | 275,248 |
-| 8 | `rtk-read`                  | 0.329 | 0.369 | 0.349 | 0.349 | 0.010 | 274,289 |
-| 9 | `llm-summary-v1-mock`       | 0.343 | 0.348 | 0.294 | 0.328 | **0.133** | **432,076** |
+| 4 | `llm-summary-v1-haiku` <sub>(*promoted to headline in v1.1*)</sub> | 0.583 | 0.704 | 0.608 | **0.632** | 0.029 | 1,681,520 |
+| 5 | `tail-200`                  | 0.595 | 0.624 | 0.623 | 0.614 | 0.019 | **6,108** |
+| 6 | `hybrid-grep-4k-rtk-err-cat` <sub>(*replaced; see report*)</sub> | 0.552 | 0.597 | 0.571 | 0.573 | 0.029 | 19,892 |
+| 7 | `rtk-err-cat`               | 0.455 | 0.488 | 0.467 | 0.470 | 0.029 | 19,850 |
+| 8 | `raw`                       | 0.324 | 0.368 | 0.367 | 0.353 | **0.000** | 275,248 |
+| 9 | `rtk-read`                  | 0.329 | 0.369 | 0.349 | 0.349 | 0.010 | 274,289 |
 | 10 | `rtk-log`                  | 0.238 | 0.262 | 0.249 | 0.249 | **0.133** | **810** |
+| — | `llm-summary-v1-mock` <sub>(*legacy stub*)</sub> | 0.343 | 0.348 | 0.294 | 0.328 | **0.133** | 432,076 |
 
 Three layers of finding:
 
 1. **Quality**: top-2 are 120k-threshold hybrid routers. Stable
-   across all 3 model families.
+   across all 3 model families. The real Haiku summarizer
+   (`llm-summary-v1-haiku`, row 4) lands fourth — a +0.30 jump
+   over the legacy mock stub that previously represented the
+   LLM-summary class.
 2. **Safety** (`conf_err`): top-3 methods produce ~zero confidently-
-   wrong diagnoses. `rtk-log` and `llm-summary-v1-mock` mislead a
-   confident LLM on ~13% of cases — the failure mode
+   wrong diagnoses. `rtk-log` and the legacy `llm-summary-v1-mock`
+   mislead a confident LLM on ~13% of cases — the failure mode
    [discussed in rtk-ai/rtk#1599](https://github.com/rtk-ai/rtk/issues/1599).
 3. **Cost** (`tokens`): the top-2 hybrids dominate `grep` —
    **same-ballpark score at 4.5× fewer tokens**.
-   `llm-summary-v1-mock` is the most expensive method on the board
-   (432k tokens/case end-to-end, because the summarizer itself
-   burns 430k tokens generating a 1.3k summary) AND ranks 9th.
-   Full Pareto frontier on the
+   `llm-summary-v1-haiku` is the most expensive method on the
+   board (1.68M tokens/case end-to-end — the real summarizer's
+   Claude-Code-nested cached-prefix overhead is ~4× higher than
+   the mock had estimated), so it remains a quality-over-cost
+   choice. Full Pareto frontier on the
    [leaderboard page](leaderboard.html#cost-quality-pareto-frontier).
 
 The top-2 hybrids replaced an earlier 4k-threshold hybrid that was

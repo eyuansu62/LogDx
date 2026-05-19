@@ -1,0 +1,118 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The NumPy smoke test job fails with a segmentation fault during `test_datetime_nat_argsort_stability`. The build completes (BLAS absence is allowed via `-Dallow-noblas=true`), but when pytest reaches the datetime test module, calling `argsort` on datetime data triggers a fatal segfault in the C extension, causing pytest to exit with code 245.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "A segmentation fault occurs in NumPy's C extension code when `argsort` is called on datetime arrays containing NaT values in `test_datetime_nat_argsort_stability`. This crashes the Python interpreter with exit code 245 rather than a normal test failure.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py",
+    "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py"
+  ],
+  "relevant_tests": [
+    "test_datetime_nat_argsort_stability"
+  ],
+  "evidence": [
+    {
+      "quote": "numpy/_core/tests/test_datetime.py ^[[32m.^[[0m...^[[0mFatal Python error: Segmentation fault",
+      "reason": "The segfault occurs while pytest is running test_datetime.py, immediately identifying the crash location."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
+      "reason": "The stack trace pinpoints the failing test as test_datetime_nat_argsort_stability at line 226."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 1231 in argsort",
+      "reason": "The crash originates in the argsort C extension call, indicating a bug in the datetime argsort implementation."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 245.",
+      "reason": "Exit code 245 is the pytest exit code for a crash/segfault, confirming the process was killed by a signal rather than a normal test failure."
+    },
+    {
+      "quote": "MESON_ARGS: -Dallow-noblas=true -Dcpu-baseline=none -Dcpu-dispatch=none",
+      "reason": "The build explicitly allows no BLAS, so the missing BLAS/LAPACK libraries are not the root cause of the failure — the build completes and tests run."
+    }
+  ],
+  "suggested_fix": "Investigate the datetime argsort C implementation for a memory safety bug when handling NaT (Not-a-Time) values, particularly in the stability sort path. Run the test locally with a debug build or AddressSanitizer to identify the exact memory corruption or null pointer dereference.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-haiku/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 1130
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 962
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 28087.032,
+    "cache_key": "4304c683ac1f7c553859acaa0ed207ed0bbadca40f535e55f4ca11cd01011bc7",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 11051,
+        "output_tokens": 914,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.046863,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.046863,
+          "upstream_inference_prompt_cost": 0.033153,
+          "upstream_inference_completions_cost": 0.01371
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 3,
+    "tool_call_count": 2,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "openblas|mkl|blas|lapack|segfault|exit code 245",
+          "before": 2,
+          "after": 3,
+          "max_matches": 10
+        },
+        "observation_tokens_estimate": 936,
+        "runtime_ms": 7.882541976869106,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "allow-noblas|noblas|BLAS not found|no BLAS|Segmentation fault|Fatal Python",
+          "before": 2,
+          "after": 5,
+          "max_matches": 15
+        },
+        "observation_tokens_estimate": 1996,
+        "runtime_ms": 20.999625034164637,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 22731,
+    "total_output_tokens_consumed": 1194,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 3
+  }
+}

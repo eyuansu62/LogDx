@@ -1,0 +1,25 @@
+{
+  "key_parts": {
+    "case_id": "gradle-projecthealth-batch5-v2-001",
+    "raw_sha": "f2a59b4a6dc08511756031cb19f636617b50bf5e74ebf4be8d2fcd59a3751620",
+    "prompt_version": "llm_summary_v1",
+    "prompt_sha": "e3739738b7136af3956f3712e7b76babd9224b6854dcc60ff16546a3fbb16702",
+    "provider": "command",
+    "method": "llm-summary-v1-haiku",
+    "chunk_index": -1,
+    "chunk_sha": "360cc9af98c05f8a678ede7d936fc4eb6dd48207d3231409c1404dd24fd501ad",
+    "temperature": 0.0,
+    "max_output_chars": 12000,
+    "stage": "reduce"
+  },
+  "response": {
+    "content": "# CI Failure Summary\n\n## Primary Failure\n\nGradle build task `:platform-base:projectHealth` failed due to an incorrect dependency configuration. The task expects `domainObjectCollections` to be declared as `implementation` but it is currently declared as `api`.\n\n## Critical Evidence\n\n- `Task :platform-base:projectHealth FAILED` (L012757)\n- `Execution failed for task ':platform-base:projectHealth'.` (L012775)\n- `implementation(projects.domainObjectCollections) (was api)` (L012778)\n- `Existing dependencies which should be modified to be as indicated:` (L012777)\n- `##[error]Process completed with exit code 1.` (L012792)\n\n## Failed Tests / Checks\n\n- `:platform-base:projectHealth`\n\n## Relevant Files and Locations\n\n- `/home/runner/work/gradle/gradle/platforms/software/platform-base/build.gradle.kts`\n\n## Commands and Exit Codes\n\n- `FAILURE: Build failed with an exception.` (L012772)\n- Exit code 1 (L012792)\n\n## Possible Root Cause\n\nThe `domainObjectCollections` dependency is exported via the public API surface of `platform-base` (using `api`) when the project's health check requires internal dependencies to use `implementation` scope to prevent transitive exposure. This is a dependency visibility constraint violation.\n\n## Uncertainties / Missing Context\n\n- Whether this is a newly enforced check or a pre-existing constraint\n- The full list of other dependencies that may have the same issue\n- The purpose/rationale for the `projectHealth` task's visibility requirements\n- Relationship between chunk 4's Java documentation warning and this build failure (likely unrelated)",
+    "provider": "claude-cli",
+    "model": "haiku",
+    "usage": {
+      "input_tokens": 66156,
+      "output_tokens": 1038,
+      "total_cost_usd": 0.01528785
+    }
+  }
+}

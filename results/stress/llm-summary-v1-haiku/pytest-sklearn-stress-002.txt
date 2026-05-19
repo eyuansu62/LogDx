@@ -1,1 +1,46 @@
-UNAVAILABLE: summary reduce stage failed. See provider_error in row metadata.
+# CI Failure Summary
+
+## Primary Failure
+
+The doctest in scikit-learn's `callbacks.rst` module is failing with a mismatch between expected and actual output. The doctest expects a formatted progress bar string but receives only the string representation of a `LogisticRegression` object. Multiple Cython compilation warnings about const qualifiers and uninitialized variables were also emitted during the build, but these appear to be non-blocking warnings.
+
+## Critical Evidence
+
+- `Expected: LogisticRegression - fit ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:03:12` (L005614)
+- `Got: LogisticRegression()` (L005616)
+- `DocTestFailure` location: `/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst:48` (L005618)
+- Cython warnings: `Assigning to 'intp_t *' from 'const intp_t *' discards const qualifier` (L001925–L001938)
+- Uninitialized variable warnings: `'__pyx_v_p' may be used uninitialized [-Wmaybe-uninitialized]` (L001968–L002101)
+
+## Failed Tests / Checks
+
+- `FAILED ../doc/callbacks.rst::callbacks.rst` (L005620)
+- Doctest in `/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst:48` (L005618)
+
+## Relevant Files and Locations
+
+- `/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst:48`
+- `sklearn/neighbors/_binary_tree.pxi:1091`, `1957`, `2052`, `2221`, `2344`, `2401`, `2402`, `2726`, `3592`, `3687`, `3856`, `3979`, `4036`, `4037`
+- `sklearn/neighbors/_ball_tree.pyx:107`, `310`
+- `sklearn/neighbors/_kd_tree.pyx:74`, `75`, `342`, `343`
+- `sklearn/_loss/_loss.cpython-314-x86_64-linux-gnu.so.p/_loss.c:87144`, `88376`, `91410`, `90430`, `90920`
+- `sklearn/cluster/_k_means_lloyd.cpython-314-x86_64-linux-gnu.so.p/meson-generated__k_means_lloyd.c.o`
+- `sklearn/manifold/_barnes_hut_tsne.cpython-314-x86_64-linux-gnu.so.p/_barnes_hut_tsne.c:6308`
+
+## Commands and Exit Codes
+
+- `python -m pytest --doctest-modules /home/runner/work/scikit-learn/scikit-learn/doc/about.rst /home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst ...` (L005548)
+- Exit code: `1` (L005622)
+- `##[error]Process completed with exit code 1.` (L005622)
+
+## Possible Root Cause
+
+The progress bar callback is not producing output in the doctest environment, resulting in only the object's default `__repr__` being captured. This may be due to the callback not executing, its output being suppressed in doctest mode, or the callback machinery not being properly initialized in the test context.
+
+## Uncertainties / Missing Context
+
+- Whether Cython compilation warnings are promoted to errors by the build configuration
+- Why the progress bar callback fails to produce output; no runtime exception is logged
+- Whether the doctest was intended to be skipped (the annotation `# doctest: +SKIP` appears earlier but may not apply to the failing line)
+- The Python version or environment differences that might suppress callback output
+- Whether these are regressions introduced by recent changes or pre-existing test issues

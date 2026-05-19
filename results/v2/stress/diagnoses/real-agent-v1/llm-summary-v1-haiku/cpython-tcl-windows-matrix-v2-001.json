@@ -1,0 +1,106 @@
+{
+  "case_id": "cpython-tcl-windows-matrix-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CPython test suite's test_tcl module failed with 2 test failures in both the initial run and re-run. The tests `test_eval_surrogates_in_result` and `test_evalfile_surrogates_in_result` fail because Tcl's `eval()` returns raw UTF-16 surrogate pairs (`\\ud83d\\udcbb`) instead of the expected properly-encoded emoji character (`<\\U0001f4bb>`), indicating a Unicode surrogate pair handling regression in the Tcl/Python integration layer on Windows.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The Tcl integration on Windows returns raw UTF-16 surrogate pairs instead of converting them to the proper Unicode code point (U+1F4BB). When `tcl.eval()` processes a string containing surrogate pairs `\\ud83d\\udcbb`, it returns the surrogates as-is rather than combining them into the emoji character `\\U0001f4bb`, causing assertEqual assertions to fail.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "Lib\\test\\test_tcl.py"
+  ],
+  "relevant_tests": [
+    "test.test_tcl.TclTest.test_eval_surrogates_in_result",
+    "test.test_tcl.TclTest.test_evalfile_surrogates_in_result"
+  ],
+  "evidence": [
+    {
+      "quote": "AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ'»>'",
+      "reason": "The test receives raw UTF-16 surrogate pairs from tcl.eval() instead of the properly encoded emoji, showing the Unicode conversion is broken."
+    },
+    {
+      "quote": "self.assertEqual(tcl.eval(r'set a \"<\\ud83d\\udcbb>\"'), '<\\U0001f4bb>')",
+      "reason": "The test expects Tcl to return the combined Unicode code point U+1F4BB but instead gets the raw surrogate pair back unchanged."
+    },
+    {
+      "quote": "test_tcl failed (2 failures)",
+      "reason": "Both the initial run and the re-run confirm the same 2 failures, ruling out a transient/flaky failure."
+    },
+    {
+      "quote": "Re-running test_tcl in verbose mode (matching: test_eval_surrogates_in_result, test_evalfile_surrogates_in_result)",
+      "reason": "The re-run targeted exactly these two surrogate-handling tests, and they failed again, confirming a consistent regression."
+    },
+    {
+      "quote": "patchlevel = 9.0.3",
+      "reason": "Identifies the Tcl version (9.0.3) in use, which may have different surrogate handling behavior compared to earlier versions."
+    }
+  ],
+  "suggested_fix": "Investigate the `_tkinter` C extension's string conversion code to ensure UTF-16 surrogate pairs are properly combined into their corresponding Unicode code points when returning strings from Tcl to Python on Windows. Check if Tcl 9.0.3 changed its internal string encoding (it moved to UTF-8 internally), which may require updating the surrogate-pair handling logic in `Modules/_tkinter.c`.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-haiku/cpython-tcl-windows-matrix-v2-001.txt",
+    "context_tokens_estimate": 708
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 903
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 20172.868,
+    "cache_key": "8ca176731e0537fe1f107848436cd6ff779d99d43d7fb5f01757ff7898361852",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 7719,
+        "output_tokens": 842,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard",
+        "cost": 0.035787,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.035787,
+          "upstream_inference_prompt_cost": 0.023157,
+          "upstream_inference_completions_cost": 0.01263
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 1,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "AssertionError.*ud83d|test_eval_surrogates|test_evalfile_surrogates",
+          "before": 3,
+          "after": 10,
+          "max_matches": 10
+        },
+        "observation_tokens_estimate": 1728,
+        "runtime_ms": 27.543833013623953,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 11930,
+    "total_output_tokens_consumed": 994,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

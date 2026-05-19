@@ -1,0 +1,44 @@
+# CI Failure Summary
+
+## Primary Failure
+
+The `docker buildx bake` action failed during the integration-tests build step. The root cause was an HTTP/1.1 502 Bad Gateway error when downloading the Nydus release package (`nydus-static-v2.4.0-linux-amd64.tgz`) via wget from the GitHub Releases server.
+
+## Critical Evidence
+
+- `wget: server returned error: HTTP/1.1 502 Bad Gateway or Proxy Error` (L001855)
+- `wget https://github.com/dragonflyoss/nydus/releases/download/v2.4.0/nydus-static-v2.4.0-linux-amd64.tgz` (L001853)
+- `Dockerfile:336` contains the failing wget command (L001886)
+- `exit code: 1` returned by the wget process (L001856, L001894, L003817)
+- `docker buildx bake https://github.com/moby/buildkit.git#9a62e8d2257e5914a98a66a1ac3722f9b636cbaf --set *.cache-from=type=gha,scope=frontend-integration-tests --print integration-tests` (L000923)
+
+## Failed Tests / Checks
+
+- `[nydus 1/2]` build stage failed (L001853)
+- Coverage upload step: "No coverage reports found. Please make sure you're generating reports successfully." (L002303)
+- `docker/bake-action@a66e1c87e2eca0503c343edf1d208c716d54b8a8` step failed (L000725)
+
+## Relevant Files and Locations
+
+- `Dockerfile:336` — wget command for nydus binary
+- `/src/executor/runcexecutor/executor.go:403` (L003820)
+- `/src/executor/runcexecutor/executor.go:351` (L003821)
+- `/src/solver/llbsolver/ops/exec.go:498` (L003823)
+- `/src/util/flightcontrol/flightcontrol.go:122` (L003827)
+
+## Commands and Exit Codes
+
+- `docker buildx bake https://github.com/moby/buildkit.git#9a62e8d2257e5914a98a66a1ac3722f9b636cbaf ...` — exit code 1 (L001901)
+- `wget https://github.com/dragonflyoss/nydus/releases/download/$NYDUS_VERSION/nydus-static-$NYDUS_VERSION-$TARGETOS-$TARGETARCH.tgz` — exit code 1 (L001856)
+- `##[error]buildx bake failed with: ERROR: failed to solve: process "/bin/bash -c wget ..." did not complete successfully: exit code: 1` (L001901)
+
+## Possible Root Cause
+
+The dragonflyoss/nydus GitHub Releases endpoint is returning 502 Bad Gateway errors, blocking the Dockerfile's wget operation at step 336. This is an upstream service availability issue. Secondary failures (missing coverage reports, missing docker-compose files) are cascading consequences of the primary build failure stopping execution before coverage reports were generated.
+
+## Uncertainties / Missing Context
+
+- Whether the 502 error is transient or persistent at the nydus releases endpoint
+- Why buildx backend is probing for docker-compose.yaml, docker-bake.json, docker-bake.override.hcl, and Dockerfile.rego when an explicit build context is provided (L002510–L003404)
+- Context cancellation during image fetches (`failed to do request: Get ... context canceled`, L003814–L003815) — whether this is a timeout from the primary 502 error or a separate network issue
+- Cache reservation conflict at job end (`Unable to reserve cache with key docker.io--tonistiigi--binfmt-latest-linux-x64`, L003944) — whether this is a race condition with parallel job runs

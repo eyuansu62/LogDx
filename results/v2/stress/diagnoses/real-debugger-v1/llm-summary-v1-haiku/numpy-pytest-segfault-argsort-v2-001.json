@@ -1,0 +1,112 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "NumPy build fails because the CI runner lacks required BLAS/LAPACK system libraries (MKL, OpenBLAS, BLIS, BLAS, LAPACK); Meson and the linker cannot locate them. Additionally, the C compiler environment is misconfigured, leaving standard math functions (`isfinite`, `isinf`, `isnan`, `signbit`) undeclared. A partial build reaches the test suite and segfaults.",
+  "root_cause_category": "dependency_install",
+  "root_cause": "The CI runner environment is missing required linear algebra libraries. Meson reports `Run-time dependency mkl found: NO`, `openblas found: NO`, `blas found: NO`, `lapack found: NO`; the linker cannot resolve `-lmkl_rt`, `-lopenblas`, `-lblas`, or `-llapack`. The build system cannot proceed without these libraries.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py",
+    "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py"
+  ],
+  "relevant_tests": [
+    "test_datetime_nat_argsort_stability"
+  ],
+  "evidence": [
+    {
+      "quote": "Run-time dependency mkl found: NO (tried pkgconfig and system)",
+      "reason": "Meson explicitly reports that MKL is not available in the runner environment."
+    },
+    {
+      "quote": "Run-time dependency openblas found: NO (tried pkgconfig, pkgconfig, pkgconfig, system and cmake)",
+      "reason": "Meson explicitly reports that OpenBLAS is not available despite multiple search strategies."
+    },
+    {
+      "quote": "Run-time dependency blas found: NO (tried pkgconfig and system)",
+      "reason": "Generic BLAS library is not found in the environment."
+    },
+    {
+      "quote": "Run-time dependency lapack found: NO (tried pkgconfig and system)",
+      "reason": "LAPACK library is not found in the environment."
+    },
+    {
+      "quote": "/usr/bin/ld: cannot find -lmkl_rt: No such file or directory",
+      "reason": "Linker cannot locate the MKL library file, indicating the library is not installed."
+    },
+    {
+      "quote": "/usr/bin/ld: cannot find -lopenblas: No such file or directory",
+      "reason": "Linker cannot locate the OpenBLAS library file."
+    },
+    {
+      "quote": "/usr/bin/ld: cannot find -lblas: No such file or directory",
+      "reason": "Linker cannot locate the generic BLAS library file."
+    },
+    {
+      "quote": "/usr/bin/ld: cannot find -llapack: No such file or directory",
+      "reason": "Linker cannot locate the LAPACK library file."
+    },
+    {
+      "quote": "Fatal Python error: Segmentation fault",
+      "reason": "The partial build that reached testing crashes, confirming the build was incomplete or misconfigured."
+    }
+  ],
+  "suggested_fix": "Install BLAS and LAPACK libraries in the CI runner image. The build system explicitly requires at least one of: MKL, OpenBLAS, BLIS, BLAS, or LAPACK. For a Linux runner, install these via the system package manager (e.g., `apt-get install libopenblas-dev liblapack-dev` or equivalent for the runner's OS).",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-haiku/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 1130
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 895
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 37081.588,
+    "cache_key": "ac044aae75ad4db3eb4bbf2ea5b566977b3cbfff9879bd8c4a45ff5d020fdcee",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "haiku",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 9,
+        "cache_creation_input_tokens": 4346,
+        "cache_read_input_tokens": 44848,
+        "output_tokens": 2572,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 4346,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 9,
+            "output_tokens": 2572,
+            "cache_read_input_tokens": 44848,
+            "cache_creation_input_tokens": 4346,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 4346
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "0f0a1389-ff7e-46e8-851c-082b893e3053"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "ade4ac2160bff920d4d00a0acc2289b3e3cf8de3a70e06ecd399e7cb5a0bb356",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

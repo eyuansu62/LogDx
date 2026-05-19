@@ -68,9 +68,12 @@ def get_messages(payload: dict) -> tuple[str, str]:
     return system, user
 
 
-# Match the diagnosis shim's single-call ceiling. The summarizer is invoked
-# per-chunk so this caps an individual chunk, not the whole log.
-MAX_USER_CHARS = 480_000
+# Per-chunk cap. Some real-world CI logs contain very long base64/binary
+# lines (e.g. nodejs debugger stack dumps) that push a 500-line chunk over
+# the diagnosis shim's 480k ceiling. Haiku 4.5 has ~200k tokens of input
+# context ≈ 800k chars, so a 700k cap leaves headroom for the system
+# prompt while admitting these long-line chunks.
+MAX_USER_CHARS = 700_000
 
 
 def invoke_claude(system_prompt: str, user_message: str,

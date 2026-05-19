@@ -1,0 +1,111 @@
+{
+  "case_id": "pytest-pandas-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The Numpy Nightly CI job failed because NumPy deprecated the 'generic' unit for timedelta64, and this DeprecationWarning is being treated as an error. Pandas code in concat/reshape operations that implicitly creates timedelta64 with unspecified units (e.g., via `np.datetime64(\"NaT\") + 1`) triggers this warning, causing 45 test failures and 52 errors across multiple test files.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "NumPy nightly deprecated implicit conversion of bare integers to timedelta64 with a 'generic' unit (DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated). Pandas code in `pandas/core/internals/concat.py` and related reshape/concat operations triggers this warning when handling NaT values, and the CI configuration treats this DeprecationWarning as an error, causing widespread test failures.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "pandas/core/reshape/concat.py",
+    "pandas/core/internals/concat.py",
+    "pandas/tests/reshape/concat/test_datetimes.py",
+    "pandas/tests/arrays/test_timedeltas.py",
+    "pandas/tests/arithmetic/test_datetime64.py",
+    "pandas/tests/reshape/concat/test_append.py",
+    "pandas/tests/reshape/concat/test_categorical.py",
+    "pandas/tests/tslibs/test_array_to_datetime.py",
+    "pandas/tests/frame/methods/test_rank.py",
+    "pandas/tests/util/test_assert_index_equal.py"
+  ],
+  "relevant_tests": [
+    "TestDatetimeIndexComparisons.test_dti_cmp_nat_behaves_like_float_cmp_nan",
+    "TestAppend.test_append_dtype_coerce[True]",
+    "TestAppend.test_append_dtype_coerce[False]",
+    "TestCategoricalConcat.test_concat_categorical_datetime",
+    "TestDatetimeConcat.test_concat_NaT_dataframes[None]",
+    "TestTimedeltaAdditionSubtraction.test_td_rsub_nat",
+    "TestTimedeltaMultiplicationDivision.test_td_rdiv_na_scalar",
+    "TestTimedeltaArraylikeAddSubOps.test_td64arr_add_datetime64_nat[Index]",
+    "TestArrayToDatetimeResolutionInference.test_infer_homogeoneous_date_objects",
+    "test_concat_datetime64_different_resolutions",
+    "test_assert_index_equal_different_inferred_types"
+  ],
+  "evidence": [
+    {
+      "quote": "DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific unit instead.",
+      "reason": "This is the core warning being raised as an error, directly causing test failures across the suite."
+    },
+    {
+      "quote": "= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s (0:12:39) =",
+      "reason": "Confirms the scale of the failure: 45 test failures and 52 collection/execution errors."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the CI job failed with a non-zero exit code."
+    },
+    {
+      "quote": "np.datetime64(\"NaT\")",
+      "reason": "This construct is identified as the source of the warning, appearing at multiple locations in the log, indicating pandas uses bare NaT values that trigger the timedelta generic unit deprecation."
+    },
+    {
+      "quote": "pandas/core/internals/concat.py:145, :380, :412",
+      "reason": "Core pandas files identified as triggering the warning, pointing to where the fix should be applied."
+    }
+  ],
+  "suggested_fix": "Update `pandas/core/internals/concat.py` (lines 145, 380, 412) and `pandas/core/reshape/concat.py` (line 466) to use explicit timedelta64 units (e.g., `np.timedelta64(1, 'ns')` instead of bare integer `1`) when performing arithmetic with NaT values, to comply with NumPy's new requirement for explicit units in timedelta64 operations.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-haiku/pytest-pandas-001.txt",
+    "context_tokens_estimate": 1335
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1074
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 28801.568,
+    "cache_key": "677feda43460a476fb49c34001e70bdc62257ae5d0ad9ae9bc9b498774535ae5",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 5096,
+        "output_tokens": 1339,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.035373,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.035373,
+          "upstream_inference_prompt_cost": 0.015288,
+          "upstream_inference_completions_cost": 0.020085
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 1,
+    "tool_call_count": 0,
+    "tool_calls": [],
+    "total_input_tokens_consumed": 5096,
+    "total_output_tokens_consumed": 1339,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 1
+  }
+}

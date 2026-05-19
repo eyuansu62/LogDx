@@ -1,0 +1,111 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Git submodule config files are missing (.git/modules/*/config) across 13 submodules, causing git submodule initialization to fail. This likely leads to incomplete LLVM toolchain setup, resulting in downstream test failure where FileCheck cannot find expected WebAssembly exception handling patterns in assembly output.",
+  "root_cause_category": "other",
+  "root_cause": "Missing git submodule config files preventing proper initialization of critical dependencies. Multiple 'could not lock config file .git/modules/*/config: No such file or directory' errors during 'git submodule deinit/update' operations indicate incomplete or corrupted git submodule state. The LLVM submodule (src/llvm-project) is among those with missing config, which likely prevents proper LLVM toolchain compilation and causes downstream test failures.",
+  "confidence": 0.68,
+  "relevant_files": [
+    ".git/modules/library/backtrace/config",
+    ".git/modules/src/llvm-project/config",
+    ".git/modules/src/doc/book/config",
+    ".git/modules/src/doc/edition-guide/config",
+    ".git/modules/src/doc/embedded-book/config",
+    ".git/modules/src/doc/nomicon/config",
+    ".git/modules/src/doc/reference/config",
+    ".git/modules/src/doc/rust-by-example/config",
+    ".git/modules/src/gcc/config",
+    ".git/modules/src/tools/cargo/config",
+    ".git/modules/src/tools/enzyme/config",
+    ".git/modules/src/tools/rustc-perf/config",
+    "tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "relevant_tests": [
+    "test [assembly] tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "error: could not lock config file .git/modules/library/backtrace/config: No such file or directory",
+      "reason": "First explicit evidence of missing git submodule config files; occurs during git submodule initialization"
+    },
+    {
+      "quote": "error: could not lock config file .git/modules/src/llvm-project/config: No such file or directory",
+      "reason": "Critical LLVM dependency submodule config is missing, directly affecting toolchain availability"
+    },
+    {
+      "quote": "Multiple identical lock errors for 11 other submodules",
+      "reason": "Systematic pattern of 13 missing config files indicates widespread submodule initialization failure, not isolated file issue"
+    },
+    {
+      "quote": "git submodule deinit -f ... && git submodule sync && git submodule update -j 16 --init --recursive --depth 1",
+      "reason": "Submodule initialization command explicitly fails during config file locking phase"
+    },
+    {
+      "quote": "The missing `.git/modules/*/config` files indicate incomplete or corrupted git submodule state, likely from a failed prior checkout or clone.",
+      "reason": "Context analysis directly attributes submodule config files to primary failure cause"
+    },
+    {
+      "quote": "CHECK: expected string not found in input",
+      "reason": "Downstream test failure consistent with incomplete LLVM setup preventing proper code generation"
+    }
+  ],
+  "suggested_fix": "Clean and reinitialize git submodules: git clean -fd && git submodule deinit --all -f && git submodule update --init --recursive --depth 1. If failure persists, verify git repository integrity with 'git fsck' and check for corrupted .git directory.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-haiku/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 944
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 953
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 62961.562,
+    "cache_key": "7ad2c3e28e53ca87a83f9752fd70c0a3586ef16a4aeabeb3792c7400f8a4805a",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "haiku",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 9,
+        "cache_creation_input_tokens": 3960,
+        "cache_read_input_tokens": 44848,
+        "output_tokens": 6328,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 3960,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 9,
+            "output_tokens": 6328,
+            "cache_read_input_tokens": 44848,
+            "cache_creation_input_tokens": 3960,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 3960
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "f448c99b-f1a8-43ca-983a-1e50d1212304"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "ade4ac2160bff920d4d00a0acc2289b3e3cf8de3a70e06ecd399e7cb5a0bb356",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "case_id": "gh-cli-go-test-prompter-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The Go test `TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query` in `internal/prompter` failed because `form.Run()` did not complete within the allowed time (~5 seconds), indicating a hang or deadlock in the multi-select form with search persistence logic. This caused the entire `github.com/cli/cli/v2/internal/prompter` package to fail with exit code 1.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The test `TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query` in `huh_prompter_test.go:478` timed out waiting for `form.Run()` to return, suggesting a deadlock, race condition, or missing signal in the multi-select search persistence code path of the huh prompter.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "huh_prompter_test.go"
+  ],
+  "relevant_tests": [
+    "TestHuhPrompterMultiSelectWithSearchPersistence",
+    "TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query"
+  ],
+  "evidence": [
+    {
+      "quote": "--- FAIL: TestHuhPrompterMultiSelectWithSearchPersistence (5.19s)",
+      "reason": "Top-level test failure with total duration indicating a timeout scenario."
+    },
+    {
+      "quote": "--- FAIL: TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query (5.13s)",
+      "reason": "Specific subtest that failed, consuming ~5 seconds which matches the timeout threshold."
+    },
+    {
+      "quote": "huh_prompter_test.go:478: form.Run() did not complete in time",
+      "reason": "Explicit assertion failure message showing that form.Run() hung and did not return before the test's deadline."
+    },
+    {
+      "quote": "FAIL\tgithub.com/cli/cli/v2/internal/prompter\t8.475s",
+      "reason": "Confirms the entire prompter package failed due to this test timeout."
+    }
+  ],
+  "suggested_fix": "Investigate the `form.Run()` call path in the multi-select with search persistence logic for deadlocks or missing channel signals. Add debug logging or use Go's race detector (`go test -race`) to identify the blocking goroutine. If this is a flaky timing issue, consider increasing the test timeout or refactoring the async signaling mechanism.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-haiku/gh-cli-go-test-prompter-v2-001.txt",
+    "context_tokens_estimate": 393
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 800
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 17019.446,
+    "cache_key": "c6a4420ac88802ffb6818e167f39e088acadaea14b2a274eca5a8ad794cf39b9",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 4822,
+        "output_tokens": 673,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.024561,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.024561,
+          "upstream_inference_prompt_cost": 0.014466,
+          "upstream_inference_completions_cost": 0.010095
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 1,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "form.Run\\(\\) did not complete|selections_persist_after_changing_search_query|FAIL.*prompter",
+          "before": 5,
+          "after": 10
+        },
+        "observation_tokens_estimate": 499,
+        "runtime_ms": 2.1088329958729446,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 8550,
+    "total_output_tokens_consumed": 814,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

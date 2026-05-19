@@ -1,0 +1,44 @@
+# CI Failure Summary
+
+## Primary Failure
+
+Multiple cascading failures during CI: (1) native module installation errors with permission denied (EACCES) when running `node-gyp rebuild` for `fuse-native` and missing `@unrs/resolver-binding-linux-x64-gnu`, (2) Jest Haste map collision for `has-glob`, and (3) test assertion failure in `test/config/get.ts` expecting a registry URL without a trailing slash but receiving one with it. The job failed with exit code 1.
+
+## Critical Evidence
+
+- `Error: spawn node-gyp EACCES` (L000212)
+- `errno: -13, code: 'EACCES'` (L000220–L000221)
+- `Cannot find module 'unrs-resolver/package.json'` (L000199)
+- `jest-haste-map: Haste module naming collision: has-glob` (L002396)
+- `Expected: "https://my-org.registry.example.com"` (L002961)
+- `Received: "https://my-org.registry.example.com/"` (L002962)
+- `##[error]Process completed with exit code 1.` (L003090)
+
+## Failed Tests / Checks
+
+- `FAIL test/config/get.ts` (17.807 s)
+- Test: "pnpm config get reads npm options but ignores other settings from .npmrc"
+
+## Relevant Files and Locations
+
+- `test/config/get.ts:32:38`
+- `node_modules/fuse-native/` (native module build failure)
+- `node_modules/@unrs/resolver-binding-linux-x64-gnu/` (missing package)
+
+## Commands and Exit Codes
+
+- `pn install` – Failed with EACCES error during `fuse-native` postinstall (L000170)
+- `node-gyp rebuild` – Permission denied (L000224)
+- `cross-env NODE_OPTIONS="$NODE_OPTIONS --experimental-vm-modules --disable-warning=ExperimentalWarning --disable-warning=DEP0169" jest` – Exit code 1 (L003084)
+
+## Possible Root Cause
+
+Permission errors during native module installation prevent `fuse-native` and `@unrs/resolver-binding-linux-x64-gnu` from being built/installed. Additionally, Jest encounters a Haste map collision for `has-glob`, and a test assertion fails because the registry URL in the output includes a trailing slash that the test does not expect.
+
+## Uncertainties / Missing Context
+
+- Root cause of permission errors in the CI environment (EACCES) – may relate to CI runner permissions or sandbox restrictions.
+- Whether the Haste collision for `has-glob` is a dependency duplication or configuration issue.
+- Whether the trailing slash in the registry URL is a real bug or an environment-specific output difference.
+- Whether native module installation failure cascades to test execution or is independent.
+- CI environment details (runner OS, Node version, pnpm version).

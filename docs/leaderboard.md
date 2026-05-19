@@ -1,6 +1,6 @@
 ---
 title: "Leaderboard"
-description: "Method × debugger leaderboard for LogDx-CI v1.0 (35 cases)."
+description: "Method × debugger leaderboard for LogDx-CI v1.1 (35 cases, single-shot + agent-loop)."
 ---
 
 # LogDx-CI Leaderboard
@@ -31,29 +31,34 @@ CI failure," which is the failure mode raised in
 | 1 | `hybrid-grep-120k-rtk-tail` | 0.624 | 0.679 | 0.706 | **0.670** | **0.000** | 19,844 |
 | 2 | `hybrid-grep-120k-tail`     | 0.610 | 0.730 | 0.658 | **0.666** | 0.010 | 19,753 |
 | 3 | `grep`                      | 0.578 | 0.684 | 0.655 | **0.639** | **0.000** | 88,355 |
-| 4 | `tail-200`                  | 0.595 | 0.624 | 0.623 | **0.614** | 0.019 | **6,108** |
-| 5 | `hybrid-grep-4k-rtk-err-cat`<br/><sub>*(earlier 4k-threshold hybrid; replaced — see report)*</sub> | 0.552 | 0.597 | 0.571 | **0.573** | 0.029 | 19,892 |
-| 6 | `rtk-err-cat`               | 0.455 | 0.488 | 0.467 | **0.470** | 0.029 | 19,850 |
-| 7 | `raw`                       | 0.324 | 0.368 | 0.367 | **0.353** | **0.000** | 275,248 |
-| 8 | `rtk-read`                  | 0.329 | 0.369 | 0.349 | **0.349** | 0.010 | 274,289 |
-| 9 | `llm-summary-v1-mock`       | 0.343 | 0.348 | 0.294 | **0.328** | **0.133** | 432,076 |
+| 4 | `llm-summary-v1-haiku`<br/><sub>*(real Haiku 4.5 map-reduce summarizer; promoted to headline in v1.1)*</sub> | 0.583 | 0.704 | 0.608 | **0.632** | 0.029 | 1,681,520 |
+| 5 | `tail-200`                  | 0.595 | 0.624 | 0.623 | **0.614** | 0.019 | **6,108** |
+| 6 | `hybrid-grep-4k-rtk-err-cat`<br/><sub>*(earlier 4k-threshold hybrid; replaced — see report)*</sub> | 0.552 | 0.597 | 0.571 | **0.573** | 0.029 | 19,892 |
+| 7 | `rtk-err-cat`               | 0.455 | 0.488 | 0.467 | **0.470** | 0.029 | 19,850 |
+| 8 | `raw`                       | 0.324 | 0.368 | 0.367 | **0.353** | **0.000** | 275,248 |
+| 9 | `rtk-read`                  | 0.329 | 0.369 | 0.349 | **0.349** | 0.010 | 274,289 |
 | 10 | `rtk-log`                  | 0.238 | 0.262 | 0.249 | **0.249** | **0.133** | **810** |
+| — | `llm-summary-v1-mock` <sub>*(legacy synthetic stub; superseded by `llm-summary-v1-haiku` row 4)*</sub> | 0.343 | 0.348 | 0.294 | 0.328 | 0.133 | 432,076 |
 
 Two layers of finding:
 
 1. **Safety (confident_error)** — the top-3 methods produce zero or
-   near-zero confidently-wrong diagnoses. `rtk-log` and
+   near-zero confidently-wrong diagnoses. `rtk-log` and the legacy
    `llm-summary-v1-mock` mislead a confident LLM on ~13% of cases
    ([rtk-ai/rtk#1599](https://github.com/rtk-ai/rtk/issues/1599)).
+   The real Haiku summarizer (`llm-summary-v1-haiku`, row 4) cuts
+   confident-error to 2.9% — an order-of-magnitude safer than the
+   mock that previously stood in for it.
 
 2. **Cost (total_tokens)** — `grep` (rank 3) uses **4.5× more tokens
    per case than the top-2 hybrids** while scoring lower. The hybrids
-   dominate grep on both axes. `llm-summary-v1-mock` is the **most
-   expensive method on the leaderboard at 432k tokens/case** (because
-   the summarizer itself burns 430k tokens generating a 1.3k summary,
-   pricing it out of any cost-quality consideration).
-   See the [cost-quality Pareto plot](#cost-quality-pareto-frontier)
-   below for the full picture.
+   dominate grep on both axes. `llm-summary-v1-haiku` is the **most
+   expensive method on the leaderboard at 1.68M tokens/case** — the
+   real summarizer is ~4× more expensive than the mock estimated
+   (1.68M vs 432k), because the mock didn't model the cached-prefix
+   overhead of nested Claude calls per chunk. See the
+   [cost-quality Pareto plot](#cost-quality-pareto-frontier) below
+   for the full picture.
 
 ## Cost-quality Pareto frontier
 
@@ -82,14 +87,16 @@ the same tokens. Most notable dominations:
   pure upgrade on both axes.
 - `rtk-err-cat` is **dominated by `hybrid-grep-120k-tail`** —
   similar token cost, but the hybrid scores +0.20 higher.
-- `llm-summary-v1-mock` is **dominated by every other method on
-  the leaderboard**. At 432k tokens/case it's 22× more expensive
-  than the hybrids while scoring rank-9. The hidden cost is the
-  summarizer itself: 370k input + 60k output tokens to produce a
-  1.3k-token summary fed to the diagnoser. Real LLM summarizers
-  inherit this overhead; the v1.0 corpus does not have a real-Haiku
-  summary run on the 35-case set (see "A note on llm-summary-v1-haiku"
-  below).
+- `llm-summary-v1-haiku` (rank 4) **is on the Pareto frontier in
+  cost-quality terms only at the high end**: it scores 0.632 (rank
+  4 overall, ahead of `tail-200` at 0.614) but at 1.68M tokens/case
+  it's the most expensive method on the leaderboard, ~85× pricier
+  than the top-2 hybrids per case. The dominant cost is the reducer
+  itself: 1.66M input tokens spread across 12–108 chunked Haiku
+  calls per case, producing a ~1.1k-token summary. The cheaper
+  legacy stub `llm-summary-v1-mock` underestimated this overhead
+  by ~4× and overstated lossiness on quality — see the v1.1
+  promotion note at the end of this page.
 
 ### Cost breakdown (case-count-weighted macro)
 
@@ -104,7 +111,8 @@ the same tokens. Most notable dominations:
 | `grep`                      |       0 |      0 |  87,862 | 494 |  **88,355** |
 | `rtk-read`                  |       0 |      0 | 273,998 | 291 | **274,289** |
 | `raw`                       |       0 |      0 | 274,944 | 304 | **275,248** |
-| `llm-summary-v1-mock`       | 369,957 | 60,362 |   1,264 | 492 | **432,076** |
+| `llm-summary-v1-haiku`      | 1,661,358 | 18,451 |   1,100 | 611 | **1,681,520** |
+| `llm-summary-v1-mock` <sub>*(legacy)*</sub> | 369,957 | 60,362 |   1,264 | 492 | **432,076** |
 
 `reducer_in` and `reducer_out` are non-zero only for methods that
 internally call an LLM (here, `llm-summary-*`). For `grep`/`tail`/
@@ -146,11 +154,15 @@ raw log).
 **Every context method gains in agent-loop, and the score range
 collapses ~7× — from 0.42 (single-shot) to 0.059 (agent-loop).**
 Weak single-shot methods are rescued by the agent's tool calls;
-`rtk-log` gains a massive **+0.44** and `llm-summary-v1-mock` gains
-**+0.39** by being supplemented with on-the-fly grep / tail.
-Confident-error rates drop to **0%** on 6 of 10 methods (single-
-shot's 13% rate for `rtk-log` and `llm-summary-v1-mock` collapses
-to 5.7% and 0% respectively); the four non-zero rates (2.9%–5.7%)
+`rtk-log` gains a massive **+0.44** and the legacy
+`llm-summary-v1-mock` gains **+0.39** by being supplemented with
+on-the-fly grep / tail. The real `llm-summary-v1-haiku` already
+front-loads the failure signal, so it gains only **+0.058** in the
+agent-loop — but it does so with the lowest tool count of any
+non-`tail-200` method (0.71/case).
+Confident-error rates drop to **0%** on 5 of 10 methods (single-
+shot's 13% rate for `rtk-log` and the legacy mock collapses to
+5.7% and 0% respectively); the four non-zero rates (2.9%–5.7%)
 are concentrated on methods where the agent commits before
 verifying — see § 2 of the
 [analysis doc](analysis/agent-loop-vs-single-shot.md).
@@ -170,11 +182,12 @@ Sorted by agent-loop `diagnosis_score_v1_1`.
 | 3 | `hybrid-grep-120k-tail`     | 0.666 | 0.735 | +0.069 | **0.000** | 1.94 | 1.00 | 39,221 |
 | 4 | `rtk-read`                  | 0.349 | 0.735 | **+0.386** | **0.000** | 2.40 | 1.46 | 55,391 |
 | 5 | `grep`                      | 0.639 | 0.722 | +0.083 | 0.029 | 2.00 | 1.20 | 42,232 |
-| 6 | `llm-summary-v1-mock`       | 0.328 | 0.715 | **+0.387** | **0.000** | 2.51 | 1.88 | **32,139** |
-| 7 | `tail-200`                  | 0.614 | 0.710 | +0.096 | 0.029 | 1.66 | **0.69** | **28,166** |
-| 8 | `rtk-err-cat`               | 0.470 | 0.708 | **+0.238** | **0.000** | 2.60 | 1.66 | 43,009 |
+| 6 | `tail-200`                  | 0.614 | 0.710 | +0.096 | 0.029 | 1.66 | **0.69** | **28,166** |
+| 7 | `rtk-err-cat`               | 0.470 | 0.708 | **+0.238** | **0.000** | 2.60 | 1.66 | 43,009 |
+| 8 | `llm-summary-v1-haiku`<br/><sub>*(promoted to headline in v1.1)*</sub> | 0.632 | 0.690 | +0.058 | 0.057 | 1.66 | 0.71 | 9,968 <sub>*(agent-only; reducer adds 1.68M)*</sub> |
 | 9 | `rtk-log`                  | **0.249** (single-shot #10) | 0.689 | **+0.440** | 0.057 | 2.77 | 2.60 | 36,259 |
 | 10 | `raw`                      | 0.353 | 0.688 | +0.335 | 0.029 | 2.51 | 1.68 | 67,311 |
+| — | `llm-summary-v1-mock` <sub>*(legacy synthetic stub; superseded by row 8)*</sub> | 0.328 | 0.715 | +0.387 | 0.000 | 2.51 | 1.88 | 32,139 |
 
 Five layers of finding:
 
@@ -182,26 +195,30 @@ Five layers of finding:
    — a 0.059 spread (7× tighter than single-shot's 0.42). The
    agent rescues weak contexts via tool calls.
 2. **Safety mostly collapses.** Single-shot's 13% confident_error
-   on `rtk-log` and `llm-summary-v1-mock` drops to 5.7% and 0%
-   respectively. The agent-loop highest is 5.7% (`rtk-log`); 6 of
-   10 methods sit at 0%.
+   on `rtk-log` and the legacy `llm-summary-v1-mock` drops to 5.7%
+   and 0% respectively. The agent-loop highest is 5.7% (`rtk-log`,
+   `llm-summary-v1-haiku`); 5 of 10 methods sit at 0%.
 3. **Top single-shot method holds.** v1.0 single-shot #1
    `hybrid-grep-120k-rtk-tail` is also #1 in agent-loop (0.747),
    with 0% confident_error AND lowest non-tail tool usage (0.97
    tools/case). **This method is the v1.1 recommendation for both
    static and agent settings.** All three 120k-threshold and 4k
    hybrid variants land in the agent-loop top 3.
-4. **Cost differs by 2.4×.** Cheapest agent-loop method is
-   `tail-200` at 28.2k tokens/case; most expensive is `raw` at
-   67.3k. The range is 2.4× — far smaller than the 530× single-
-   shot range (1k–432k), but still meaningful for a fleet of agents.
+4. **Cost differs by 2.4× ignoring the reducer.** Cheapest agent-loop
+   method is `tail-200` at 28.2k tokens/case; most expensive is `raw`
+   at 67.3k. `llm-summary-v1-haiku` has the lowest agent-side cost
+   at **10.0k tokens/case** — the front-loaded summary lets the
+   agent close out in 1.7 turns with 0.71 tools — but its reducer
+   overhead (1.68M tokens/case) more than wipes that out at the
+   end-to-end level.
 5. **Tool calls correlate inversely with single-shot quality.** The
    methods that needed the most rescuing (`rtk-log` 2.60 tools,
-   `llm-summary-v1-mock` 1.88, `raw` 1.68) are the ones with the
-   worst or most-lossy single-shot starting context. The two
-   strongest agent-loop performers (`hybrid-grep-120k-rtk-tail`
-   0.97, `hybrid-grep-120k-tail` 1.00) need ~1 tool/case.
-   `tail-200` uses the FEWEST tools (0.69/case) but lands rank 7
+   legacy mock 1.88, `raw` 1.68) are the ones with the worst or
+   most-lossy single-shot starting context. The strongest agent-loop
+   performers — both static (`hybrid-grep-120k-rtk-tail` 0.97,
+   `hybrid-grep-120k-tail` 1.00) and front-loaded
+   (`llm-summary-v1-haiku` 0.71) — need ~1 tool/case or less.
+   `tail-200` uses the fewest tools (0.69/case) but lands rank 6
    on quality.
 
 ### Agent-loop cost-quality Pareto frontier
@@ -209,17 +226,19 @@ Five layers of finding:
 ![Agent-loop cost-quality Pareto](figures/agent_cost_quality_pareto.png)
 
 In agent-loop, the Pareto frontier compresses dramatically (the
-score range is only 0.059 wide). The frontier is essentially:
+score range is only 0.059 wide). The frontier (agent-side tokens
+only — reducer cost not amortized in this view) is:
 
-- `tail-200` — cheapest (28.2k tokens/case) at score 0.710
-- `llm-summary-v1-mock` — 32.1k, score 0.715
+- `tail-200` — 28.2k tokens/case at score 0.710
 - `rtk-log` — 36.3k, score 0.689
 - `hybrid-grep-120k-rtk-tail` — top score (0.747) at 37.2k tokens
 
 `hybrid-grep-120k-rtk-tail` dominates: top score, 0% confident_error,
-and 37k tokens/case (cheaper than every other method except `tail-
-200` / `llm-summary` / `rtk-log` — all of which score worse). It
-is the v1.1 recommendation for both single-shot AND agent-loop.
+and 37k agent tokens/case (cheaper than every other method except
+`tail-200` / `rtk-log` — both of which score worse). It is the v1.1
+recommendation for both single-shot AND agent-loop. `llm-summary-v1-
+haiku` looks Pareto-optimal at 10.0k agent tokens but its 1.68M
+reducer overhead per case dominates total end-to-end cost.
 
 ### What this means
 
@@ -233,9 +252,12 @@ is the v1.1 recommendation for both single-shot AND agent-loop.
   (range collapses 7×). Cost matters more: `tail-200` is the
   cheapest at 28k tokens/case but ranks 7 on quality. The 120k
   hybrids hit the best cost-quality balance.
-- **Don't use `rtk-log` or `llm-summary-v1-mock` standalone** — they
-  remain dangerous in single-shot (13% confident misclassification
-  rate each). In agent-loop the agent rescues them via tool calls,
+- **Don't use `rtk-log` standalone** — it remains dangerous in
+  single-shot (13% confident misclassification rate). The legacy
+  `llm-summary-v1-mock` had the same problem; the real
+  `llm-summary-v1-haiku` cuts confident-error to 2.9% in single-
+  shot but at ~85× higher cost than the top-2 hybrids.
+  In agent-loop the agent rescues weak contexts via tool calls,
   but `rtk-log` still carries the highest agent-loop confident_error
   (5.7%) and needs ~2.6 tool calls/case to recover.
 
@@ -303,10 +325,14 @@ The **top-3** under each debugger family separately:
 single-method baseline on at least one family and on the overall
 mean.
 
-The **bottom-4 set** also agrees across all three families:
-`{raw, rtk-read, rtk-log, llm-summary-v1-mock}` — context that's
-either too large (raw / rtk-read on big logs) or too lossy
-(rtk-log / mock summary) for the LLM to identify root causes.
+The **bottom-4 set** (excluding the legacy `llm-summary-v1-mock`
+synthetic stub) also agrees across all three families:
+`{raw, rtk-read, rtk-log, rtk-err-cat}` — context that's either
+too large (raw / rtk-read on big logs) or too lossy (rtk-log /
+rtk-err-cat) for the LLM to identify root causes. Replacing the
+mock with the real Haiku summarizer (`llm-summary-v1-haiku`)
+lifts the LLM-summary class out of the bottom-4 and into rank
+4 overall — see the v1.1 promotion note below.
 
 ## Methodology evolution
 
@@ -321,14 +347,62 @@ See the [technical report §3](https://github.com/eyuansu62/LogDx/blob/main/repo
 for the prototype-vs-formal corpus analysis that motivated the
 threshold change.
 
-## A note on `llm-summary-v1-haiku`
+## v1.1 — promoting `llm-summary-v1-haiku` to the headline
 
-A real Anthropic Haiku summarizer (`llm-summary-v1-haiku`) was run
-during prototyping on a 16-case subset but **not** re-run on the
-full 35-case corpus, so it's not on the headline leaderboard. Its
-subset score is 0.490 on Haiku-as-debugger; Sonnet and gpt-5-mini
-aren't scored against it (would have required a paid re-run). See
-the report §3 for context.
+Up through v1.0 the LLM-summary class on the leaderboard was
+represented by `llm-summary-v1-mock` — a deterministic stub that
+extracts compile-errors / failed tests / stack frames / exit codes
+via regex and formats them into the same per-case summary the real
+summarizer would write. The stub was useful for cost-modeling the
+LLM-summary class without burning paid tokens, but as Mengyao Tan
+pointed out post-v1.1, it was unfair to rank LLM-summary methods by
+their cheapest-possible mock representative.
+
+For v1.1 the real Anthropic Haiku 4.5 map-reduce summarizer was
+backfilled to the full 35-case corpus (3 splits + v2 splits) and
+all 4 diagnosers (Haiku, Sonnet, gpt-5-mini single-shot; Sonnet
+agent-loop) were re-run on those contexts. Results vs the legacy
+mock:
+
+| Diagnoser | mock | haiku | Δ |
+|---|---:|---:|---:|
+| real-debugger-v1 (Haiku 4.5)    | 0.343 | 0.583 | **+0.240** |
+| real-debugger-v2 (Sonnet 4.6)   | 0.348 | 0.704 | **+0.356** |
+| real-debugger-v3 (gpt-5-mini)   | 0.294 | 0.608 | **+0.314** |
+| real-agent-v1   (Sonnet+tools)  | 0.715 | 0.690 | -0.025 |
+
+The real summarizer **wins by 0.24–0.36** in every single-shot
+family; the mock had been underselling the method class by an
+order of magnitude on quality. In the agent-loop both mock and
+haiku land near 0.70 (the agent rescues weak contexts via tool
+calls), but `llm-summary-v1-haiku` needs only 0.71 tools/case to
+get there — about as low as `tail-200` (0.69), and much lower than
+the mock's 1.88 — confirming the real summary front-loads the
+failure signal effectively.
+
+`llm-summary-v1-haiku` is now the LLM-summary class representative
+in the headline single-shot table (row 4, score 0.632) and the
+agent-loop table (row 8, score 0.690). `llm-summary-v1-mock`
+remains visible as a final-row legacy entry for cross-version
+continuity.
+
+### Implementation notes
+
+- The map-reduce config is fixed at `chunk_lines=500`,
+  `chunk_overlap_lines=25`, `temperature=0`, model=`haiku` (alias
+  resolves to `claude-haiku-4-5`). Three cases (one nodejs, two
+  pytest-sklearn) had a small fraction of 500-line chunks larger
+  than Haiku's effective input window after the Claude-Code session
+  overhead is counted; those cases re-chunked at `chunk_lines=100`
+  for the same map-reduce algorithm. The reducer-config SHA in
+  per-case `metadata.chunk_lines` reflects the actual config used.
+- Reducer cost averages **1.66M input + 18.5k output tokens per
+  case** — about 4× more than the mock's modeled cost (370k +
+  60k). Most of the gap is Claude Code's cached-prefix overhead on
+  nested `claude -p` invocations, which the mock didn't simulate.
+- All 35 haiku-summary context rows have `provider_error=None`
+  and non-zero output; no synthetic abstention rows. See the
+  v1.1 release notes / commit history for the backfill timeline.
 
 ## How to reproduce a number
 
@@ -382,7 +456,8 @@ external dependencies are linked to their upstream projects.
 | `tail-200` | last 200 lines |
 | `grep` | regex-filtered failure-pattern lines + 3/8 context, see [`docs/methods/diagnosis.md`](https://github.com/eyuansu62/LogDx/blob/main/docs/methods/diagnosis.md) |
 | `rtk-read`, `rtk-log`, `rtk-err-cat` | three modes of **[RTK (Rust Token Killer)](https://github.com/rtk-ai/rtk)** by rtk-ai. See [`docs/methods/rtk.md`](https://github.com/eyuansu62/LogDx/blob/main/docs/methods/rtk.md) for setup. |
-| `llm-summary-v1-mock` | mock summarizer (deterministic stub; the corresponding real-Haiku run is `llm-summary-v1-haiku`, prototype-only) |
+| `llm-summary-v1-haiku` | real Anthropic Haiku 4.5 map-reduce summarizer (chunk_lines=500, overlap=25, temp=0). See [`docs/methods/llm_summary.md`](https://github.com/eyuansu62/LogDx/blob/main/docs/methods/llm_summary.md). |
+| `llm-summary-v1-mock` <sub>*(legacy)*</sub> | deterministic regex-extract stub; pre-v1.1 stand-in for the LLM-summary class. Superseded by `llm-summary-v1-haiku`. |
 | `hybrid-grep-4k-rtk-err-cat` | earlier 4k-threshold hybrid using grep primary + rtk-err-cat fallback (replaced by the 120k hybrids) |
 | `hybrid-grep-120k-tail` | grep ≤ 120k tokens else tail-200 |
 | `hybrid-grep-120k-rtk-tail` | grep ≤ 120k tokens else rtk-err-cat (if not truncated and ≤ 120k) else tail-200 |

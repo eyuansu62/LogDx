@@ -1,0 +1,97 @@
+{
+  "case_id": "pytest-pandas-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Tests failed because a NumPy DeprecationWarning about the 'generic' timedelta unit (triggered by np.datetime64(\"NaT\") and implicit integer conversions) was raised as an error, causing many pytest failures and errors during the run.",
+  "root_cause_category": "other",
+  "root_cause": "A NumPy deprecation for the 'generic' timedelta unit (implicit conversion of bare integers) is being raised as an error during tests — the warning originates from operations around NaT (np.datetime64(\"NaT\")) in concat internals (pandas/core/internals/concat.py and pandas/core/reshape/concat.py), and pytest appears to be treating the deprecation warning as an error.",
+  "confidence": 0.75,
+  "relevant_files": [
+    "pandas/core/reshape/concat.py:466",
+    "pandas/core/internals/concat.py:145",
+    "pandas/core/internals/concat.py:380",
+    "pandas/core/internals/concat.py:412",
+    "pandas/tests/arrays/masked/test_indexing.py:43",
+    "pandas/tests/arrays/test_timedeltas.py:233"
+  ],
+  "relevant_tests": [
+    "TestDatetimeIndexComparisons.test_dti_cmp_nat_behaves_like_float_cmp_nan",
+    "TestAppend.test_append_dtype_coerce[True]",
+    "TestTimedeltaAdditionSubtraction.test_td_rsub_nat",
+    "TestTimedeltaMultiplicationDivision.test_td_rdiv_na_scalar",
+    "test_equals_matching_nas",
+    "TestGetLoc.test_get_loc_nat"
+  ],
+  "evidence": [
+    {
+      "quote": "DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific unit instead.",
+      "reason": "This is the exact deprecation message causing failures; it states the deprecated behavior and that implicit bare-integer conversions are involved."
+    },
+    {
+      "quote": "np.datetime64(\"NaT\")",
+      "reason": "The context identifies np.datetime64(\"NaT\") as the source of the warning, linking NaT handling to the deprecation."
+    },
+    {
+      "quote": "= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s (0:12:39) =",
+      "reason": "Shows a large number of test failures/errors in the pytest run, consistent with the deprecation being escalated to errors."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "CI job exited non-zero, indicating the test failures caused the job to fail."
+    },
+    {
+      "quote": "pandas/core/internals/concat.py:145",
+      "reason": "Identifies a core file location (internals/concat) implicated as triggering the warning during concat/reshape operations."
+    },
+    {
+      "quote": "Either pytest is configured to treat warnings as errors (via `-W error` or `filterwarnings = error` in setup.cfg/pytest.ini), or NumPy's deprecation has been upgraded to an error in the version being tested.",
+      "reason": "The context explicitly suggests that warnings may be treated as errors (pytest configuration) or that NumPy changed behavior, explaining why a deprecation becomes a failing error."
+    }
+  ],
+  "suggested_fix": "Modify the code paths in pandas/core/internals/concat.py and pandas/core/reshape/concat.py (and other concat/NaT handling sites) to avoid implicit conversion with bare integers by using explicit timedelta units (e.g., np.timedelta64(1, 'D') or specifying units when creating timedeltas), and/or relax pytest's warnings-as-errors configuration (remove `-W error` or the `filterwarnings = error` rule) while issuing a targeted fix for the deprecation.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-haiku/pytest-pandas-001.txt",
+    "context_tokens_estimate": 1335
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 974
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 46067.402,
+    "cache_key": "1480b1e25a5662ea9c5f550ee68d386b5bf5878528076032abab0d8f7c5321c7",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
+    "model_info": {
+      "provider_name": "openai",
+      "requested_model": "gpt-5-mini",
+      "resolved_model": "gpt-5-mini-2025-08-07",
+      "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
+      "max_completion_tokens": 4096,
+      "system_fingerprint": null,
+      "usage": {
+        "prompt_tokens": 2546,
+        "completion_tokens": 2332,
+        "total_tokens": 4878,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1472,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8d5f6bb1e7382f07124c3096574e449b1db3361a9edfee83a2cea21aa4e1246b",
+    "shim_sha256": "bdb194f15bf4f87108aa71863384c07d14b106caa712d398ec48c98ff391e573"
+  }
+}

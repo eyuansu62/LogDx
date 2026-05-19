@@ -1,0 +1,110 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "Type checking fails across pyright and mypy because multiple pyarrow.compute and pyarrow.fs symbols (e.g., `is_null`, `if_else`, `FileSystem`) are reported as not exported or not found. This produces 279 errors across 9 files and ultimately blocks the `mypy (stubtest)` check with exit code 1.",
+  "root_cause_category": "type_error",
+  "root_cause": "The installed pyarrow version or its type stubs do not export the symbols that pandas references (e.g., pyarrow.compute.is_null, pyarrow.compute.if_else, pyarrow.fs.FileSystem), causing both pyright and mypy to report these as unknown/missing attributes.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "/home/runner/work/pandas/pandas/pandas/core/arrays/arrow/accessors.py"
+  ],
+  "relevant_tests": [
+    "pyright",
+    "pyright reportGeneralTypeIssues",
+    "mypy",
+    "mypy (stubtest)"
+  ],
+  "evidence": [
+    {
+      "quote": "\"Expression\" is not exported from module \"pyarrow.compute\"",
+      "reason": "Pyright reports a specific pyarrow.compute symbol as unexported, indicating a version or stub mismatch."
+    },
+    {
+      "quote": "\"FileSystem\" is not exported from module \"pyarrow.fs\"",
+      "reason": "A second pyarrow submodule symbol is also flagged as not exported, reinforcing the pyarrow stub/version incompatibility hypothesis."
+    },
+    {
+      "quote": "\"is_null\" is not a known attribute of module \"pyarrow.compute\"",
+      "reason": "Pyright cannot resolve this function, consistent with stubs or the installed package not exposing it."
+    },
+    {
+      "quote": "Module has no attribute \"is_null\"  [attr-defined]",
+      "reason": "Mypy independently reports the same missing attribute, confirming this is not a pyright-only issue and points to the actual installed pyarrow package or stubs."
+    },
+    {
+      "quote": "Module has no attribute \"if_else\"  [attr-defined]",
+      "reason": "Another pyarrow.compute function missing in mypy, showing the problem spans multiple symbols."
+    },
+    {
+      "quote": "Found 279 errors in 9 files (checked 1458 source files)",
+      "reason": "The scale of errors across many files indicates a systemic dependency issue rather than isolated code bugs."
+    },
+    {
+      "quote": "error: not checking stubs due to mypy build errors:",
+      "reason": "Mypy stubtest was blocked entirely by the upstream mypy build errors, confirming the type errors are the root blocker."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "The CI job ultimately failed with exit code 1, traceable to the type-checking failures above."
+    }
+  ],
+  "suggested_fix": "Pin or update the pyarrow package (and its type stubs) in the CI environment to a version that exports pyarrow.compute.is_null, pyarrow.compute.if_else, and pyarrow.fs.FileSystem, or update the pandas source references in accessors.py to match the API surface of the currently installed pyarrow version.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-haiku/mypy-pandas-001.txt",
+    "context_tokens_estimate": 611
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 870
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 24391.9,
+    "cache_key": "334ce80bbaf5c3ba5b54d0f02a5093a52e4baceb8d0525b016a1de0f1e86ac31",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 5184,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 848,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 5184,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 848,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 5184,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 5184
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "c239c694-986d-46cc-9209-d71d09eded3f"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

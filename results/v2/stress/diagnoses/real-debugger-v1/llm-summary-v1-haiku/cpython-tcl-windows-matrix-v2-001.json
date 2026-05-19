@@ -1,0 +1,92 @@
+{
+  "case_id": "cpython-tcl-windows-matrix-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Two Tcl integration tests failed during execution due to Unicode surrogate pair handling. The tests expected properly encoded emoji characters but received raw UTF-16 surrogate pairs from Tcl's eval() function, causing assertion failures.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Unicode encoding regression in Tcl/Python integration. Tests test_eval_surrogates_in_result and test_evalfile_surrogates_in_result failed because tcl.eval() returned raw UTF-16 surrogate pairs ('<\\ud83d\\udcbb>') instead of the expected properly encoded emoji character ('<\\U0001f4bb>').",
+  "confidence": 0.88,
+  "relevant_files": [
+    "Lib\\test\\test_tcl.py"
+  ],
+  "relevant_tests": [
+    "test.test_tcl.TclTest.test_eval_surrogates_in_result",
+    "test.test_tcl.TclTest.test_evalfile_surrogates_in_result"
+  ],
+  "evidence": [
+    {
+      "quote": "AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ'»>'",
+      "reason": "Direct assertion comparison failure showing actual surrogate pair vs expected emoji representation"
+    },
+    {
+      "quote": "self.assertEqual(tcl.eval(r'set a \"<\\ud83d\\udcbb>\"'), '<\\U0001f4bb>')",
+      "reason": "Explicit test assertion that expects Tcl to return properly encoded emoji character"
+    },
+    {
+      "quote": "test_tcl failed (2 failures)",
+      "reason": "Confirms test_tcl module execution resulted in 2 assertion failures"
+    },
+    {
+      "quote": "Result: FAILURE then FAILURE",
+      "reason": "Indicates consistent failure across re-run, ruling out transient flakiness"
+    }
+  ],
+  "suggested_fix": "Investigate the Unicode surrogate pair handling in the Tcl integration layer, specifically how Tcl eval() results are converted from UTF-16 surrogate pairs to proper Unicode characters. Review recent changes to the Tcl bindings or bytecode generation that may have affected string encoding/decoding.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-haiku/cpython-tcl-windows-matrix-v2-001.txt",
+    "context_tokens_estimate": 708
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 624
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 30978.24,
+    "cache_key": "34e94286b7997055ab1caea09368c919f2c2c859b71c5d021e0892ca18fe5b7e",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "haiku",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 9,
+        "cache_creation_input_tokens": 3725,
+        "cache_read_input_tokens": 44848,
+        "output_tokens": 2157,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 3725,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 9,
+            "output_tokens": 2157,
+            "cache_read_input_tokens": 44848,
+            "cache_creation_input_tokens": 3725,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 3725
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "8273e3db-4366-41b0-b1c8-760bc257fa28"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "ade4ac2160bff920d4d00a0acc2289b3e3cf8de3a70e06ecd399e7cb5a0bb356",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

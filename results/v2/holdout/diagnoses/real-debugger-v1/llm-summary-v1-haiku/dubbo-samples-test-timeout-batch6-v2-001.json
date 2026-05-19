@@ -1,0 +1,95 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Integration test dubbo-samples-test-11137 timed out after 602 seconds waiting for a container to become ready. Multiple Docker daemon errors about invalid filter 'reference' and a 500 Internal Server Error from zookeeper occurred during container startup, preventing the container from becoming ready within the timeout window.",
+  "root_cause_category": "timeout_or_oom",
+  "root_cause": "Container failed to become ready within the 602-second timeout period. Upstream infrastructure failures—specifically Docker daemon errors with 'invalid filter reference' and zookeeper HTTP 500 Internal Server Error—prevented proper container initialization.",
+  "confidence": 0.72,
+  "relevant_files": [
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs"
+  ],
+  "relevant_tests": [
+    "dubbo-samples-test-11137"
+  ],
+  "evidence": [
+    {
+      "quote": "wait for container is timeout: 602 s",
+      "reason": "Explicit statement that container readiness check exceeded the 602-second timeout threshold"
+    },
+    {
+      "quote": "[dubbo-samples-test-11137:1/1] TEST FAILURE: Run tests timeout",
+      "reason": "Test failure explicitly attributed to timeout during execution"
+    },
+    {
+      "quote": "Error response from daemon: invalid filter 'reference'",
+      "reason": "Repeated Docker daemon error occurring throughout execution, suggesting systematic filter syntax or Docker API version issue during container operations"
+    },
+    {
+      "quote": "Error response from daemon: received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "Docker daemon reporting HTTP 500 error during container operations"
+    },
+    {
+      "quote": "zookeeper Error received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "Zookeeper service returning 500 error during container startup, preventing successful initialization"
+    }
+  ],
+  "suggested_fix": "Examine logs at /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs to determine the specific root cause of zookeeper 500 errors and Docker filter syntax failures; verify Docker daemon version compatibility and zookeeper service health in the CI environment",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-haiku/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 620
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 706
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 45003.804,
+    "cache_key": "0d54dfc499f85c7065a7f3268689ec768571ef40657ab0c3bb3d2bc82b32380e",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "haiku",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 9,
+        "cache_creation_input_tokens": 3494,
+        "cache_read_input_tokens": 44848,
+        "output_tokens": 4132,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 3494,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 9,
+            "output_tokens": 4132,
+            "cache_read_input_tokens": 44848,
+            "cache_creation_input_tokens": 3494,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 3494
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "3aa56ef2-6c09-4666-bc83-045699bad985"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "ade4ac2160bff920d4d00a0acc2289b3e3cf8de3a70e06ecd399e7cb5a0bb356",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

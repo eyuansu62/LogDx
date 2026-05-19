@@ -1,0 +1,120 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest snapshot tests in Prettier's Babel parser are failing because the Babel parser has changed how it reports error messages and error positions for dynamic import errors and TypeScript parameter declarations. 14 tests failed with 13 snapshot mismatches across 3 test suites, indicating the stored snapshots no longer match the new Babel parser output.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "A Babel parser version change altered error message text and error position reporting. Dynamic import errors now report '`import()` requires exactly one or two arguments. (1:1)' instead of 'Unexpected token (1:8)' or 'Unexpected token (1:21)', and TypeScript parameter initializer errors now report different positions. The stored Jest snapshots reflect the old Babel behavior and no longer match the new output.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/_errors_/import-dynamic-error/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js",
+    "src/language-js/parse/babel.js"
+  ],
+  "relevant_tests": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/_errors_/import-dynamic-error/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js"
+  ],
+  "evidence": [
+    {
+      "quote": "13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "Confirms the failure is snapshot mismatches, not a code crash or compile error."
+    },
+    {
+      "quote": "Test Suites: 3 failed, 1500 passed, 1503 total\nTests:       14 failed, 5 skipped, 29634 passed, 29653 total\nSnapshots:   13 failed, 12086 passed, 12099 total",
+      "reason": "Quantifies the scope: 14 test failures, 13 snapshot mismatches across 3 suites."
+    },
+    {
+      "quote": "`import()` requires exactly one or two arguments. (1:1)` vs expected `Unexpected token (1:8)`",
+      "reason": "Shows the Babel parser now emits a different error message and position for dynamic import errors, causing snapshot mismatch."
+    },
+    {
+      "quote": "`import()` requires exactly one or two arguments. (1:1)` vs expected `Unexpected token (1:21)`",
+      "reason": "Second instance of the same error message change, confirming a systematic Babel parser behavior change."
+    },
+    {
+      "quote": "SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)",
+      "reason": "TypeScript parameter declaration error also changed, contributing to snapshot failures in the constructorParameters test."
+    },
+    {
+      "quote": "Error position mismatch in declare-function-with-body: `(1:1)` vs expected `(1:24)`",
+      "reason": "Error position reporting changed for declare-function-with-body, causing 1 additional snapshot failure."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the CI job exited with failure status."
+    }
+  ],
+  "suggested_fix": "Update the Jest snapshots to reflect the new Babel parser error messages and positions by running `jest -u` on the failing test suites, then review whether the new Babel error messages are correct and intentional. If the Babel version was unintentionally upgraded, pin it back to the previous version in package.json.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-haiku/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 684
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1123
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 21393.153,
+    "cache_key": "7712abe94760afea801e18e252e517a48e4a81d2a3f84f583bd65ee3ba77940b",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 5332,
+        "output_tokens": 1041,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard",
+        "cost": 0.031611,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.031611,
+          "upstream_inference_prompt_cost": 0.015996,
+          "upstream_inference_completions_cost": 0.015615
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 1,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "snapshot.*failed|snapshots.*failed|● .*format\\.test",
+          "before": 2,
+          "after": 5,
+          "max_matches": 20
+        },
+        "observation_tokens_estimate": 609,
+        "runtime_ms": 14.778500015381724,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 9424,
+    "total_output_tokens_consumed": 1187,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "key_parts": {
+    "case_id": "hibernate-orm-dbversion-test-batch6-v2-001",
+    "raw_sha": "35cb42c7f58b6dfa463f3fdf2500efefc804aa801fc51035cbf7070efca3e5b6",
+    "prompt_version": "llm_summary_v1",
+    "prompt_sha": "e3739738b7136af3956f3712e7b76babd9224b6854dcc60ff16546a3fbb16702",
+    "provider": "command",
+    "method": "llm-summary-v1-haiku",
+    "chunk_index": -1,
+    "chunk_sha": "b263d5c902ec1340a555177cbb977285598ee901ac6c7c151f98cdc77a7ca7e6",
+    "temperature": 0.0,
+    "max_output_chars": 12000,
+    "stage": "reduce"
+  },
+  "response": {
+    "content": "# CI Failure Summary\n\n## Primary Failure\n\nGradle build failed in the Hibernate ORM test suite with `exit code 1`. Out of 16,923 tests executed, 1 test failed: `DbVersionTest.testCollectionVersion(SessionFactoryScope)`. The test failure is an assertion error where an owner version was incorrectly incremented, and the build logs contain 100+ compilation warnings about deprecated APIs marked for removal, though these do not prevent compilation.\n\n## Critical Evidence\n\n- `owner version not incremented ==> expected: <false> but was: <true>` (L045537)\n- `org.opentest4j.AssertionFailedError: owner version not incremented ==> expected: <false> but was: <true>` (L045537)\n- `16923 tests completed, 1 failed, 2596 skipped` (L045953)\n- `100 warnings` related to deprecated removal APIs (L001157, L000846)\n- `##[error]Process completed with exit code 1.` (L046121)\n- Task `:hibernate-core:test FAILED` (L045955)\n\n## Failed Tests / Checks\n\n- `Gradle Test Executor 25 > DbVersionTest > testCollectionVersion(SessionFactoryScope) FAILED`\n\n## Relevant Files and Locations\n\n- `org.hibernate.orm.test.version.db.DbVersionTest.testCollectionVersion(DbVersionTest.java:60)` (L045543)\n- `/home/runner/work/hibernate-orm/hibernate-orm/hibernate-core/target/reports/tests/test/index.html` (full test report location)\n- `/home/runner/work/hibernate-orm/hibernate-orm/hibernate-community-dialects/src/main/java/org/hibernate/community/dialect/SingleStoreDialect.java:1078`\n- `/home/runner/work/hibernate-orm/hibernate-orm/tooling/metamodel-generator/src/main/java/org/hibernate/processor/validation/MockSessionFactory.java:602`\n\n## Commands and Exit Codes\n\n- `> Task :hibernate-core:test FAILED` (L045955)\n- `BUILD FAILED in 17m 39s` (L046120)\n- Exit code `1` (L046121)\n\n## Possible Root Cause\n\nA logic bug in the version-tracking code for collection owner entities is causing the owner version to be incremented when it should remain unchanged. The test failure is isolated to a single test case and is unrelated to the 100+ compilation warnings about deprecated APIs marked for removal.\n\n## Uncertainties / Missing Context\n\n- The root cause of the version increment (whether it's in the collection handling, persistence logic, or versioning mechanism) is not evident from the provided logs\n- The connection between deprecated API usage and the test failure is unclear; the warnings may indicate upstream API changes that need migration\n- The exact state of the entity and collection at the point of failure is not visible in the log output\n- Additional context about recent changes to version tracking or collection handling would be needed to diagnose the root cause",
+    "provider": "claude-cli",
+    "model": "haiku",
+    "usage": {
+      "input_tokens": 48610,
+      "output_tokens": 1261,
+      "total_cost_usd": 0.01604435
+    }
+  }
+}

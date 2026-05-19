@@ -1,0 +1,107 @@
+{
+  "case_id": "cpython-tcl-windows-matrix-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Two test failures in test.test_tcl show Tcl eval() returning UTF-16 surrogate pairs instead of the expected single Unicode code point (U+1F4BB), causing assertion failures; C4244 compiler warnings were also emitted during the build.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Tcl/Python integration is returning UTF-16 surrogate pairs ('<\\ud83d\\udcbb>') instead of a single Unicode code point '<\\U0001f4bb>' in Tcl eval results, causing assertions in test_tcl to fail.",
+  "confidence": 0.75,
+  "relevant_files": [
+    "Lib\\test\\test_tcl.py:57",
+    "Lib\\test\\test_tcl.py:292",
+    "Python\\generated_cases.c.h:7948,46",
+    "Python\\generated_cases.c.h:13056,46",
+    "Modules\\_testinternalcapi\\test_cases.c.h:7949,46",
+    "Modules\\_testinternalcapi\\test_cases.c.h:13059,46",
+    "Python\\bytecodes.c",
+    "Python\\optimizer_bytecodes.c",
+    "Tools\\cases_generator\\tier1_generator.py",
+    "Tools\\cases_generator\\tier2_generator.py",
+    "Tools\\cases_generator\\optimizer_generator.py"
+  ],
+  "relevant_tests": [
+    "test.test_tcl.TclTest.test_eval_surrogates_in_result",
+    "test.test_tcl.TclTest.test_evalfile_surrogates_in_result",
+    "test_tcl"
+  ],
+  "evidence": [
+    {
+      "quote": "AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ'»>'",
+      "reason": "Shows the test observed a surrogate-pair representation ('<\\ud83d\\udcbb>') rather than the expected emoji code point rendering."
+    },
+    {
+      "quote": "self.assertEqual(tcl.eval(r'set a \"<\\ud83d\\udcbb>\"'), '<\\U0001f4bb>')",
+      "reason": "The failing assertion explicitly expects '<\\U0001f4bb>' but tcl.eval returned a surrogate pair, demonstrating a mismatch in Unicode handling."
+    },
+    {
+      "quote": "self.assertEqual(tcl.eval('set b'), '<\\U0001f4bb>')",
+      "reason": "Another assertion expecting the single code point indicates the test verifies proper decoding of Tcl results to Python Unicode."
+    },
+    {
+      "quote": "test.test_tcl.TclTest.test_eval_surrogates_in_result",
+      "reason": "Identifies one of the specific tests that failed due to the Unicode/encoding mismatch."
+    },
+    {
+      "quote": "test.test_tcl.TclTest.test_evalfile_surrogates_in_result",
+      "reason": "Identifies the second specific test that failed, showing the issue affects multiple Tcl eval paths."
+    },
+    {
+      "quote": "warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data",
+      "reason": "Build emitted C4244 warnings from generated code, noted in the log; these are present but not shown to be the direct cause of the test failures."
+    },
+    {
+      "quote": "Result: FAILURE then FAILURE",
+      "reason": "Confirms the test job failed, and a re-run also reported failure."
+    },
+    {
+      "quote": "Process completed with exit code 2",
+      "reason": "The overall CI process exited with a non-zero code indicating failure."
+    }
+  ],
+  "suggested_fix": "Investigate and fix the Tcl<->Python Unicode conversion so Tcl eval results produce the single Unicode code point U+1F4BB (\"<\\U0001f4bb>\") instead of UTF-16 surrogate pairs ('<\\ud83d\\udcbb>'). Review recent changes to Tools\\cases_generator scripts and generated files (Python\\bytecodes.c, Python\\optimizer_bytecodes.c, Python\\generated_cases.c.h) that were built during this run, reproduce the failing tests locally (test.test_tcl.TclTest.*), correct the encoding/decoding path in the Tcl integration, rebuild, and re-run the test suite.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-haiku/cpython-tcl-windows-matrix-v2-001.txt",
+    "context_tokens_estimate": 708
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 960
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 24889.193,
+    "cache_key": "a6f09154ffbf1839b243b202855c30c7e7f9d881cf33bf81dc2235b858a5bbc5",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
+    "model_info": {
+      "provider_name": "openai",
+      "requested_model": "gpt-5-mini",
+      "resolved_model": "gpt-5-mini-2025-08-07",
+      "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
+      "max_completion_tokens": 4096,
+      "system_fingerprint": null,
+      "usage": {
+        "prompt_tokens": 1884,
+        "completion_tokens": 3108,
+        "total_tokens": 4992,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2176,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8d5f6bb1e7382f07124c3096574e449b1db3361a9edfee83a2cea21aa4e1246b",
+    "shim_sha256": "bdb194f15bf4f87108aa71863384c07d14b106caa712d398ec48c98ff391e573"
+  }
+}

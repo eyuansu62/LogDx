@@ -1,0 +1,89 @@
+{
+  "case_id": "argocd-race-conditions-batch5-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "GitHub Actions cache restoration failed when tar encountered pre-existing files in the Go module cache directory, producing 'Cannot open: File exists' errors and exiting with code 2.",
+  "root_cause_category": "other",
+  "root_cause": "Files already existed in ../../../go/pkg/mod/ at destination paths, preventing tar from extracting the cached Go module archive. This suggests incomplete cleanup from a previous build or cache state collision.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "../../../go/pkg/mod/code.gitea.io/sdk/gitea@v0.23.2/hook_validate_test.go"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "/usr/bin/tar: ../../../go/pkg/mod/code.gitea.io/sdk/gitea@v0.23.2/hook_validate_test.go: Cannot open: File exists",
+      "reason": "Explicit tar error showing files already exist at destination, blocking extraction"
+    },
+    {
+      "quote": "The process '/usr/bin/tar' failed with exit code 2",
+      "reason": "Confirms tar exited with failure status during cache restoration"
+    },
+    {
+      "quote": "/usr/bin/tar -xf /home/runner/work/_temp/.../cache.tzst -P -C /home/runner/work/argo-cd/argo-cd --use-compress-program unzstd",
+      "reason": "Shows the tar extraction command that failed when restoring cached Go modules"
+    },
+    {
+      "quote": "Cache not found for input keys: Linux-go-build-v1-7778bf290a783e6ddaacb4a0c88f558f925dd82620e7f9b15810d2e935953cb9",
+      "reason": "Confirms cache restoration ultimately failed, blocking access to module cache"
+    }
+  ],
+  "suggested_fix": "Clear the go/pkg/mod/ directory during job setup before cache restoration to prevent file-exists conflicts during tar extraction.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-haiku/argocd-race-conditions-batch5-v2-001.txt",
+    "context_tokens_estimate": 991
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 580
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 38488.257,
+    "cache_key": "762603376fa223187d653872c8aa9dfa5e8474cf12560a55c478507302d262d3",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "haiku",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 9,
+        "cache_creation_input_tokens": 4100,
+        "cache_read_input_tokens": 44848,
+        "output_tokens": 2996,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 4100,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 9,
+            "output_tokens": 2996,
+            "cache_read_input_tokens": 44848,
+            "cache_creation_input_tokens": 4100,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 4100
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "26f187f7-7a10-4013-bfe9-0553ec19cc2b"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "ade4ac2160bff920d4d00a0acc2289b3e3cf8de3a70e06ecd399e7cb5a0bb356",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

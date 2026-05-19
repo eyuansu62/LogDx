@@ -1,0 +1,93 @@
+{
+  "case_id": "pnpm-audit-vuln-ip-address-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because `pnpm audit` detected a moderate severity XSS vulnerability in the `ip-address` package (versions <=10.1.0). The audit step exited with code 1, blocking the build. Upgrading `ip-address` to >=10.1.1 is required to resolve the issue.",
+  "root_cause_category": "dependency_install",
+  "root_cause": "The project depends on `ip-address` <=10.1.0, which contains a moderate XSS vulnerability in Address6 HTML-emitting methods. `pnpm audit` detected this vulnerability and exited with code 1.",
+  "confidence": 0.92,
+  "relevant_files": [],
+  "relevant_tests": [
+    "pnpm audit"
+  ],
+  "evidence": [
+    {
+      "quote": "moderate │ ip-address has XSS in Address6 HTML-emitting methods",
+      "reason": "Identifies the specific package and vulnerability type that triggered the audit failure."
+    },
+    {
+      "quote": "Vulnerable versions │ <=10.1.0",
+      "reason": "Confirms the range of affected versions currently depended upon by the project."
+    },
+    {
+      "quote": "Patched versions │ >=10.1.1",
+      "reason": "Specifies the minimum version required to resolve the vulnerability."
+    },
+    {
+      "quote": "1 vulnerabilities found",
+      "reason": "Shows the audit found exactly one vulnerability, which is sufficient to fail the job."
+    },
+    {
+      "quote": "Severity: 1 moderate",
+      "reason": "Confirms the severity level reported by pnpm audit that caused the non-zero exit."
+    }
+  ],
+  "suggested_fix": "Upgrade the `ip-address` dependency (direct or transitive) to >=10.1.1 in the relevant `package.json` and regenerate `pnpm-lock.yaml`, then re-run `pnpm audit` to confirm zero vulnerabilities.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-haiku/pnpm-audit-vuln-ip-address-v2-001.txt",
+    "context_tokens_estimate": 320
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 570
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 18451.905,
+    "cache_key": "050656bf3dd1c39cd4c712d6d848c94c43a383900a25d2ea67b1c68b192b5c8f",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 3981,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 507,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 3981,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 507,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 3981,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 3981
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "1f8efbdc-f489-4e3c-b24a-790ff69f77d9"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

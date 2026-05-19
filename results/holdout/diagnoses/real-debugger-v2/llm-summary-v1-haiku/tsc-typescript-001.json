@@ -1,0 +1,98 @@
+{
+  "case_id": "tsc-typescript-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "A fourslash test for code fix suggestion on generic type exports is failing because the generated return type annotation includes more type parameters than the test expects. The test expects 'Add return type \\'Foo<string>\\'' but the actual output contains additional type parameters ('Foo<string, string[…').",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The code fix logic for missing type annotations on generic exports generates a return type suggestion with additional type parameters (e.g., 'Foo<string, string[]...>') beyond what the test expects ('Foo<string>'), causing an assertion mismatch in the fourslash test.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts",
+    "src/harness/fourslashImpl.ts",
+    "src/harness/fourslashInterfaceImpl.ts",
+    "src/testRunner/fourslashRunner.ts"
+  ],
+  "relevant_tests": [
+    "tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts"
+  ],
+  "evidence": [
+    {
+      "quote": "expected 'Add return type \\'Foo<string>\\'' to equal 'Add return type \\'Foo<string, string[…'",
+      "reason": "This is the direct assertion failure showing the mismatch between the expected string and the actual generated suggestion text, confirming the test assertion is the point of failure."
+    },
+    {
+      "quote": "Test assertion at `src/harness/fourslashImpl.ts:3435:20`",
+      "reason": "Identifies the exact file and line where the assertion failure occurs, confirming this is a test assertion error."
+    },
+    {
+      "quote": "tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts",
+      "reason": "This is the specific test file that failed, indicating the test covers the oversimplification scenario for generic return type annotations."
+    },
+    {
+      "quote": "Exit code: `1`",
+      "reason": "Non-zero exit code confirms the test run failed."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions error line confirming the CI step failed due to the test failure."
+    }
+  ],
+  "suggested_fix": "Investigate whether the code fix logic for generic export return type annotations has recently changed to emit additional type parameters. Either update the test's expected value in 'tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts' to match the new generated output if the new behavior is correct, or revert/fix the code fix generation logic if the extra type parameters are unintended.",
+  "input": {
+    "context_path": "results/holdout/llm-summary-v1-haiku/tsc-typescript-001.txt",
+    "context_tokens_estimate": 404
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 808
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 21974.804,
+    "cache_key": "e01de79e6d21cf78058122e2272eeab4163d4a529f5fa87f21b3fc0ad58f395c",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 4038,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 735,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 4038,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 735,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 4038,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 4038
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "aa95e060-1cc8-47d4-9652-c451dab8b9ca"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

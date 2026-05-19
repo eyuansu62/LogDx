@@ -1,0 +1,25 @@
+{
+  "key_parts": {
+    "case_id": "moby-buildx-bake-v2-001",
+    "raw_sha": "61f1b155691a41b20eb83a14e2e89211698e074c178f5326f61034a394252e72",
+    "prompt_version": "llm_summary_v1",
+    "prompt_sha": "e3739738b7136af3956f3712e7b76babd9224b6854dcc60ff16546a3fbb16702",
+    "provider": "command",
+    "method": "llm-summary-v1-haiku",
+    "chunk_index": -1,
+    "chunk_sha": "ee45878fbb5c63b539bd0456eb439a31df4b32d34d3813fa8a66224abeb4028d",
+    "temperature": 0.0,
+    "max_output_chars": 12000,
+    "stage": "reduce"
+  },
+  "response": {
+    "content": "# CI Failure Summary\n\n## Primary Failure\n\nThe `docker buildx bake` action failed during the integration-tests build step. The root cause was an HTTP/1.1 502 Bad Gateway error when downloading the Nydus release package (`nydus-static-v2.4.0-linux-amd64.tgz`) via wget from the GitHub Releases server.\n\n## Critical Evidence\n\n- `wget: server returned error: HTTP/1.1 502 Bad Gateway or Proxy Error` (L001855)\n- `wget https://github.com/dragonflyoss/nydus/releases/download/v2.4.0/nydus-static-v2.4.0-linux-amd64.tgz` (L001853)\n- `Dockerfile:336` contains the failing wget command (L001886)\n- `exit code: 1` returned by the wget process (L001856, L001894, L003817)\n- `docker buildx bake https://github.com/moby/buildkit.git#9a62e8d2257e5914a98a66a1ac3722f9b636cbaf --set *.cache-from=type=gha,scope=frontend-integration-tests --print integration-tests` (L000923)\n\n## Failed Tests / Checks\n\n- `[nydus 1/2]` build stage failed (L001853)\n- Coverage upload step: \"No coverage reports found. Please make sure you're generating reports successfully.\" (L002303)\n- `docker/bake-action@a66e1c87e2eca0503c343edf1d208c716d54b8a8` step failed (L000725)\n\n## Relevant Files and Locations\n\n- `Dockerfile:336` — wget command for nydus binary\n- `/src/executor/runcexecutor/executor.go:403` (L003820)\n- `/src/executor/runcexecutor/executor.go:351` (L003821)\n- `/src/solver/llbsolver/ops/exec.go:498` (L003823)\n- `/src/util/flightcontrol/flightcontrol.go:122` (L003827)\n\n## Commands and Exit Codes\n\n- `docker buildx bake https://github.com/moby/buildkit.git#9a62e8d2257e5914a98a66a1ac3722f9b636cbaf ...` — exit code 1 (L001901)\n- `wget https://github.com/dragonflyoss/nydus/releases/download/$NYDUS_VERSION/nydus-static-$NYDUS_VERSION-$TARGETOS-$TARGETARCH.tgz` — exit code 1 (L001856)\n- `##[error]buildx bake failed with: ERROR: failed to solve: process \"/bin/bash -c wget ...\" did not complete successfully: exit code: 1` (L001901)\n\n## Possible Root Cause\n\nThe dragonflyoss/nydus GitHub Releases endpoint is returning 502 Bad Gateway errors, blocking the Dockerfile's wget operation at step 336. This is an upstream service availability issue. Secondary failures (missing coverage reports, missing docker-compose files) are cascading consequences of the primary build failure stopping execution before coverage reports were generated.\n\n## Uncertainties / Missing Context\n\n- Whether the 502 error is transient or persistent at the nydus releases endpoint\n- Why buildx backend is probing for docker-compose.yaml, docker-bake.json, docker-bake.override.hcl, and Dockerfile.rego when an explicit build context is provided (L002510–L003404)\n- Context cancellation during image fetches (`failed to do request: Get ... context canceled`, L003814–L003815) — whether this is a timeout from the primary 502 error or a separate network issue\n- Cache reservation conflict at job end (`Unable to reserve cache with key docker.io--tonistiigi--binfmt-latest-linux-x64`, L003944) — whether this is a race condition with parallel job runs",
+    "provider": "claude-cli",
+    "model": "haiku",
+    "usage": {
+      "input_tokens": 50060,
+      "output_tokens": 2374,
+      "total_cost_usd": 0.0241452
+    }
+  }
+}

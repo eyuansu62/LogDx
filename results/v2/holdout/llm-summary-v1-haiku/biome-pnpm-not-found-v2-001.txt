@@ -1,0 +1,38 @@
+# CI Failure Summary
+
+## Primary Failure
+
+GitHub Actions build failed during a recipe-based build process. The `pnpm format` command encountered a "command not found" error (exit code 127), causing the `format` recipe to fail on line 221, which then cascaded to failure of the `gen-all` recipe on line 32.
+
+## Critical Evidence
+
+- `sh: 1: pnpm: not found` (L015764)
+- `exit code 127` (L015765, L015766) — standard Unix "command not found" exit code
+- `##[error]Process completed with exit code 127.` (L015767)
+- Failed command: `pnpm format` (L015763)
+
+## Failed Tests / Checks
+
+- Recipe `format` (line 221)
+- Recipe `gen-all` (line 32)
+
+## Relevant Files and Locations
+
+- Recipe definitions referenced at lines 221 and 32 _(exact file path not provided in logs)_
+
+## Commands and Exit Codes
+
+- `pnpm format` — exit code 127
+- GitHub Actions process exit — exit code 127
+
+## Possible Root Cause
+
+The `pnpm` package manager is not installed or not present in the CI environment's PATH. No setup step appears to have installed pnpm before the recipe execution attempted to invoke it.
+
+## Uncertainties / Missing Context
+
+- Whether a Node.js/npm setup step ran before `pnpm format` was called
+- Whether pnpm installation should have been a prerequisite (e.g., via `npm install -g pnpm` or similar)
+- The location and content of the recipe definition file
+- Whether this is a recent regression (pnpm was previously available in the CI environment)
+- Whether a lock file (pnpm-lock.yaml) exists and whether it should be committed

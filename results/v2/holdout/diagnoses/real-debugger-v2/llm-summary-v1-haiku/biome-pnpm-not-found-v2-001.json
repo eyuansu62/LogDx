@@ -1,0 +1,94 @@
+{
+  "case_id": "biome-pnpm-not-found-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because `pnpm` was not installed in the CI environment. When the `format` recipe attempted to run `pnpm format`, the shell returned exit code 127 ('command not found'), which cascaded to failure of the `gen-all` recipe.",
+  "root_cause_category": "dependency_install",
+  "root_cause": "The `pnpm` package manager was not installed or not available in PATH in the CI environment, causing `pnpm format` to fail with exit code 127.",
+  "confidence": 0.92,
+  "relevant_files": [],
+  "relevant_tests": [
+    "format (line 221)",
+    "gen-all (line 32)"
+  ],
+  "evidence": [
+    {
+      "quote": "sh: 1: pnpm: not found",
+      "reason": "Directly confirms that the pnpm binary was not found in the CI environment's PATH when the command was executed."
+    },
+    {
+      "quote": "exit code 127",
+      "reason": "Exit code 127 is the standard Unix exit code for 'command not found', confirming pnpm was not installed or not on PATH."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 127.",
+      "reason": "GitHub Actions reports the job as failed due to the missing pnpm command, confirming the CI step itself failed."
+    },
+    {
+      "quote": "Failed command: `pnpm format`",
+      "reason": "Identifies the exact command that triggered the failure, confirming pnpm was invoked but unavailable."
+    },
+    {
+      "quote": "Recipe `format` (line 221)",
+      "reason": "Shows the recipe that failed, indicating the pnpm invocation was part of a build recipe step that had no prior pnpm installation prerequisite."
+    }
+  ],
+  "suggested_fix": "Add a step to install pnpm in the CI workflow before the `gen-all`/`format` recipe runs, for example using `npm install -g pnpm` or the official `pnpm/action-setup` GitHub Action (e.g., `uses: pnpm/action-setup@v2`).",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-haiku/biome-pnpm-not-found-v2-001.txt",
+    "context_tokens_estimate": 382
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 605
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 20081.5,
+    "cache_key": "1e958ebf8d71a10b7c3ae282e2dd49e33f6c0c39f6e0f61f039aba3205614eb2",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 4028,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 543,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 4028,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 543,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 4028,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 4028
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "27e23386-26cc-4048-a14b-45c54d7e0ad5"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

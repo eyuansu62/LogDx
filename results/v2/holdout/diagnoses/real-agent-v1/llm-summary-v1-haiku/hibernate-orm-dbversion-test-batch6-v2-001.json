@@ -1,0 +1,92 @@
+{
+  "case_id": "hibernate-orm-dbversion-test-batch6-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "A single test `DbVersionTest.testCollectionVersion(SessionFactoryScope)` failed with an assertion error: the owner entity version was incremented when it should not have been (`expected: <false> but was: <true>`). This caused the Gradle build to fail with exit code 1 after 16,923 tests completed.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The test `DbVersionTest.testCollectionVersion` asserts that the owner entity version is NOT incremented during a collection operation, but the actual behavior increments the version. The assertion `owner version not incremented ==> expected: <false> but was: <true>` indicates a logic bug in Hibernate ORM's version-tracking code for collection owner entities.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "org/hibernate/orm/test/version/db/DbVersionTest.java"
+  ],
+  "relevant_tests": [
+    "DbVersionTest.testCollectionVersion(SessionFactoryScope)"
+  ],
+  "evidence": [
+    {
+      "quote": "owner version not incremented ==> expected: <false> but was: <true>",
+      "reason": "This is the exact assertion failure message showing the owner version was incremented when the test expected it not to be."
+    },
+    {
+      "quote": "org.opentest4j.AssertionFailedError: owner version not incremented ==> expected: <false> but was: <true>",
+      "reason": "Confirms this is a JUnit/OpenTest4J assertion failure at runtime, not a compile or configuration error."
+    },
+    {
+      "quote": "16923 tests completed, 1 failed, 2596 skipped",
+      "reason": "Shows the failure is isolated to exactly one test, ruling out systemic infrastructure or compilation issues."
+    },
+    {
+      "quote": "Task :hibernate-core:test FAILED",
+      "reason": "Confirms the Gradle test task for hibernate-core failed due to this test."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the CI job exited with a non-zero exit code due to the test failure."
+    }
+  ],
+  "suggested_fix": "Investigate recent changes to Hibernate ORM's collection handling and version-tracking logic (particularly in `hibernate-core`) to identify why the owner entity version is being incremented during collection operations. Review the `DbVersionTest.testCollectionVersion` test at `DbVersionTest.java:60` and trace the version increment path for the collection owner entity.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-haiku/hibernate-orm-dbversion-test-batch6-v2-001.txt",
+    "context_tokens_estimate": 663
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 762
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 16577.793,
+    "cache_key": "fb21c438efe61eda77488546ce368a2da855602c5ff6962b79acd84cb107a0f3",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 4013,
+        "output_tokens": 798,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.024009,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.024009,
+          "upstream_inference_prompt_cost": 0.012039,
+          "upstream_inference_completions_cost": 0.01197
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 1,
+    "tool_call_count": 0,
+    "tool_calls": [],
+    "total_input_tokens_consumed": 4013,
+    "total_output_tokens_consumed": 798,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 1
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed in two phases: git submodule initialization failed due to missing .git/modules/*/config files for 13 submodules, and subsequently a FileCheck assembly test for WebAssembly exception handling in wasm_exceptions.rs failed because expected instructions ('catch_all', 'catch') were not found in the generated assembly. The downstream test failure may stem from incomplete LLVM submodule setup or an actual code generation regression.",
+  "root_cause_category": "compile_error",
+  "root_cause": "FileCheck verification failed for tests/assembly-llvm/wasm_exceptions.rs because the expected CHECK patterns '// CHECK: catch_all' and '// CHECK: catch' were not found in the generated WebAssembly assembly output, causing the assembly-llvm test suite to fail with 1 of 550+ tests failing and Bootstrap to exit with code 1.",
+  "confidence": 0.72,
+  "relevant_files": [
+    "tests/assembly-llvm/wasm_exceptions.rs",
+    ".git/modules/library/backtrace/config",
+    ".git/modules/src/llvm-project/config",
+    ".git/modules/src/doc/book/config",
+    ".git/modules/src/doc/edition-guide/config",
+    ".git/modules/src/doc/embedded-book/config",
+    ".git/modules/src/doc/nomicon/config",
+    ".git/modules/src/doc/reference/config",
+    ".git/modules/src/doc/rust-by-example/config",
+    ".git/modules/src/gcc/config",
+    ".git/modules/src/tools/cargo/config",
+    ".git/modules/src/tools/enzyme/config",
+    ".git/modules/src/tools/rustc-perf/config"
+  ],
+  "relevant_tests": [
+    "test [assembly] tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "CHECK: expected string not found in input",
+      "reason": "FileCheck reported that a required CHECK pattern was missing from the generated assembly output, directly causing the test failure."
+    },
+    {
+      "quote": "// CHECK: catch_all` not found in assembly",
+      "reason": "The specific expected WebAssembly instruction 'catch_all' was absent from the compiler-generated assembly, indicating a code generation mismatch."
+    },
+    {
+      "quote": "// CHECK: catch` not found in assembly",
+      "reason": "The expected 'catch' WebAssembly exception handling instruction was also absent, confirming the LLVM backend is not emitting the expected exception handling instructions."
+    },
+    {
+      "quote": "error: verification with 'FileCheck' failed",
+      "reason": "Explicit FileCheck verification error confirming the assembly output did not match the test's expected patterns."
+    },
+    {
+      "quote": "test result: FAILED. 550 passed; 1 failed; 103 ignored",
+      "reason": "Confirms exactly one assembly test failed in the suite, isolating the failure to wasm_exceptions.rs."
+    },
+    {
+      "quote": "Bootstrap failed while executing --stage 2 test --host= --target wasm32-wasip1",
+      "reason": "The bootstrap failure is scoped to the wasm32-wasip1 target, consistent with WebAssembly exception handling test failure."
+    },
+    {
+      "quote": "error: could not lock config file .git/modules/library/backtrace/config: No such file or directory",
+      "reason": "Submodule config files are missing, indicating corrupted or incomplete git submodule state that may have affected LLVM toolchain availability."
+    },
+    {
+      "quote": "error: could not lock config file .git/modules/src/llvm-project/config: No such file or directory",
+      "reason": "The LLVM submodule specifically failed to initialize, which could have caused the LLVM toolchain to be built from an incomplete or stale state, potentially explaining incorrect code generation."
+    }
+  ],
+  "suggested_fix": "Investigate whether the WebAssembly exception handling code path in the LLVM backend was recently changed to no longer emit 'catch' and 'catch_all' instructions for the wasm32-wasip1 target, and update the CHECK patterns in tests/assembly-llvm/wasm_exceptions.rs accordingly — or fix the regression in LLVM code generation. Additionally, ensure the CI environment properly initializes git submodules (especially src/llvm-project) before building, as missing .git/modules/*/config files suggest a corrupted checkout that may contribute to toolchain issues.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-haiku/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 944
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1166
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 27030.488,
+    "cache_key": "7cd0f260d09a1d784339dbb8fdfaf24934527591f7d08ce199f322684b630b38",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 4751,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 1135,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 4751,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 1135,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 4751,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 4751
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "b8aaac91-70ef-43ad-86d6-4912b1ddb02f"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

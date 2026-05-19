@@ -1,0 +1,37 @@
+# CI Failure Summary
+
+## Primary Failure
+
+A Go test in the CLI prompter package timed out. The test `TestHuhPrompterMultiSelectWithSearchPersistence` failed because `form.Run()` did not complete in time, indicating a hang or race condition in the multi-select form with search persistence logic.
+
+## Critical Evidence
+
+- `form.Run() did not complete in time` (L000245)
+- Test location: `huh_prompter_test.go:478` (L000245)
+- Test subtest: `selections_persist_after_changing_search_query` (L000244)
+- Subtest duration: `5.13s` (L000244)
+
+## Failed Tests / Checks
+
+- `TestHuhPrompterMultiSelectWithSearchPersistence`
+- `TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query`
+
+## Relevant Files and Locations
+
+- `huh_prompter_test.go:478`
+
+## Commands and Exit Codes
+
+- `go test github.com/cli/cli/v2/internal/prompter` – `FAIL` exit code `1` (L000511)
+
+## Possible Root Cause
+
+The form operation appears to hang or block indefinitely during test execution, likely due to a deadlock, race condition, or missing signal in the multi-select search persistence code path. The test timeout was triggered while waiting for `form.Run()` to return.
+
+## Uncertainties / Missing Context
+
+- Configured test timeout duration is not shown.
+- No indication whether this is a new regression or pre-existing flaky test.
+- Whether other tests in the `internal/prompter` package also failed.
+- Actual error message or panic, if any, beyond the timeout assertion.
+- System resource state (CPU, memory, file descriptor limits) at test execution time.

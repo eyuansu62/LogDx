@@ -1,0 +1,103 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The `compile_fail_full` trybuild test in `tests-build::macros` failed because the actual Rust compiler error messages no longer match the stored snapshots. The actual output uses `error[E0271]` with a new message format referencing `{async block@$DIR/...}`, while the expected snapshot contains different error codes and message text, indicating a Rust compiler version upgrade changed the error output format.",
+  "root_cause_category": "compile_error",
+  "root_cause": "Trybuild snapshot mismatch: the Rust compiler (likely upgraded) now emits different error messages for `tests/fail/macros_type_mismatch.rs`. The actual output uses `error[E0271]: expected '{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}' to be a future that resolves to '()', but it resolves to 'Result<(), _>'` and additional `help:` suggestions that differ from the stored `.stderr` snapshot, causing trybuild to report a mismatch.",
+  "confidence": 0.9,
+  "relevant_files": [
+    "tests/fail/macros_type_mismatch.rs"
+  ],
+  "relevant_tests": [
+    "tests-build::macros compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "test compile_fail_full ... FAILED",
+      "reason": "Identifies the specific trybuild test that failed."
+    },
+    {
+      "quote": "ACTUAL OUTPUT:",
+      "reason": "Marks the start of the actual compiler output that differs from the expected snapshot."
+    },
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
+      "reason": "The actual compiler output uses error code E0271 with a new message format referencing async block spans, which differs from the expected snapshot stored for this test."
+    },
+    {
+      "quote": "If the actual output is the correct output you can bless it by rerunning your test with the environment variable TRYBUILD=overwrite",
+      "reason": "Trybuild's remediation hint confirms this is a snapshot mismatch between expected and actual compiler output."
+    },
+    {
+      "quote": "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.87s",
+      "reason": "Confirms exactly one test failed in the test suite."
+    }
+  ],
+  "suggested_fix": "Update the trybuild snapshots by running the test with `TRYBUILD=overwrite cargo test compile_fail_full` in the `tests-build` crate, then commit the updated `.stderr` snapshot files. Alternatively, pin the Rust toolchain version to one that matches the existing snapshots.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-haiku/cargo-tokio-001.txt",
+    "context_tokens_estimate": 519
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 850
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 28925.607,
+    "cache_key": "189fcd20148da18e61f72104a2d642600ea7ce062c154ec331efa288d03fe1e2",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 8825,
+        "output_tokens": 749,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard",
+        "cost": 0.03771,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.03771,
+          "upstream_inference_prompt_cost": 0.026475,
+          "upstream_inference_completions_cost": 0.011235
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 3,
+    "tool_call_count": 1,
+    "tool_calls": [
+      {
+        "tool": "read_file",
+        "args": {
+          "start_line": 2845,
+          "end_line": 2950
+        },
+        "observation_tokens_estimate": 2086,
+        "runtime_ms": 1.8153749988414347,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 20724,
+    "total_output_tokens_consumed": 1683,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 3
+  }
+}

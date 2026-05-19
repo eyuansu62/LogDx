@@ -1,0 +1,87 @@
+{
+  "case_id": "pushpr-nextjs-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The sync-react workflow failed when attempting to push branch `update/react/19.3.0-canary-142cfde8-20260422` to vercel/next.js. The nextjs-bot user was denied push access with a 403 HTTP error, indicating invalid, expired, or insufficiently scoped credentials.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GitHub token used by nextjs-bot lacks push permission to vercel/next.js. The git push command exited with code 128 and the remote returned 'Permission to vercel/next.js.git denied to nextjs-bot.' along with HTTP 403.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "/home/runner/work/next.js/next.js/scripts/sync-react.js",
+    "/home/runner/work/next.js/next.js/node_modules/.pnpm/execa@2.0.3/node_modules/execa/lib/error.js"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "remote: Permission to vercel/next.js.git denied to nextjs-bot.",
+      "reason": "Explicit remote rejection message confirming the nextjs-bot account does not have push access."
+    },
+    {
+      "quote": "fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403",
+      "reason": "HTTP 403 indicates an authentication/authorization failure, not a network issue."
+    },
+    {
+      "quote": "git push origin update/react/19.3.0-canary-142cfde8-20260422",
+      "reason": "The specific git push command that triggered the permission denial."
+    },
+    {
+      "quote": "exit code 128",
+      "reason": "Git exits with code 128 on fatal errors such as authentication failures, confirming the push was rejected."
+    }
+  ],
+  "suggested_fix": "Verify and refresh the GitHub token (e.g., a Personal Access Token or GitHub App installation token) used by nextjs-bot in the repository or organization secrets, ensuring it has `repo` (or at minimum `public_repo`) write scope for vercel/next.js.",
+  "input": {
+    "context_path": "results/holdout/llm-summary-v1-haiku/pushpr-nextjs-001.txt",
+    "context_tokens_estimate": 455
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 644
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 12183.26,
+    "cache_key": "40e0b3e7e1b31bc144d92378e1ffbd0159311001a5921b1bb5c3f1173f8503af",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 3828,
+        "output_tokens": 636,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.021024,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.021024,
+          "upstream_inference_prompt_cost": 0.011484,
+          "upstream_inference_completions_cost": 0.00954
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 1,
+    "tool_call_count": 0,
+    "tool_calls": [],
+    "total_input_tokens_consumed": 3828,
+    "total_output_tokens_consumed": 636,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 1
+  }
+}

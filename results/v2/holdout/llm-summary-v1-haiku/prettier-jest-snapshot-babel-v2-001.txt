@@ -1,0 +1,45 @@
+# CI Failure Summary
+
+## Primary Failure
+
+Jest snapshot tests in Prettier's Babel parser are failing across 4 test suites due to changes in how the Babel parser reports error messages and error positions. 14 tests failed with 13 snapshots mismatched, indicating that error strings and their reported line/column positions have changed from the baseline.
+
+## Critical Evidence
+
+- `` `import()` requires exactly one or two arguments. (1:1)`` vs expected `Unexpected token (1:8)` (L000408-L000409)
+- `` `import()` requires exactly one or two arguments. (1:1)`` vs expected `Unexpected token (1:21)` (L002039-L002040)
+- `SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)` (L002201)
+- Error position mismatch in declare-function-with-body: `(1:1)` vs expected `(1:24)` (L002227-L002228)
+- `typescript@6.0.3` installed, but `eslint-plugin-jest` requires `>=4.8.4 <6.0.0` (L000174)
+- `src/language-js/parse/babel.js:176:13` raising `SyntaxError` (L000667)
+
+## Failed Tests / Checks
+
+- `tests/format/js/_errors_/import/format.test.js`
+- `tests/format/typescript/_errors_/import-dynamic-error/format.test.js` (12 snapshots failed)
+- `tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js`
+- `tests/format/typescript/_errors_/declare-function-with-body/format.test.js` (1 snapshot failed)
+
+## Relevant Files and Locations
+
+- `tests/format/js/_errors_/import/format.test.js` (L000399)
+- `tests/format/typescript/_errors_/import-dynamic-error/format.test.js` (L000476)
+- `tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js` (L000655)
+- `tests/format/typescript/_errors_/declare-function-with-body/format.test.js` (L000768)
+- `src/language-js/parse/babel.js:176` (L000667)
+
+## Commands and Exit Codes
+
+- Jest test suite execution
+- Exit code 1: `##[error]Process completed with exit code 1.` (L002247)
+
+## Possible Root Cause
+
+A recent Babel parser version upgrade or configuration change is altering how dynamic import errors are formatted (changing error text and error position reporting) and/or how TypeScript parameter declarations are validated. The TypeScript 6.0.3 version conflict may be masking the actual Babel version causing the parser behavior shift.
+
+## Uncertainties / Missing Context
+
+- Which Babel version was recently updated or changed in the build dependencies?
+- Was the error message formatting behavior intentionally changed upstream in Babel?
+- Is the TypeScript 6.0.3 constraint issue a separate blocker or a symptom of a broader dependency conflict?
+- Are the error position changes (e.g., 1:8 → 1:1) intentional refinements in error reporting or regressions?

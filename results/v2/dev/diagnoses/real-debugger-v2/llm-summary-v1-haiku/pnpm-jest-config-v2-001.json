@@ -1,0 +1,103 @@
+{
+  "case_id": "pnpm-jest-config-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed due to a test assertion error where the registry URL includes a trailing slash that the test does not expect. Additionally, native module installation failed with EACCES permission errors for `fuse-native` and a missing `@unrs/resolver-binding-linux-x64-gnu` package, and a Jest Haste map collision was detected for `has-glob`.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The test 'pnpm config get reads npm options but ignores other settings from .npmrc' in test/config/get.ts:32:38 fails because the registry URL returned is 'https://my-org.registry.example.com/' (with trailing slash) but the test expects 'https://my-org.registry.example.com' (without trailing slash).",
+  "confidence": 0.72,
+  "relevant_files": [
+    "test/config/get.ts"
+  ],
+  "relevant_tests": [
+    "pnpm config get reads npm options but ignores other settings from .npmrc"
+  ],
+  "evidence": [
+    {
+      "quote": "Expected: \"https://my-org.registry.example.com\"",
+      "reason": "Shows the exact value the test expects — a registry URL without a trailing slash."
+    },
+    {
+      "quote": "Received: \"https://my-org.registry.example.com/\"",
+      "reason": "Shows the actual value returned — a registry URL with a trailing slash, causing the assertion mismatch."
+    },
+    {
+      "quote": "FAIL test/config/get.ts",
+      "reason": "Confirms the test file that failed during the Jest run."
+    },
+    {
+      "quote": "test/config/get.ts:32:38",
+      "reason": "Pinpoints the exact line and column of the failing assertion in the test file."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the overall job failure with a non-zero exit code."
+    },
+    {
+      "quote": "Error: spawn node-gyp EACCES",
+      "reason": "Indicates a secondary failure — native module installation for fuse-native was blocked by a permission error, which may have impacted the test environment setup."
+    },
+    {
+      "quote": "jest-haste-map: Haste module naming collision: has-glob",
+      "reason": "Indicates a tertiary issue with duplicate module resolution that could affect test reliability, though not the direct cause of the assertion failure."
+    }
+  ],
+  "suggested_fix": "Update the test assertion at test/config/get.ts:32:38 to either accept a trailing slash (e.g., 'https://my-org.registry.example.com/') or fix the config normalization code to strip the trailing slash from registry URLs before returning them, depending on which behavior is intended.",
+  "input": {
+    "context_path": "results/v2/dev/llm-summary-v1-haiku/pnpm-jest-config-v2-001.txt",
+    "context_tokens_estimate": 614
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 775
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 22109.765,
+    "cache_key": "48fb0d1944aeae31c4670edc355816d1809c04919d4b50cb2678b0bffcbf0f74",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 5154,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 718,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 5154,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 718,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 5154,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 5154
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "cd97be7a-4732-4cde-842c-620182c177ea"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

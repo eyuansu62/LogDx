@@ -1,0 +1,132 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Type checking failures in both pyright and mypy due to pyarrow module attributes and exports not being recognized. Multiple pyarrow.compute functions (is_null, if_else, utf8_length, etc.) and pyarrow.fs.FileSystem are reported as unknown/not exported, producing 279 total mypy errors across 9 files and causing the pre-commit type-checking hooks to exit with code 1.",
+  "root_cause_category": "type_error",
+  "root_cause": "The installed pyarrow version's type stubs do not export or expose the attributes that pandas code references (e.g., pyarrow.compute.is_null, pyarrow.compute.if_else, pyarrow.compute.utf8_length, pyarrow.fs.FileSystem, pyarrow.compute.Expression). Both pyright (reportPrivateImportUsage, reportAttributeAccessIssue) and mypy (attr-defined) report these as missing, indicating a mismatch between the pyarrow version/stubs installed in the CI environment and what the pandas codebase expects.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "pandas/core/arrays/arrow/accessors.py",
+    "pandas/compat/pyarrow.py",
+    "pandas/core/arrays/_arrow_string_mixins.py",
+    "pandas/io/orc.py",
+    "pandas/io/feather_format.py"
+  ],
+  "relevant_tests": [
+    "pyright",
+    "pyright reportGeneralTypeIssues",
+    "mypy",
+    "mypy (stubtest)"
+  ],
+  "evidence": [
+    {
+      "quote": "\"Expression\" is not exported from module \"pyarrow.compute\" (reportPrivateImportUsage)",
+      "reason": "Pyright reports pyarrow.compute.Expression as not exported, indicating the installed pyarrow stubs do not publicly expose this symbol."
+    },
+    {
+      "quote": "\"FileSystem\" is not exported from module \"pyarrow.fs\" (reportPrivateImportUsage)",
+      "reason": "Pyright reports pyarrow.fs.FileSystem as not exported, another sign of pyarrow stub incompatibility."
+    },
+    {
+      "quote": "\"is_null\" is not a known attribute of module \"pyarrow.compute\" (reportAttributeAccessIssue)",
+      "reason": "Pyright cannot find is_null in pyarrow.compute, consistent with missing or outdated stubs."
+    },
+    {
+      "quote": "\"if_else\" is not a known attribute of module \"pyarrow.compute\" (reportAttributeAccessIssue)",
+      "reason": "Same pattern for if_else, confirming broad pyarrow.compute attribute coverage is missing from stubs."
+    },
+    {
+      "quote": "Found 279 errors in 9 files (checked 1458 source files)",
+      "reason": "Mypy reports 279 errors, showing the scope of the pyarrow stub incompatibility across the codebase."
+    },
+    {
+      "quote": "mypy (stubtest)..........................................................[41mFailed[m\n- exit code: 1",
+      "reason": "The mypy stubtest hook explicitly failed with exit code 1, blocking the CI job."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Final CI process exit code confirms the job failed."
+    }
+  ],
+  "suggested_fix": "Pin or upgrade the pyarrow version (and its type stubs, e.g., pyarrow-stubs) in the CI environment to a version that publicly exports pyarrow.compute.Expression, pyarrow.compute.is_null, pyarrow.compute.if_else, pyarrow.fs.FileSystem, and the other referenced attributes. Alternatively, update the pandas import style to use the private-but-stable internal paths if the public API changed in a newer pyarrow release.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-haiku/mypy-pandas-001.txt",
+    "context_tokens_estimate": 611
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1102
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 26724.957,
+    "cache_key": "66bc70f9e2ada68d249663e942a4949f90a4a5c9d9b56b37a79b16648b661309",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 7737,
+        "output_tokens": 998,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard",
+        "cost": 0.038181,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.038181,
+          "upstream_inference_prompt_cost": 0.023211,
+          "upstream_inference_completions_cost": 0.01497
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 3,
+    "tool_call_count": 2,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "pyarrow.*version|Found 279 errors|not exported from module|not a known attribute",
+          "before": 2,
+          "after": 3,
+          "max_matches": 20
+        },
+        "observation_tokens_estimate": 1673,
+        "runtime_ms": 12.887249991763383,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "Found 279 errors|pyarrow==|pyarrow-stubs|stubtest.*exit|exit code 1",
+          "before": 2,
+          "after": 5,
+          "max_matches": 15
+        },
+        "observation_tokens_estimate": 367,
+        "runtime_ms": 37.43629198288545,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 18726,
+    "total_output_tokens_consumed": 1280,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 3
+  }
+}

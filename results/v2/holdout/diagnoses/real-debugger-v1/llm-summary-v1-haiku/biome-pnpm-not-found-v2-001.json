@@ -1,0 +1,86 @@
+{
+  "case_id": "biome-pnpm-not-found-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The `pnpm format` command failed with exit code 127 ('command not found'), indicating that pnpm is not installed or available in the CI environment's PATH. No setup step appears to have installed pnpm before the recipe invoked it.",
+  "root_cause_category": "dependency_install",
+  "root_cause": "pnpm package manager is not installed or not in PATH in the CI environment. The `pnpm format` command exited with code 127 because the executable could not be found.",
+  "confidence": 0.85,
+  "relevant_files": [],
+  "relevant_tests": [
+    "Recipe format (line 221)",
+    "Recipe gen-all (line 32)"
+  ],
+  "evidence": [
+    {
+      "quote": "sh: 1: pnpm: not found",
+      "reason": "Direct evidence that pnpm executable is not available in PATH at invocation time"
+    },
+    {
+      "quote": "exit code 127",
+      "reason": "Standard Unix exit code for 'command not found', confirming the executable lookup failure"
+    },
+    {
+      "quote": "No setup step appears to have installed pnpm before the recipe execution attempted to invoke it",
+      "reason": "Indicates missing prerequisite installation in CI workflow configuration"
+    }
+  ],
+  "suggested_fix": "Add a step to the GitHub Actions workflow to install pnpm (e.g., `npm install -g pnpm` or via a Node.js setup action that includes pnpm) before executing the `gen-all` recipe",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-haiku/biome-pnpm-not-found-v2-001.txt",
+    "context_tokens_estimate": 382
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 501
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 21954.177,
+    "cache_key": "74c6c380e99e9553201386458ea64821839a8f3508d0ebf412f4007f07b2b392",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "haiku",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 9,
+        "cache_creation_input_tokens": 3237,
+        "cache_read_input_tokens": 44848,
+        "output_tokens": 1140,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 3237,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 9,
+            "output_tokens": 1140,
+            "cache_read_input_tokens": 44848,
+            "cache_creation_input_tokens": 3237,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 3237
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "89999daf-bc34-4eaa-af5e-cbe91fd61099"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "ade4ac2160bff920d4d00a0acc2289b3e3cf8de3a70e06ecd399e7cb5a0bb356",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "case_id": "cleanup-tsc-stress-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Cleanup artifacts' CI step failed because the GitHub CLI (gh) received a 403 permission error when attempting to delete GitHub Actions artifacts via the API. The workflow's integration token does not have sufficient permissions to delete artifacts in the microsoft/TypeScript repository.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GitHub Actions integration token lacks the required permissions to delete artifacts via the GitHub API (DELETE /repos/microsoft/TypeScript/actions/artifacts/{artifact_id}), resulting in HTTP 403 'Resource not accessible by integration'.",
+  "confidence": 0.88,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "Explicit 403 authorization failure from the GitHub API when the workflow attempted to delete an artifact, indicating the token lacks the necessary permissions."
+    },
+    {
+      "quote": "Process exit code 1",
+      "reason": "The gh CLI exited with code 1 due to the API rejection, causing the CI step to fail."
+    },
+    {
+      "quote": "gh api \\\n  --silent \\\n  -X DELETE \\\n  -H \"Accept: application/vnd.github+json\" \\\n  /repos/microsoft/TypeScript/actions/artifacts/\"$artifact_id\"",
+      "reason": "This is the exact command that was rejected, showing the DELETE operation on artifacts requires elevated permissions not granted to the current token."
+    }
+  ],
+  "suggested_fix": "Add `actions: write` permission to the workflow job or step that runs the artifact cleanup, e.g. by adding `permissions: actions: write` in the job definition of the GitHub Actions workflow YAML file.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-haiku/cleanup-tsc-stress-001.txt",
+    "context_tokens_estimate": 355
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 609
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 11515.522,
+    "cache_key": "c762e05adf5f72d988069a2500405260be08033b2ffdbc978d69ea6a2e7a0cfa",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 3631,
+        "output_tokens": 521,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.018708,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.018708,
+          "upstream_inference_prompt_cost": 0.010893,
+          "upstream_inference_completions_cost": 0.007815
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 1,
+    "tool_call_count": 0,
+    "tool_calls": [],
+    "total_input_tokens_consumed": 3631,
+    "total_output_tokens_consumed": 521,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 1
+  }
+}

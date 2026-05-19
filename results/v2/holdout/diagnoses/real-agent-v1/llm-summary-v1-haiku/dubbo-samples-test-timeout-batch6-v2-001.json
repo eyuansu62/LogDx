@@ -1,0 +1,106 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The integration test `dubbo-samples-test-11137` timed out after 602 seconds waiting for its test container to become ready. The root cause is a Docker image pull failure for the zookeeper dependency, which returned a '500 Internal Server Error' from the registry, preventing the container from starting. This caused the test harness to exhaust its timeout and report TEST FAILURE.",
+  "root_cause_category": "network_or_flaky",
+  "root_cause": "Docker image pull for the zookeeper container dependency failed with 'Error received unexpected HTTP status: 500 Internal Server Error', preventing the test container from starting. The test harness waited 602 seconds for the container to become ready and then timed out, resulting in TEST FAILURE for dubbo-samples-test-11137.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/docker-compose.yml"
+  ],
+  "relevant_tests": [
+    "[2/23] [dubbo-samples-test-11137:1/1] TEST FAILURE: Run tests timeout, version: -Ddubbo.version=3.3.7-SNAPSHOT -Dspring.version=5.3.24 -Djava.version=21"
+  ],
+  "evidence": [
+    {
+      "quote": "wait for container is timeout: 602 s",
+      "reason": "Confirms the test container never became ready within the 602-second timeout window, directly causing the test failure."
+    },
+    {
+      "quote": "zookeeper Error received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "Shows the zookeeper image pull failed with a 500 Internal Server Error from the Docker registry, which is the upstream cause preventing container startup."
+    },
+    {
+      "quote": "Error response from daemon: received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "Docker daemon confirms the HTTP 500 error during image pull, corroborating the zookeeper pull failure."
+    },
+    {
+      "quote": "[2/23] [dubbo-samples-test-11137:1/1] TEST FAILURE: Run tests timeout, version: -Ddubbo.version=3.3.7-SNAPSHOT -Dspring.version=5.3.24 -Djava.version=21",
+      "reason": "Explicit test failure record naming the specific test and version that failed due to the timeout."
+    },
+    {
+      "quote": "Error response from daemon: No such container: dubbo-samples-test-11137--zookeeper-1",
+      "reason": "Confirms the zookeeper container was never successfully created/started, consistent with the image pull failure."
+    }
+  ],
+  "suggested_fix": "Retry the CI job, as this is a transient infrastructure failure (Docker registry returned 500 Internal Server Error during image pull). If the issue recurs, consider pre-pulling the zookeeper image or using a mirror/cache registry to avoid dependency on the upstream registry availability.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-haiku/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 620
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 937
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 20421.298,
+    "cache_key": "bf48fe1e71cdc4b9357d63c3cb27972164817fc4d39b571224977f056f5d7dff",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 13131,
+        "output_tokens": 861,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard",
+        "cost": 0.052308,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.052308,
+          "upstream_inference_prompt_cost": 0.039393,
+          "upstream_inference_completions_cost": 0.012915
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 1,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "wait for container is timeout|TEST FAILURE|invalid filter|500 Internal Server Error",
+          "before": 2,
+          "after": 5,
+          "max_matches": 20
+        },
+        "observation_tokens_estimate": 5097,
+        "runtime_ms": 42.77954204007983,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 17111,
+    "total_output_tokens_consumed": 1014,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

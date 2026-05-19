@@ -1,0 +1,90 @@
+{
+  "case_id": "pnpm-audit-vuln-ip-address-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The `pnpm audit` step failed with exit code 1 because the project depends on `ip-address` ≤10.1.0, which contains a moderate severity XSS vulnerability in Address6 HTML-emitting methods. The audit found 1 vulnerability and exited with code 1, blocking the build.",
+  "root_cause_category": "dependency_install",
+  "root_cause": "The project has a dependency on `ip-address` version ≤10.1.0 which contains a moderate XSS vulnerability in Address6 HTML-emitting methods. `pnpm audit` detected this vulnerability and exited with code 1.",
+  "confidence": 0.92,
+  "relevant_files": [],
+  "relevant_tests": [
+    "pnpm audit"
+  ],
+  "evidence": [
+    {
+      "quote": "moderate │ ip-address has XSS in Address6 HTML-emitting methods",
+      "reason": "Identifies the specific vulnerability detected by pnpm audit — a moderate severity XSS flaw in the ip-address package."
+    },
+    {
+      "quote": "Vulnerable versions │ <=10.1.0",
+      "reason": "Specifies which versions of ip-address are affected by the vulnerability."
+    },
+    {
+      "quote": "Patched versions │ >=10.1.1",
+      "reason": "Indicates the minimum version required to resolve the vulnerability."
+    },
+    {
+      "quote": "1 vulnerabilities found",
+      "reason": "Confirms that pnpm audit found exactly one vulnerability, triggering the failure."
+    },
+    {
+      "quote": "pnpm audit` → exit code `1`",
+      "reason": "The non-zero exit code from pnpm audit caused the CI job to fail."
+    }
+  ],
+  "suggested_fix": "Upgrade the `ip-address` dependency (direct or transitive) to version ≥10.1.1. If it is a transitive dependency, use `pnpm update ip-address` or add an override in `package.json` under `pnpm.overrides` to pin `ip-address` to `>=10.1.1`.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-haiku/pnpm-audit-vuln-ip-address-v2-001.txt",
+    "context_tokens_estimate": 320
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 607
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 10410.386,
+    "cache_key": "9bdd02f6176f6700738f0efbc8443569098e0ccf5e4cee9d2b8872b8995512c9",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 3676,
+        "output_tokens": 599,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.020013,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.020013,
+          "upstream_inference_prompt_cost": 0.011028,
+          "upstream_inference_completions_cost": 0.008985
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 1,
+    "tool_call_count": 0,
+    "tool_calls": [],
+    "total_input_tokens_consumed": 3676,
+    "total_output_tokens_consumed": 599,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 1
+  }
+}

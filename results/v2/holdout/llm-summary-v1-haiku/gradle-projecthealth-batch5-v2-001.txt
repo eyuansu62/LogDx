@@ -1,0 +1,37 @@
+# CI Failure Summary
+
+## Primary Failure
+
+Gradle build task `:platform-base:projectHealth` failed due to an incorrect dependency configuration. The task expects `domainObjectCollections` to be declared as `implementation` but it is currently declared as `api`.
+
+## Critical Evidence
+
+- `Task :platform-base:projectHealth FAILED` (L012757)
+- `Execution failed for task ':platform-base:projectHealth'.` (L012775)
+- `implementation(projects.domainObjectCollections) (was api)` (L012778)
+- `Existing dependencies which should be modified to be as indicated:` (L012777)
+- `##[error]Process completed with exit code 1.` (L012792)
+
+## Failed Tests / Checks
+
+- `:platform-base:projectHealth`
+
+## Relevant Files and Locations
+
+- `/home/runner/work/gradle/gradle/platforms/software/platform-base/build.gradle.kts`
+
+## Commands and Exit Codes
+
+- `FAILURE: Build failed with an exception.` (L012772)
+- Exit code 1 (L012792)
+
+## Possible Root Cause
+
+The `domainObjectCollections` dependency is exported via the public API surface of `platform-base` (using `api`) when the project's health check requires internal dependencies to use `implementation` scope to prevent transitive exposure. This is a dependency visibility constraint violation.
+
+## Uncertainties / Missing Context
+
+- Whether this is a newly enforced check or a pre-existing constraint
+- The full list of other dependencies that may have the same issue
+- The purpose/rationale for the `projectHealth` task's visibility requirements
+- Relationship between chunk 4's Java documentation warning and this build failure (likely unrelated)

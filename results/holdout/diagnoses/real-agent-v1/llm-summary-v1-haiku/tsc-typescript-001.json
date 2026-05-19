@@ -1,0 +1,99 @@
+{
+  "case_id": "tsc-typescript-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "A fourslash test for code fix suggestions on generic exports is failing because the actual generated suggestion text ('Add return type \\'Foo<string>\\'') does not match the expected text ('Add return type \\'Foo<string, string[…\\'). The code fix logic is producing a simpler return type annotation than the test expects, missing additional type parameters.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The code fix for missing type annotations on generic exports generates 'Add return type \\'Foo<string>\\'' but the test expects 'Add return type \\'Foo<string, string[…\\'' (with additional type parameters). Either the code fix logic was changed to oversimplify generic return types, or the test expectation is wrong.",
+  "confidence": 0.9,
+  "relevant_files": [
+    "tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts",
+    "src/harness/fourslashImpl.ts",
+    "src/harness/fourslashInterfaceImpl.ts",
+    "src/testRunner/fourslashRunner.ts"
+  ],
+  "relevant_tests": [
+    "fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts runs correctly"
+  ],
+  "evidence": [
+    {
+      "quote": "AssertionError: expected 'Add return type \\'Foo<string>\\'' to equal 'Add return type \\'Foo<string, string[…'",
+      "reason": "This is the direct assertion failure showing the mismatch between the actual generated suggestion ('Foo<string>') and the expected suggestion ('Foo<string, string[…') with additional type parameters."
+    },
+    {
+      "quote": "at _TestState.verifyCodeFix (src/harness/fourslashImpl.ts:3435:20)",
+      "reason": "Identifies the exact location in the test harness where the assertion is made, confirming this is a test assertion failure in the code fix verification logic."
+    },
+    {
+      "quote": "tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts",
+      "reason": "Names the specific fourslash test file that is failing, which tests the code fix for missing type annotations on generic exports."
+    }
+  ],
+  "suggested_fix": "Investigate whether the code fix logic for generic return type annotations was recently changed to simplify type parameters. Either update the test expectation in 'codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts' to match 'Foo<string>' if the simplification is intentional, or revert/fix the code fix logic to correctly include all type parameters like 'Foo<string, string[]>' if the oversimplification is a bug.",
+  "input": {
+    "context_path": "results/holdout/llm-summary-v1-haiku/tsc-typescript-001.txt",
+    "context_tokens_estimate": 404
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 857
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 17829.327,
+    "cache_key": "d4f49466a3f487b5232ebda87df22f1228af3091d71ab902796a60d73725b788",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 4303,
+        "output_tokens": 732,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.023889,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.023889,
+          "upstream_inference_prompt_cost": 0.012909,
+          "upstream_inference_completions_cost": 0.01098
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 1,
+    "tool_calls": [
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "expected.*Add return type.*Foo",
+          "before": 2,
+          "after": 5
+        },
+        "observation_tokens_estimate": 267,
+        "runtime_ms": 2.5303749716840684,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 8036,
+    "total_output_tokens_consumed": 850,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

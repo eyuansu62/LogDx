@@ -1,0 +1,25 @@
+{
+  "key_parts": {
+    "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+    "raw_sha": "103cf7d333895a658276b6cf6dfa8e144f065de35cc85a7d54238b8db7b2013b",
+    "prompt_version": "llm_summary_v1",
+    "prompt_sha": "e3739738b7136af3956f3712e7b76babd9224b6854dcc60ff16546a3fbb16702",
+    "provider": "command",
+    "method": "llm-summary-v1-haiku",
+    "chunk_index": -1,
+    "chunk_sha": "865a2e24d9ef3c91bed9d2c0a6daf2fee6a810224114ad7b18227a41d3169afd",
+    "temperature": 0.0,
+    "max_output_chars": 12000,
+    "stage": "reduce"
+  },
+  "response": {
+    "content": "# CI Failure Summary\n\n## Primary Failure\n\nThe CI build encountered two failure phases: (1) git submodule initialization failed when locking config files for 13 submodules during `git submodule deinit/update` operations, and (2) a downstream test failure in the LLVM assembly test suite where FileCheck verification failed on WebAssembly exception handling in `wasm_exceptions.rs` (1 of 550+ assembly tests failed).\n\n## Critical Evidence\n\n- `error: could not lock config file .git/modules/library/backtrace/config: No such file or directory` (L000755)\n- `error: could not lock config file .git/modules/src/llvm-project/config: No such file or directory` (L000779)\n- Multiple identical lock errors for 11 other submodules (.git/modules/src/doc/book, src/doc/edition-guide, src/doc/embedded-book, src/doc/nomicon, src/doc/reference, src/doc/rust-by-example, src/gcc, src/tools/cargo, src/tools/enzyme, src/tools/rustc-perf) (L000758–L000788)\n- `CHECK: expected string not found in input` (L030469, L030478)\n- `// CHECK: catch_all` not found in assembly (L030470, L030732)\n- `// CHECK: catch` not found in assembly (L030479, L030741)\n- `error: verification with 'FileCheck' failed` (L030726)\n- `Bootstrap failed while executing --stage 2 test --host= --target wasm32-wasip1` (L030995)\n\n## Failed Tests / Checks\n\n- `test [assembly] tests/assembly-llvm/wasm_exceptions.rs ... FAILED` (L030430)\n- Assembly-llvm suite: `test result: FAILED. 550 passed; 1 failed; 103 ignored` (L030992)\n\n## Relevant Files and Locations\n\n- `.git/modules/library/backtrace/config`, `.git/modules/src/doc/book/config`, `.git/modules/src/doc/edition-guide/config`, `.git/modules/src/doc/embedded-book/config`, `.git/modules/src/doc/nomicon/config`, `.git/modules/src/doc/reference/config`, `.git/modules/src/doc/rust-by-example/config`, `.git/modules/src/gcc/config`, `.git/modules/src/llvm-project/config`, `.git/modules/src/tools/cargo/config`, `.git/modules/src/tools/enzyme/config`, `.git/modules/src/tools/rustc-perf/config`\n- `tests/assembly-llvm/wasm_exceptions.rs:38:12` (L030469)\n- `tests/assembly-llvm/wasm_exceptions.rs:62:12` (L030478)\n- `/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s:33:16`, line 37:5, line 68:16, line 72:4 (L030472, L030475, L030481, L030484)\n\n## Commands and Exit Codes\n\n- `git submodule deinit -f ... && git submodule sync && git submodule update -j 16 --init --recursive --depth 1 ...` (L000754) – failed during config file lock operations\n- `FileCheck --input-file /checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s /checkout/tests/assembly-llvm/wasm_exceptions.rs --check-prefix=CHECK` (L030728) – exit status: 1 (L030727)\n- `##[error]Process completed with exit code 1.` (L030999)\n\n## Possible Root Cause\n\nThe missing `.git/modules/*/config` files indicate incomplete or corrupted git submodule state, likely from a failed prior checkout or clone. The downstream wasm_exceptions.rs test failure may result from incomplete LLVM submodule setup (which prevents proper LLVM toolchain compilation), or it may reflect an actual LLVM code generation regression where WebAssembly exception handling instructions are not being emitted.\n\n## Uncertainties / Missing Context\n\n- Whether the submodule config files were never created or were deleted between steps\n- Why the build proceeded past submodule failures to reach the assembly tests\n- Whether the wasm_exceptions.rs failures are caused by missing LLVM toolchain or by actual LLVM/compiler output regression\n- The relevance of a merge/diff marker (`>>>>>>`) appearing at L030984 before test output (suggests possible git state corruption or in-progress merge)\n- Whether test expectations or LLVM behavior changed upstream",
+    "provider": "claude-cli",
+    "model": "haiku",
+    "usage": {
+      "input_tokens": 48678,
+      "output_tokens": 2881,
+      "total_cost_usd": 0.024229350000000004
+    }
+  }
+}

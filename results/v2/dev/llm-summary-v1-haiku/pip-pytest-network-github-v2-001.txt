@@ -1,0 +1,35 @@
+# CI Failure Summary
+
+## Primary Failure
+
+Pytest test failure in `test_truststore.py::test_no_truststore_can_install[GitHub]` (lines L006392, L006649). The test invokes `pip install` against a GitHub URL and expects success, but the command returns exit code 1 due to repeated 502 errors from the remote host.
+
+## Critical Evidence
+
+- `AssertionError: Script returned code: 1` (L006520)
+- `HTTPSConnectionPool(host='github.com', port=443): Max retries exceeded with url: /pypa/pip-test-package/archive/refs/heads/master.zip (Caused by ResponseError('too many 502 error responses'))` (L006537, L006547, L006557, L006567)
+- `python -m pip install https://github.com/pypa/pip-test-package/archive/refs/heads/master.zip --use-deprecated=legacy-certs` (L006534, L006544, L006554, L006564)
+- `##[error]Process completed with exit code 1.` (L006653)
+
+## Failed Tests / Checks
+
+- `tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]`
+
+## Relevant Files and Locations
+
+- `tests/functional/test_truststore.py:32`
+- `tests/lib/__init__.py:681`
+
+## Commands and Exit Codes
+
+- Command: `python -m pip install https://github.com/pypa/pip-test-package/archive/refs/heads/master.zip --use-deprecated=legacy-certs`
+- Exit code: 1
+- Session: test-3.12 failed
+
+## Possible Root Cause
+
+GitHub is returning HTTP 502 (Bad Gateway) responses to the pip install request, causing repeated retries to exhaust and the command to fail. This is a transient upstream issue with github.com, not a defect in the code under test.
+
+## Uncertainties / Missing Context
+
+- _(none identified)_ — the failure is a network/upstream service issue rather than an ambiguous code or environment problem

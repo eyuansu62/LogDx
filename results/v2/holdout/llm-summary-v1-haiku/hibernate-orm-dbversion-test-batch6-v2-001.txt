@@ -1,0 +1,42 @@
+# CI Failure Summary
+
+## Primary Failure
+
+Gradle build failed in the Hibernate ORM test suite with `exit code 1`. Out of 16,923 tests executed, 1 test failed: `DbVersionTest.testCollectionVersion(SessionFactoryScope)`. The test failure is an assertion error where an owner version was incorrectly incremented, and the build logs contain 100+ compilation warnings about deprecated APIs marked for removal, though these do not prevent compilation.
+
+## Critical Evidence
+
+- `owner version not incremented ==> expected: <false> but was: <true>` (L045537)
+- `org.opentest4j.AssertionFailedError: owner version not incremented ==> expected: <false> but was: <true>` (L045537)
+- `16923 tests completed, 1 failed, 2596 skipped` (L045953)
+- `100 warnings` related to deprecated removal APIs (L001157, L000846)
+- `##[error]Process completed with exit code 1.` (L046121)
+- Task `:hibernate-core:test FAILED` (L045955)
+
+## Failed Tests / Checks
+
+- `Gradle Test Executor 25 > DbVersionTest > testCollectionVersion(SessionFactoryScope) FAILED`
+
+## Relevant Files and Locations
+
+- `org.hibernate.orm.test.version.db.DbVersionTest.testCollectionVersion(DbVersionTest.java:60)` (L045543)
+- `/home/runner/work/hibernate-orm/hibernate-orm/hibernate-core/target/reports/tests/test/index.html` (full test report location)
+- `/home/runner/work/hibernate-orm/hibernate-orm/hibernate-community-dialects/src/main/java/org/hibernate/community/dialect/SingleStoreDialect.java:1078`
+- `/home/runner/work/hibernate-orm/hibernate-orm/tooling/metamodel-generator/src/main/java/org/hibernate/processor/validation/MockSessionFactory.java:602`
+
+## Commands and Exit Codes
+
+- `> Task :hibernate-core:test FAILED` (L045955)
+- `BUILD FAILED in 17m 39s` (L046120)
+- Exit code `1` (L046121)
+
+## Possible Root Cause
+
+A logic bug in the version-tracking code for collection owner entities is causing the owner version to be incremented when it should remain unchanged. The test failure is isolated to a single test case and is unrelated to the 100+ compilation warnings about deprecated APIs marked for removal.
+
+## Uncertainties / Missing Context
+
+- The root cause of the version increment (whether it's in the collection handling, persistence logic, or versioning mechanism) is not evident from the provided logs
+- The connection between deprecated API usage and the test failure is unclear; the warnings may indicate upstream API changes that need migration
+- The exact state of the entity and collection at the point of failure is not visible in the log output
+- Additional context about recent changes to version tracking or collection handling would be needed to diagnose the root cause

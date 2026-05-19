@@ -1,0 +1,25 @@
+{
+  "key_parts": {
+    "case_id": "pnpm-jest-config-v2-001",
+    "raw_sha": "49aee8f0a9f3a029c4804868ce41939286734ee53efdf204e6466af20ddd7cd6",
+    "prompt_version": "llm_summary_v1",
+    "prompt_sha": "e3739738b7136af3956f3712e7b76babd9224b6854dcc60ff16546a3fbb16702",
+    "provider": "command",
+    "method": "llm-summary-v1-haiku",
+    "chunk_index": -1,
+    "chunk_sha": "c3697f5511324a676db5ca8e4ab5c70edfba3cd6ca55762ff34cff434723b8cc",
+    "temperature": 0.0,
+    "max_output_chars": 12000,
+    "stage": "reduce"
+  },
+  "response": {
+    "content": "# CI Failure Summary\n\n## Primary Failure\n\nMultiple cascading failures during CI: (1) native module installation errors with permission denied (EACCES) when running `node-gyp rebuild` for `fuse-native` and missing `@unrs/resolver-binding-linux-x64-gnu`, (2) Jest Haste map collision for `has-glob`, and (3) test assertion failure in `test/config/get.ts` expecting a registry URL without a trailing slash but receiving one with it. The job failed with exit code 1.\n\n## Critical Evidence\n\n- `Error: spawn node-gyp EACCES` (L000212)\n- `errno: -13, code: 'EACCES'` (L000220–L000221)\n- `Cannot find module 'unrs-resolver/package.json'` (L000199)\n- `jest-haste-map: Haste module naming collision: has-glob` (L002396)\n- `Expected: \"https://my-org.registry.example.com\"` (L002961)\n- `Received: \"https://my-org.registry.example.com/\"` (L002962)\n- `##[error]Process completed with exit code 1.` (L003090)\n\n## Failed Tests / Checks\n\n- `FAIL test/config/get.ts` (17.807 s)\n- Test: \"pnpm config get reads npm options but ignores other settings from .npmrc\"\n\n## Relevant Files and Locations\n\n- `test/config/get.ts:32:38`\n- `node_modules/fuse-native/` (native module build failure)\n- `node_modules/@unrs/resolver-binding-linux-x64-gnu/` (missing package)\n\n## Commands and Exit Codes\n\n- `pn install` – Failed with EACCES error during `fuse-native` postinstall (L000170)\n- `node-gyp rebuild` – Permission denied (L000224)\n- `cross-env NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules --disable-warning=ExperimentalWarning --disable-warning=DEP0169\" jest` – Exit code 1 (L003084)\n\n## Possible Root Cause\n\nPermission errors during native module installation prevent `fuse-native` and `@unrs/resolver-binding-linux-x64-gnu` from being built/installed. Additionally, Jest encounters a Haste map collision for `has-glob`, and a test assertion fails because the registry URL in the output includes a trailing slash that the test does not expect.\n\n## Uncertainties / Missing Context\n\n- Root cause of permission errors in the CI environment (EACCES) – may relate to CI runner permissions or sandbox restrictions.\n- Whether the Haste collision for `has-glob` is a dependency duplication or configuration issue.\n- Whether the trailing slash in the registry URL is a real bug or an environment-specific output difference.\n- Whether native module installation failure cascades to test execution or is independent.\n- CI environment details (runner OS, Node version, pnpm version).",
+    "provider": "claude-cli",
+    "model": "haiku",
+    "usage": {
+      "input_tokens": 47727,
+      "output_tokens": 1792,
+      "total_cost_usd": 0.0175956
+    }
+  }
+}

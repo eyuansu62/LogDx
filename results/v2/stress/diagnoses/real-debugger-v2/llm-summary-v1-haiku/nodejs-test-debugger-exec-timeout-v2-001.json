@@ -1,0 +1,100 @@
+{
+  "case_id": "nodejs-test-debugger-exec-timeout-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The test-debugger-exec test timed out after 15 seconds waiting for the debugger to emit output matching the pattern `/break (?:on start )?in/i`. The debugger process never produced the expected output within the timeout window, causing a hard failure. One test failed out of ten in the suite.",
+  "root_cause_category": "timeout_or_oom",
+  "root_cause": "The debugger process did not produce output matching `/break (?:on start )?in/i` within the 15-second timeout enforced at `test/common/debugger.js:92`, causing the test to fail with `Error: Timeout (15000) while waiting for /break (?:on start )?in/i`.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "test/common/debugger.js",
+    "test/parallel/test-debugger-exec.js"
+  ],
+  "relevant_tests": [
+    "test-debugger-exec"
+  ],
+  "evidence": [
+    {
+      "quote": "Error: Timeout (15000) while waiting for /break (?:on start )?in/i",
+      "reason": "This is the direct error message confirming the test timed out waiting for a specific debugger output pattern."
+    },
+    {
+      "quote": "test/common/debugger.js:92:28",
+      "reason": "This is the stack location of the timeout assertion, confirming the failure originates in the shared debugger test helper's timeout handler."
+    },
+    {
+      "quote": "F..................... with failed 1 out of 10",
+      "reason": "Confirms exactly one test failed in the suite and it was test-debugger-exec, consistent with a single timeout failure."
+    },
+    {
+      "quote": "test/parallel/test-debugger-exec.js:15:15",
+      "reason": "This is the entry point of the failing test, confirming the test identity."
+    },
+    {
+      "quote": "--flaky-tests=keep_retrying",
+      "reason": "The test harness is configured to retry flaky tests, suggesting this type of intermittent timeout may have been observed before on this platform."
+    },
+    {
+      "quote": "Exit code: 2",
+      "reason": "Non-zero exit code confirms the CI job failed as a result of the test timeout."
+    }
+  ],
+  "suggested_fix": "Investigate whether the Node.js debugger is hanging or producing delayed output specifically on macOS runners. Consider increasing the timeout in `test/common/debugger.js` or marking `test-debugger-exec` as flaky for macOS if this is a recurring platform-specific issue. Check recent changes to the debugger communication protocol or startup sequence that may have introduced a race condition.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-haiku/nodejs-test-debugger-exec-timeout-v2-001.txt",
+    "context_tokens_estimate": 701
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 749
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 20872.06,
+    "cache_key": "5c05f6d2a8a6515451ee586a6cdafaa2c2450e65a9d466196773e39daa3e63f1",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 4406,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 685,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 4406,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 685,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 4406,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 4406
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "2e63799c-339d-4a05-b76f-163a8670d255"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

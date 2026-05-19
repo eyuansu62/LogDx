@@ -1,0 +1,98 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest snapshot tests are failing because Babel parser error messages and positions have changed from the baseline snapshots. 14 tests across 4 test suites failed with 13 snapshot mismatches, showing errors like import() validation reported at different positions (e.g., (1:1) vs (1:8)) and with different message text.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Babel parser is reporting different error messages and line:column positions than the snapshot baselines. For example, import() errors changed from 'Unexpected token (1:8)' to '`import()` requires exactly one or two arguments. (1:1)', and TypeScript parameter initializer errors shifted from position (1:24) to (1:1), causing Jest snapshot assertions to fail.",
+  "confidence": 0.78,
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/_errors_/import-dynamic-error/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js",
+    "src/language-js/parse/babel.js"
+  ],
+  "relevant_tests": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/_errors_/import-dynamic-error/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js"
+  ],
+  "evidence": [
+    {
+      "quote": "14 tests failed with 13 snapshots mismatched",
+      "reason": "Directly identifies Jest snapshot test assertion failures as the failure mechanism"
+    },
+    {
+      "quote": "`import()` requires exactly one or two arguments. (1:1)` vs expected `Unexpected token (1:8)`",
+      "reason": "Shows actual Babel parser output differs from snapshot baseline in both message text and error position"
+    },
+    {
+      "quote": "Error position mismatch in declare-function-with-body: `(1:1)` vs expected `(1:24)`",
+      "reason": "Demonstrates Babel is reporting errors at different line:column positions than snapshots expect"
+    },
+    {
+      "quote": "src/language-js/parse/babel.js:176:13 raising SyntaxError",
+      "reason": "Identifies the Babel parser code location where changed error messages originate"
+    }
+  ],
+  "suggested_fix": "Determine why Babel parser error messages and positions changed (recent version upgrade, configuration change, or code modification). If intentional, update snapshots with `jest --updateSnapshot` after validation. If unintentional, revert the Babel-related change. Also resolve the TypeScript 6.0.3 compatibility conflict with eslint-plugin-jest (requires >=4.8.4 <6.0.0).",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-haiku/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 684
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 841
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 34663.91,
+    "cache_key": "052d9e2a6fd1483f7f1c553a291212e8f252878818fc171d2ba205bf56b5132e",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "haiku",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 9,
+        "cache_creation_input_tokens": 3606,
+        "cache_read_input_tokens": 44848,
+        "output_tokens": 3049,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 3606,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 9,
+            "output_tokens": 3049,
+            "cache_read_input_tokens": 44848,
+            "cache_creation_input_tokens": 3606,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 3606
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "70d32b42-5f2f-43f9-b5af-b095bc537b08"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "ade4ac2160bff920d4d00a0acc2289b3e3cf8de3a70e06ecd399e7cb5a0bb356",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

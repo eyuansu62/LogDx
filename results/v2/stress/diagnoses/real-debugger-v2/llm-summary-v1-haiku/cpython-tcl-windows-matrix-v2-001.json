@@ -1,0 +1,100 @@
+{
+  "case_id": "cpython-tcl-windows-matrix-v2-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "Two test_tcl tests failed because Tcl's eval() returned raw UTF-16 surrogate pairs instead of the expected properly-encoded emoji character U+1F4BB. The assertion `AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ'»>'` shows the encoding conversion between Tcl and Python is broken on Windows. The job failed on both the initial run and a re-run, exiting with code 2.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Unicode surrogate pair handling in the Tcl/Python integration layer is broken on Windows: tcl.eval() returns raw UTF-16 surrogate pairs ('\\ud83d\\udcbb') instead of the correctly decoded emoji codepoint U+1F4BB, causing assertEqual assertions in test_eval_surrogates_in_result and test_evalfile_surrogates_in_result to fail.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "Lib\\test\\test_tcl.py"
+  ],
+  "relevant_tests": [
+    "test.test_tcl.TclTest.test_eval_surrogates_in_result",
+    "test.test_tcl.TclTest.test_evalfile_surrogates_in_result"
+  ],
+  "evidence": [
+    {
+      "quote": "AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ'»>'",
+      "reason": "Directly shows that tcl.eval() returned raw UTF-16 surrogate pair characters instead of the correctly encoded emoji, the exact point of failure."
+    },
+    {
+      "quote": "self.assertEqual(tcl.eval(r'set a \"<\\ud83d\\udcbb>\"'), '<\\U0001f4bb>')",
+      "reason": "The test assertion expects the surrogate pair to be decoded into the single codepoint U+1F4BB, but the conversion is not happening."
+    },
+    {
+      "quote": "self.assertEqual(tcl.eval('set b'), '<\\U0001f4bb>')",
+      "reason": "Second assertion that failed, also expecting proper Unicode decoding from Tcl evaluation result."
+    },
+    {
+      "quote": "test_tcl failed (2 failures)",
+      "reason": "Confirms the test module reported 2 failures, consistent with the two surrogate-handling tests."
+    },
+    {
+      "quote": "Result: FAILURE then FAILURE",
+      "reason": "Both the initial run and re-run failed, ruling out a transient/flaky failure and confirming a reproducible regression."
+    },
+    {
+      "quote": "Process completed with exit code 2",
+      "reason": "Non-zero exit code confirms the CI job failed."
+    }
+  ],
+  "suggested_fix": "Investigate recent changes to the CPython Tcl/Tk integration layer (Modules/_tkinter.c or related files) on Windows that may have altered how UTF-16 surrogate pairs from Tcl are decoded into Python Unicode strings; the fix should ensure surrogate pairs like \\ud83d\\udcbb are combined and decoded into the corresponding Unicode scalar value U+1F4BB before being returned to Python callers.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-haiku/cpython-tcl-windows-matrix-v2-001.txt",
+    "context_tokens_estimate": 708
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 799
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 23590.286,
+    "cache_key": "9bb7188fc8b10e171db3d4b964e6beb544bec372e59b5df340e4e1e48572e616",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 4516,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 802,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 4516,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 802,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 4516,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 4516
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "d47bbf60-77fa-4f3d-8768-afd69701969f"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

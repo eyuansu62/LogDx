@@ -1,0 +1,25 @@
+{
+  "key_parts": {
+    "case_id": "pandas-cpp-xsimd-neon64-v2-001",
+    "raw_sha": "3710d506cb58d55356c55dbe1976a937e943adb3c53ea445ed487567bb4e8b4a",
+    "prompt_version": "llm_summary_v1",
+    "prompt_sha": "e3739738b7136af3956f3712e7b76babd9224b6854dcc60ff16546a3fbb16702",
+    "provider": "command",
+    "method": "llm-summary-v1-haiku",
+    "chunk_index": -1,
+    "chunk_sha": "5deb9aaaab56e9410e3bd198af68e579a4b4c2719f36a53ea5ef3bc5c0ee8891",
+    "temperature": 0.0,
+    "max_output_chars": 12000,
+    "stage": "reduce"
+  },
+  "response": {
+    "content": "# CI Failure Summary\n\n## Primary Failure\n\nMeson/Ninja compilation failures in pandas SIMD module during the `fast_float` subproject build. Two template instantiation errors occur in moments calculation code, with the primary issue being a signature mismatch between `xsimd::neon64` and `xsimd::neon` in explicit function template instantiation.\n\n## Critical Evidence\n\n- `error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member` (L001009, L001026)\n- Signature mismatch: `could not match 'Moments (xsimd::neon64, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int) noexcept' against 'Moments (xsimd::neon, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int)'` (L001012)\n- `ninja: build stopped: subcommand failed.` (L001036)\n- `subprocess-exited-with-error` (L001037)\n\n## Failed Tests / Checks\n\n- `pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o` (L001006)\n- `pandas/_libs/simd/libmoments_base.a.p/moments.cpp.o` (L001023)\n\n## Relevant Files and Locations\n\n- `pandas/_libs/include/pandas/simd/moments_simd.hpp:255:50`\n- `pandas/_libs/simd/moments_inst_neon.cpp`\n- `pandas/_libs/simd/moments.cpp`\n\n## Commands and Exit Codes\n\n- `ninja: build stopped: subcommand failed` (L001036)\n- Exit code: `1` (L001041)\n- GHA error: `##[error]Process completed with exit code 1.` (L001054)\n\n## Possible Root Cause\n\nThe explicit template instantiation in `moments_simd.hpp:255` specifies `xsimd::neon64` but the template function definition expects `xsimd::neon`, causing a linker/compiler mismatch. This may indicate an incompatible SIMD architecture configuration or a recent change to NEON intrinsics that was not fully propagated through all instantiation points.\n\n## Uncertainties / Missing Context\n\n- Whether this is a regression (previously passing build) or new code\n- The xsimd library version and whether it changed recently\n- Whether ARM NEON architecture selection changed in the build configuration\n- Full compiler command lines and compiler version being used\n- Content of `moments.cpp` that triggers the base class instantiation error",
+    "provider": "claude-cli",
+    "model": "haiku",
+    "usage": {
+      "input_tokens": 47562,
+      "output_tokens": 1012,
+      "total_cost_usd": 0.01348935
+    }
+  }
+}

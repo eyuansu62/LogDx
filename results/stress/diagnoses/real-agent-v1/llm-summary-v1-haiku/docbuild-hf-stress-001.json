@@ -1,0 +1,89 @@
+{
+  "case_id": "docbuild-hf-stress-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The `doc_build_status_check` job failed because one of the upstream documentation build jobs returned a status of `\"failure\"` instead of `\"success\"` or `\"skipped\"`. The bash conditional in the status-check step evaluated `\"failure\" == \"success\" || \"failure\" == \"skipped\"` as false and exited with code 1.",
+  "root_cause_category": "github_actions_config",
+  "root_cause": "An upstream documentation build job produced a `\"failure\"` status. The `doc_build_status_check` step validates that all dependent job statuses are either `\"success\"` or `\"skipped\"`, but the first status was `\"failure\"`, causing the bash conditional to exit with code 1.",
+  "confidence": 0.85,
+  "relevant_files": [],
+  "relevant_tests": [
+    "doc_build_status_check"
+  ],
+  "evidence": [
+    {
+      "quote": "if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\\n   [[ \"skipped\" == \"success\" || \"skipped\" == \"skipped\" ]]; then",
+      "reason": "The bash conditional explicitly shows that the first upstream job status is `\"failure\"`, which matches neither `\"success\"` nor `\"skipped\"`, causing the condition to be false and triggering `exit 1`."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions error marker confirming the step failed with exit code 1 as a result of the failed conditional."
+    }
+  ],
+  "suggested_fix": "Investigate the upstream documentation build job that returned `\"failure\"` status (the first dependency checked in the conditional). Fix the root cause of that build failure so it returns `\"success\"`, which will allow the `doc_build_status_check` to pass.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-haiku/docbuild-hf-stress-001.txt",
+    "context_tokens_estimate": 373
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 646
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 12964.918,
+    "cache_key": "c655b102ada0c069a48a7db5da566f625f4387dc9c77dcb60f098d941fa46ea2",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 5101,
+        "output_tokens": 464,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.022263,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.022263,
+          "upstream_inference_prompt_cost": 0.015303,
+          "upstream_inference_completions_cost": 0.00696
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 1,
+    "tool_calls": [
+      {
+        "tool": "read_file",
+        "args": {
+          "start_line": 1,
+          "end_line": 60
+        },
+        "observation_tokens_estimate": 653,
+        "runtime_ms": 1.6283750301226974,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 8804,
+    "total_output_tokens_consumed": 539,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "case_id": "prettier-react-stress-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job 'Run prettier' failed because two files do not conform to the project's Prettier formatting configuration. The `yarn prettier-check` command exited with code 1, and the log instructs contributors to run `yarn prettier-all` and commit the resulting changes.",
+  "root_cause_category": "formatting_failure",
+  "root_cause": "Two files—`packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` and `compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts`—contain formatting that does not match the project's Prettier configuration, causing `yarn prettier-check` to exit with code 1.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+    "compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts"
+  ],
+  "relevant_tests": [
+    "Run prettier"
+  ],
+  "evidence": [
+    {
+      "quote": "Please run yarn prettier-all and add changes to files listed below to your commit:",
+      "reason": "This is the direct message from the Prettier check indicating unformatted files were detected and identifies the remediation step."
+    },
+    {
+      "quote": "error Command failed with exit code 1.",
+      "reason": "Confirms that the `yarn prettier-check` command failed, which is the immediate cause of the CI job failure."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions runner echoes the non-zero exit code, confirming the job was marked as failed."
+    }
+  ],
+  "suggested_fix": "Run `yarn prettier-all` locally, then stage and commit the reformatted versions of `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` and `compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts` to the branch.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-haiku/prettier-react-stress-001.txt",
+    "context_tokens_estimate": 355
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 625
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 18662.842,
+    "cache_key": "95f5d2fe2e2d3d548fe73acb3587deee7f72b11fa0f371836d7024b1a4f8c451",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 3939,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 534,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 3939,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 534,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 3939,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 3939
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "d8d9ce8e-cb3e-4375-ae7b-e2626e9e370a"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

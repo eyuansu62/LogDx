@@ -1,0 +1,90 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Type-checking (pyright and mypy) failed because attributes and exports from the pyarrow package referenced in the code are not present according to the type checkers, producing many attr-defined/export errors and failing stubtest.",
+  "root_cause_category": "dependency_install",
+  "root_cause": "The pyarrow installation (or its type stubs) available in the CI environment does not export the attributes referenced by the code (e.g., pyarrow.compute.is_null, pyarrow.compute.if_else, pyarrow.fs.FileSystem), causing pyright and mypy attr/export errors.",
+  "confidence": 0.8,
+  "relevant_files": [
+    "/home/runner/work/pandas/pandas/pandas/core/arrays/arrow/accessors.py:319"
+  ],
+  "relevant_tests": [
+    "`pyright` (L004049, exit code 1)",
+    "`pyright reportGeneralTypeIssues` (L004062, exit code 1)",
+    "`mypy` (L004145, exit code 1)",
+    "`mypy (stubtest)` (L004431, exit code 1)"
+  ],
+  "evidence": [
+    {
+      "quote": "\"Expression\" is not exported from module \"pyarrow.compute\"",
+      "reason": "Shows pyright/mypy report that a symbol expected from pyarrow.compute is not exported."
+    },
+    {
+      "quote": "\"FileSystem\" is not exported from module \"pyarrow.fs\"",
+      "reason": "Shows pyright/mypy report that pyarrow.fs.FileSystem is not present/exported."
+    },
+    {
+      "quote": "\"is_null\" is not a known attribute of module \"pyarrow.compute\"",
+      "reason": "Direct attribute-not-found message for pyarrow.compute.is_null from the type checkers."
+    },
+    {
+      "quote": "\"if_else\" is not a known attribute of module \"pyarrow.compute\"",
+      "reason": "Direct attribute-not-found message for pyarrow.compute.if_else from the type checkers."
+    },
+    {
+      "quote": "Found 279 errors in 9 files (checked 1458 source files)",
+      "reason": "Indicates the problem is widespread across files and caused the type-checking step to fail."
+    },
+    {
+      "quote": "PyArrow version mismatch or outdated type stubs: the code references pyarrow.compute functions (`is_null`, `if_else`, `equal`, `utf8_length`, etc.) and pyarrow.fs (`FileSystem`) that are either not present in the installed pyarrow version or not properly exported in the type stubs.",
+      "reason": "The provided CI summary explicitly identifies a pyarrow version/stub incompatibility as the possible root cause."
+    }
+  ],
+  "suggested_fix": "Ensure the CI installs a pyarrow version whose runtime API and type stubs export the referenced symbols (e.g., is_null, if_else, FileSystem), or update the project's pyarrow type stubs to match the installed pyarrow. Pin the appropriate pyarrow version in CI dependencies and re-run the type checks.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-haiku/mypy-pandas-001.txt",
+    "context_tokens_estimate": 611
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 777
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 77317.358,
+    "cache_key": "6639a93fe38e685e883f8f66e7333385b5ec92fbe3dc19c8efba0c31d7cc7150",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_openai.py",
+    "model_info": {
+      "provider_name": "openai",
+      "requested_model": "gpt-5-mini",
+      "resolved_model": "gpt-5-mini-2025-08-07",
+      "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
+      "max_completion_tokens": 4096,
+      "system_fingerprint": null,
+      "usage": {
+        "prompt_tokens": 1756,
+        "completion_tokens": 1815,
+        "total_tokens": 3571,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1152,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8d5f6bb1e7382f07124c3096574e449b1db3361a9edfee83a2cea21aa4e1246b",
+    "shim_sha256": "bdb194f15bf4f87108aa71863384c07d14b106caa712d398ec48c98ff391e573"
+  }
+}

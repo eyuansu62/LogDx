@@ -1,0 +1,81 @@
+{
+  "case_id": "docbuild-hf-stress-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The doc_build_status_check step failed because a bash conditional found one build status equal to \"failure\", which satisfies neither the \"success\" nor \"skipped\" requirement. The step enforces that all tracked statuses must be \"success\" or \"skipped\" before passing, and the presence of a single \"failure\" status caused the check to exit with code 1.",
+  "root_cause_category": "github_actions_config",
+  "root_cause": "An upstream documentation build or related check returned a status of \"failure\". The doc_build_status_check validation bash conditional requires all statuses to be either \"success\" or \"skipped\"; encountering \"failure\" caused the conditional to evaluate false and the step to exit with code 1.",
+  "confidence": 0.78,
+  "relevant_files": [],
+  "relevant_tests": [
+    "doc_build_status_check"
+  ],
+  "evidence": [
+    {
+      "quote": "if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && [[ \"skipped\" == \"success\" || \"skipped\" == \"skipped\" ]];",
+      "reason": "This bash conditional directly shows that one status value is \"failure\", which matches neither \"success\" nor \"skipped\", causing the entire condition to evaluate to false and the check to fail."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "This GitHub Actions error marker confirms the step terminated with a non-zero exit code as a direct result of the failed conditional."
+    }
+  ],
+  "suggested_fix": "Investigate the upstream documentation build or check that produced the \"failure\" status (the first value in the conditional) and fix the root cause of that build failure so its status returns \"success\" or \"skipped\".",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-haiku/docbuild-hf-stress-001.txt",
+    "context_tokens_estimate": 373
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 599
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 18152.267,
+    "cache_key": "f87f04647f172030a66dd2ad664c3cfbc4b39a4a53d1144bee7cd0041e5474c7",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 4008,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 439,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 4008,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 439,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 4008,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 4008
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "778172ea-febb-4629-aa57-0a7fd17b3693"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

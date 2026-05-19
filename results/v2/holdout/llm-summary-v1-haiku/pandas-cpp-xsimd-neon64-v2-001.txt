@@ -1,0 +1,41 @@
+# CI Failure Summary
+
+## Primary Failure
+
+Meson/Ninja compilation failures in pandas SIMD module during the `fast_float` subproject build. Two template instantiation errors occur in moments calculation code, with the primary issue being a signature mismatch between `xsimd::neon64` and `xsimd::neon` in explicit function template instantiation.
+
+## Critical Evidence
+
+- `error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member` (L001009, L001026)
+- Signature mismatch: `could not match 'Moments (xsimd::neon64, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int) noexcept' against 'Moments (xsimd::neon, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int)'` (L001012)
+- `ninja: build stopped: subcommand failed.` (L001036)
+- `subprocess-exited-with-error` (L001037)
+
+## Failed Tests / Checks
+
+- `pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o` (L001006)
+- `pandas/_libs/simd/libmoments_base.a.p/moments.cpp.o` (L001023)
+
+## Relevant Files and Locations
+
+- `pandas/_libs/include/pandas/simd/moments_simd.hpp:255:50`
+- `pandas/_libs/simd/moments_inst_neon.cpp`
+- `pandas/_libs/simd/moments.cpp`
+
+## Commands and Exit Codes
+
+- `ninja: build stopped: subcommand failed` (L001036)
+- Exit code: `1` (L001041)
+- GHA error: `##[error]Process completed with exit code 1.` (L001054)
+
+## Possible Root Cause
+
+The explicit template instantiation in `moments_simd.hpp:255` specifies `xsimd::neon64` but the template function definition expects `xsimd::neon`, causing a linker/compiler mismatch. This may indicate an incompatible SIMD architecture configuration or a recent change to NEON intrinsics that was not fully propagated through all instantiation points.
+
+## Uncertainties / Missing Context
+
+- Whether this is a regression (previously passing build) or new code
+- The xsimd library version and whether it changed recently
+- Whether ARM NEON architecture selection changed in the build configuration
+- Full compiler command lines and compiler version being used
+- Content of `moments.cpp` that triggers the base class instantiation error

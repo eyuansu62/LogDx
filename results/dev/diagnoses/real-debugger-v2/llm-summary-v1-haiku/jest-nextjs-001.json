@@ -1,0 +1,122 @@
+{
+  "case_id": "jest-nextjs-001",
+  "context_method": "llm-summary-v1-haiku",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest test discovery fails across 17+ example projects because all explicit file path patterns resolve to 0 matches, causing every Jest invocation to exit with code 1. Secondary ENOENT errors follow immediately since the expected results JSON files are never written. The test files at the specified paths either do not exist in the container or are otherwise invisible to Jest.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Jest is invoked with explicit file paths (e.g. 'examples/with-jest/__tests__/index.test.tsx') but reports 0 matches for every pattern, indicating the test files do not exist at those paths inside the CI container at the time of test execution.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "/work/run-tests.js",
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest-babel/__tests__/index.test.tsx",
+    "examples/with-jest/app/blog/[slug]/page.test.tsx",
+    "examples/with-jest/app/counter.test.tsx",
+    "examples/with-jest/app/utils/add.test.ts",
+    "examples/with-jest/app/page.test.tsx",
+    "examples/with-mocha/test/index.test.js",
+    "examples/with-typescript-graphql/test/index.test.tsx",
+    "examples/with-vitest/__tests__/Home.test.tsx",
+    "examples/with-vitest/app/blog/[slug]/page.test.tsx",
+    "examples/with-vitest/app/counter.test.tsx",
+    "examples/with-vitest/app/page.test.tsx",
+    "examples/with-vitest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts"
+  ],
+  "relevant_tests": [
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest-babel/__tests__/index.test.tsx",
+    "examples/with-jest/app/blog/[slug]/page.test.tsx",
+    "examples/with-jest/app/counter.test.tsx",
+    "examples/with-jest/app/utils/add.test.ts",
+    "examples/with-jest/app/page.test.tsx",
+    "examples/with-mocha/test/index.test.js",
+    "examples/with-typescript-graphql/test/index.test.tsx",
+    "examples/with-vitest/__tests__/Home.test.tsx",
+    "examples/with-vitest/app/blog/[slug]/page.test.tsx",
+    "examples/with-vitest/app/counter.test.tsx",
+    "examples/with-vitest/app/page.test.tsx",
+    "examples/with-vitest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts"
+  ],
+  "evidence": [
+    {
+      "quote": "Pattern: examples/with-jest/__tests__/index.test.tsx - 0 matches",
+      "reason": "Jest was given an explicit file path but found zero matching files, directly confirming the file is absent or inaccessible at that path in the container."
+    },
+    {
+      "quote": "No tests found, exiting with code 1",
+      "reason": "Repeated across all 17+ invocations, confirming the pattern-matching failure is systemic and not isolated to a single test file."
+    },
+    {
+      "quote": "ENOENT: no such file or directory, open 'examples/with-jest/__tests__/index.test.tsx.results.json'",
+      "reason": "The results JSON file was never created because Jest exited before running any tests; this is a downstream symptom of the 0-matches failure."
+    },
+    {
+      "quote": "/work/run-tests.js:927:29",
+      "reason": "The readFileSync call in the test runner harness crashes because it unconditionally tries to read a results file that Jest never wrote, confirming the runner does not handle the no-tests-found exit gracefully."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "The GitHub Actions error marker confirms the overall job failed due to the cascading test-discovery failures."
+    }
+  ],
+  "suggested_fix": "Verify that the `examples/with-*/` directories and their test files are physically present in the CI workspace after the build step (e.g., add a `ls examples/with-jest/__tests__/` step before test execution). If the files are missing, ensure the release/build step (`taskr release`) correctly includes the example directories in the output artifact, or that the checkout/copy step places them at the paths `/work/run-tests.js` expects.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-haiku/jest-nextjs-001.txt",
+    "context_tokens_estimate": 888
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1118
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 26518.704,
+    "cache_key": "cf70596e19db0df6e80bba84088f89dae4acd88e641b80c2474e551b2ee85caa",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 4717,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 1213,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 4717,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 1213,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 4717,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 4717
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "1298dd15-81a7-4e10-bdd0-cc69c1192349"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}
