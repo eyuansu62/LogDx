@@ -22,8 +22,11 @@ description: "A benchmark for CI log reduction tools — do they preserve enough
 
 > **v1.1 highlight**: in multi-turn agent usage (Claude Code /
 > Codex–style tool loops), the choice of context method matters
-> far less for *quality* — the agent rescues weak contexts via
-> tool calls. See the
+> far less for *quality* — the score range collapses 7× (0.42 →
+> 0.06) as the agent rescues weak contexts via tool calls.
+> The v1.0 single-shot #1 (`hybrid-grep-120k-rtk-tail`) is also
+> #1 in agent-loop with 0% confident-error — the most robust
+> method across both regimes. See the
 > [agent-loop leaderboard](leaderboard.html#agent-loop-leaderboard--v11)
 > and the
 > [agent-loop vs single-shot analysis](https://github.com/eyuansu62/LogDx/blob/main/docs/analysis/agent-loop-vs-single-shot.md).

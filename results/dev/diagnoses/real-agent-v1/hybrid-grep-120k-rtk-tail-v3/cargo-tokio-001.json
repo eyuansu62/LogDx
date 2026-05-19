@@ -3,138 +3,101 @@
   "context_method": "hybrid-grep-120k-rtk-tail-v3",
   "diagnoser": "real-agent-v1",
   "mode": "root_cause_diagnosis",
-  "summary": "The trybuild compile-fail test `compile_fail_full` in `tests-build::macros` failed because the actual compiler error output for `tests/fail/macros_type_mismatch.rs` does not match the stored expected output. The current Rust stable compiler emits additional `error[E0271]` errors that are absent from the snapshot, causing a mismatch.",
-  "root_cause_category": "test_assertion",
-  "root_cause": "The trybuild snapshot for `tests/fail/macros_type_mismatch.rs` is out of date: the current stable Rust compiler emits extra `error[E0271]` diagnostics (e.g., 'expected ... to be a future that resolves to ...') that are not present in the stored `.stderr` file, causing the compile-fail test to report a mismatch.",
-  "confidence": 0.95,
+  "summary": "The trybuild compile-fail test `compile_fail_full` in `tests-build::macros` failed because the actual compiler error output for `tests/fail/macros_type_mismatch.rs` did not match the expected (blessed) output stored in the test fixtures. 1 of 10 compile-fail tests failed.",
+  "root_cause_category": "compile_error",
+  "root_cause": "The trybuild test `compile_fail_full` failed because the compiler error messages produced for `tests/fail/macros_type_mismatch.rs` do not match the expected `.stderr` snapshot files. The actual errors include type mismatches (e.g., `expected Result<(), ()>, found ()` and `expected (), found integer`) that differ from what was previously blessed.",
+  "confidence": 0.9,
   "relevant_files": [
     "tests/fail/macros_type_mismatch.rs",
-    "tests-build/tests/macros.rs"
+    "tests/macros.rs"
   ],
   "relevant_tests": [
-    "tests-build::macros::compile_fail_full"
+    "tests-build::macros compile_fail_full"
   ],
   "evidence": [
     {
-      "quote": "test tests/fail/macros_type_mismatch.rs [should fail to compile] ... mismatch",
-      "reason": "Trybuild explicitly reports a mismatch for this specific test file, indicating the stored snapshot does not match actual compiler output."
-    },
-    {
-      "quote": "ACTUAL OUTPUT:\n    ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n    error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
-      "reason": "The actual compiler output contains new E0271 errors not present in the expected snapshot, confirming the snapshot is stale relative to the current compiler."
+      "quote": "thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13:",
+      "reason": "The trybuild runner panicked, indicating the actual compiler output did not match the expected snapshot."
     },
     {
       "quote": "1 of 10 tests failed",
-      "reason": "Trybuild reports exactly 1 of 10 compile-fail/pass tests failed, confirming only the macros_type_mismatch snapshot is mismatched."
-    },
-    {
-      "quote": "note: If the actual output is the correct output you can bless it by rerunning\n          your test with the environment variable TRYBUILD=overwrite",
-      "reason": "Trybuild itself suggests the fix: re-run with TRYBUILD=overwrite to update the snapshot to match the new compiler output."
+      "reason": "Confirms exactly one compile-fail test case failed out of 10."
     },
     {
       "quote": "FAIL [   9.875s] (396/396) tests-build::macros compile_fail_full",
-      "reason": "Confirms the failing test identifier and that it is the only test failure causing the CI job to fail."
+      "reason": "Identifies the specific failing test."
+    },
+    {
+      "quote": "note: If the actual output is the correct output you can bless it by rerunning\n      your test with the environment variable TRYBUILD=overwrite",
+      "reason": "Confirms this is a trybuild snapshot mismatch — the actual compiler output differs from the stored expected output."
+    },
+    {
+      "quote": "error[E0308]: mismatched types\n  --> tests/fail/macros_type_mismatch.rs:57:5",
+      "reason": "Shows the specific compiler error that was produced but didn't match the expected snapshot."
     }
   ],
-  "suggested_fix": "Update the trybuild snapshot for `tests/fail/macros_type_mismatch.rs` by running the test suite with `TRYBUILD=overwrite cargo nextest run --workspace --features full,test-util` (or the equivalent `cargo test`) so the stored `.stderr` file is regenerated to match the current stable Rust compiler's error output.",
+  "suggested_fix": "Update the trybuild snapshot files by running the tests with `TRYBUILD=overwrite cargo test compile_fail_full` in the `tests-build` crate to bless the new expected compiler output, then commit the updated `.stderr` files.",
   "input": {
     "context_path": "results/dev/hybrid-grep-120k-rtk-tail-v3/cargo-tokio-001.txt",
     "context_tokens_estimate": 43413
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 1029
+    "output_tokens_estimate": 763
   },
   "metadata": {
     "provider": "command",
-    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 39487.097,
-    "cache_key": "556c11b1523b364850887fce3b2902d742e5f96100786ed584b9c24742f399e5",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 20391.333,
+    "cache_key": "18147178cf45a1a70450fe228b009f674ed60fc5caaf5ca995fd280af05866cb",
     "provider_error": null,
     "provider_error_detail": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
     "model_info": {
       "provider_name": "anthropic",
-      "requested_model": "claude-sonnet-4-6",
-      "resolved_model": "claude-sonnet-4-6",
-      "base_url": "https://api.anthropic.com/v1",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
       "usage": {
-        "input_tokens": 51087,
+        "input_tokens": 20399,
+        "output_tokens": 778,
         "cache_creation_input_tokens": 0,
         "cache_read_input_tokens": 0,
-        "cache_creation": {
-          "ephemeral_5m_input_tokens": 0,
-          "ephemeral_1h_input_tokens": 0
-        },
-        "output_tokens": 1106,
-        "service_tier": "standard",
-        "inference_geo": "global"
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.072867,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.072867,
+          "upstream_inference_prompt_cost": 0.061197,
+          "upstream_inference_completions_cost": 0.01167
+        }
       }
     },
     "diagnoser_config_name": null,
-    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
-    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
   },
   "agent_metadata": {
-    "iterations": 5,
-    "tool_call_count": 5,
+    "iterations": 2,
+    "tool_call_count": 1,
     "tool_calls": [
-      {
-        "tool": "grep",
-        "args": {
-          "pattern": "FAIL|FAILED|failed|error\\[|panicked|assertion",
-          "after": 10,
-          "max_matches": 20
-        },
-        "observation_tokens_estimate": 5579,
-        "runtime_ms": 8.931124990340322,
-        "error": null
-      },
       {
         "tool": "tail",
         "args": {
           "n": 100
         },
         "observation_tokens_estimate": 2603,
-        "runtime_ms": 0.05399997462518513,
-        "error": null
-      },
-      {
-        "tool": "grep",
-        "args": {
-          "pattern": "compile_fail_full|macros_type_mismatch|trybuild|1 of 10 tests failed",
-          "before": 5,
-          "after": 15,
-          "max_matches": 10
-        },
-        "observation_tokens_estimate": 3599,
-        "runtime_ms": 12.76641699951142,
-        "error": null
-      },
-      {
-        "tool": "view_log_lines",
-        "args": {
-          "center_line": 2825,
-          "radius": 80
-        },
-        "observation_tokens_estimate": 3340,
-        "runtime_ms": 0.12204100494273007,
-        "error": null
-      },
-      {
-        "tool": "view_log_lines",
-        "args": {
-          "center_line": 2905,
-          "radius": 80
-        },
-        "observation_tokens_estimate": 3178,
-        "runtime_ms": 0.10691600618883967,
+        "runtime_ms": 3.4233329934068024,
         "error": null
       }
     ],
-    "total_input_tokens_consumed": 180875,
-    "total_output_tokens_consumed": 1538,
+    "total_input_tokens_consumed": 35964,
+    "total_output_tokens_consumed": 845,
     "budget_exhausted": false,
-    "final_diagnosis_turn": 5
+    "final_diagnosis_turn": 2
   }
 }

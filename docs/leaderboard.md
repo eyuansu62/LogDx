@@ -144,17 +144,20 @@ raw log).
 ![Agent-loop narrows the gap between methods](figures/agent_flattens_methods.png)
 
 **Every context method gains in agent-loop, and the score range
-collapses ~6× — from 0.42 (single-shot) to 0.074 (agent-loop).**
+collapses ~7× — from 0.42 (single-shot) to 0.059 (agent-loop).**
 Weak single-shot methods are rescued by the agent's tool calls;
-rtk-log gains a massive **+0.42** by being supplemented with
-on-the-fly grep / tail. Confident-error rates drop to **0%** on 7 of
-10 methods (single-shot's 13% rate for `rtk-log` and
-`llm-summary-v1-mock` collapses to 0% and 2.9% respectively); the
-remaining three non-zero rates (5.7% on `raw`, 2.9% on
-`llm-summary-v1-mock`, 2.9% on `hybrid-grep-120k-rtk-tail`) come
-from over-comprehensive starting contexts that encourage the agent
-to commit before verifying — see § 2 of the
+`rtk-log` gains a massive **+0.44** and `llm-summary-v1-mock` gains
+**+0.39** by being supplemented with on-the-fly grep / tail.
+Confident-error rates drop to **0%** on 6 of 10 methods (single-
+shot's 13% rate for `rtk-log` and `llm-summary-v1-mock` collapses
+to 5.7% and 0% respectively); the four non-zero rates (2.9%–5.7%)
+are concentrated on methods where the agent commits before
+verifying — see § 2 of the
 [analysis doc](analysis/agent-loop-vs-single-shot.md).
+**v1.0 single-shot #1 (`hybrid-grep-120k-rtk-tail`) is also #1 in
+agent-loop** at 0.747, 0% confident_error, lowest tool usage
+(0.97/case among non-tail-200 methods) — the most robust method
+across both regimes.
 
 ### Agent-loop rankings (Sonnet 4.6, 35-case macro)
 
@@ -162,74 +165,79 @@ Sorted by agent-loop `diagnosis_score_v1_1`.
 
 | Rank | Method | single-shot score | agent score | Δ | conf_err | iters/case | tools/case | tokens/case |
 |----:|--------|---:|---:|---:|---:|---:|---:|---:|
-| 1 | `hybrid-grep-120k-tail`     | 0.666 | **0.740** | +0.074 | **0.000** | 2.86 | 2.71 |  56,777 |
-| 2 | `grep`                      | 0.639 | **0.738** | **+0.099** | **0.000** | 2.91 | 2.80 |  61,394 |
-| 3 | `rtk-read`                  | 0.349 | 0.726 | **+0.377** | **0.000** | 2.97 | 2.89 |  71,450 |
-| 4 | `tail-200`                  | 0.614 | 0.722 | +0.108 | **0.000** | 2.94 | 2.80 |  59,047 |
-| 5 | `hybrid-grep-4k-rtk-err-cat`| 0.573 | 0.720 | +0.147 | **0.000** | 3.09 | 3.20 |  55,287 |
-| 6 | `rtk-err-cat`               | 0.470 | 0.708 | **+0.238** | **0.000** | 3.00 | 3.28 |  57,552 |
-| 7 | `llm-summary-v1-mock`       | 0.328 | 0.703 | **+0.375** | 0.029 | 3.14 | 3.40 |  **48,826** |
-| 8 | `hybrid-grep-120k-rtk-tail` | **0.670** (single-shot #1) | 0.702 | +0.033 | 0.029 | 2.89 | 2.86 |  60,530 |
-| 9 | `raw`                       | 0.353 | 0.700 | **+0.347** | 0.057 | 2.94 | 2.94 |  71,411 |
-| 10 | `rtk-log`                  | **0.249** (single-shot #10) | 0.666 | **+0.417** | **0.000** | 3.46 | 3.97 |  **48,334** |
+| 1 | `hybrid-grep-120k-rtk-tail` | **0.670** (single-shot #1) | **0.747** | +0.077 | **0.000** | 1.94 | 0.97 | 37,152 |
+| 2 | `hybrid-grep-4k-rtk-err-cat`| 0.573 | 0.737 | +0.164 | **0.000** | 2.37 | 1.40 | 42,862 |
+| 3 | `hybrid-grep-120k-tail`     | 0.666 | 0.735 | +0.069 | **0.000** | 1.94 | 1.00 | 39,221 |
+| 4 | `rtk-read`                  | 0.349 | 0.735 | **+0.386** | **0.000** | 2.40 | 1.46 | 55,391 |
+| 5 | `grep`                      | 0.639 | 0.722 | +0.083 | 0.029 | 2.00 | 1.20 | 42,232 |
+| 6 | `llm-summary-v1-mock`       | 0.328 | 0.715 | **+0.387** | **0.000** | 2.51 | 1.88 | **32,139** |
+| 7 | `tail-200`                  | 0.614 | 0.710 | +0.096 | 0.029 | 1.66 | **0.69** | **28,166** |
+| 8 | `rtk-err-cat`               | 0.470 | 0.708 | **+0.238** | **0.000** | 2.60 | 1.66 | 43,009 |
+| 9 | `rtk-log`                  | **0.249** (single-shot #10) | 0.689 | **+0.440** | 0.057 | 2.77 | 2.60 | 36,259 |
+| 10 | `raw`                      | 0.353 | 0.688 | +0.335 | 0.029 | 2.51 | 1.68 | 67,311 |
 
 Five layers of finding:
 
-1. **Quality flattens.** Agent-loop scores cluster in [0.666, 0.740]
-   — a 0.074 spread. Single-shot's 0.42 spread is gone; the agent
-   rescues weak contexts via tool calls.
+1. **Quality flattens.** Agent-loop scores cluster in [0.688, 0.747]
+   — a 0.059 spread (7× tighter than single-shot's 0.42). The
+   agent rescues weak contexts via tool calls.
 2. **Safety mostly collapses.** Single-shot's 13% confident_error
-   on `rtk-log` and `llm-summary-v1-mock` drops to 0% and 2.9%
-   respectively. The agent-loop highest is 5.7% on `raw` (the LLM
-   sometimes commits to a category based on the start of the
-   truncated raw log without verifying via tools); two other methods
-   carry 2.9% (`llm-summary-v1-mock`, `hybrid-grep-120k-rtk-tail`).
-3. **Rankings reshuffle.** v1.0 single-shot #1
-   `hybrid-grep-120k-rtk-tail` drops to agent-loop rank 8. The new
-   winner is `hybrid-grep-120k-tail` (single-shot rank 2, agent rank
-   1, agent confident_error 0%). **This method is the v1.1
-   recommendation for both static and agent settings.** `grep` jumps
-   from single-shot rank 3 to agent rank 2 at competitive cost.
-4. **Cost differs by 1.5×.** Cheapest agent-loop method is `rtk-log`
-   at 48.3k tokens/case; most expensive is `rtk-read` at 71.5k. The
-   range is 1.5× — far smaller than the 530× single-shot range
-   (1k–432k), but still meaningful for a fleet of agents.
+   on `rtk-log` and `llm-summary-v1-mock` drops to 5.7% and 0%
+   respectively. The agent-loop highest is 5.7% (`rtk-log`); 6 of
+   10 methods sit at 0%.
+3. **Top single-shot method holds.** v1.0 single-shot #1
+   `hybrid-grep-120k-rtk-tail` is also #1 in agent-loop (0.747),
+   with 0% confident_error AND lowest non-tail tool usage (0.97
+   tools/case). **This method is the v1.1 recommendation for both
+   static and agent settings.** All three 120k-threshold and 4k
+   hybrid variants land in the agent-loop top 3.
+4. **Cost differs by 2.4×.** Cheapest agent-loop method is
+   `tail-200` at 28.2k tokens/case; most expensive is `raw` at
+   67.3k. The range is 2.4× — far smaller than the 530× single-
+   shot range (1k–432k), but still meaningful for a fleet of agents.
 5. **Tool calls correlate inversely with single-shot quality.** The
-   methods that needed the most rescuing (`rtk-log` 4.0 tools,
-   `llm-summary-v1-mock` 3.4, `rtk-err-cat` 3.3) are the ones with
-   the worst or most-lossy single-shot starting context. The two
-   strongest agent-loop performers (`hybrid-grep-120k-tail` 2.7,
-   `grep` 2.8) need fewer.
+   methods that needed the most rescuing (`rtk-log` 2.60 tools,
+   `llm-summary-v1-mock` 1.88, `raw` 1.68) are the ones with the
+   worst or most-lossy single-shot starting context. The two
+   strongest agent-loop performers (`hybrid-grep-120k-rtk-tail`
+   0.97, `hybrid-grep-120k-tail` 1.00) need ~1 tool/case.
+   `tail-200` uses the FEWEST tools (0.69/case) but lands rank 7
+   on quality.
 
 ### Agent-loop cost-quality Pareto frontier
 
 ![Agent-loop cost-quality Pareto](figures/agent_cost_quality_pareto.png)
 
 In agent-loop, the Pareto frontier compresses dramatically (the
-score range is only 0.074 wide). The frontier looks like:
+score range is only 0.059 wide). The frontier is essentially:
 
-- `rtk-log` — cheapest (48.3k tokens/case) but lowest score (0.666)
-- `hybrid-grep-4k-rtk-err-cat` — 55.3k, score 0.720
-- `hybrid-grep-120k-tail` — top score (0.740) at 56.8k tokens
+- `tail-200` — cheapest (28.2k tokens/case) at score 0.710
+- `llm-summary-v1-mock` — 32.1k, score 0.715
+- `rtk-log` — 36.3k, score 0.689
+- `hybrid-grep-120k-rtk-tail` — top score (0.747) at 37.2k tokens
 
-`hybrid-grep-120k-tail` and `grep` (0.738, 61.4k) are the
-**practical recommendations for agent users** — top-2 quality, low
-cost, zero confident_error.
+`hybrid-grep-120k-rtk-tail` dominates: top score, 0% confident_error,
+and 37k tokens/case (cheaper than every other method except `tail-
+200` / `llm-summary` / `rtk-log` — all of which score worse). It
+is the v1.1 recommendation for both single-shot AND agent-loop.
 
 ### What this means
 
-- **If your downstream is single-shot LLM** (no tools): stick with
-  the v1.0 leaderboard. `hybrid-grep-120k-rtk-tail` wins.
+- **`hybrid-grep-120k-rtk-tail` is the v1.1 universal pick** —
+  ranked #1 in BOTH single-shot (0.670) AND agent-loop (0.747),
+  0% confident_error in agent-loop, and only 0.97 tool calls/case
+  on average. Use this regardless of whether your downstream is
+  single-shot or tool-using.
 - **If your downstream is a tool-using agent** (Claude Code, Codex):
-  the choice of static reducer matters much less for *quality*.
-  Use `hybrid-grep-120k-tail` (best agent-loop) or `tail-200`
-  (cheapest agent-loop while staying in the top 2).
+  the choice of static reducer matters much less for *quality*
+  (range collapses 7×). Cost matters more: `tail-200` is the
+  cheapest at 28k tokens/case but ranks 7 on quality. The 120k
+  hybrids hit the best cost-quality balance.
 - **Don't use `rtk-log` or `llm-summary-v1-mock` standalone** — they
   remain dangerous in single-shot (13% confident misclassification
-  rate each). In agent-loop they're safe-ish (rtk-log 0% / llm-
-  summary-v1-mock 2.9% confident_error), but they force the agent
-  into 4.0 and 3.4 tool calls per case respectively to recover the
-  lost signal.
+  rate each). In agent-loop the agent rescues them via tool calls,
+  but `rtk-log` still carries the highest agent-loop confident_error
+  (5.7%) and needs ~2.6 tool calls/case to recover.
 
 For the full mechanism analysis (why agents rescue weak methods
 without hurting strong ones, why confident_error vanishes), see
@@ -241,14 +249,23 @@ without hurting strong ones, why confident_error vanishes), see
   v1.2 follow-ups in [ROADMAP](https://github.com/eyuansu62/LogDx/blob/main/ROADMAP.md).
   The "every method gains" finding may be specific to Sonnet's
   tool-use bias and could narrow for smaller models.
-- **5-turn cap, 180k cumulative input cap is a *soft* cap.** The
-  cap is checked at the start of each tool-using turn. A single
-  turn (especially on huge static contexts like raw or rtk-read on
-  argocd-class logs) can push the cumulative count above 180k by
-  up to ~75k before the loop exits to the forced-final no-tools
-  call. 6 of 350 v1.1 rows landed above 180k (max 254,688). Costs
+- **5-turn cap, 180k cumulative input cap is a *soft* cap.** Two
+  guards: (1) hard stop before issuing any tool-using turn once
+  cumulative input ≥ 180k; (2) preflight estimate of the next
+  request's input tokens — skip the turn if it would cross the cap.
+  Despite both, a single late turn whose observation token count
+  exceeds our chars/4 estimate can still push cumulative above the
+  cap. 18 of 350 v1.1 rows landed above 180k (max 273,654). Costs
   reported in the leaderboard reflect actual usage, not the nominal
   cap.
+- **Routing**: v1.1 ran via OpenRouter's Anthropic-native
+  passthrough (`https://openrouter.ai/api/v1/messages`). The
+  underlying model is identical to direct Anthropic (`anthropic/
+  claude-4.6-sonnet-20260217` resolves on both endpoints).
+  A 3-case A/B comparison vs Anthropic direct found no extra
+  variance beyond Sonnet's inherent temp=0 drift; differences in
+  individual rows are within ±5% on token counts and the same
+  category in 2/3 cases.
 - **Same 35-case corpus** as single-shot. No corpus expansion in v1.1.
 - **Non-determinism**: Sonnet 4.6 at temperature=0 still has small
   variance in tool selection across runs. The macro means above are

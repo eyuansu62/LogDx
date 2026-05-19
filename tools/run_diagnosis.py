@@ -1042,6 +1042,7 @@ _API_VERSION_SEGMENT_RE = re.compile(r"^v\d+$")
 
 _PUBLIC_HOST_ALLOWLIST = frozenset({
     "api.openai.com", "api.anthropic.com",
+    "openrouter.ai",  # OpenRouter Anthropic-native passthrough used by real-agent-v1
     "localhost", "127.0.0.1", "::1",
 })
 
@@ -1737,24 +1738,21 @@ def cache_key_for(
 def run(
     *, split: str, diagnoser_provider: str, diagnoser_name: str,
     context_method: str, results_dir: Path, cases_dir: Path,
-    prompt_path: Path, command_str: str | None,
+    prompt_path: Path | None, command_str: str | None,
     strict: bool, no_cache: bool, cache_errors: bool,
     diagnoser_config_path: Path | None = None,
 ) -> int:
-    if not prompt_path.exists():
-        print(f"ERROR: prompt not found: {prompt_path}", file=sys.stderr)
-        return 1
-    prompt_text = prompt_path.read_text(encoding="utf-8")
-    prompt_sha = sha256_text(prompt_text)
-
     # Per Codex 2026-05-12 F2 + 2026-05-15 F2: load the diagnoser config
     # to discover (a) env-var-driven cache_key contributions, (b) the
     # canonical requested_model / requested_alias for cache-hit
-    # validation, and (c) the external-LLM opt-in gate. When the caller
-    # supplies an explicit --diagnoser-config path (the wrappers do this
-    # now), the loader fails fast on diagnoser_name mismatch so a
-    # manifest can never claim one config while the runner derived its
-    # behaviour from another.
+    # validation, (c) the external-LLM opt-in gate, AND
+    # (d) the diagnoser's own prompt_path (per Codex 2026-05-19
+    # adversarial-review [high]): without this lookup, the runner
+    # silently used --prompt's default (prompts/debugger_v1.md) even
+    # when the config declared a different prompt. The agent-loop
+    # variant was the first diagnoser to declare a non-default prompt
+    # (prompts/agent_v1.md) and the bug caused Phase E to run with
+    # the wrong system prompt across 350 rows.
     try:
         diagnoser_config = load_diagnoser_config(
             diagnoser_name, explicit_path=diagnoser_config_path
@@ -1762,6 +1760,26 @@ def run(
     except DiagnoserConfigError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
+
+    # Resolve effective prompt_path:
+    # 1. If caller passed an explicit --prompt, that wins (back-compat).
+    # 2. Else, if the diagnoser config declares prompt_path, use it.
+    # 3. Else, fall back to the legacy default (debugger_v1.md).
+    if prompt_path is None:
+        config_prompt_rel = (
+            (diagnoser_config or {}).get("prompt_path")
+            if isinstance(diagnoser_config, dict) else None
+        )
+        if config_prompt_rel:
+            prompt_path = ROOT / config_prompt_rel
+        else:
+            prompt_path = DEFAULT_PROMPT_PATH
+
+    if not prompt_path.exists():
+        print(f"ERROR: prompt not found: {prompt_path}", file=sys.stderr)
+        return 1
+    prompt_text = prompt_path.read_text(encoding="utf-8")
+    prompt_sha = sha256_text(prompt_text)
 
     # Per Codex 2026-06-08 F2 [high]: SHA the loaded config + the shim
     # script (if command_str references a repo-local .py). These get
@@ -2398,7 +2416,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--split", default="dev")
     ap.add_argument("--cases-dir", type=Path, default=ROOT / "cases")
     ap.add_argument("--results-dir", type=Path, default=ROOT / "results")
-    ap.add_argument("--prompt", type=Path, default=DEFAULT_PROMPT_PATH)
+    ap.add_argument(
+        "--prompt", type=Path, default=None,
+        help=(
+            "Path to the system prompt. When omitted, the runner reads "
+            "`prompt_path` from --diagnoser-config (if supplied); "
+            "if neither is set, falls back to the legacy default "
+            f"({DEFAULT_PROMPT_PATH.relative_to(ROOT)}). Per Codex "
+            "2026-05-19 adversarial-review [high]."
+        ),
+    )
     ap.add_argument("--diagnoser", default="mock", choices=["mock", "command"],
                     help="Provider kind.")
     ap.add_argument("--diagnoser-name", default=None,

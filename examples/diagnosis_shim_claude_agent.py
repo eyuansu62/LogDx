@@ -19,10 +19,19 @@ All tool outputs are formatted as `LINENO: line content` so the agent
 can reference exact line numbers when emitting evidence quotes.
 
 Implementation uses stdlib `urllib.request` (no `anthropic` SDK
-required); same pattern as `diagnosis_shim_openai.py`. Requires
-`ANTHROPIC_API_KEY` env var — unlike the single-shot CLI shim, this
-shim talks DIRECTLY to api.anthropic.com so it cannot ride a
-developer's OAuth session.
+required); same pattern as `diagnosis_shim_openai.py`.
+
+Endpoint selection (one of):
+  - `ANTHROPIC_API_KEY` → direct https://api.anthropic.com/v1/messages
+    with `x-api-key` + `anthropic-version` headers.
+  - `OPENROUTER_API_KEY` → https://openrouter.ai/api/v1/messages via
+    OpenRouter's Anthropic-native passthrough (request/response shape
+    is identical), using `Authorization: Bearer` header. Useful for
+    consolidated billing across multiple model families.
+
+When both env vars are set, OPENROUTER_API_KEY wins. The selected
+endpoint shows up in `metadata.provider_name`
+(`anthropic` or `openrouter`) and `metadata.base_url`.
 
 Fulfills the M5 command-provider contract:
     stdin  = {"case_id","context_method","prompt","context",
@@ -49,13 +58,22 @@ Safety invariants enforced here:
 Usage:
     export DIAGNOSIS_COMMAND="python3 $(pwd)/examples/diagnosis_shim_claude_agent.py"
     export CILOGBENCH_ALLOW_EXTERNAL_LLM=1
-    export ANTHROPIC_API_KEY=...                    # required
-    export CILOGBENCH_CLAUDE_MODEL=claude-haiku-4-5  # default
+
+    # Direct Anthropic:
+    export ANTHROPIC_API_KEY=sk-ant-...
+    export CILOGBENCH_CLAUDE_MODEL=claude-sonnet-4-6
+
+    # OR OpenRouter (Anthropic-native passthrough):
+    export OPENROUTER_API_KEY=sk-or-...
+    export CILOGBENCH_CLAUDE_MODEL=anthropic/claude-sonnet-4
 
 Optional env overrides:
     CILOGBENCH_CLAUDE_TIMEOUT                     — seconds (default: 180)
     CILOGBENCH_AGENT_V1_MAX_ITERATIONS            — default 5
     CILOGBENCH_AGENT_V1_MAX_TOTAL_INPUT_TOKENS    — default 180000
+    CILOGBENCH_AGENT_V1_BASE_URL                  — override endpoint URL
+                                                    (default depends on
+                                                    which API key is set)
 """
 
 import hashlib
@@ -65,7 +83,65 @@ import re
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
+
+# ---------------------------------------------------------------------------
+# Base-URL sanitization helpers (mirror tools/run_diagnosis.py +
+# examples/diagnosis_shim_openai.py). The runner checks that the
+# persisted `metadata.model_info.base_url` matches its own sanitized
+# form; if the shim persists a raw URL it gets rejected with
+# fresh_row_model_identity_mismatch. Duplicated here so the shim has
+# no runner-import dependency.
+# ---------------------------------------------------------------------------
+
+_PUBLIC_HOST_ALLOWLIST = frozenset({
+    "api.openai.com", "api.anthropic.com",
+    "openrouter.ai",  # OpenRouter Anthropic-native passthrough
+    "localhost", "127.0.0.1", "::1",
+})
+_API_VERSION_SEGMENT_RE = re.compile(r"^v\d+$")
+_REDACTED_HOST_NETLOC_RE = re.compile(
+    r"^<redacted-host sha=[0-9a-fA-F]{8,}>$"
+)
+
+
+def _redact_hostname(host: str) -> str:
+    if not host:
+        return host
+    return (
+        "<redacted-host sha="
+        + hashlib.sha256(host.encode("utf-8")).hexdigest()[:16]
+        + ">"
+    )
+
+
+def sanitize_base_url(url: str) -> str:
+    """Strip userinfo + query, redact non-allowlisted hostnames, and
+    keep only the first path segment if it's a canonical `vN` version
+    route. Matches `tools/run_diagnosis.py:_sanitize_base_url_for_compare`
+    EXACTLY so the runner's redaction-equality check passes."""
+    if not url:
+        return url
+    parts = urllib.parse.urlsplit(url)
+    host = parts.hostname or ""
+    if _REDACTED_HOST_NETLOC_RE.fullmatch(host):
+        netloc = host
+    elif host.lower() in _PUBLIC_HOST_ALLOWLIST:
+        netloc = host
+        if parts.port:
+            netloc = f"{netloc}:{parts.port}"
+    else:
+        netloc = _redact_hostname(host)
+    path = parts.path or ""
+    if path and path != "/":
+        segments = [s for s in path.split("/") if s]
+        if segments and _API_VERSION_SEGMENT_RE.fullmatch(segments[0]):
+            path = "/" + segments[0]
+        else:
+            path = ""
+    return urllib.parse.urlunsplit((parts.scheme, netloc, path, "", ""))
+
 
 # ---------------------------------------------------------------------------
 # Redaction helpers (mirror the single-shot CLI shim, lines 36–69)
@@ -215,6 +291,45 @@ class _ContextTooLargeError(Exception):
 def estimate_tokens(text: str) -> int:
     import math
     return math.ceil(len(text or "") / 4)
+
+
+def _char_len_of(obj) -> int:
+    """Sum the character length of any nested str/list/dict structure.
+    Used by _estimate_request_input_tokens for the preflight guard."""
+    if obj is None:
+        return 0
+    if isinstance(obj, str):
+        return len(obj)
+    if isinstance(obj, (int, float, bool)):
+        return len(str(obj))
+    if isinstance(obj, dict):
+        return sum(_char_len_of(k) + _char_len_of(v) for k, v in obj.items())
+    if isinstance(obj, (list, tuple)):
+        return sum(_char_len_of(x) for x in obj)
+    return len(str(obj))
+
+
+def _estimate_request_input_tokens(
+    messages: list[dict], system_prompt: str, tools: list[dict],
+) -> int:
+    """Estimate the input_tokens Anthropic will bill for a /v1/messages
+    request with this body. Uses the same ceil(chars/4) heuristic as
+    tools/run_diagnosis.py:estimate_tokens, plus a small fixed buffer
+    to cover unaccounted overhead (request framing, tool-schema
+    rendering, etc). Intentionally rough: we only need it accurate
+    enough to refuse a request that would cross the configured cap.
+    """
+    import math
+    total_chars = (
+        _char_len_of(system_prompt)
+        + _char_len_of(messages)
+        + _char_len_of(tools)
+    )
+    # +2000-token buffer for system framing, JSON envelope, tool
+    # specifications overhead vs raw text. Conservative so the
+    # preflight skips a marginal request rather than letting it
+    # squeak through.
+    return math.ceil(total_chars / 4) + 2000
 
 
 # ---------------------------------------------------------------------------
@@ -606,29 +721,61 @@ def anthropic_post(
     model: str,
     timeout_s: int,
     api_key: str,
+    base_url: str = "https://api.anthropic.com/v1",
+    auth_scheme: str = "anthropic",
 ) -> dict:
     """POST /v1/messages and return the parsed envelope.
+
+    Supports two endpoint families via the `base_url` + `auth_scheme`
+    pair:
+      - Anthropic direct (default): `https://api.anthropic.com/v1` +
+        `x-api-key` header + `anthropic-version` header.
+      - OpenRouter (Anthropic-native passthrough):
+        `https://openrouter.ai/api/v1` + `Authorization: Bearer ...`
+        header. Request/response format is identical to direct.
 
     3-attempt exponential backoff on 5xx and network errors, mirroring
     the OpenAI shim's invoke_openai retry block.
     """
-    url = "https://api.anthropic.com/v1/messages"
+    url = f"{base_url.rstrip('/')}/messages"
     body = {
         "model": model,
         "max_tokens": max_output_tokens,
         "temperature": 0,
         "system": system_prompt,
-        "tools": tools,
         "messages": messages,
     }
+    # Tool-use field semantics: Anthropic's `/v1/messages` accepts
+    # an empty `tools=[]` array (means "tools available but none
+    # right now"), but the documented way to disable tool use is to
+    # OMIT the field. The forced-final no-tools call passes tools=[]
+    # to signal "disable tools" — translate that to omitting the
+    # field so both Anthropic-direct and OpenRouter's passthrough
+    # interpret it as "respond with text only."
+    if tools:
+        body["tools"] = tools
+    headers = {
+        "content-type": "application/json",
+        # `anthropic-version` is required by Anthropic's API and
+        # safe (no-op-or-helpful) for OpenRouter's Anthropic-native
+        # passthrough; sending it under both schemes avoids the
+        # "OpenRouter rejected our request because we forgot a
+        # header" class of edge cases.
+        "anthropic-version": "2023-06-01",
+    }
+    if auth_scheme == "openrouter":
+        headers["Authorization"] = f"Bearer {api_key}"
+        # OpenRouter accepts but does not require these; we send them so
+        # our usage shows up in their dashboard with stable attribution.
+        headers["HTTP-Referer"] = "https://github.com/eyuansu62/LogDx"
+        headers["X-Title"] = "LogDx-CI"
+    else:
+        # Default: Anthropic direct API.
+        headers["x-api-key"] = api_key
     req = urllib.request.Request(
         url,
         data=json.dumps(body).encode("utf-8"),
-        headers={
-            "content-type": "application/json",
-            "x-api-key": api_key,
-            "anthropic-version": "2023-06-01",
-        },
+        headers=headers,
         method="POST",
     )
     last_err = None
@@ -712,6 +859,8 @@ def run_agent_loop(
     model: str,
     timeout_s: int,
     api_key: str,
+    base_url: str = "https://api.anthropic.com/v1",
+    auth_scheme: str = "anthropic",
 ) -> tuple[dict | None, dict, dict | None]:
     """Drive the multi-turn tool-use loop.
 
@@ -750,19 +899,25 @@ def run_agent_loop(
     turn = 0
 
     for turn in range(1, agent_config["max_iterations"] + 1):
-        # HARD BUDGET STOP. Per Codex 2026-05-18 [high]: before
-        # consuming another tool-using turn, check that we are still
-        # under the cumulative input cap. If we have already exceeded
-        # it (typically because the previous turn's tool observations
-        # pushed us over), stop calling the model with tools enabled.
-        # The post-loop forced-final block below will make ONE last
-        # call with tools=[] disabled so the agent must emit JSON. The
-        # cap is therefore a hard ceiling on **tool-using** turns; the
-        # final no-tools cleanup call may add a small overhead beyond
-        # that. Without this check the loop would happily keep paying
-        # for tool-using turns until max_iterations even though
-        # budget_exhausted was already set true.
+        # HARD BUDGET STOP — two guards. Per Codex 2026-05-18 [high]
+        # + 2026-05-19 [high]:
+        # (1) Cumulative-input guard: if the cumulative input we have
+        #     already paid for has reached the cap, do not initiate
+        #     another tool-enabled turn.
+        # (2) Preflight guard: even if cumulative is below cap, ESTIMATE
+        #     the next request's input size. If we would cross the cap
+        #     by issuing it, fall through to the forced-final no-tools
+        #     block. Without (2), a single late turn that pulls a fat
+        #     tool observation onto an already-large conversation could
+        #     push cumulative far past the nominal cap (committed v1.1
+        #     pre-fix had 6 rows above 200k before this guard landed).
         if total_input >= agent_config["max_total_input_tokens"]:
+            budget_exhausted = True
+            break
+        estimated_next = _estimate_request_input_tokens(
+            messages, system_prompt, specs
+        )
+        if total_input + estimated_next > agent_config["max_total_input_tokens"]:
             budget_exhausted = True
             break
 
@@ -774,6 +929,8 @@ def run_agent_loop(
             model,
             timeout_s,
             api_key,
+            base_url=base_url,
+            auth_scheme=auth_scheme,
         )
         last_response = resp
         usage = resp.get("usage") or {}
@@ -918,6 +1075,8 @@ def run_agent_loop(
                 model,
                 timeout_s,
                 api_key,
+                base_url=base_url,
+                auth_scheme=auth_scheme,
             )
             last_response = forced_resp
             usage = forced_resp.get("usage") or {}
@@ -956,11 +1115,26 @@ def run_agent_loop(
         resolved_model = last_response.get("model")
         last_usage = last_response.get("usage")
 
+    # provider_name reflects the MODEL provider (Anthropic, since
+    # Sonnet 4.6 is an Anthropic model), NOT the routing service.
+    # OpenRouter is a routing proxy — the underlying model is still
+    # Anthropic's, billing aside. The runner validates
+    # `model_info.provider_name == config.model.provider_name`
+    # (which is "anthropic" for real-agent-v1) and refuses rows that
+    # claim a different provider. The actual endpoint hit lives in
+    # `model_info.base_url` (e.g. `https://openrouter.ai`) and the
+    # routing-service identity can be inferred from that.
     model_info = {
         "provider_name": "anthropic",
         "requested_model": model,
         "resolved_model": resolved_model,
-        "base_url": "https://api.anthropic.com/v1",
+        # base_url is persisted in SANITIZED form (no userinfo / query /
+        # non-allowlist hosts / deep paths) so it can land in committed
+        # diagnosis artifacts without leaking tenant URLs or proxy creds.
+        # The runner re-runs the same sanitization and rejects rows
+        # whose persisted form doesn't match — matching the OpenAI
+        # shim's pattern (see diagnosis_shim_openai.py:544).
+        "base_url": sanitize_base_url(base_url),
         # Per-turn usage is in agent_metadata; this is the last turn's
         # usage, kept for compatibility with the single-shot shim's
         # model_info shape.
@@ -998,11 +1172,30 @@ def main() -> int:
         )
         return 1
 
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if not api_key:
+    # Endpoint selection: prefer OPENROUTER_API_KEY when present,
+    # else fall back to ANTHROPIC_API_KEY direct. The base URL +
+    # auth scheme follow from the key choice. CILOGBENCH_AGENT_V1_
+    # BASE_URL can override either default for testing.
+    openrouter_key = os.environ.get("OPENROUTER_API_KEY", "")
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if openrouter_key:
+        api_key = openrouter_key
+        base_url = os.environ.get(
+            "CILOGBENCH_AGENT_V1_BASE_URL",
+            "https://openrouter.ai/api/v1",
+        )
+        auth_scheme = "openrouter"
+    elif anthropic_key:
+        api_key = anthropic_key
+        base_url = os.environ.get(
+            "CILOGBENCH_AGENT_V1_BASE_URL",
+            "https://api.anthropic.com/v1",
+        )
+        auth_scheme = "anthropic"
+    else:
         sys.stderr.write(
-            "diagnosis_shim_claude_agent: ANTHROPIC_API_KEY env var "
-            "not set\n"
+            "diagnosis_shim_claude_agent: one of OPENROUTER_API_KEY or "
+            "ANTHROPIC_API_KEY env var must be set\n"
         )
         return 1
 
@@ -1054,6 +1247,8 @@ def main() -> int:
         final, agent_metadata, model_info = run_agent_loop(
             payload, system_prompt, raw_log_path,
             model, timeout_s, api_key,
+            base_url=base_url,
+            auth_scheme=auth_scheme,
         )
     except Exception as e:
         # The agent loop blew up before producing a final answer. Hash

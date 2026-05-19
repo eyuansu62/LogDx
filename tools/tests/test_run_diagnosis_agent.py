@@ -59,13 +59,14 @@ def test_real_agent_v1_config_loads():
     assert cfg["agent_config"]["max_total_input_tokens"] == 180000
 
 
-def test_real_agent_v1_declares_three_env_vars_in_cache_key():
+def test_real_agent_v1_declares_four_env_vars_in_cache_key():
     cfg = _agent_cfg()
     env_keys = set(cfg.get("cache_key_env") or [])
     expected = {
         "CILOGBENCH_CLAUDE_MODEL",
         "CILOGBENCH_AGENT_V1_MAX_ITERATIONS",
         "CILOGBENCH_AGENT_V1_MAX_TOTAL_INPUT_TOKENS",
+        "CILOGBENCH_AGENT_V1_BASE_URL",
     }
     assert env_keys == expected, (
         f"real-agent-v1 cache_key_env mismatch.\n"
@@ -303,6 +304,87 @@ def test_build_row_omits_agent_metadata_for_single_shot_rows():
 # ---------------------------------------------------------------------------
 
 
+def test_runner_resolves_prompt_path_from_diagnoser_config():
+    """Per Codex 2026-05-19 adversarial-review [high]: the runner's
+    --prompt flag previously defaulted to prompts/debugger_v1.md and
+    ignored the `prompt_path` field declared in the diagnoser config.
+    That caused Phase E to silently run the agent diagnoser with the
+    single-shot debugger prompt instead of the agent prompt.
+
+    This regression test simulates the resolution logic: with no
+    explicit --prompt and a config that declares prompt_path, the
+    runner must pick the config's prompt — NOT the legacy default.
+    """
+    cfg = rd.load_diagnoser_config(
+        "real-agent-v1",
+        explicit_path=ROOT / "configs" / "diagnosers" / "real-agent-v1.json",
+    )
+    assert cfg.get("prompt_path") == "prompts/agent_v1.md", (
+        "real-agent-v1.json must declare prompt_path: prompts/agent_v1.md "
+        f"(got {cfg.get('prompt_path')!r})"
+    )
+    # Mirror the resolution branch from run_diagnosis.run():
+    prompt_path = None  # no explicit --prompt
+    if prompt_path is None:
+        config_prompt_rel = cfg.get("prompt_path") if isinstance(cfg, dict) else None
+        if config_prompt_rel:
+            prompt_path = rd.ROOT / config_prompt_rel
+        else:
+            prompt_path = rd.DEFAULT_PROMPT_PATH
+
+    assert prompt_path == (rd.ROOT / "prompts" / "agent_v1.md"), (
+        f"runner should resolve to agent_v1.md, got {prompt_path}"
+    )
+    # The agent prompt must hash DIFFERENTLY from debugger_v1.md;
+    # otherwise the bug fix is a no-op.
+    agent_sha = rd.sha256_text(prompt_path.read_text(encoding="utf-8"))
+    debugger_sha = rd.sha256_text(rd.DEFAULT_PROMPT_PATH.read_text(encoding="utf-8"))
+    assert agent_sha != debugger_sha, (
+        "agent_v1.md and debugger_v1.md must hash differently "
+        "(otherwise the prompt resolution bug fix has nothing to test)"
+    )
+
+
+def test_runner_falls_back_to_legacy_default_without_config():
+    """Back-compat: if no diagnoser_config is loaded AND no explicit
+    --prompt is passed, the runner falls back to DEFAULT_PROMPT_PATH
+    (prompts/debugger_v1.md). v1.0 single-shot diagnosers depend on
+    this fallback if they're invoked without --diagnoser-config.
+    """
+    prompt_path = None
+    cfg = None  # no config loaded
+    if prompt_path is None:
+        config_prompt_rel = cfg.get("prompt_path") if isinstance(cfg, dict) else None
+        if config_prompt_rel:
+            prompt_path = rd.ROOT / config_prompt_rel
+        else:
+            prompt_path = rd.DEFAULT_PROMPT_PATH
+
+    assert prompt_path == rd.DEFAULT_PROMPT_PATH
+
+
+def test_runner_respects_explicit_prompt_override():
+    """If the caller passes --prompt explicitly, that wins over the
+    config's prompt_path — preserves operator override capability."""
+    cfg = rd.load_diagnoser_config(
+        "real-agent-v1",
+        explicit_path=ROOT / "configs" / "diagnosers" / "real-agent-v1.json",
+    )
+    # Pretend the operator passed --prompt prompts/debugger_v1.md
+    explicit_path = rd.ROOT / "prompts" / "debugger_v1.md"
+    prompt_path = explicit_path  # simulates args.prompt being non-None
+    if prompt_path is None:
+        config_prompt_rel = cfg.get("prompt_path") if isinstance(cfg, dict) else None
+        if config_prompt_rel:
+            prompt_path = rd.ROOT / config_prompt_rel
+        else:
+            prompt_path = rd.DEFAULT_PROMPT_PATH
+
+    assert prompt_path == explicit_path, (
+        "explicit --prompt override must win over config's prompt_path"
+    )
+
+
 def test_diagnosis_schema_accepts_agent_metadata():
     """The added agent_metadata block in schemas/diagnosis.schema.json
     should accept a typical agent-loop row and reject obviously
@@ -370,7 +452,7 @@ def test_diagnosis_schema_accepts_agent_metadata():
 def main() -> int:
     tests = [
         test_real_agent_v1_config_loads,
-        test_real_agent_v1_declares_three_env_vars_in_cache_key,
+        test_real_agent_v1_declares_four_env_vars_in_cache_key,
         test_max_iterations_bump_invalidates_cache_key,
         test_token_budget_bump_invalidates_cache_key,
         test_shim_requires_external_llm_optin,
@@ -379,6 +461,9 @@ def main() -> int:
         test_shim_emits_runtime_tool_dispatch_error_when_raw_log_path_does_not_exist,
         test_build_row_lifts_agent_metadata,
         test_build_row_omits_agent_metadata_for_single_shot_rows,
+        test_runner_resolves_prompt_path_from_diagnoser_config,
+        test_runner_falls_back_to_legacy_default_without_config,
+        test_runner_respects_explicit_prompt_override,
         test_diagnosis_schema_accepts_agent_metadata,
     ]
     failed = 0

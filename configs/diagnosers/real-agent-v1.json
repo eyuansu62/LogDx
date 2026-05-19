@@ -9,8 +9,8 @@
     "provider_name": "anthropic",
     "model_name": "claude-sonnet-4-6",
     "model_version": "2026-04-25",
-    "requested_alias": "claude-sonnet-4-6",
-    "requested_alias_note": "real-agent-v1 starts with Sonnet 4.6. Unlike real-debugger-v2 which uses CLI alias 'sonnet' (resolved by the claude CLI's alias table), this config uses the canonical API model ID directly because the agent shim talks to api.anthropic.com via HTTP (no CLI alias resolution). Haiku 4.5 and gpt-5-mini variants ship as real-agent-v1-haiku.json and real-agent-v1-gpt5mini.json after the Sonnet smoke test passes.",
+    "requested_alias": "anthropic/claude-sonnet-4.6",
+    "requested_alias_note": "real-agent-v1 ships with Sonnet 4.6. The slug 'anthropic/claude-sonnet-4.6' is the OpenRouter form (used as CILOGBENCH_CLAUDE_MODEL when OPENROUTER_API_KEY is set). For Anthropic-direct invocation (ANTHROPIC_API_KEY only), override CILOGBENCH_CLAUDE_MODEL=claude-sonnet-4-6 AND temporarily update this alias to match — the runner validates env vs config to refuse silent model substitution. Both endpoints resolve to the same Anthropic Sonnet 4.6 snapshot (model_info.resolved_model is logged on every row).",
     "env_var_name": "CILOGBENCH_CLAUDE_MODEL",
     "temperature": 0,
     "top_p": 1.0,
@@ -57,7 +57,8 @@
   "cache_key_env": [
     "CILOGBENCH_CLAUDE_MODEL",
     "CILOGBENCH_AGENT_V1_MAX_ITERATIONS",
-    "CILOGBENCH_AGENT_V1_MAX_TOTAL_INPUT_TOKENS"
+    "CILOGBENCH_AGENT_V1_MAX_TOTAL_INPUT_TOKENS",
+    "CILOGBENCH_AGENT_V1_BASE_URL"
   ],
-  "cache_key_env_note": "Three env vars participate in the cache key: model alias (mirrors real-debugger-v2), and the two agent budget overrides. Bumping either budget invalidates existing cached rows by design — a larger budget should not silently replay a row from a smaller budget."
+  "cache_key_env_note": "Four env vars participate in the cache key: model alias (mirrors real-debugger-v2), the two agent budget overrides, and the API base URL (so routing the same model through Anthropic-direct vs OpenRouter produces distinct cache rows — different endpoints can have different latency / routing behavior). Bumping any of these invalidates existing cached rows by design."
 }

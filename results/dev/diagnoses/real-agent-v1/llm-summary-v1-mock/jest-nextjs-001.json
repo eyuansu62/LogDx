@@ -3,17 +3,17 @@
   "context_method": "llm-summary-v1-mock",
   "diagnoser": "real-agent-v1",
   "mode": "root_cause_diagnosis",
-  "summary": "Multiple example test files (examples/with-jest, examples/with-jest-babel, examples/with-vitest, examples/with-zones) all fail with 'No tests found, exiting with code 1' because Jest's configured roots do not include the examples/ directory. Every test retries twice and still fails, causing the job to exit with code 1.",
+  "summary": "All example test files (with-jest, with-jest-babel, with-vitest, with-zones, etc.) fail with 'No tests found, exiting with code 1' because Jest is run from /work/test with roots that do not include the /work/examples directory. Every test retries twice and still fails, causing the job to exit with code 1.",
   "root_cause_category": "test_assertion",
-  "root_cause": "Jest is invoked with test file patterns under the examples/ directory (e.g., 'examples/with-jest/__tests__/index.test.tsx'), but the Jest configuration's 'roots' only covers '/work/test', '/work/packages/next/src', '/work/packages/next-codemod', '/work/packages/eslint-plugin-internal', '/work/packages/font/src', and '/work/packages/next-routing'. The examples/ directory is not in roots, so Jest finds 0 matches for every example test pattern and exits with code 1.",
-  "confidence": 0.92,
+  "root_cause": "Jest is invoked with a configuration whose 'roots' only covers /work/test and /work/packages/*, but the example test files live under /work/examples/*. When Jest is asked to run a specific pattern like 'examples/with-jest/__tests__/index.test.tsx', it finds 0 matches in its configured roots and exits with code 1 ('No tests found').",
+  "confidence": 0.9,
   "relevant_files": [
     "examples/with-jest/__tests__/index.test.tsx",
     "examples/with-jest-babel/__tests__/index.test.tsx",
     "examples/with-jest/app/blog/[slug]/page.test.tsx",
     "examples/with-jest/app/counter.test.tsx",
-    "examples/with-jest/app/utils/add.test.ts",
     "examples/with-jest/app/page.test.tsx",
+    "examples/with-jest/app/utils/add.test.ts",
     "examples/with-vitest/app/utils/add.test.ts",
     "examples/with-zones/home/test/next-config.test.ts"
   ],
@@ -22,140 +22,118 @@
     "examples/with-jest-babel/__tests__/index.test.tsx",
     "examples/with-jest/app/blog/[slug]/page.test.tsx",
     "examples/with-jest/app/counter.test.tsx",
-    "examples/with-jest/app/utils/add.test.ts",
     "examples/with-jest/app/page.test.tsx",
+    "examples/with-jest/app/utils/add.test.ts",
     "examples/with-vitest/app/utils/add.test.ts",
     "examples/with-zones/home/test/next-config.test.ts"
   ],
   "evidence": [
     {
       "quote": "No tests found, exiting with code 1",
-      "reason": "Jest exits with code 1 for every example test file because no matching tests are found under the configured roots."
+      "reason": "Jest exits with code 1 for every example test file because none are found within the configured roots."
     },
     {
       "quote": "roots: /work/test, /work/packages/next/src, /work/packages/next-codemod, /work/packages/eslint-plugin-internal, /work/packages/font/src, /work/packages/next-routing - 14634 matches",
-      "reason": "The Jest roots configuration does not include the examples/ directory, so test files under examples/ are never discovered."
+      "reason": "The Jest roots configuration does not include /work/examples, so example test files are invisible to Jest."
     },
     {
       "quote": "Pattern: examples/with-jest/__tests__/index.test.tsx - 0 matches",
-      "reason": "Jest explicitly reports 0 matches for the example test pattern, confirming the root cause is the missing examples/ directory in roots."
+      "reason": "Confirms that the specific test file pattern resolves to 0 matches within the configured roots."
     },
     {
       "quote": "examples/with-jest/__tests__/index.test.tsx failed to pass within 2 retries",
-      "reason": "After exhausting all retries the test is still not found, confirming this is a configuration issue rather than a transient failure."
+      "reason": "The test runner retried each failing test twice and still got 'No tests found', confirming a systematic configuration mismatch rather than a transient failure."
     },
     {
       "quote": "Some tests failed\nexiting with code 1",
-      "reason": "The overall test runner reports failure and exits with code 1, which propagates to the GitHub Actions step exit code."
-    },
-    {
-      "quote": "##[error]Process completed with exit code 1.",
-      "reason": "GitHub Actions records the final non-zero exit code, confirming the job failure."
+      "reason": "Final summary confirming the job failed due to these test failures."
     }
   ],
-  "suggested_fix": "Add the examples/ directory to the Jest configuration's 'roots' array so that test files under examples/ are discoverable, or update the test runner script to change the working directory to the specific example directory before invoking Jest with the example-relative test path.",
+  "suggested_fix": "Add '/work/examples' to the Jest 'roots' configuration (or the run-tests.js script's roots list) so that example test files are discoverable when running the 'examples' test profile. Alternatively, run example tests from their own directory using each example's local Jest config rather than the monorepo-wide Jest config.",
   "input": {
     "context_path": "results/dev/llm-summary-v1-mock/jest-nextjs-001.txt",
     "context_tokens_estimate": 1240
   },
   "usage": {
     "processing_tokens_estimate": 0,
-    "output_tokens_estimate": 1215
+    "output_tokens_estimate": 1081
   },
   "metadata": {
     "provider": "command",
-    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
-    "runtime_ms": 31565.097,
-    "cache_key": "bb8ea41694fae60d7037968c0d18c63ddcb0b6028a2c2b11f04c0794065a17c2",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 38795.124,
+    "cache_key": "79f09fc54ce285067cb449a4297b79eacc846dd2c44d80134d35f212f6e18e48",
     "provider_error": null,
     "provider_error_detail": null,
     "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
     "model_info": {
       "provider_name": "anthropic",
-      "requested_model": "claude-sonnet-4-6",
-      "resolved_model": "claude-sonnet-4-6",
-      "base_url": "https://api.anthropic.com/v1",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
       "usage": {
-        "input_tokens": 25419,
+        "input_tokens": 19914,
+        "output_tokens": 1055,
         "cache_creation_input_tokens": 0,
         "cache_read_input_tokens": 0,
-        "cache_creation": {
-          "ephemeral_5m_input_tokens": 0,
-          "ephemeral_1h_input_tokens": 0
-        },
-        "output_tokens": 1162,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
         "service_tier": "standard",
-        "inference_geo": "global"
+        "speed": "standard",
+        "cost": 0.075567,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.075567,
+          "upstream_inference_prompt_cost": 0.059742,
+          "upstream_inference_completions_cost": 0.015825
+        }
       }
     },
     "diagnoser_config_name": null,
-    "diagnoser_config_sha256": "a87dd5e5ce51e6205be617b7a3c45c1647376786e44852f4b639352884f6c1ea",
-    "shim_sha256": "9d926e0343b984d1ae4eacaf2f824d2bb26a2187b40521325c01423354e61901"
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
   },
   "agent_metadata": {
-    "iterations": 4,
-    "tool_call_count": 5,
+    "iterations": 3,
+    "tool_call_count": 3,
     "tool_calls": [
       {
-        "tool": "grep",
+        "tool": "view_log_lines",
         "args": {
-          "pattern": "fatal: detected dubious ownership",
-          "before": 5,
-          "after": 10
+          "center_line": 1147,
+          "radius": 30
         },
-        "observation_tokens_estimate": 778,
-        "runtime_ms": 20.396583015099168,
+        "observation_tokens_estimate": 1046,
+        "runtime_ms": 9.616290975827724,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 10976,
+          "radius": 50
+        },
+        "observation_tokens_estimate": 1949,
+        "runtime_ms": 0.08266698569059372,
         "error": null
       },
       {
         "tool": "grep",
         "args": {
-          "pattern": "error|failed|FAILED|Error",
+          "pattern": "No tests found|failed due to Error|failed to pass within",
           "before": 2,
-          "after": 5,
+          "after": 3,
           "max_matches": 30
         },
-        "observation_tokens_estimate": 2766,
-        "runtime_ms": 9.767833020305261,
-        "error": null
-      },
-      {
-        "tool": "tail",
-        "args": {
-          "n": 100
-        },
-        "observation_tokens_estimate": 2932,
-        "runtime_ms": 0.1653329818509519,
-        "error": null
-      },
-      {
-        "tool": "grep",
-        "args": {
-          "pattern": "##\\[error\\]|exit code|FAIL |● |AssertionError|jest.*FAIL",
-          "before": 5,
-          "after": 10,
-          "max_matches": 20
-        },
-        "observation_tokens_estimate": 2616,
-        "runtime_ms": 61.04241599678062,
-        "error": null
-      },
-      {
-        "tool": "grep",
-        "args": {
-          "pattern": "No tests found",
-          "before": 10,
-          "after": 5,
-          "max_matches": 5
-        },
-        "observation_tokens_estimate": 2397,
-        "runtime_ms": 21.70608300366439,
+        "observation_tokens_estimate": 5260,
+        "runtime_ms": 49.957415962126106,
         "error": null
       }
     ],
-    "total_input_tokens_consumed": 62762,
-    "total_output_tokens_consumed": 1629,
+    "total_input_tokens_consumed": 36353,
+    "total_output_tokens_consumed": 1349,
     "budget_exhausted": false,
-    "final_diagnosis_turn": 4
+    "final_diagnosis_turn": 3
   }
 }
