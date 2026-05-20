@@ -15,31 +15,37 @@ description: "A benchmark for CI log reduction tools — do they preserve enough
 [![Release](https://img.shields.io/github/v/release/eyuansu62/LogDx?include_prereleases&label=release)](https://github.com/eyuansu62/LogDx/releases/latest)
 [![License](https://img.shields.io/badge/license-Apache--2.0%20%2B%20CC--BY--4.0-blue)](https://github.com/eyuansu62/LogDx/blob/main/LICENSE)
 
-**Current release**: `v1.1` (adds agent-loop leaderboard) ·
+**Current release**: `v1.2` (adds cross-family LLM-summary; new agent-loop #1) ·
 [Leaderboard](leaderboard.html) ·
 [Citation](cite.html) ·
 [Technical report](https://github.com/eyuansu62/LogDx/blob/main/reports/e10_v2_generalization_partial.md)
 
-> **v1.1 highlight**: in multi-turn agent usage (Claude Code /
-> Codex–style tool loops), the choice of context method matters
-> far less for *quality* — the score range collapses 7× (0.42 →
-> 0.06) as the agent rescues weak contexts via tool calls.
-> The v1.0 single-shot #1 (`hybrid-grep-120k-rtk-tail`) is also
-> #1 in agent-loop with 0% confident-error — the most robust
-> method across both regimes. See the
-> [agent-loop leaderboard](leaderboard.html#agent-loop-leaderboard--v11)
-> and the
-> [agent-loop vs single-shot analysis](https://github.com/eyuansu62/LogDx/blob/main/docs/analysis/agent-loop-vs-single-shot.md).
+> **v1.2 highlight**: `llm-summary-v1-gpt-5-mini` (real OpenAI
+> gpt-5-mini map-reduce summarizer) becomes the new
+> **agent-loop #1** at 0.749 with only **0.37 tool calls/case** —
+> the lowest of any method. Cross-pair (gpt-5-mini-summarizer →
+> Haiku-debugger) beats the self-pair (Haiku → Haiku) by +0.071,
+> **falsifying the self-call-bias hypothesis** raised by v1.1's
+> reviewer. See [v1.2 release notes](https://github.com/eyuansu62/LogDx/blob/main/RELEASE_NOTES_v1_2.md)
+> and the [v1.2 promotion section](leaderboard.html#v12--cross-family-llm-summary-llm-summary-v1-gpt-5-mini)
+> on the leaderboard.
+>
+> *v1.1 highlight (still load-bearing)*: in multi-turn agent
+> usage, the choice of context method matters far less for
+> *quality* — the score range collapses 7× (0.42 → 0.06) as the
+> agent rescues weak contexts via tool calls. See the
+> [agent-loop leaderboard](leaderboard.html#agent-loop-leaderboard--v11).
 
 ## What it measures
 
-LogDx-CI compares **10 context providers** — `raw`, `tail`, `grep`,
+LogDx-CI compares **11 context providers** — `raw`, `tail`, `grep`,
 three [RTK](https://github.com/rtk-ai/rtk) modes (`rtk-read`,
-`rtk-log`, `rtk-err-cat`), `llm-summary-*`, and three hybrid
-routers — by handing the same CI failure log to three debugger
-families (Claude Haiku 4.5, Claude Sonnet 4.6, OpenAI gpt-5-mini)
-and scoring the resulting root-cause diagnoses against AI-drafted +
-author-verified ground truth.
+`rtk-log`, `rtk-err-cat`), two real LLM summarizers
+(`llm-summary-v1-haiku` Anthropic + `llm-summary-v1-gpt-5-mini`
+OpenAI), and three hybrid routers — by handing the same CI failure
+log to three debugger families (Claude Haiku 4.5, Claude Sonnet
+4.6, OpenAI gpt-5-mini) and scoring the resulting root-cause
+diagnoses against AI-drafted + author-verified ground truth.
 
 It optimizes for **method ranking stability** — the question is not
 "which LLM is smartest" but "which log reducer gives an LLM the best
