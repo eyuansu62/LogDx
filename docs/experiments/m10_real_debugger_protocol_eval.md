@@ -14,9 +14,9 @@ publishable (but still internal) cross-split real-model result.
 
 M10 uses the latest frozen protocol:
 
-- **Preferred**: `protocols/cilogbench-v1.1.lock.json` (3 splits: dev,
+- **Preferred**: `protocols/legacy/cilogbench-v1.1.lock.json` (3 splits: dev,
   holdout, stress; 16 cases).
-- **Fallback**: `protocols/cilogbench-v1.lock.json` (2 splits; 10
+- **Fallback**: `protocols/legacy/cilogbench-v1.lock.json` (2 splits; 10
   cases) — only if v1.1 is not yet frozen.
 
 The wrapper refuses to run if the lock fails
@@ -73,7 +73,7 @@ export CILOGBENCH_ALLOW_EXTERNAL_LLM=1
 
 # 1. Validate the lock before running anything.
 python tools/validate_protocol_lock.py \
-    --protocol protocols/cilogbench-v1.1.lock.json
+    --protocol protocols/legacy/cilogbench-v1.1.lock.json
 
 # 2. Smoke-test one method × one split first.
 python tools/run_diagnosis.py --split holdout --diagnoser command \
@@ -83,7 +83,7 @@ python tools/run_diagnosis.py --split holdout --diagnoser command \
 
 # 3. Full frozen-protocol run.
 python tools/run_protocol_diagnosis_eval.py \
-    --protocol protocols/cilogbench-v1.1.lock.json \
+    --protocol protocols/legacy/cilogbench-v1.1.lock.json \
     --diagnoser-config configs/diagnosers/stub-debugger-v1.json \
     --diagnoser-name stub-debugger-v1 \
     --context-methods all \

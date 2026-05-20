@@ -1,5 +1,15 @@
 # CILogBench v1.3: Measuring CI Failure Context Quality for Coding Agents
 
+> ⚠️ **Historical document — frozen at v1.3 ship (16-case corpus,
+> Haiku-only debugger).** This report's verdict that
+> **`llm-summary-v1-haiku` is "not competitive with grep / hybrid"**
+> has been **reversed by v1.1.1**: a 35-case × 4-diagnoser backfill
+> showed the real Haiku summarizer scores **0.632 overall (rank 4)**
+> on the [live leaderboard](https://logdx-bench.github.io/leaderboard.html).
+> The v1.3 lock file stays frozen for reproducibility, but the
+> ranking conclusions in §6 and §9 of this report are superseded.
+> Section-level forward-pointers are noted inline where relevant.
+
 > **Reviewer disclosure (read first):** sv1.1 was originally calibrated by an
 > **LLM-as-judge expert reviewer** (`claude-opus-4-7-expert` in E2/E2b) and
 > later spot-checked by **AI-assisted human review** (E9: 1 reviewer, project
@@ -154,7 +164,7 @@ methods break. Examples:
 
 ## 6. Context methods
 
-Locked v1.3 baselines (`protocols/cilogbench-v1.3.lock.json`):
+Locked v1.3 baselines (`protocols/legacy/cilogbench-v1.3.lock.json`):
 
 ```text
 raw                            full log; if too large for the debugger, the run records
@@ -203,7 +213,7 @@ final-context budgets. Real summary remains an experiment artifact.
 > exclusion verdict was based on the 16-case prototype subset and a single
 > Haiku-only debugger — both of which understated the method. v1.1
 > promotes `llm-summary-v1-haiku` to the headline leaderboard. v1.3's lock
-> file (`protocols/cilogbench-v1.3.lock.json`) remains frozen as-is for
+> file (`protocols/legacy/cilogbench-v1.3.lock.json`) remains frozen as-is for
 > reproducibility; a future v1.4 protocol could include the real Haiku
 > summarizer if a lock-time re-evaluation is wanted.
 
@@ -413,7 +423,7 @@ result.**
 
 All four freeze criteria from the v1.3 plan passed (`reports/cilogbench_v1_3_freeze_memo.md`):
 sv1.1 ≥ grep, total tokens ≤ grep, confErr v1.1 ≤ grep, provider error rate
-≤ 10%. The hybrid was promoted into `protocols/cilogbench-v1.3.lock.json`.
+≤ 10%. The hybrid was promoted into `protocols/legacy/cilogbench-v1.3.lock.json`.
 
 ---
 
@@ -570,7 +580,7 @@ The full E6 replication run can be reproduced from the locked protocol with:
 ```bash
 # 1. Validate the lock (recomputes every recorded SHA, confirms 16 cases × 3 splits)
 python3 tools/validate_protocol_lock.py \
-  --protocol protocols/cilogbench-v1.3.lock.json
+  --protocol protocols/legacy/cilogbench-v1.3.lock.json
 
 # 2. (one-time) Build the hybrid baseline outputs from the locked grep + rtk-err-cat
 #     manifests. Anti-leakage: router reads only context manifests + token estimates.
@@ -589,7 +599,7 @@ done
 #     and the same shim with CILOGBENCH_CLAUDE_MODEL=haiku for the v1 run.
 export CILOGBENCH_ALLOW_EXTERNAL_LLM=1
 python3 tools/run_protocol_diagnosis_eval.py \
-  --protocol protocols/cilogbench-v1.3.lock.json \
+  --protocol protocols/legacy/cilogbench-v1.3.lock.json \
   --diagnoser-name real-debugger-v2 \
   --diagnoser-config configs/diagnosers/real-debugger-v2.json \
   --context-methods raw,tail,grep,rtk-read,rtk-log,rtk-err-cat,llm-summary-v1-mock,hybrid-grep-4k-rtk-err-cat-v1 \
@@ -610,7 +620,7 @@ known source of drift.
 ## 17. Appendix: protocol and artifact links
 
 ```text
-protocols/cilogbench-v1.3.lock.json                     frozen v1.3 protocol
+protocols/legacy/cilogbench-v1.3.lock.json                     frozen v1.3 protocol
 configs/evaluation/category_compatibility_v1_1.json     sv1.1 calibration table
 configs/hybrids/hybrid-grep-4k-rtk-err-cat-v1.json      hybrid router config
 schemas/hybrid_route.schema.json                        per-case route record schema

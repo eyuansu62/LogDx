@@ -16,7 +16,7 @@ calibration that ran after E2.5 closed at PASS-but-marginal. E2b adds
 `category_match_score_v1_1` (partial match) and a stricter
 `confident_error_v1_1` trigger; it does NOT rerun any model. The
 result is `diagnosis_score_v1_1`, frozen as
-`protocols/cilogbench-v1.2.lock.json`.
+`protocols/legacy/cilogbench-v1.2.lock.json`.
 
 If E2.5 says the auto evaluator is **not** trustworthy at all, the
 next milestone is **E2b**, not E3. Do not skip this gate.
@@ -27,7 +27,7 @@ next milestone is **E2b**, not E3. Do not skip this gate.
 |---|---|
 | Diagnoses to score | `results/holdout/diagnoses/real-debugger-v1/*.jsonl` (from E1) |
 | Eval (auto metrics) | `results/holdout/eval_diagnosis_real-debugger-v1.json` |
-| Protocol lock | `protocols/cilogbench-v1.1.lock.json` |
+| Protocol lock | `protocols/legacy/cilogbench-v1.1.lock.json` |
 | Review batch | `review/batches/e2-real-debugger-v1-holdout-001/` |
 
 ## Scope
@@ -53,7 +53,7 @@ the human means are comparable across reviewers.
 ```bash
 # (already done) build the blinded batch:
 python3 tools/build_human_review_set.py \
-  --protocol protocols/cilogbench-v1.1.lock.json \
+  --protocol protocols/legacy/cilogbench-v1.1.lock.json \
   --split holdout \
   --diagnoser real-debugger-v1 \
   --methods raw,grep,rtk-err-cat,rtk-log \

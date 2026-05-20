@@ -79,7 +79,7 @@ ship a new method:
    `cilogbench-v2`) so the lock records the new method's parameters
    too.
 
-Silently editing `protocols/cilogbench-v1.lock.json` to add a new
+Silently editing `protocols/legacy/cilogbench-v1.lock.json` to add a new
 baseline is forbidden.
 
 ## Method submission checklist

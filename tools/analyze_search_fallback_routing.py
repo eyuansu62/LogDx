@@ -10,7 +10,7 @@ attached AFTER routing.
 
 Usage:
     python tools/analyze_search_fallback_routing.py \
-        --protocol protocols/cilogbench-v1.3.lock.json \
+        --protocol protocols/legacy/cilogbench-v1.3.lock.json \
         --hybrid-diagnoser real-debugger-v2 \
         --search-agent mcp-search-agent-v1-sonnet \
         --splits dev,holdout,stress

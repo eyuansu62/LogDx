@@ -21,7 +21,7 @@ Inputs are existing E1/E3 outputs only. No model calls.
 
 Usage:
     python tools/analyze_budget_frontier.py \
-        --protocol protocols/cilogbench-v1.2.lock.json \
+        --protocol protocols/legacy/cilogbench-v1.2.lock.json \
         --diagnoser real-debugger-v1 \
         --splits dev,holdout,stress
 """

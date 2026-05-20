@@ -38,7 +38,19 @@ CI failure," which is the failure mode raised in
 | 8 | `raw`                       | 0.324 | 0.368 | 0.367 | **0.353** | **0.000** | 275,248 |
 | 9 | `rtk-read`                  | 0.329 | 0.369 | 0.349 | **0.349** | 0.010 | 274,289 |
 | 10 | `rtk-log`                  | 0.238 | 0.262 | 0.249 | **0.249** | **0.133** | **810** |
-| — | `llm-summary-v1-mock` <sub>*(legacy synthetic stub; superseded by `llm-summary-v1-haiku` row 4)*</sub> | 0.343 | 0.348 | 0.294 | 0.328 | 0.133 | 432,076 |
+
+> *Footnote on `llm-summary-v1-haiku`*: three of the 35 cases
+> (nodejs-test-debugger-exec-timeout-v2-001, pytest-sklearn-stress-001,
+> pytest-sklearn-stress-002) used `chunk_lines=100` instead of the
+> default 500 because they contained 500-line windows that exceeded
+> Haiku's effective input window after Claude-Code session overhead.
+> Same map-reduce algorithm, same model, same temperature — only the
+> map-stage granularity differs and is recorded in per-case
+> `metadata.chunk_lines`. The other 32 cases used `chunk_lines=500`.
+
+The legacy `llm-summary-v1-mock` is no longer in the headline table.
+See the [appendix](#appendix-legacy-baselines) for its retained
+numbers and rationale.
 
 Two layers of finding:
 
@@ -112,7 +124,6 @@ the same tokens. Most notable dominations:
 | `rtk-read`                  |       0 |      0 | 273,998 | 291 | **274,289** |
 | `raw`                       |       0 |      0 | 274,944 | 304 | **275,248** |
 | `llm-summary-v1-haiku`      | 1,661,358 | 18,451 |   1,100 | 611 | **1,681,520** |
-| `llm-summary-v1-mock` <sub>*(legacy)*</sub> | 369,957 | 60,362 |   1,264 | 492 | **432,076** |
 
 `reducer_in` and `reducer_out` are non-zero only for methods that
 internally call an LLM (here, `llm-summary-*`). For `grep`/`tail`/
@@ -130,14 +141,74 @@ which write `external_tool.runtime_ms` into their manifests):
 `grep`/`tail` runtime is unmeasured in v1.0 but is empirically
 sub-100ms for every case in the corpus (CPU-bound, single-pass).
 
-### USD cost
+### USD cost (v1.1.2)
 
-USD cost per case is **not reported** in v1.0.1 because the
-relevant provider list prices (Anthropic Haiku 4.5, Sonnet 4.6,
-OpenAI gpt-5-mini) need to be pinned to a snapshot date and
-versioned in the protocol lock for reproducibility. This will
-land in v1.1 alongside the multi-turn / agent-loop benchmark
-(see [`ROADMAP.md`](https://github.com/eyuansu62/LogDx/blob/main/ROADMAP.md#2--cost--latency-reporting--p0-for-v11)).
+Provider list prices are pinned to a snapshot date in
+[`configs/pricing/snapshot_2026_05_20.json`](https://github.com/eyuansu62/LogDx/blob/main/configs/pricing/snapshot_2026_05_20.json).
+Per-case dollar cost is computed by
+[`tools/compute_usd_costs.py`](https://github.com/eyuansu62/LogDx/blob/main/tools/compute_usd_costs.py)
+from real per-call API usage on the reducer side (when applicable)
+plus eval-manifest `macro_context_tokens` / `macro_diagnosis_tokens`
+on the diagnoser side.
+
+| Method | Haiku $ | Sonnet $ | gpt-5-mini $ | Avg single-shot $ | Reducer $ | **Total $/case** |
+|---|---:|---:|---:|---:|---:|---:|
+| `rtk-log` | $0.0022 | $0.0083 | $0.0013 | $0.0039 | — | **$0.0039** |
+| `tail-200` | $0.0077 | $0.0246 | $0.0027 | $0.0117 | — | **$0.0117** |
+| `rtk-err-cat` | $0.0193 | $0.0681 | $0.0062 | $0.0312 | — | **$0.0312** |
+| `hybrid-grep-120k-rtk-tail` | $0.0167 | $0.0704 | $0.0069 | $0.0313 | — | **$0.0313** |
+| `hybrid-grep-4k-rtk-err-cat` | $0.0198 | $0.0690 | $0.0062 | $0.0317 | — | **$0.0317** |
+| `hybrid-grep-120k-tail` | $0.0163 | $0.0746 | $0.0066 | $0.0325 | — | **$0.0325** |
+| `grep` | $0.0859 | $0.2772 | $0.0236 | $0.1289 | — | **$0.1289** |
+| `rtk-read` | $0.2721 | $0.8354 | $0.0692 | $0.3922 | — | **$0.3922** |
+| `raw` | $0.2721 | $0.8355 | $0.0700 | $0.3925 | — | **$0.3925** |
+| `llm-summary-v1-haiku` | $0.0034 | $0.0134 | $0.0016 | $0.0061 | $1.7536 | **$1.7597** |
+
+Three layers of finding:
+
+1. **The top-2 hybrids cost ~3¢/case end-to-end** across the 3 single-
+   shot families. `tail-200` at 1.2¢ is cheaper but ranks lower on
+   quality. The 3¢ tier is the sweet spot.
+2. **`raw` and `rtk-read` are ~10× more expensive than the hybrids**
+   (~39¢/case) because they ship the full log to the diagnoser; the
+   hybrids cap context at 120k tokens. This is the dominant cost
+   axis for any method that doesn't pre-summarize.
+3. **`llm-summary-v1-haiku` is 5× more expensive than `raw`** ($1.76
+   vs $0.39) because the reducer itself burns ~1.66M Haiku-input
+   tokens per case. The downstream diagnoser cost is tiny ($0.006
+   for haiku-summary vs $0.39 for raw) — the reducer dominates the
+   total. Whether this is worth it depends on whether you'd otherwise
+   send raw to a more expensive model (Sonnet raw = 83¢/case;
+   haiku-summary + Sonnet diagnoser = 1.77¢ diagnoser side + 1.75
+   reducer = $1.77 — close).
+
+#### Caveats
+
+- **Snapshot prices, not live.** The pinned prices in `snapshot_2026_05_20.json`
+  may have drifted from current provider list prices. Re-run
+  `tools/compute_usd_costs.py --pricing <new-snapshot>` against a fresh
+  snapshot for current numbers.
+- **Diagnoser-side tokens are byte-size estimates** (`output_byte_size // 4`)
+  from the eval manifests, not provider-reported tokens. Some older
+  diagnosis rows have `usage=None` (pre-2026-05-14 F2 shim fix); using
+  estimates ensures every method × family pair is treated identically.
+  The order of magnitude is correct; exact dollar amounts may differ
+  ±15% from a provider-billed re-run.
+- **Reducer-side tokens ARE provider-reported** (from
+  `metadata.usage.input_tokens` / `output_tokens` per row). This
+  matters for `llm-summary-v1-haiku` since the reducer dominates that
+  method's total; the number above reflects what a direct-API
+  re-run would actually bill.
+- **No agent-loop USD** in this section. Agent-loop costs are
+  reported separately in the agent-loop table below; agent_v1 runs
+  via OpenRouter which reports cost directly per call.
+- **USD column is NOT in the headline overall table**. The headline
+  ranking is still pure quality (`diagnosis_score_v1_1`). Use this
+  section to make cost-quality trade-offs, but don't read "rank by
+  total $/case" as the recommendation — `tail-200` is cheapest but
+  ranks 5 on quality, and `llm-summary-v1-haiku` is most expensive
+  but ranks 4 on quality. The cost-quality Pareto plot above
+  visualizes this.
 
 ## Agent-loop leaderboard  (v1.1)
 
@@ -187,7 +258,6 @@ Sorted by agent-loop `diagnosis_score_v1_1`.
 | 8 | `llm-summary-v1-haiku`<br/><sub>*(promoted to headline in v1.1)*</sub> | 0.632 | 0.690 | +0.058 | 0.057 | 1.66 | 0.71 | 9,968 <sub>*(agent-only; reducer adds 1.68M)*</sub> |
 | 9 | `rtk-log`                  | **0.249** (single-shot #10) | 0.689 | **+0.440** | 0.057 | 2.77 | 2.60 | 36,259 |
 | 10 | `raw`                      | 0.353 | 0.688 | +0.335 | 0.029 | 2.51 | 1.68 | 67,311 |
-| — | `llm-summary-v1-mock` <sub>*(legacy synthetic stub; superseded by row 8)*</sub> | 0.328 | 0.715 | +0.387 | 0.000 | 2.51 | 1.88 | 32,139 |
 
 Five layers of finding:
 
@@ -404,6 +474,47 @@ continuity.
 - All 35 haiku-summary context rows have `provider_error=None`
   and non-zero output; no synthetic abstention rows. See the
   v1.1 release notes / commit history for the backfill timeline.
+
+## Appendix: legacy baselines
+
+The following baselines are retained for cross-version continuity
+and as control/smoke-test references, but are **not** part of the
+current v1.1.1 ranking. Do not cite their numbers as
+recommendations for production use.
+
+### `llm-summary-v1-mock`
+
+A deterministic regex-extract stub that bucketizes compile errors /
+failed tests / stack frames / exit codes into the same markdown
+template the real summarizer writes — without ever calling an LLM.
+
+| Diagnoser | Score |
+|---|---:|
+| Haiku 4.5 (single-shot) | 0.343 |
+| Sonnet 4.6 (single-shot) | 0.348 |
+| gpt-5-mini (single-shot) | 0.294 |
+| **Overall single-shot mean** | **0.328** |
+| Sonnet 4.6 (agent-loop) | 0.715 |
+| confident_error_rate (single-shot) | 0.133 |
+| total_tokens/case | 432,076 |
+| agent tokens/case | 32,139 (1.88 tool calls/case) |
+
+Why it's retained:
+
+1. **CI smoke test.** Schema / pipeline regression tests need a
+   deterministic, zero-cost LLM-summary path. `tools/run_llm_summary
+   _baseline.py --provider mock` still works.
+2. **Lower-bound data point.** The +0.30 gap from mock 0.328 to
+   `llm-summary-v1-haiku` 0.632 quantifies what the real LLM call
+   contributes beyond the structural map-reduce skeleton.
+3. **Historical reproducibility.** v1.0 published numbers cite the
+   mock. Removing it would break those references.
+
+Through v1.1 the mock was used as the LLM-summary class
+representative on the leaderboard because the real Haiku summarizer
+had only been prototyped on a 16-case subset. v1.1.1 promoted the
+real summarizer to the headline (see [v1.1 promotion](#v11--promoting-llm-summary-v1-haiku-to-the-headline)
+above); v1.1.2 moved the mock here.
 
 ## How to reproduce a number
 

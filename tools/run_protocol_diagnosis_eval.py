@@ -15,7 +15,7 @@ Usage:
     export CILOGBENCH_ALLOW_EXTERNAL_LLM=1
 
     python tools/run_protocol_diagnosis_eval.py \\
-        --protocol protocols/cilogbench-v1.1.lock.json \\
+        --protocol protocols/legacy/cilogbench-v1.1.lock.json \\
         --diagnoser-config configs/diagnosers/stub-debugger-v1.json \\
         --diagnoser-name stub-debugger-v1 \\
         --context-methods all \\

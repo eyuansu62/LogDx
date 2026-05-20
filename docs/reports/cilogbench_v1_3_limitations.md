@@ -188,7 +188,7 @@ addition is listed as priority 2 in §15 of the technical report.
 ([RTK](https://github.com/rtk-ai/rtk)). RTK output formats can shift
 between versions. The protocol records the RTK version and command metadata
 used here (in the corresponding baseline entries of
-`protocols/cilogbench-v1.3.lock.json`), but does **not** vendor a binary or
+`protocols/legacy/cilogbench-v1.3.lock.json`), but does **not** vendor a binary or
 cryptographically pin one. A future RTK release may produce materially
 different contexts on the same case.
 

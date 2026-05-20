@@ -4,7 +4,7 @@ E8 search-fallback routing report renderer.
 Reads:
   results/e8_hybrid_first_search_fallback_cilogbench_v1_3.json
   configs/routing/hybrid_search_fallback_policy_v1.json
-  protocols/cilogbench-v1.3.lock.json
+  protocols/legacy/cilogbench-v1.3.lock.json
 
 Writes:
   reports/e8_hybrid_first_search_fallback_cilogbench_v1_3.md
@@ -215,7 +215,7 @@ def main(argv: list[str] | None = None) -> int:
     md.append("")
     md.append("| Input | Path |")
     md.append("|---|---|")
-    md.append(f"| Protocol lock | `protocols/cilogbench-v1.3.lock.json` |")
+    md.append(f"| Protocol lock | `protocols/legacy/cilogbench-v1.3.lock.json` |")
     md.append(f"| Policy config | `configs/routing/hybrid_search_fallback_policy_v1.json` |")
     md.append(f"| Hybrid eval (E6) | `results/{{dev,holdout,stress}}/eval_diagnosis_real-debugger-v2.json` |")
     md.append(f"| Search-agent eval (E7) | `results/{{dev,holdout,stress}}/eval_diagnosis_mcp-search-agent-v1-sonnet.json` |")

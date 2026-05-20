@@ -1,5 +1,13 @@
 # CILogBench v1.3 — one-pager
 
+> ⚠️ **Historical document — frozen at v1.3 ship (16-case corpus,
+> Haiku-only debugger).** Its verdict that **`llm-summary-v1-haiku`
+> is "deliberately excluded from the v1.3 baseline lock" as
+> uncompetitive** has been **reversed by v1.1.1**: a full 35-case ×
+> 4-diagnoser backfill places the real Haiku summarizer at **0.632
+> overall (rank 4)** on the [live leaderboard](https://logdx-bench.github.io/leaderboard.html).
+> Read this page as historical context, not a current recommendation.
+
 > **Disclosure:** sv1.1 was originally calibrated by an LLM-as-judge
 > reviewer (E2/E2b: `claude-opus-4-7-expert`) and later spot-checked by
 > AI-assisted human review (E9: 1 reviewer, project author of the hybrid
@@ -177,7 +185,7 @@ In priority order:
 
 - Full technical report: `docs/reports/cilogbench_v1_3_technical_report.md`
 - Limitations: `docs/reports/cilogbench_v1_3_limitations.md`
-- Frozen protocol: `protocols/cilogbench-v1.3.lock.json`
+- Frozen protocol: `protocols/legacy/cilogbench-v1.3.lock.json`
 - Per-experiment reports: `reports/e{2b,3,4,5}_*`,
   `reports/e6_second_debugger_cilogbench_v1_3_real-debugger-v2.md`,
   `reports/e7_mcp_search_agent_cilogbench_v1_3_mcp-search-agent-v1-sonnet.md`,

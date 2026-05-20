@@ -1,7 +1,7 @@
 # CILogBench v1
 
 **Protocol ID:** `cilogbench-v1`
-**Lock file:** `protocols/cilogbench-v1.lock.json`
+**Lock file:** `protocols/legacy/cilogbench-v1.lock.json`
 
 CILogBench v1 evaluates CI failure context strategies on evidence
 preservation and downstream diagnosis proxies. It does not claim to
@@ -143,7 +143,7 @@ and re-checked whenever tools change.
 
 ## 10. Baselines + parameters
 
-Locked in `protocols/cilogbench-v1.lock.json` under `baselines`:
+Locked in `protocols/legacy/cilogbench-v1.lock.json` under `baselines`:
 
 | method | params |
 |---|---|

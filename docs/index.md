@@ -69,7 +69,16 @@ the 35-case corpus:
 | 8 | `raw`                       | 0.324 | 0.368 | 0.367 | 0.353 | **0.000** | 275,248 |
 | 9 | `rtk-read`                  | 0.329 | 0.369 | 0.349 | 0.349 | 0.010 | 274,289 |
 | 10 | `rtk-log`                  | 0.238 | 0.262 | 0.249 | 0.249 | **0.133** | **810** |
-| — | `llm-summary-v1-mock` <sub>(*legacy stub*)</sub> | 0.343 | 0.348 | 0.294 | 0.328 | **0.133** | 432,076 |
+
+<sub>*Footnote on `llm-summary-v1-haiku`*: three of the 35 cases used
+`chunk_lines=100` instead of the default 500 because they contained
+500-line windows exceeding Haiku's effective input window after
+Claude-Code session overhead. Same map-reduce algorithm, same model,
+same temperature — only map-stage granularity differs; recorded in
+per-case `metadata.chunk_lines`. The legacy `llm-summary-v1-mock`
+stub (used as the LLM-summary representative through v1.1) has been
+moved to the [appendix](leaderboard.html#appendix-legacy-baselines)
+on the leaderboard page.</sub>
 
 Three layers of finding:
 

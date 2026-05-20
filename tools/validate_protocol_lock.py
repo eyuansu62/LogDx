@@ -7,7 +7,7 @@ cases that exist. Fails non-zero on the first mismatch with a
 diff-style message.
 
 Usage:
-    python tools/validate_protocol_lock.py --protocol protocols/cilogbench-v1.lock.json
+    python tools/validate_protocol_lock.py --protocol protocols/legacy/cilogbench-v1.lock.json
 """
 
 from __future__ import annotations

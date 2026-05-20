@@ -2,7 +2,7 @@
 E7 search-agent report renderer.
 
 Reads:
-  protocols/cilogbench-v1.3.lock.json
+  protocols/legacy/cilogbench-v1.3.lock.json
   configs/search_agents/<agent>.json
   prompts/search_agent_v1.md
   results/<split>/search_agents/<agent>/traces/<case_id>.json

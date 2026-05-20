@@ -2,7 +2,7 @@
 E6 second-debugger replication report renderer.
 
 Reads:
-  protocols/cilogbench-v1.3.lock.json
+  protocols/legacy/cilogbench-v1.3.lock.json
   configs/diagnosers/<diagnoser_v1>.json
   configs/diagnosers/<diagnoser_v2>.json
   results/<split>/eval_diagnosis_<diagnoser_v1>.json

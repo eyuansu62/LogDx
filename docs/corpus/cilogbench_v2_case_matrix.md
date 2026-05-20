@@ -484,7 +484,7 @@ Update this section as cases land.
              Phase 3 first run (8-case state) → headline finding:
              hybrid sv1.1 −0.32 Sonnet / −0.30 Haiku, rank #1 → #6
              cross-debugger (`reports/e10_v2_generalization_partial.md`
-             §3); locked at `protocols/cilogbench-v2-partial.lock.json`.
+             §3); locked at `protocols/legacy/cilogbench-v2-partial.lock.json`.
 
 [2026-05-07] Batch 3 COMPLETE — Phase 2 10-case checkpoint reached
              (10 / 34 cumulative).
@@ -500,7 +500,7 @@ Update this section as cases land.
              ranking magnitude softens to "rank #1 → #3-4" (Sonnet #4,
              Haiku #3). 8-case → 10-case Δ table in
              `reports/e10_v2_generalization_partial.md` §3b. New lock
-             at `protocols/cilogbench-v2-checkpoint.lock.json`
+             at `protocols/legacy/cilogbench-v2-checkpoint.lock.json`
              (26 cases, 6 splits, validated clean).
              v1.3 one-pager v2 caveat (`docs/reports/cilogbench_v1_3_one_pager.md`)
              refreshed to the "#1 → #3–4" framing.

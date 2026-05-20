@@ -12,13 +12,13 @@ corpus with a stratified **stress** split, and freezes the result as
 | dev cases | 5 | 5 (unchanged) |
 | holdout cases | 5 | 5 (unchanged) |
 | stress cases | — | 6 |
-| protocol lock | `protocols/cilogbench-v1.lock.json` | `protocols/cilogbench-v1.1.lock.json` (new file; v1 is never modified) |
+| protocol lock | `protocols/legacy/cilogbench-v1.lock.json` | `protocols/legacy/cilogbench-v1.1.lock.json` (new file; v1 is never modified) |
 | tag schema | — | `schemas/case_tags.schema.json` |
 | corpus tools | — | `tools/{import_case_skeleton, tag_cases, validate_case_tags, summarize_corpus, check_split_balance}.py` |
 
-`protocols/cilogbench-v1.lock.json` is **unchanged**. Any benchmark
+`protocols/legacy/cilogbench-v1.lock.json` is **unchanged**. Any benchmark
 result produced against v1 continues to be reproducible with
-`tools/validate_protocol_lock.py --protocol protocols/cilogbench-v1.lock.json`.
+`tools/validate_protocol_lock.py --protocol protocols/legacy/cilogbench-v1.lock.json`.
 
 ### What did NOT change
 
@@ -46,7 +46,7 @@ known gaps.
 python tools/build_split_manifest.py --split all
 python tools/freeze_protocol.py --protocol-id cilogbench-v1.1 \
     --splits dev,holdout,stress
-python tools/validate_protocol_lock.py --protocol protocols/cilogbench-v1.1.lock.json
+python tools/validate_protocol_lock.py --protocol protocols/legacy/cilogbench-v1.1.lock.json
 ```
 
 The v1.1 lock inherits every schema/prompt/evaluator hash from v1
@@ -65,7 +65,7 @@ python tools/validate_case_tags.py --split all
 
 # 2. Locked baselines on stress.
 python tools/run_locked_eval.py \
-    --protocol protocols/cilogbench-v1.1.lock.json \
+    --protocol protocols/legacy/cilogbench-v1.1.lock.json \
     --split stress \
     --methods raw,tail-200,grep,rtk-read,rtk-log,rtk-err-cat,llm-summary-v1-mock
 
@@ -76,7 +76,7 @@ python tools/render_diagnosis_report.py --split stress --diagnoser debugger-v1-m
 
 # 4. 3-way comparison.
 python tools/compare_splits.py \
-    --protocol protocols/cilogbench-v1.1.lock.json \
+    --protocol protocols/legacy/cilogbench-v1.1.lock.json \
     --splits dev,holdout,stress \
     --diagnoser debugger-v1-mock
 ```

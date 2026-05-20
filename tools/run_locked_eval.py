@@ -8,11 +8,11 @@ holdout evaluations use the same knobs as dev.
 
 Usage:
     python tools/run_locked_eval.py \\
-        --protocol protocols/cilogbench-v1.lock.json \\
+        --protocol protocols/legacy/cilogbench-v1.lock.json \\
         --split dev --methods raw,tail,grep
 
     python tools/run_locked_eval.py \\
-        --protocol protocols/cilogbench-v1.lock.json \\
+        --protocol protocols/legacy/cilogbench-v1.lock.json \\
         --split holdout \\
         --methods raw,tail,grep,rtk-read,rtk-log,rtk-err-cat,llm-summary-v1-mock
 

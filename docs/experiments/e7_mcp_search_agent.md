@@ -50,7 +50,7 @@ cases/<split>/<case_id>/raw.log
 ## Scope
 
 E7 is a **separately-tabled baseline**, not a context-provider. It is
-not included in `protocols/cilogbench-v1.3.lock.json`. If the verdict
+not included in `protocols/legacy/cilogbench-v1.3.lock.json`. If the verdict
 of the rendered report is `ADD_AS_V1_4_BASELINE`, the next step is to
 freeze `cilogbench-v1.4` with the search-agent locked in alongside the
 v1.3 baselines.
@@ -73,7 +73,7 @@ export CILOGBENCH_CLAUDE_MODEL=sonnet
 
 for split in dev holdout stress; do
   python3 tools/run_search_agent.py \
-    --protocol protocols/cilogbench-v1.3.lock.json \
+    --protocol protocols/legacy/cilogbench-v1.3.lock.json \
     --split $split \
     --agent-config configs/search_agents/mcp-search-agent-v1-sonnet.json \
     --allow-external-llm

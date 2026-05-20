@@ -1,5 +1,16 @@
 # cilogbench-v1.3 — Protocol document
 
+> ⚠️ **Historical document — frozen at v1.3 ship.** This page
+> documents the cilogbench-v1.3 protocol as released. Its verdict
+> that **`llm-summary-v1-haiku` is not competitive with grep / hybrid**
+> was based on a 16-case prototype subset and a single Haiku-only
+> debugger. The v1.1.1 full 35-case × 4-diagnoser backfill **reverses
+> that verdict** — the real Haiku summarizer scores **0.632 overall
+> (rank 4)** on the [live leaderboard](../leaderboard.md). The v1.3
+> lock file stays frozen for reproducibility; the live ranking has
+> moved on. New readers should treat this page as historical context,
+> not a current recommendation.
+
 `cilogbench-v1.3` differs from `v1.2` only by adding the deterministic
 `hybrid-grep-4k-rtk-err-cat-v1` context-provider baseline.
 

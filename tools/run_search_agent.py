@@ -27,7 +27,7 @@ Usage:
     export SEARCH_AGENT_COMMAND="python3 examples/search_agent_shim_claude_cli.py"
     export CILOGBENCH_ALLOW_EXTERNAL_LLM=1
     python3 tools/run_search_agent.py \
-        --protocol protocols/cilogbench-v1.3.lock.json \
+        --protocol protocols/legacy/cilogbench-v1.3.lock.json \
         --split holdout \
         --agent-config configs/search_agents/mcp-search-agent-v1-sonnet.json
 """

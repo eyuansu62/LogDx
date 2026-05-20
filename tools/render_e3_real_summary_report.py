@@ -6,7 +6,7 @@ Produces:
     reports/e3_real_llm_summary_cilogbench_v1_2_<summarizer_slug>.md
 
 Reads:
-    protocols/cilogbench-v1.2.lock.json
+    protocols/legacy/cilogbench-v1.2.lock.json
     configs/summarizers/<summarizer_slug>.json
     configs/diagnosers/real-debugger-v1.json
     prompts/llm_summary_v1_map.md

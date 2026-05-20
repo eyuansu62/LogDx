@@ -2,7 +2,7 @@
 E5 hybrid baseline report renderer.
 
 Reads:
-  protocols/cilogbench-v1.2.lock.json
+  protocols/legacy/cilogbench-v1.2.lock.json
   configs/hybrids/<hybrid>.json
   results/<split>/<hybrid>.jsonl
   results/<split>/<hybrid>.routes.jsonl

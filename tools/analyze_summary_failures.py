@@ -19,7 +19,7 @@ For each case in dev/holdout/stress:
 
 Usage:
     python tools/analyze_summary_failures.py \
-        --protocol protocols/cilogbench-v1.2.lock.json \
+        --protocol protocols/legacy/cilogbench-v1.2.lock.json \
         --summary-method llm-summary-v1-haiku \
         --diagnoser real-debugger-v1 \
         --splits dev,holdout,stress
