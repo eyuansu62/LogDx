@@ -50,6 +50,14 @@ jobs:
           # docstring for the fix workflow (two-step: upload to HF, then
           # refresh huggingface/corpus_fingerprint.json).
           python3 tools/validate_corpus_fingerprint.py
+          # Catches a stale "Current release vX.Y" banner in docs that
+          # didn't get bumped on the latest tag. Between v1.1 and v1.2
+          # the homepage banner went 3 releases stale because no gate
+          # validated it. See tools/validate_release_string.py docstring.
+          # Fetch tags first so the validator sees the full tag list
+          # (actions/checkout@v4 only pulls the HEAD commit by default).
+          git fetch --tags --depth=1
+          python3 tools/validate_release_string.py
 
       - name: Run test suites
         run: |
