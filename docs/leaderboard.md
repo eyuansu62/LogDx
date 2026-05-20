@@ -354,9 +354,10 @@ represented by `llm-summary-v1-mock` — a deterministic stub that
 extracts compile-errors / failed tests / stack frames / exit codes
 via regex and formats them into the same per-case summary the real
 summarizer would write. The stub was useful for cost-modeling the
-LLM-summary class without burning paid tokens, but as Mengyao Tan
-pointed out post-v1.1, it was unfair to rank LLM-summary methods by
-their cheapest-possible mock representative.
+LLM-summary class without burning paid tokens, but post-v1.1
+reviewer feedback flagged that this was unfair to the LLM-summary
+class — ranking it by its cheapest-possible mock representative
+penalized the class for the stub's quality, not the real method's.
 
 For v1.1 the real Anthropic Haiku 4.5 map-reduce summarizer was
 backfilled to the full 35-case corpus (3 splits + v2 splits) and
