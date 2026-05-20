@@ -36,8 +36,14 @@ into the seven reduce sections. It does not call an LLM and does not
 reach the network. Use it to verify the schema, the evaluator, and
 the report pipeline.
 
-**Not a real benchmark method.** By convention it is named
-`llm-summary-v1-mock` and kept out of primary results tables.
+**Infrastructure-only / legacy.** Named `llm-summary-v1-mock`.
+From v1.0 through early v1.1 the mock stood in for the
+LLM-summary class on the leaderboard because the real summarizer
+had only been prototyped on a 16-case subset. **v1.1 promoted the
+real `llm-summary-v1-haiku` to the headline** (full 35-case
+backfill on all 4 diagnoser families) — the mock is no longer the
+LLM-summary representative. Use the mock for schema /
+infrastructure smoke tests only.
 
 ```bash
 python tools/run_llm_summary_baseline.py \

@@ -102,6 +102,11 @@ E2b).
 `llm-summary-v1-haiku` (real Haiku-summarized context) was tested but
 **deliberately excluded from the v1.3 baseline lock** because its
 quality-cost trade-off was uncompetitive at standard budgets (E3, E4).
+*Reversed in v1.1 (2026-05-20): a full 35-case × 4-diagnoser backfill
+showed the real Haiku summary scores 0.632 overall (rank 4) — the v1.3
+exclusion verdict was based on the 16-case prototype subset and
+underestimated the method. See the v1.1 promotion note on the
+[live leaderboard](../leaderboard.md#v11--promoting-llm-summary-v1-haiku-to-the-headline).*
 
 ## Headline result
 

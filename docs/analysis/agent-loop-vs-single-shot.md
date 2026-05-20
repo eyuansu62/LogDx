@@ -31,16 +31,19 @@ Four findings on the 35-case corpus × Sonnet 4.6 agent:
    `rtk-log` gains the most (+0.44) by being rescued via tool calls;
    no method loses score.
 2. **Confident-error mostly collapses.** v1.0 surfaced that
-   `rtk-log` and `llm-summary-v1-mock` produce confidently-wrong
-   diagnoses on **~13%** of cases (the failure mode
-   [discussed in rtk-ai/rtk#1599](https://github.com/rtk-ai/rtk/issues/1599)).
-   In agent-loop, 6 of 10 methods sit at **0%** confident_error,
-   including `llm-summary-v1-mock`. The four non-zero rates are
-   `rtk-log` (5.7%), `raw` (2.9%), `grep` (2.9%), and `tail-200`
-   (2.9%) — methods that either over-compress (rtk-log loses too
-   much signal for the agent to verify), or under-filter (raw / tail
-   give the agent so much surface detail it commits before tool-
-   verifying).
+   `rtk-log` and the legacy `llm-summary-v1-mock` produce
+   confidently-wrong diagnoses on **~13%** of cases (the failure
+   mode [discussed in rtk-ai/rtk#1599](https://github.com/rtk-ai/rtk/issues/1599)).
+   In agent-loop, 5 of 10 methods sit at **0%** confident_error,
+   including the legacy mock. Five methods carry non-zero
+   confident_error: `rtk-log` (5.7%), `llm-summary-v1-haiku`
+   (5.7%), `raw` (2.9%), `grep` (2.9%), and `tail-200` (2.9%) —
+   either over-compressed (rtk-log loses too much signal for the
+   agent to verify), under-filtered (raw / tail give the agent so
+   much surface detail it commits before tool-verifying), or
+   already so confident-feeling that the agent commits without
+   verifying (the real Haiku summary front-loads a polished
+   markdown answer that looks authoritative).
 3. **Top single-shot method holds.** v1.0's #1
    (`hybrid-grep-120k-rtk-tail`, 0.670 single-shot) **stays #1 in
    agent-loop** (0.747). It's also the cheapest in the top tier
@@ -49,11 +52,14 @@ Four findings on the 35-case corpus × Sonnet 4.6 agent:
    variants (`hybrid-grep-120k-rtk-tail`, `hybrid-grep-4k-rtk-err-
    cat`, `hybrid-grep-120k-tail`) cluster in the agent-loop top 3.
 4. **Cost compresses ~220×, but doesn't vanish.** Single-shot
-   input tokens range from 810 (`rtk-log`) to 432k
-   (`llm-summary-v1-mock` end-to-end) — a 530× max/min ratio.
-   Agent-loop ranges from 28k to 67k — a 2.4× ratio (so the
-   spread shrinks by 530 / 2.4 ≈ 220×). The agent adds a roughly
-   fixed ~30–70k token cost regardless of starting context.
+   input tokens range from 810 (`rtk-log`) to 1.68M
+   (`llm-summary-v1-haiku` end-to-end, including reducer) — a
+   ~2000× max/min ratio. Agent-side tokens range from 10k to 67k
+   — a 6.7× ratio (so the spread compresses ~300×). The agent
+   adds a roughly fixed ~30–70k token cost regardless of starting
+   context, except for `llm-summary-v1-haiku` where the
+   front-loaded summary lets the agent close out at 10k agent-
+   side tokens (but the reducer's 1.68M dominates the total).
 
 ## Setup
 
@@ -81,13 +87,14 @@ Sorted by single-shot score (matches the v1.0 leaderboard order).
 | `hybrid-grep-120k-rtk-tail` | **0.670** | **0.747** | +0.077 | **0.000** | 0.97 | 37,152 |
 | `hybrid-grep-120k-tail` | 0.666 | 0.735 | +0.069 | **0.000** | 1.00 | 39,221 |
 | `grep` | 0.639 | 0.722 | +0.083 | 0.029 | 1.20 | 42,232 |
+| `llm-summary-v1-haiku` <sub>*(v1.1 promotion)*</sub> | 0.632 | 0.690 | +0.058 | 0.057 | 0.71 | 9,968 <sub>*(agent-only)*</sub> |
 | `tail-200` | 0.614 | 0.710 | +0.096 | 0.029 | 0.69 | 28,166 |
 | `hybrid-grep-4k-rtk-err-cat` | 0.573 | 0.737 | +0.164 | **0.000** | 1.40 | 42,862 |
 | `rtk-err-cat` | 0.470 | 0.708 | +0.238 | **0.000** | 1.66 | 43,009 |
 | `raw` | 0.353 | 0.688 | +0.335 | 0.029 | 1.68 | 67,311 |
 | `rtk-read` | 0.349 | 0.735 | +0.386 | **0.000** | 1.46 | 55,391 |
-| `llm-summary-v1-mock` | 0.328 | 0.715 | +0.387 | **0.000** | 1.88 | 32,139 |
 | `rtk-log` | **0.249** | 0.689 | **+0.440** | 0.057 | 2.60 | 36,259 |
+| `llm-summary-v1-mock` <sub>*(legacy)*</sub> | 0.328 | 0.715 | +0.387 | **0.000** | 1.88 | 32,139 |
 
 ![Agent flattens methods](../figures/agent_flattens_methods.png)
 
@@ -106,9 +113,16 @@ lossy and falls back to `tail(200)` or a targeted `grep` on the
 raw log. **By the time the agent diagnoses, it has effectively
 reconstructed the grep-style context on the fly.**
 
-Same mechanism for `llm-summary-v1-mock` (1.88 tool calls per case
-in agent-loop): the mock summary is deterministic and unhelpful, so
-the agent supplements via grep/tail on the raw log.
+Same mechanism for the legacy `llm-summary-v1-mock` (1.88 tool
+calls per case in agent-loop): the mock summary is deterministic
+and unhelpful, so the agent supplements via grep/tail on the raw
+log. **The real `llm-summary-v1-haiku` flips this completely**:
+the agent uses only 0.71 tools/case (tied with `tail-200` for the
+lowest) because the real summary already names the failure
+explicitly. The agent's marginal gain (+0.058) is the smallest of
+any method — the front-loaded context did most of the work, but
+also occasionally let the agent commit to the summary's framing
+without verifying (5.7% confident_error, matching `rtk-log`).
 
 ### 2. Does the agent *hurt* strong contexts?
 
@@ -122,16 +136,21 @@ That said, the **gains are smallest** for already-strong methods:
 - `hybrid-grep-120k-tail` (single-shot #2): +0.069
 - `grep` (single-shot #3): +0.083
 
-And a related effect emerges: four methods carry **non-zero
-agent-loop confident_error**: `rtk-log` (5.7%), `raw` (2.9%),
-`grep` (2.9%), `tail-200` (2.9%). The cluster is mixed — `rtk-log`
-over-compresses (agent can't verify; commits prematurely),
-while `raw` / `grep` / `tail-200` give the agent a lot of surface
-detail that can mislead it into committing before tool-verifying.
-The methods that route via mid-band intermediate logic
-(`hybrid-grep-120k-rtk-tail`, `hybrid-grep-120k-tail`, `hybrid-
-grep-4k-rtk-err-cat`, `rtk-err-cat`, `llm-summary-v1-mock`,
-`rtk-read`) all sit at 0% confident_error.
+And a related effect emerges: five methods carry **non-zero
+agent-loop confident_error**: `rtk-log` (5.7%),
+`llm-summary-v1-haiku` (5.7%), `raw` (2.9%), `grep` (2.9%),
+`tail-200` (2.9%). The cluster spans three failure modes —
+`rtk-log` over-compresses (agent can't verify; commits
+prematurely), `raw` / `grep` / `tail-200` give the agent a lot of
+surface detail that can mislead it into committing before tool-
+verifying, and the real Haiku summary is so confident-feeling
+that the agent inherits its framing. The methods that route via
+mid-band intermediate logic (`hybrid-grep-120k-rtk-tail`,
+`hybrid-grep-120k-tail`, `hybrid-grep-4k-rtk-err-cat`,
+`rtk-err-cat`, `rtk-read`) all sit at 0% confident_error; the
+legacy `llm-summary-v1-mock` also sat at 0% but that was the
+mock's "no useful signal" output forcing the agent to do its own
+work, not a property of LLM-summary methods generally.
 
 This is consistent with Sonnet's tool-use bias: it is **trained to
 be helpful by exploring**, even when exploration is not informative.

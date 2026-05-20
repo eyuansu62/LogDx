@@ -94,13 +94,47 @@ CLI envelope provides them. Aggregate cost reported in the E3 report's
 - Map-stage outputs feed the reduce stage; map nondeterminism can
   amplify into reduce-stage variance.
 
+## v1.1 corpus expansion (2026-05-20)
+
+The original E3 run was on a 16-case prototype subset (`dev`,
+`holdout`, `stress` v1 splits) with only Haiku 4.5 as the debugger.
+v1.1 expanded coverage to:
+
+- **35 cases** (full v1.0 corpus = 16 v1 + 19 v2 cases)
+- **4 diagnoser families** (Haiku 4.5, Sonnet 4.6, gpt-5-mini single-
+  shot; Sonnet 4.6 agent-loop)
+- Same map-reduce config (`chunk_lines=500`, `chunk_overlap_lines=25`,
+  `temperature=0`)
+- Three cases (one nodejs, two pytest-sklearn) re-chunked at
+  `chunk_lines=100` because some 500-line windows exceeded Haiku's
+  effective input window after Claude-Code session overhead. Same
+  algorithm, smaller chunks; recorded in per-case
+  `metadata.chunk_lines`.
+
+Headline result of the v1.1 backfill (`diagnosis_score_v1_1`,
+case-weighted macro across 6 splits):
+
+| Diagnoser | mock | haiku | Δ |
+|---|---:|---:|---:|
+| real-debugger-v1 (Haiku 4.5) | 0.343 | 0.583 | **+0.240** |
+| real-debugger-v2 (Sonnet 4.6) | 0.348 | 0.704 | **+0.356** |
+| real-debugger-v3 (gpt-5-mini) | 0.294 | 0.608 | **+0.314** |
+| real-agent-v1 (Sonnet+tools) | 0.715 | 0.690 | -0.025 |
+
+`llm-summary-v1-haiku` is now the LLM-summary class representative
+on the v1.1 headline leaderboard at rank 4 overall (0.632).
+
 ## Limitations
 
-- **One model on both sides.** Do not quote E3 numbers as "LLM summary
-  beats grep" in general — it is one summarizer + one debugger + one
-  prompt + 16 cases.
-- **Same model on both sides.** Self-call has known shared priors. A
-  Sonnet-summarizer/Haiku-debugger experiment is a natural follow-up to
-  separate signal from artifact.
-- **Pricing changes over time.** The cost numbers in the E3 report are
+- **One summarizer model.** v1.1 fixed the cross-diagnoser gap (the
+  real summary is evaluated against 4 different debuggers now), but
+  the summarizer itself is still single-model (Haiku 4.5). A
+  Sonnet-summarizer / Opus-summarizer comparison would isolate
+  "summarizer model" as a separate variable.
+- **Same model on both sides for v1-debugger.** Self-call has known
+  shared priors when the debugger is also Haiku.
+- **High end-to-end cost.** ~1.68M tokens/case (~4× the v1.0 mock
+  estimate). Most of the gap is Claude-Code cached-prefix overhead
+  the mock didn't simulate.
+- **Pricing changes over time.** The cost numbers above are
   informational and not a leaderboard.

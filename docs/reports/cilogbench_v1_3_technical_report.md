@@ -196,6 +196,17 @@ was excluded after the E4 budget-frontier analysis showed that its quality-
 cost trade-off was not competitive with grep / hybrid except at very tight
 final-context budgets. Real summary remains an experiment artifact.
 
+> **2026-05-20 update (forward-pointer to v1.1)**: a full 35-case × 4-
+> diagnoser backfill of `llm-summary-v1-haiku` (Haiku 4.5, Sonnet 4.6, gpt-
+> 5-mini single-shot; Sonnet 4.6 agent-loop) showed the real Haiku summary
+> scores **0.632** overall (rank 4 across all 10 methods). The v1.3
+> exclusion verdict was based on the 16-case prototype subset and a single
+> Haiku-only debugger — both of which understated the method. v1.1
+> promotes `llm-summary-v1-haiku` to the headline leaderboard. v1.3's lock
+> file (`protocols/cilogbench-v1.3.lock.json`) remains frozen as-is for
+> reproducibility; a future v1.4 protocol could include the real Haiku
+> summarizer if a lock-time re-evaluation is wanted.
+
 ---
 
 ## 7. Evaluation metrics
@@ -316,7 +327,7 @@ debugger as v1.
 
 | Result | Number |
 |---|---:|
-| Beat `llm-summary-v1-mock` (control baseline) on macro sv1.1 | **+0.04 to +0.05** across splits |
+| Beat `llm-summary-v1-mock` (control baseline) on macro sv1.1 | **+0.04 to +0.05** across splits (v1.3 16-case subset; in v1.1's 35-case backfill the same comparison widens to **+0.24 to +0.36** across diagnosers — see forward-pointer above) |
 | Cross-split max-gap (stability) | **0.121** (2nd-most stable method) |
 | Confident-error v1.1 across all 3 splits | **0.0%** |
 | Lost to `grep` on macro sv1.1 | **−0.13** |

@@ -30,13 +30,14 @@ macro `diagnosis_score_v1_1`:
 | 1 | `hybrid-grep-120k-rtk-tail` | **0.670** |
 | 2 | `hybrid-grep-120k-tail` | **0.666** |
 | 3 | `grep` | 0.639 |
-| 4 | `tail-200` | 0.614 |
-| 5 | `hybrid-grep-4k-rtk-err-cat` | 0.573 |
-| 6 | **`rtk-err-cat`** | **0.470** |
-| 7 | `raw` | 0.353 |
-| 8 | **`rtk-read`** | **0.349** |
-| 9 | `llm-summary-v1-mock` | 0.328 |
+| 4 | `llm-summary-v1-haiku` <sub>*(v1.1)*</sub> | 0.632 |
+| 5 | `tail-200` | 0.614 |
+| 6 | `hybrid-grep-4k-rtk-err-cat` | 0.573 |
+| 7 | **`rtk-err-cat`** | **0.470** |
+| 8 | `raw` | 0.353 |
+| 9 | **`rtk-read`** | **0.349** |
 | 10 | **`rtk-log`** | **0.249** |
+| — | `llm-summary-v1-mock` <sub>*(legacy)*</sub> | 0.328 |
 
 Full leaderboard:
 <https://logdx-bench.github.io/leaderboard.html>.
@@ -191,11 +192,15 @@ enough task that it warrants a different mode.
    stock RTK invocations (no custom rules, no `.rtkrc` tuning). A
    CI-tuned RTK config could close some of this gap; we did not
    test that.
-4. **Mock-summary in the leaderboard.** `llm-summary-v1-mock` is a
-   deterministic stub. A real Haiku summarizer scored 0.490 on the
-   16-case prototype subset, suggesting a real LLM summarizer could
-   sit near `rtk-err-cat`, not in the bottom-4. Don't use the mock
-   number to argue against LLM summarization in general.
+4. **Mock-summary in the leaderboard.** Resolved in v1.1. The
+   v1.0/early-v1.1 board used `llm-summary-v1-mock` (deterministic
+   stub) as the LLM-summary class representative, which was unfair.
+   v1.1 backfilled the real Haiku map-reduce summarizer
+   (`llm-summary-v1-haiku`) to all 35 cases × 4 diagnosers — it
+   lands at rank 4 overall (0.632, +0.30 over the mock), confirming
+   the LLM-summary class is mid-pack, not bottom-4. See the
+   [v1.1 promotion note](../leaderboard.html#v11--promoting-llm-summary-v1-haiku-to-the-headline)
+   on the leaderboard. The mock remains visible as a legacy entry.
 
 ## See also
 

@@ -51,10 +51,21 @@ llm-summary-v1-mock
 hybrid-grep-4k-rtk-err-cat-v1   ← NEW
 ```
 
-`llm-summary-v1-haiku` is **not** locked. E3 showed real Haiku summary
-was useful only under very tight final-context budgets and was not
-competitive with grep / hybrid on the quality-cost trade-off. Real
-summary remains an experiment artifact, not a v1.3 baseline.
+`llm-summary-v1-haiku` is **not** locked in v1.3. E3 showed real
+Haiku summary was useful only under very tight final-context budgets
+and was not competitive with grep / hybrid on the quality-cost
+trade-off. Real summary remains an experiment artifact, not a v1.3
+baseline.
+
+> **2026-05-20 forward-pointer (v1.1)**: the v1.3 exclusion verdict was
+> based on a 16-case prototype subset and a single Haiku-only debugger.
+> A v1.1 full 35-case × 4-diagnoser backfill of `llm-summary-v1-haiku`
+> places it at **rank 4 overall (0.632)** on the live leaderboard
+> (vs the mock's 0.328). v1.3's lock file stays frozen for
+> reproducibility, but the live `docs/leaderboard.md` now uses the real
+> Haiku summary as the LLM-summary class representative. A future v1.4
+> protocol could codify this by locking `llm-summary-v1-haiku` into the
+> baseline list.
 
 ## 4. Hybrid routing rule
 
