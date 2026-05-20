@@ -31,8 +31,11 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 CASES_DIR = ROOT / "cases"
 FINGERPRINT_FILE = ROOT / "huggingface" / "corpus_fingerprint.json"
 
-CASE_FILES = ("raw.log", "case.json", "ground_truth.json",
-              "tags.json", "privacy_audit.json")
+# Only the git-tracked files contribute to the fingerprint.
+# `privacy_audit.json` is gitignored (regenerated on demand by
+# tools/audit_context_privacy.py) and would otherwise cause local-vs-CI
+# fingerprint drift since local devs may have generated them.
+CASE_FILES = ("raw.log", "case.json", "ground_truth.json", "tags.json")
 
 
 def hash_file(p: pathlib.Path) -> str:
