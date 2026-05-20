@@ -1,0 +1,96 @@
+{
+  "case_id": "prettier-react-stress-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job 'Run prettier' failed because Prettier detected unformatted code in two files. The `yarn prettier-check` command exited with code 1, indicating that the listed files need to be reformatted and the changes committed.",
+  "root_cause_category": "formatting_failure",
+  "root_cause": "Prettier found formatting violations in `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` and `compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts`, causing `yarn prettier-check` to fail with exit code 1.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+    "compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts"
+  ],
+  "relevant_tests": [
+    "yarn prettier-check"
+  ],
+  "evidence": [
+    {
+      "quote": "Please run yarn prettier-all and add changes to files listed below to your commit:",
+      "reason": "This is the explicit message from the Prettier script indicating that formatting fixes are required and must be committed."
+    },
+    {
+      "quote": "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+      "reason": "This file is explicitly listed by the Prettier script as needing formatting."
+    },
+    {
+      "quote": "compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts",
+      "reason": "This file is explicitly listed by the Prettier script as needing formatting."
+    },
+    {
+      "quote": "error Command failed with exit code 1.",
+      "reason": "Confirms that `yarn prettier-check` exited non-zero, causing the CI job to fail."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions recorded the step as failed due to the non-zero exit code."
+    }
+  ],
+  "suggested_fix": "Run `yarn prettier-all` locally, then stage and commit the formatting changes to the two listed files before pushing.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-gpt-5-mini/prettier-react-stress-001.txt",
+    "context_tokens_estimate": 595
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 647
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 17442.586,
+    "cache_key": "372408e6486622bf06897327b3905921dc239d48739fb46986d8b2ffe40ef20f",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 5086,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 573,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 5086,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 573,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 5086,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 5086
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "bd4b4aa8-6c81-4ac6-acba-5ef73912f10f"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

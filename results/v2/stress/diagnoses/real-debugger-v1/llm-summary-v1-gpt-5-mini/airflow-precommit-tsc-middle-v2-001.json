@@ -1,0 +1,95 @@
+{
+  "case_id": "airflow-precommit-tsc-middle-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "TypeScript compilation failed with 3 errors: unused declarations in UserSettingsButton.tsx and ConnectionForm.tsx, and a type incompatibility in testsSetup.ts where SetupServer is missing required properties (#private, network) from SetupServerApi.",
+  "root_cause_category": "type_error",
+  "root_cause": "TypeScript compiler (tsc) encountered three compilation errors: TS6196 ('ColorMode' unused in src/layouts/Nav/UserSettingsButton.tsx:55), TS6133 ('ParamsSpec' unused in src/pages/Connections/ConnectionForm.tsx:33), and TS2739 (type mismatch in testsSetup.ts:78 where SetupServer lacks properties #private and network required by SetupServerApi). These errors caused tsc to exit with status 2.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "src/layouts/Nav/UserSettingsButton.tsx",
+    "src/pages/Connections/ConnectionForm.tsx",
+    "testsSetup.ts"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "'ColorMode' is declared but never used.",
+      "reason": "Explicit TypeScript error TS6196 at UserSettingsButton.tsx:55:6 indicating an unused declaration"
+    },
+    {
+      "quote": "'ParamsSpec' is declared but its value is never read.",
+      "reason": "Explicit TypeScript error TS6133 at ConnectionForm.tsx:33:1 indicating an unused declaration"
+    },
+    {
+      "quote": "Type 'SetupServer' is missing the following properties from type 'SetupServerApi': #private, network",
+      "reason": "Explicit TypeScript error TS2739 at testsSetup.ts:78:3 indicating a type mismatch with missing properties"
+    },
+    {
+      "quote": "Found 3 errors in 3 files.",
+      "reason": "Summary confirming tsc compilation failure"
+    },
+    {
+      "quote": "Command '['pnpm', 'tsc', '--p', '/home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json']' returned non-zero exit status 2.",
+      "reason": "Shows tsc exited with status 2, confirming compilation failed"
+    }
+  ],
+  "suggested_fix": "Remove the unused 'ColorMode' import from src/layouts/Nav/UserSettingsButton.tsx:55, remove the unused 'ParamsSpec' declaration from src/pages/Connections/ConnectionForm.tsx:33, and fix the type mismatch in testsSetup.ts:78 by ensuring the SetupServer type includes the #private and network properties required by SetupServerApi or update the type annotation accordingly.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-gpt-5-mini/airflow-precommit-tsc-middle-v2-001.txt",
+    "context_tokens_estimate": 1087
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 733
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 21609.135,
+    "cache_key": "a4c32029dc8c6e9ae4fe3460447e126d5310f057929a41d03ac9ed6e069544ff",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "haiku",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 9,
+        "cache_creation_input_tokens": 4398,
+        "cache_read_input_tokens": 44442,
+        "output_tokens": 1628,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 4398,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 9,
+            "output_tokens": 1628,
+            "cache_read_input_tokens": 44442,
+            "cache_creation_input_tokens": 4398,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 4398
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "7ab0be3c-e608-4f3b-9125-e268c716485e"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "ade4ac2160bff920d4d00a0acc2289b3e3cf8de3a70e06ecd399e7cb5a0bb356",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

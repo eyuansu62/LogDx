@@ -1,0 +1,88 @@
+{
+  "case_id": "lint-react-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The `yarn prettier-check` step failed because Prettier detected formatting violations in `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js`. The CI enforces code formatting, and the file must be reformatted before committing.",
+  "root_cause_category": "formatting_failure",
+  "root_cause": "Prettier found unformatted code in `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js`, causing `yarn prettier-check` (which runs `node ./scripts/prettier/index.js`) to exit with code 1.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js"
+  ],
+  "relevant_tests": [
+    "yarn prettier-check"
+  ],
+  "evidence": [
+    {
+      "quote": "Please run yarn prettier-all and add changes to files listed below to your commit:",
+      "reason": "Prettier's own output explicitly states that formatting changes are needed and instructs the developer to run `yarn prettier-all`."
+    },
+    {
+      "quote": "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+      "reason": "This is the specific file flagged by Prettier as having formatting violations."
+    },
+    {
+      "quote": "error Command failed with exit code 1.",
+      "reason": "Confirms that the `yarn prettier-check` command exited non-zero due to the formatting violation."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions recorded the step as failed with exit code 1, confirming the CI job failure."
+    }
+  ],
+  "suggested_fix": "Run `yarn prettier-all` locally to auto-format the code, then commit the resulting changes to `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js`.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-gpt-5-mini/lint-react-001.txt",
+    "context_tokens_estimate": 563
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 603
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 11395.842,
+    "cache_key": "4c7a7ff81456df4eda6ffc7986a325e0ce91a65a8d87ef5c2ec702d00467b460",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 3928,
+        "output_tokens": 568,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard",
+        "cost": 0.020304,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.020304,
+          "upstream_inference_prompt_cost": 0.011784,
+          "upstream_inference_completions_cost": 0.00852
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 1,
+    "tool_call_count": 0,
+    "tool_calls": [],
+    "total_input_tokens_consumed": 3928,
+    "total_output_tokens_consumed": 568,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 1
+  }
+}

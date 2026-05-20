@@ -382,7 +382,18 @@ def parse_diagnosis_json(text: str) -> dict:
             f"no JSON object found in model reply: "
             f"reply_sha256={body_sha}… reply_len={len(t)}"
         )
-    return json.loads(t[start:end + 1])
+    snippet = t[start:end + 1]
+    # 2026-05-20: gpt-5-mini sometimes quotes ANSI-escaped evidence
+    # lines from the context verbatim into JSON string values (e.g.
+    # "quote": "test_foo.py \x1b[32m.\x1b[0m..."). Python's `json.loads`
+    # is strict by default and rejects raw U+0000–U+001F control chars
+    # inside strings — even though the rest of the JSON is well-formed.
+    # `strict=False` allows literal control chars in strings, which is
+    # the right call here: we'd rather accept slightly-non-spec JSON
+    # than reject an otherwise-valid diagnosis with embedded escape
+    # codes. Schema-level validation downstream still enforces the
+    # structural contract.
+    return json.loads(snippet, strict=False)
 
 
 def normalize(diag_raw: dict) -> dict:
@@ -503,10 +514,37 @@ def main() -> int:
     # fails, write a JSON envelope containing model_info to stdout and
     # exit 1 so the runner preserves provenance for the failed-but-
     # attempted call (Codex 2026-05-16 F1).
+    #
+    # 2026-05-20: gpt-5-mini is non-deterministic for certain inputs even
+    # at temperature=0 (the reasoning trace varies). Some calls produce
+    # a ~76-char refusal-style response with no JSON braces while a
+    # re-call produces a full valid JSON diagnosis. The maintainer note
+    # in configs/diagnosers/real-debugger-v3.json is explicit that
+    # post_api_error should NOT be allowlisted as a non-fatal prefix —
+    # it would mask real bugs. So retry the API call up to 3 times if
+    # the returned content can't be parsed as JSON. Only the last
+    # attempt's outcome is persisted.
+    PARSE_RETRY_ATTEMPTS = 3
     try:
         wrapper = invoke_openai(
             system_prompt, user_message, model, timeout_s, api_key, base_url
         )
+        for _retry_idx in range(1, PARSE_RETRY_ATTEMPTS):
+            choices_probe = wrapper.get("choices") or []
+            content_probe = (
+                (choices_probe[0].get("message") or {}).get("content") or ""
+                if choices_probe else ""
+            )
+            if not content_probe:
+                break  # empty content — let the main path handle it
+            try:
+                parse_diagnosis_json(content_probe)
+                break  # parsed OK — accept
+            except Exception:
+                wrapper = invoke_openai(
+                    system_prompt, user_message, model, timeout_s,
+                    api_key, base_url,
+                )
     except Exception as e:
         # The API call never succeeded — no model_info is available.
         # Per Codex 2026-06-04 F2 + 2026-06-16 F1 + 2026-06-22 F1

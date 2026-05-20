@@ -1,0 +1,95 @@
+{
+  "case_id": "pnpm-jest-config-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest test assertion failed in test/config/get.ts because the actual registry URL returned by pnpm config get includes a trailing slash, but the test expected the URL without one.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The test assertion on line 32 of test/config/get.ts expects the registry URL 'https://my-org.registry.example.com' but the code returns 'https://my-org.registry.example.com/' with a trailing slash, causing the string equality check to fail.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "test/config/get.ts"
+  ],
+  "relevant_tests": [
+    "pnpm config get reads npm options but ignores other settings from .npmrc"
+  ],
+  "evidence": [
+    {
+      "quote": "Expected: \"https://my-org.registry.example.com\"",
+      "reason": "Shows the expected value in the test assertion"
+    },
+    {
+      "quote": "Received: \"https://my-org.registry.example.com/\"",
+      "reason": "Shows the actual value returned by the code, which includes a trailing slash"
+    },
+    {
+      "quote": "expect(stdout.toString().trim()).toBe('https://my-org.registry.example.com')",
+      "reason": "Exact assertion code that failed due to the trailing slash mismatch"
+    },
+    {
+      "quote": "at Object.<anonymous> (test/config/get.ts:32:38)",
+      "reason": "Stack trace confirms the assertion failure location"
+    },
+    {
+      "quote": "FAIL test/config/get.ts (17.807 s)",
+      "reason": "Test file failed with specific test execution time"
+    }
+  ],
+  "suggested_fix": "Update the assertion in test/config/get.ts:32 to expect 'https://my-org.registry.example.com/' with the trailing slash, or modify the registry URL normalization logic to remove trailing slashes before returning the value.",
+  "input": {
+    "context_path": "results/v2/dev/llm-summary-v1-gpt-5-mini/pnpm-jest-config-v2-001.txt",
+    "context_tokens_estimate": 1137
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 586
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 34173.51,
+    "cache_key": "4aabc5e61e04ef81e4e0225746e5882133ca91c13ee013ba8af141923bf54b0b",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "haiku",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 9,
+        "cache_creation_input_tokens": 4269,
+        "cache_read_input_tokens": 63202,
+        "output_tokens": 2816,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 4269,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 9,
+            "output_tokens": 2816,
+            "cache_read_input_tokens": 63202,
+            "cache_creation_input_tokens": 4269,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 4269
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "6d7c3702-d853-41ee-831b-88836b7fea2e"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "ade4ac2160bff920d4d00a0acc2289b3e3cf8de3a70e06ecd399e7cb5a0bb356",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Integration test 'dubbo-samples-test-11137' timed out after 602 seconds because Docker containers (zookeeper, nacos, etc.) failed to start. Repeated 'Error response from daemon: invalid filter reference' and HTTP 500 errors from the Docker daemon prevented container startup, causing the test harness to wait until timeout.",
+  "root_cause_category": "network_or_flaky",
+  "root_cause": "The Docker daemon on the CI runner returned repeated 'invalid filter reference' errors and HTTP 500 Internal Server Error responses, preventing the required test containers (zookeeper, nacos) from starting. This caused the test harness to wait until the 602-second timeout expired, resulting in a TEST FAILURE for dubbo-samples-test-11137.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/docker-compose.yml",
+    "/home/runner/work/dubbo/dubbo/test/jobs/testjob_3-result-java21.txt"
+  ],
+  "relevant_tests": [
+    "[2/23] [dubbo-samples-test-11137:1/1]"
+  ],
+  "evidence": [
+    {
+      "quote": "wait for container is timeout: 602 s",
+      "reason": "Confirms the test harness waited the full timeout period for containers that never became available"
+    },
+    {
+      "quote": "Error response from daemon: invalid filter 'reference'",
+      "reason": "Repeated Docker daemon errors indicate the Docker CLI/daemon is incompatible with the filter syntax used, preventing container management operations"
+    },
+    {
+      "quote": "Error response from daemon: No such container: dubbo-samples-test-11137--zookeeper-1",
+      "reason": "Confirms the required zookeeper container was never created/started, directly causing the timeout"
+    },
+    {
+      "quote": "zookeeper Error received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "HTTP 500 from Docker daemon during container health check indicates daemon-level failure preventing container startup"
+    },
+    {
+      "quote": "[2/23] [dubbo-samples-test-11137:1/1] TEST FAILURE: Run tests timeout, version: -Ddubbo.version=3.3.7-SNAPSHOT -Dspring.version=5.3.24 -Djava.version=21",
+      "reason": "Explicit test failure message confirming the test timed out"
+    },
+    {
+      "quote": "Total: 23, Success: 18, Failures: 1, Ignored: 4",
+      "reason": "Final test summary showing exactly 1 failure out of 23 tests"
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the CI step failed with a non-zero exit code"
+    }
+  ],
+  "suggested_fix": "Investigate Docker daemon compatibility on the ubuntu-22.04 runner — the 'invalid filter reference' error suggests a Docker version mismatch or daemon configuration issue. Update the Docker version on the runner or fix the filter syntax used in the test scripts. Also check if the HTTP 500 errors are transient (runner infrastructure issue) or reproducible, and consider retrying the job or pinning to a specific Docker version.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-gpt-5-mini/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 1102
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 927
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 18009.526,
+    "cache_key": "4e335d19abb9695dde7855365991dca4f20feac4f9afa9597a620697131cbfb0",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 4697,
+        "output_tokens": 1017,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard",
+        "cost": 0.029346,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.029346,
+          "upstream_inference_prompt_cost": 0.014091,
+          "upstream_inference_completions_cost": 0.015255
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 1,
+    "tool_call_count": 0,
+    "tool_calls": [],
+    "total_input_tokens_consumed": 4697,
+    "total_output_tokens_consumed": 1017,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 1
+  }
+}

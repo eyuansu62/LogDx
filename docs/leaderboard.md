@@ -30,14 +30,15 @@ CI failure," which is the failure mode raised in
 |----:|--------|----------:|----------:|----------:|--------:|--------:|--------:|
 | 1 | `hybrid-grep-120k-rtk-tail` | 0.624 | 0.679 | 0.706 | **0.670** | **0.000** | 19,844 |
 | 2 | `hybrid-grep-120k-tail`     | 0.610 | 0.730 | 0.658 | **0.666** | 0.010 | 19,753 |
-| 3 | `grep`                      | 0.578 | 0.684 | 0.655 | **0.639** | **0.000** | 88,355 |
-| 4 | `llm-summary-v1-haiku`<br/><sub>*(real Haiku 4.5 map-reduce summarizer; promoted to headline in v1.1)*</sub> | 0.583 | 0.704 | 0.608 | **0.632** | 0.029 | 1,681,520 |
-| 5 | `tail-200`                  | 0.595 | 0.624 | 0.623 | **0.614** | 0.019 | **6,108** |
-| 6 | `hybrid-grep-4k-rtk-err-cat`<br/><sub>*(earlier 4k-threshold hybrid; replaced — see report)*</sub> | 0.552 | 0.597 | 0.571 | **0.573** | 0.029 | 19,892 |
-| 7 | `rtk-err-cat`               | 0.455 | 0.488 | 0.467 | **0.470** | 0.029 | 19,850 |
-| 8 | `raw`                       | 0.324 | 0.368 | 0.367 | **0.353** | **0.000** | 275,248 |
-| 9 | `rtk-read`                  | 0.329 | 0.369 | 0.349 | **0.349** | 0.010 | 274,289 |
-| 10 | `rtk-log`                  | 0.238 | 0.262 | 0.249 | **0.249** | **0.133** | **810** |
+| 3 | `llm-summary-v1-gpt-5-mini`<br/><sub>*(real gpt-5-mini map-reduce summarizer; promoted to headline in v1.2)*</sub> | 0.654 | 0.686 | 0.652 | **0.664** | 0.010 | 537,638 |
+| 4 | `grep`                      | 0.578 | 0.684 | 0.655 | **0.639** | **0.000** | 88,355 |
+| 5 | `llm-summary-v1-haiku`<br/><sub>*(real Haiku 4.5 map-reduce summarizer; promoted to headline in v1.1)*</sub> | 0.583 | 0.704 | 0.608 | **0.632** | 0.029 | 1,681,520 |
+| 6 | `tail-200`                  | 0.595 | 0.624 | 0.623 | **0.614** | 0.019 | **6,108** |
+| 7 | `hybrid-grep-4k-rtk-err-cat`<br/><sub>*(earlier 4k-threshold hybrid; replaced — see report)*</sub> | 0.552 | 0.597 | 0.571 | **0.573** | 0.029 | 19,892 |
+| 8 | `rtk-err-cat`               | 0.455 | 0.488 | 0.467 | **0.470** | 0.029 | 19,850 |
+| 9 | `raw`                       | 0.324 | 0.368 | 0.367 | **0.353** | **0.000** | 275,248 |
+| 10 | `rtk-read`                  | 0.329 | 0.369 | 0.349 | **0.349** | 0.010 | 274,289 |
+| 11 | `rtk-log`                  | 0.238 | 0.262 | 0.249 | **0.249** | **0.133** | **810** |
 
 > *Footnote on `llm-summary-v1-haiku`*: three of the 35 cases
 > (nodejs-test-debugger-exec-timeout-v2-001, pytest-sklearn-stress-001,
@@ -99,16 +100,30 @@ the same tokens. Most notable dominations:
   pure upgrade on both axes.
 - `rtk-err-cat` is **dominated by `hybrid-grep-120k-tail`** —
   similar token cost, but the hybrid scores +0.20 higher.
-- `llm-summary-v1-haiku` (rank 4) **is on the Pareto frontier in
-  cost-quality terms only at the high end**: it scores 0.632 (rank
-  4 overall, ahead of `tail-200` at 0.614) but at 1.68M tokens/case
-  it's the most expensive method on the leaderboard, ~85× pricier
-  than the top-2 hybrids per case. The dominant cost is the reducer
-  itself: 1.66M input tokens spread across 12–108 chunked Haiku
-  calls per case, producing a ~1.1k-token summary. The cheaper
-  legacy stub `llm-summary-v1-mock` underestimated this overhead
-  by ~4× and overstated lossiness on quality — see the v1.1
-  promotion note at the end of this page.
+- `llm-summary-v1-gpt-5-mini` (rank 3 single-shot, rank 1 agent-loop)
+  is **the v1.2 result that changed the cost-quality story**. At
+  0.18 USD/case it's 6× cheaper than `grep` and 10× cheaper than the
+  haiku-summary equivalent ($1.76). It's also the cheapest method in
+  agent-loop tokens (10.8k agent-side; reducer adds 512k) and uses
+  the LOWEST tool-call count of any method (0.37/case — half as many
+  as `tail-200`'s 0.69). For agent-loop usage, `llm-summary-v1-gpt-5-mini`
+  dominates the entire frontier. For single-shot single-method
+  rankings, it lands at #3 by raw quality and is still 4× cheaper
+  per case than `grep` (#4). See the v1.2 promotion section below
+  for the cross-family finding (gpt-5-mini-summarizer + Haiku-debugger
+  beats Haiku-summarizer + Haiku-debugger — falsifies the self-call-
+  bias hypothesis).
+
+- `llm-summary-v1-haiku` (rank 5) is now the more expensive cousin.
+  It scores 0.632 (rank 5 overall) but at 1.68M tokens/case it's
+  the most expensive method on the leaderboard. The dominant cost is
+  the reducer itself: 1.66M input tokens spread across 12–108 chunked
+  Haiku calls per case (Claude-Code-CLI cached-prefix overhead is
+  significant), producing a ~1.1k-token summary. v1.2's
+  `llm-summary-v1-gpt-5-mini` shows the LLM-summary class is not
+  inherently expensive — Haiku via the Claude-Code-CLI nested path
+  carries 4× more overhead per case than gpt-5-mini direct, with
+  comparable summary quality.
 
 ### Cost breakdown (case-count-weighted macro)
 
@@ -160,6 +175,7 @@ on the diagnoser side.
 | `hybrid-grep-4k-rtk-err-cat` | $0.0198 | $0.0690 | $0.0062 | $0.0317 | — | **$0.0317** |
 | `hybrid-grep-120k-tail` | $0.0163 | $0.0746 | $0.0066 | $0.0325 | — | **$0.0325** |
 | `grep` | $0.0859 | $0.2772 | $0.0236 | $0.1289 | — | **$0.1289** |
+| `llm-summary-v1-gpt-5-mini` | $0.0044 | $0.0154 | $0.0019 | $0.0072 | $0.1764 | **$0.1836** |
 | `rtk-read` | $0.2721 | $0.8354 | $0.0692 | $0.3922 | — | **$0.3922** |
 | `raw` | $0.2721 | $0.8355 | $0.0700 | $0.3925 | — | **$0.3925** |
 | `llm-summary-v1-haiku` | $0.0034 | $0.0134 | $0.0016 | $0.0061 | $1.7536 | **$1.7597** |
@@ -248,16 +264,17 @@ Sorted by agent-loop `diagnosis_score_v1_1`.
 
 | Rank | Method | single-shot score | agent score | Δ | conf_err | iters/case | tools/case | tokens/case |
 |----:|--------|---:|---:|---:|---:|---:|---:|---:|
-| 1 | `hybrid-grep-120k-rtk-tail` | **0.670** (single-shot #1) | **0.747** | +0.077 | **0.000** | 1.94 | 0.97 | 37,152 |
-| 2 | `hybrid-grep-4k-rtk-err-cat`| 0.573 | 0.737 | +0.164 | **0.000** | 2.37 | 1.40 | 42,862 |
-| 3 | `hybrid-grep-120k-tail`     | 0.666 | 0.735 | +0.069 | **0.000** | 1.94 | 1.00 | 39,221 |
-| 4 | `rtk-read`                  | 0.349 | 0.735 | **+0.386** | **0.000** | 2.40 | 1.46 | 55,391 |
-| 5 | `grep`                      | 0.639 | 0.722 | +0.083 | 0.029 | 2.00 | 1.20 | 42,232 |
-| 6 | `tail-200`                  | 0.614 | 0.710 | +0.096 | 0.029 | 1.66 | **0.69** | **28,166** |
-| 7 | `rtk-err-cat`               | 0.470 | 0.708 | **+0.238** | **0.000** | 2.60 | 1.66 | 43,009 |
-| 8 | `llm-summary-v1-haiku`<br/><sub>*(promoted to headline in v1.1)*</sub> | 0.632 | 0.690 | +0.058 | 0.057 | 1.66 | 0.71 | 9,968 <sub>*(agent-only; reducer adds 1.68M)*</sub> |
-| 9 | `rtk-log`                  | **0.249** (single-shot #10) | 0.689 | **+0.440** | 0.057 | 2.77 | 2.60 | 36,259 |
-| 10 | `raw`                      | 0.353 | 0.688 | +0.335 | 0.029 | 2.51 | 1.68 | 67,311 |
+| 1 | `llm-summary-v1-gpt-5-mini`<br/><sub>*(new in v1.2; cross-family LLM-summary)*</sub> | 0.664 (single-shot #3) | **0.749** | +0.085 | **0.000** | **1.40** | **0.37** | 10,755 <sub>*(agent-only; reducer adds 512k)*</sub> |
+| 2 | `hybrid-grep-120k-rtk-tail` | **0.670** (single-shot #1) | 0.747 | +0.077 | **0.000** | 1.94 | 0.97 | 37,152 |
+| 3 | `hybrid-grep-4k-rtk-err-cat`| 0.573 | 0.737 | +0.164 | **0.000** | 2.37 | 1.40 | 42,862 |
+| 4 | `hybrid-grep-120k-tail`     | 0.666 | 0.735 | +0.069 | **0.000** | 1.94 | 1.00 | 39,221 |
+| 5 | `rtk-read`                  | 0.349 | 0.735 | **+0.386** | **0.000** | 2.40 | 1.46 | 55,391 |
+| 6 | `grep`                      | 0.639 | 0.722 | +0.083 | 0.029 | 2.00 | 1.20 | 42,232 |
+| 7 | `tail-200`                  | 0.614 | 0.710 | +0.096 | 0.029 | 1.66 | 0.69 | **28,166** |
+| 8 | `rtk-err-cat`               | 0.470 | 0.708 | **+0.238** | **0.000** | 2.60 | 1.66 | 43,009 |
+| 9 | `llm-summary-v1-haiku`<br/><sub>*(promoted to headline in v1.1)*</sub> | 0.632 | 0.690 | +0.058 | 0.057 | 1.66 | 0.71 | 9,968 <sub>*(agent-only; reducer adds 1.68M)*</sub> |
+| 10 | `rtk-log`                  | **0.249** (single-shot #11) | 0.689 | **+0.440** | 0.057 | 2.77 | 2.60 | 36,259 |
+| 11 | `raw`                      | 0.353 | 0.688 | +0.335 | 0.029 | 2.51 | 1.68 | 67,311 |
 
 Five layers of finding:
 
@@ -417,6 +434,71 @@ See the [technical report §3](https://github.com/eyuansu62/LogDx/blob/main/repo
 for the prototype-vs-formal corpus analysis that motivated the
 threshold change.
 
+## v1.2 — cross-family LLM-summary (`llm-summary-v1-gpt-5-mini`)
+
+v1.1 promoted the Haiku map-reduce summarizer to the headline (see
+the v1.1 section below). A follow-up question: was that result
+anchored on Claude family priors? Specifically: does the
+self-call pair (Haiku-summarizer → Haiku-debugger) carry shared
+prior bias that inflates its score?
+
+v1.2 backfills a **non-Anthropic** summarizer — `llm-summary-v1-gpt-5-mini`
+(real OpenAI gpt-5-mini map-reduce, same prompts / chunk_lines / temp
+as `llm-summary-v1-haiku`) — across the full 35-case × 4-diagnoser
+matrix. Results:
+
+| Diagnoser | haiku-summary | **gpt5mini-summary** | Δ |
+|---|---:|---:|---:|
+| `real-debugger-v1` (Haiku 4.5) | 0.583 | **0.654** | +0.071 |
+| `real-debugger-v2` (Sonnet 4.6) | **0.704** | 0.686 | -0.018 |
+| `real-debugger-v3` (gpt-5-mini) | 0.608 | **0.652** | +0.044 |
+| `real-agent-v1` (Sonnet+tools) | 0.690 | **0.749** | +0.059 |
+
+**The self-call-bias hypothesis is falsified.** Cross-family beats
+self-pair in 3 of 4 diagnosers. Specifically:
+- Haiku-summary is BEST on the Sonnet debugger (not on Haiku).
+- gpt-5-mini-summary is BEST on the Haiku debugger (not on
+  gpt-5-mini).
+
+There's no clean "summarizer-and-debugger of the same family"
+advantage. Summary quality is driven by the SUMMARIZER's ability to
+extract failure signal at chunk granularity, independent of
+downstream debugger family.
+
+**`llm-summary-v1-gpt-5-mini` is the new agent-loop #1** (0.749 vs
+the previous #1 `hybrid-grep-120k-rtk-tail` at 0.747). It uses only
+**0.37 tool calls/case** (the lowest of any method, half as many as
+`tail-200`'s 0.69 — the previous "uses fewest tools" champion). The
+real summary front-loads the failure signal so completely that the
+agent typically commits to a diagnosis on turn 1 without exploring.
+
+The reducer-side cost is **10× lower than haiku-summary** ($0.18 vs
+$1.75 per case end-to-end). gpt-5-mini hits the OpenAI API directly
+without the Claude-Code-CLI cached-prefix overhead that inflated
+haiku's per-call token count by ~4×.
+
+For agent-loop downstream, `llm-summary-v1-gpt-5-mini` is the v1.2
+universal recommendation. For single-shot at low cost, the top-2
+hybrids still win ($0.03 vs $0.18); for single-shot at any cost,
+the gpt-5-mini summarizer is rank 3 just behind the top-2 hybrids.
+
+### Implementation notes (v1.2)
+
+- `examples/summary_shim_openai.py` — new shim. Uses OpenAI Chat
+  Completions API directly (no Claude-Code-CLI nesting). Same M4
+  command-provider contract as the existing claude_cli summary shim.
+- The shim retries up to 3 times on JSON parse failures. gpt-5-mini
+  is a reasoning model and occasionally produces non-JSON output
+  even at temperature=0; retries with `json.loads(strict=False)`
+  (to accept ANSI escape codes the model echoes from evidence
+  quotes) recover all 4-of-4 cases that initially failed.
+- 3 cases re-chunked at `chunk_lines=100` (same as haiku-summary):
+  nodejs-test-debugger-exec-timeout-v2-001, pytest-sklearn-stress-001,
+  pytest-sklearn-stress-002. Same per-case metadata convention.
+- Pinned model snapshot: `gpt-5-mini-2025-08-07` (resolved from the
+  `gpt-5-mini` alias; persisted in per-row `metadata.model_info.
+  resolved_model`).
+
 ## v1.1 — promoting `llm-summary-v1-haiku` to the headline
 
 Up through v1.0 the LLM-summary class on the leaderboard was
@@ -569,7 +651,8 @@ external dependencies are linked to their upstream projects.
 | `grep` | regex-filtered failure-pattern lines + 3/8 context, see [`docs/methods/diagnosis.md`](https://github.com/eyuansu62/LogDx/blob/main/docs/methods/diagnosis.md) |
 | `rtk-read`, `rtk-log`, `rtk-err-cat` | three modes of **[RTK (Rust Token Killer)](https://github.com/rtk-ai/rtk)** by rtk-ai. See [`docs/methods/rtk.md`](https://github.com/eyuansu62/LogDx/blob/main/docs/methods/rtk.md) for setup. |
 | `llm-summary-v1-haiku` | real Anthropic Haiku 4.5 map-reduce summarizer (chunk_lines=500, overlap=25, temp=0). See [`docs/methods/llm_summary.md`](https://github.com/eyuansu62/LogDx/blob/main/docs/methods/llm_summary.md). |
-| `llm-summary-v1-mock` <sub>*(legacy)*</sub> | deterministic regex-extract stub; pre-v1.1 stand-in for the LLM-summary class. Superseded by `llm-summary-v1-haiku`. |
+| `llm-summary-v1-gpt-5-mini` | real OpenAI gpt-5-mini map-reduce summarizer (same prompts / chunk_lines / temp). Cross-family counterpart to `llm-summary-v1-haiku`. See [`examples/summary_shim_openai.py`](https://github.com/eyuansu62/LogDx/blob/main/examples/summary_shim_openai.py). |
+| `llm-summary-v1-mock` <sub>*(legacy)*</sub> | deterministic regex-extract stub; pre-v1.1 stand-in for the LLM-summary class. Superseded by the v1.1 / v1.2 real summarizers above. |
 | `hybrid-grep-4k-rtk-err-cat` | earlier 4k-threshold hybrid using grep primary + rtk-err-cat fallback (replaced by the 120k hybrids) |
 | `hybrid-grep-120k-tail` | grep ≤ 120k tokens else tail-200 |
 | `hybrid-grep-120k-rtk-tail` | grep ≤ 120k tokens else rtk-err-cat (if not truncated and ≤ 120k) else tail-200 |

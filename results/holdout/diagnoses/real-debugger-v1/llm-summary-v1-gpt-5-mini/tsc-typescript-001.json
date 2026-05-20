@@ -1,0 +1,89 @@
+{
+  "case_id": "tsc-typescript-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "A fourslash test assertion failed because the code-fix description returned by the type annotation generator does not match the test's expected description. The test expects 'Add return type \\'Foo<string, string...\\'' but received 'Add return type \\'Foo<string>\\'', indicating a mismatch in generic parameter handling.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The test `codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts` calls `verifyCodeFix()` and the assertion at `src/harness/fourslashImpl.ts:3435:20` fails because the actual code-fix suggestion differs from the expected one: actual is 'Add return type \\'Foo<string>\\'' but expected is 'Add return type \\'Foo<string, string[...]\\''.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts",
+    "src/harness/fourslashImpl.ts",
+    "src/harness/fourslashInterfaceImpl.ts"
+  ],
+  "relevant_tests": [
+    "fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts runs correctly"
+  ],
+  "evidence": [
+    {
+      "quote": "AssertionError: expected 'Add return type \\'Foo<string>\\'' to equal 'Add return type \\'Foo<string, string[…'",
+      "reason": "Explicit assertion error showing the mismatch between actual and expected code-fix descriptions."
+    },
+    {
+      "quote": "at _TestState.verifyCodeFix (src/harness/fourslashImpl.ts:3435:20)",
+      "reason": "Identifies the test harness location where the assertion is failing."
+    },
+    {
+      "quote": "1 failing fourslash tests tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts",
+      "reason": "Confirms which test is failing."
+    }
+  ],
+  "suggested_fix": "Investigate whether the code-fix generator is incorrectly simplifying generic parameters (producing Foo<string> instead of Foo<string, string>), or update the test expectation if the simplified output is now the intended behavior.",
+  "input": {
+    "context_path": "results/holdout/llm-summary-v1-gpt-5-mini/tsc-typescript-001.txt",
+    "context_tokens_estimate": 892
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 667
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 20624.154,
+    "cache_key": "c3daf45b8264feaac56e809cae3c7460a813d6ff76ecf1982bd011db0a8465ee",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "haiku",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 9,
+        "cache_creation_input_tokens": 4005,
+        "cache_read_input_tokens": 63202,
+        "output_tokens": 1389,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 4005,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 9,
+            "output_tokens": 1389,
+            "cache_read_input_tokens": 63202,
+            "cache_creation_input_tokens": 4005,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 4005
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "d2334992-1ae5-4630-8e6d-5d823f50bdd6"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "ade4ac2160bff920d4d00a0acc2289b3e3cf8de3a70e06ecd399e7cb5a0bb356",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "case_id": "cleanup-tsc-stress-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Cleanup artifacts' CI job failed because the GitHub CLI received an HTTP 403 error when attempting to list and delete workflow artifacts via the GitHub API. The token used by the 'gh' integration lacks sufficient permissions to access the artifacts endpoint for the repository.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The 'gh api' command received 'Resource not accessible by integration (HTTP 403)' when calling '/repos/microsoft/TypeScript/actions/runs/24823635328/artifacts', indicating the token used by the gh CLI does not have the required permissions to list or delete Actions artifacts.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "artifact_ids.txt"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "This is the direct error message indicating an authorization failure when the gh CLI attempted to call the GitHub API."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the step exited non-zero, causing the job to fail, as a direct consequence of the 403 error."
+    },
+    {
+      "quote": "/repos/microsoft/TypeScript/actions/runs/24823635328/artifacts",
+      "reason": "Identifies the specific GitHub API endpoint that returned the 403, which is the artifacts listing endpoint requiring Actions read/write permissions."
+    },
+    {
+      "quote": "-X DELETE \\ /repos/microsoft/TypeScript/actions/artifacts/\"$artifact_id\"",
+      "reason": "Shows the DELETE operation being attempted on artifacts, which requires elevated token permissions (actions:write or equivalent) that the integration token does not have."
+    }
+  ],
+  "suggested_fix": "Grant the workflow job's token the 'actions: write' permission by adding a permissions block to the workflow job (e.g., 'permissions: actions: write') so the GITHUB_TOKEN has sufficient scope to list and delete artifacts via the GitHub API.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-gpt-5-mini/cleanup-tsc-stress-001.txt",
+    "context_tokens_estimate": 681
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 656
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 20311.119,
+    "cache_key": "3a8d2ee6c532715d5510bcf0cd7156474fc9a5488c5285fd09e90a6ddc35ecea",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 5297,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 510,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 5297,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 510,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 5297,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 5297
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "1b784443-026b-4d66-8eb7-e8d94bf3ac19"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

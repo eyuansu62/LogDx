@@ -1,0 +1,118 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job crashed with a fatal segmentation fault during pytest execution of `test_datetime_nat_argsort_stability`, inside numpy C-extension code (`argsort` → `_wrapfunc`). The build environment was missing critical BLAS libraries (openblas, mkl_rt) and various headers/math functions, suggesting the numpy C extensions were built in a degraded or incomplete configuration, leading to runtime memory corruption or undefined behavior.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "A segmentation fault occurred in numpy's C-extension argsort implementation during the test `test_datetime_nat_argsort_stability`, likely caused by an incomplete or degraded build of native extensions due to missing BLAS libraries and missing standard math/header availability during the build.",
+  "confidence": 0.72,
+  "relevant_files": [
+    "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py",
+    "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py",
+    "/home/runner/work/numpy/numpy/build/meson-private/tmpati5_57k/testfile.c",
+    "/home/runner/work/numpy/numpy/build/meson-private/tmpktaptscn/testfile.c",
+    "/home/runner/work/numpy/numpy/build/meson-private/tmp_plgfkr4/testfile.c",
+    "/home/runner/work/numpy/numpy/build/meson-private/tmpmfkk_fp3/testfile.c",
+    "/home/runner/work/numpy/numpy/build/meson-private/tmpqy8_w1nz/testfile.c",
+    "/home/runner/work/numpy/numpy/build/meson-private/tmpasac2xtx/testfile.c"
+  ],
+  "relevant_tests": [
+    "test_datetime_nat_argsort_stability"
+  ],
+  "evidence": [
+    {
+      "quote": "Fatal Python error: Segmentation fault",
+      "reason": "Confirms the test runner crashed with a native SIGSEGV, not a Python-level assertion failure."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
+      "reason": "Identifies the specific test being executed at the time of the segfault."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 54 in _wrapfunc",
+      "reason": "Shows the crash occurred deep inside numpy's C-extension dispatch path, not in pure Python test logic."
+    },
+    {
+      "quote": "/usr/bin/ld: cannot find -lmkl_rt: No such file or directory",
+      "reason": "Indicates MKL BLAS library was absent during the build, which may have caused fallback codepaths or unresolved symbols in compiled extensions."
+    },
+    {
+      "quote": "/usr/bin/ld: cannot find -lopenblas: No such file or directory",
+      "reason": "Confirms OpenBLAS was also missing, meaning no BLAS backend was successfully linked, potentially leaving numpy with an incomplete or broken numeric backend."
+    },
+    {
+      "quote": "Run-time dependency scipy-openblas found: NO (tried pkgconfig)",
+      "reason": "Reinforces that no suitable BLAS/LAPACK runtime dependency was found, consistent with a degraded build environment."
+    },
+    {
+      "quote": "Run-time dependency openblas found: NO (tried pkgconfig, pkgconfig, pkgconfig, system and cmake)",
+      "reason": "Further confirms all OpenBLAS discovery strategies failed, leaving numpy without a functional linear algebra backend."
+    },
+    {
+      "quote": "error: 'isfinite' undeclared (first use in this function)",
+      "reason": "Shows math macros were undeclared during build feature detection, indicating a potentially incomplete math.h or missing include flags that could affect C extension compilation."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 245.",
+      "reason": "Exit code 245 corresponds to a process killed by signal (256 - 11 = 245 for SIGSEGV on some systems), confirming the process died from a native segmentation fault."
+    }
+  ],
+  "suggested_fix": "Ensure the CI runner environment provides a working BLAS library (e.g., install `libopenblas-dev` via apt before the build step) so that numpy's C extensions are fully linked; then re-run the build and test suite to determine if `test_datetime_nat_argsort_stability` still segfaults with a complete build.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-gpt-5-mini/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 1901
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1196
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 32079.973,
+    "cache_key": "48ad7e1a2626c4d11cac4d6e4872a58c99764f3bbc14f02e9249818e763dd7c5",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 7023,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 1271,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 7023,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 1271,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 7023,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 7023
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "fb7005bb-3c9b-465e-8f0f-4c3e4e082e89"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

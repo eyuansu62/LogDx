@@ -1,0 +1,44 @@
+# CI Failure Summary
+
+## Primary Failure
+The CI run failed when a Git push command errored: `Error: Command failed with exit code 128 (Unknown system error -128): git push origin update/react/19.3.0-canary-142cfde8-20260422` — the push was rejected due to permission/HTTP 403 for the `nextjs-bot`, causing the job to exit non-zero. (Tool cited in log: `git push` / `execa`.)
+
+## Critical Evidence
+- `Error: Command failed with exit code 128 (Unknown system error -128): git push origin update/react/19.3.0-canary-142cfde8-20260422` (L000995)  
+- `  command: 'git push origin update/react/19.3.0-canary-142cfde8-20260422',` (L001000)  
+- `  exitCode: 128,` (L001001)  
+- `  exitCodeName: 'Unknown system error -128',` (L001002)  
+- `  stderr: 'remote: Permission to vercel/next.js.git denied to nextjs-bot.\n' +` (L001004)  
+- `"fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403",` (L001005)  
+- `  all: 'remote: Permission to vercel/next.js.git denied to nextjs-bot.\n' +` (L001006)  
+- `"fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403",` (L001007)  
+- ` ELIFECYCLE  Command failed with exit code 1.` (L001014)  
+- `##[error]Process completed with exit code 1.` (L001015)  
+- `An error occurred while minifying. The result will not be minified.` (L000886)  
+- `ncc: Version 0.34.0` (L000796)  
+- `ncc: Compiling file bundle.min.js into CJS` (L000797)
+
+## Failed Tests / Checks
+- `ncc: Compiling file bundle.min.js into CJS`  
+- `git push origin update/react/19.3.0-canary-142cfde8-20260422` (the push command that failed)
+
+## Relevant Files and Locations
+- `/home/runner/work/next.js/next.js/scripts/sync-react.js:645:5` (L000999)  
+- `/home/runner/work/next.js/next.js/node_modules/.pnpm/execa@2.0.3/node_modules/execa/lib/error.js:58:11` (L000996)  
+- `/home/runner/work/next.js/next.js/node_modules/.pnpm/execa@2.0.3/node_modules/execa/index.js:112:26` (L000997)  
+- Node internal stack: `node:internal/process/task_queues:95:5` (L000998)
+
+## Commands and Exit Codes
+- `git push origin update/react/19.3.0-canary-142cfde8-20260422` — `exitCode: 128` / `exitCodeName: 'Unknown system error -128'` (L000995, L001000-L001002)  
+- CLI stderr (from failed push): `'remote: Permission to vercel/next.js.git denied to nextjs-bot.\n'` and `"fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403"` (L001004-L001007)  
+- Lifecycle failure reported: ` ELIFECYCLE  Command failed with exit code 1.` (L001014)  
+- GitHub Actions final status: `##[error]Process completed with exit code 1.` (L001015)  
+- ncc step emitted: `An error occurred while minifying. The result will not be minified.` (L000886)
+
+## Possible Root Cause
+The push was rejected due to permission issues for the `nextjs-bot` account when attempting to push to `vercel/next.js`, resulting in a Git HTTP 403 and an exit code 128 that terminated the workflow. Separately, `ncc` reported a minification error (non-minified output), but the log indicates the push failure is the fatal error that caused the job to fail.
+
+## Uncertainties / Missing Context
+- The log does not show why `nextjs-bot` lacks permission (expired/invalid token, missing write access, branch protection, or use of HTTPS vs. SSH).  
+- No full environment or auth configuration is included (secrets, PAT usage, or how the push credentials are provided).  
+- It is unclear whether the ncc minification error is non-fatal by design or contributed to the failure; no full ncc error stack or preceding logs are present.

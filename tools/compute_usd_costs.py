@@ -44,11 +44,11 @@ def load_pricing(path: pathlib.Path) -> dict:
     return json.loads(path.read_text())
 
 
-def reducer_haiku_per_case(pricing: dict) -> tuple[float, int]:
-    p = pricing["models"]["claude-haiku-4-5"]
+def reducer_per_case(pricing: dict, method: str, model_key: str) -> tuple[float, int]:
+    p = pricing["models"][model_key]
     total_in = total_out = n = 0
     for split in SPLITS:
-        fp = ROOT / f"results/{split}/llm-summary-v1-haiku.jsonl"
+        fp = ROOT / f"results/{split}/{method}.jsonl"
         if not fp.exists():
             continue
         for line in fp.read_text().splitlines():
@@ -62,6 +62,12 @@ def reducer_haiku_per_case(pricing: dict) -> tuple[float, int]:
     cost = (total_in * p["input_per_million_usd"]
             + total_out * p["output_per_million_usd"]) / 1_000_000
     return cost / n, n
+
+
+REDUCER_MODELS = {
+    "llm-summary-v1-haiku": "claude-haiku-4-5",
+    "llm-summary-v1-gpt-5-mini": "gpt-5-mini-2025-08-07",
+}
 
 
 def diagnoser_per_method_per_family(pricing: dict) -> dict:
@@ -98,8 +104,12 @@ def main() -> int:
     print(f"# Source note: {pricing['source_note'][:120]}…")
     print()
 
-    reducer, n = reducer_haiku_per_case(pricing)
-    print(f"# Reducer cost (haiku-summary): ${reducer:.4f}/case over {n} cases")
+    reducer_costs: dict[str, float] = {}
+    for method, model_key in REDUCER_MODELS.items():
+        cost, n = reducer_per_case(pricing, method, model_key)
+        if n:
+            reducer_costs[method] = cost
+            print(f"# Reducer cost ({method}): ${cost:.4f}/case over {n} cases ({model_key})")
     print()
 
     fam_costs = diagnoser_per_method_per_family(pricing)
@@ -112,7 +122,7 @@ def main() -> int:
         s = fam_costs.get((m, "claude-sonnet-4-6"), 0)
         g = fam_costs.get((m, "gpt-5-mini-2025-08-07"), 0)
         avg = (h + s + g) / 3
-        red = reducer if m == "llm-summary-v1-haiku" else 0
+        red = reducer_costs.get(m, 0)
         total = avg + red
         red_s = f"${red:.4f}" if red else "—"
         print(f"| `{m}` | ${h:.4f} | ${s:.4f} | ${g:.4f} | ${avg:.4f} | {red_s} | **${total:.4f}** |")

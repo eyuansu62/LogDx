@@ -1,0 +1,90 @@
+{
+  "case_id": "cleanup-k8s-stress-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Cleanup artifacts' job failed because the GitHub CLI (`gh api`) received an HTTP 403 'Resource not accessible by integration' error when attempting to delete Actions artifacts for run ID 23485708914. The token used (GITHUB_TOKEN or GH_TOKEN) does not have the required permissions to delete artifacts in the kubernetes/kubernetes repository.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GitHub token used by the workflow lacks permission to delete repository Actions artifacts. The `gh api -X DELETE /repos/kubernetes/kubernetes/actions/artifacts/<id>` call returned HTTP 403 'Resource not accessible by integration', indicating the token (GITHUB_TOKEN or GH_TOKEN) does not have the `actions:write` scope or the GitHub App/token is restricted by repository or organization policy.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "/repos/kubernetes/kubernetes/actions/runs/23485708914/artifacts",
+    "/repos/kubernetes/kubernetes/actions/artifacts/$artifact_id"
+  ],
+  "relevant_tests": [
+    "Run gh api (artifact list)",
+    "Run echo \"Deleting artifacts for run ID: 23485708914\""
+  ],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "This is the direct error returned by the GitHub API when the token lacks permission to perform the DELETE operation on artifacts."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the job step failed due to the 403 error from the gh CLI."
+    },
+    {
+      "quote": "gh api \\ -X DELETE \\ -H \"Accept: application/vnd.github+json\" \\ /repos/kubernetes/kubernetes/actions/artifacts/\"$artifact_id\"",
+      "reason": "Shows the exact API call that triggered the 403, targeting artifact deletion in the kubernetes/kubernetes repository."
+    },
+    {
+      "quote": "GH_TOKEN: ***",
+      "reason": "Confirms a token was provided but its scopes/permissions are masked, consistent with a token that lacks the required actions:write permission."
+    }
+  ],
+  "suggested_fix": "Grant the workflow token the `actions: write` permission by adding `permissions: actions: write` to the workflow or job definition in the YAML file. If using a PAT or GitHub App token via GH_TOKEN, ensure it has the `repo` scope or `actions:write` permission for the kubernetes/kubernetes repository.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-gpt-5-mini/cleanup-k8s-stress-001.txt",
+    "context_tokens_estimate": 752
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 767
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 14839.054,
+    "cache_key": "a33c1363d36a5d2f1d4ffeb6884e0c9ce0b28eab35e73a469e0def3b8e782b5a",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 4280,
+        "output_tokens": 741,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.023955,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.023955,
+          "upstream_inference_prompt_cost": 0.01284,
+          "upstream_inference_completions_cost": 0.011115
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 1,
+    "tool_call_count": 0,
+    "tool_calls": [],
+    "total_input_tokens_consumed": 4280,
+    "total_output_tokens_consumed": 741,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 1
+  }
+}

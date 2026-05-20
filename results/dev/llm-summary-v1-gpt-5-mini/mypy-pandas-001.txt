@@ -1,0 +1,66 @@
+# CI Failure Summary
+
+## Primary Failure
+pre-commit run failed: type-checking hooks `pyright` and `mypy` reported multiple type/attribute/export errors against `pyarrow`-related code, causing the job to exit non‑zero. Evidence shows both `pyright` and `mypy` checks failing in the pre-commit run. (Tool names as in the log: `pre-commit run`, `pyright`, `mypy`.)
+
+## Critical Evidence
+- `##[group]Run pre-commit run --show-diff-on-failure --color=always --verbose --hook-stage manual --all-files` (L004002)  
+- `pyright..................................................................Failed` (L004049)  
+- `- exit code: 1` (L004052)  
+- `/home/runner/work/pandas/pandas/pandas/core/arrays/arrow/accessors.py:  /home/runner/work/pandas/pandas/pandas/core/arrays/arrow/accessors.py:[33m319[39m:[33m14[39m - [31merror[39m: "Expression" is not exported from module "pyarrow.compute"[90m (reportPrivateImportUsage)` (L004055)  
+- `/home/runner/work/pandas/pandas/pandas/io/orc.py:[33m44[39m:[33m28[39m - [31merror[39m: "FileSystem" is not exported from module "pyarrow.fs"[90m (reportPrivateImportUsage)` (L004059)  
+- `4 errors, 0 warnings, 0 informations` (L004060)  
+- `pyright reportGeneralTypeIssues..........................................Failed` (L004062)  
+- `- exit code: 1` (L004065)  
+- `/home/runner/work/pandas/pandas/pandas/compat/pyarrow.py:  /home/runner/work/pandas/pandas/pandas/compat/pyarrow.py:[33m76[39m:[33m23[39m - [31merror[39m: "is_null" is not a known attribute of module "pyarrow.compute"[90m (reportAttributeAccessIssue)` (L004067-L004068)  
+- `69 errors, 0 warnings, 0 informations` (L004143)  
+- `mypy.....................................................................[41mFailed[m` (L004145)  
+- `- exit code: 1` (L004148)  
+- `pandas/compat/pyarrow.py:69: error: Call to untyped function "fill_null" in typed context  [no-untyped-call]` (L004150)  
+- `pandas/compat/pyarrow.py:76: error: Module has no attribute "is_null"  [attr-defined]` (L004151)  
+- `pandas/core/arrays/_arrow_string_mixins.py:110: error: Module has no attribute "utf8_length"  [attr-defined]` (L004158)  
+- `pandas/core/arrays/arrow/accessors.py:118: error: Module has no attribute "list_value_length"  [attr-defined]` (L004225)  
+- `pandas/core/arrays/datetimes.py:1368: error: Module has no attribute "month"  [attr-defined]` (L004231)  
+- `pandas/core/arrays/arrow/array.py:863: error: Module has no attribute "bit_wise_not"  [attr-defined]` (L004276)  
+- `Found 279 errors in 9 files (checked 1458 source files)` (L004429)  
+- `error: not checking stubs due to mypy build errors:` (L004436)  
+- `mypy (stubtest)..........................................................[41mFailed[m` (L004431)  
+- `##[error]Process completed with exit code 1.` (L004716)
+
+## Failed Tests / Checks
+- `pyright` (as reported by pre-commit)  
+- `pyright reportGeneralTypeIssues`  
+- `mypy`  
+- `mypy (stubtest)`  
+
+## Relevant Files and Locations
+- `/home/runner/work/pandas/pandas/pandas/core/arrays/arrow/accessors.py:319:14` (L004055)  
+- `/home/runner/work/pandas/pandas/pandas/io/orc.py:44:28` (L004059)  
+- `pandas/compat/pyarrow.py:69` (L004150)  
+- `pandas/compat/pyarrow.py:76` (L004151)  
+- `pandas/core/arrays/_arrow_string_mixins.py:110` (L004158)  
+- `pandas/core/arrays/arrow/accessors.py:118` (L004225)  
+- `pandas/core/arrays/datetimes.py:1368` (L004231)  
+- `pandas/core/arrays/arrow/array.py:863` (L004276)  
+- `pandas/core/arrays/arrow/array.py:3072` (suggested in remediation) (L004356)  
+- `pandas/io/parquet.py:239` (L004140)  
+- `pandas/io/feather_format.py:70` (L004426)  
+- `pandas/tests/reshape/test_get_dummies.py:30` (L004428)
+
+## Commands and Exit Codes
+- `##[group]Run pre-commit run --show-diff-on-failure --color=always --verbose --hook-stage manual --all-files` (L004002)  
+- `pre-commit run --show-diff-on-failure --color=always --verbose --hook-stage manual --all-files` (ANSI-coded in log) (L004003)  
+- `- exit code: 1` (pyright pre-commit hook) (L004052)  
+- `- exit code: 1` (pyright reportGeneralTypeIssues) (L004065)  
+- `- exit code: 1` (mypy) (L004148)  
+- `- exit code: 1` (mypy (stubtest)) (L004434)  
+- `##[error]Process completed with exit code 1.` (L004716)
+
+## Possible Root Cause
+Type-checking failures are concentrated on `pyarrow` symbols (e.g. `"Expression" is not exported from module "pyarrow.compute"`, `Module has no attribute "is_null"`, etc.), which suggests a mismatch between the expected `pyarrow` API/stubs and the environment used by pyright/mypy (stub/version incompatibility). The logs point to missing or changed exports/attributes in `pyarrow` as seen by the type checkers.
+
+## Uncertainties / Missing Context
+- The log does not show the installed `pyarrow` version or whether type stubs for `pyarrow` are present.  
+- pyright and mypy configuration (config files, strictness settings, or pinned stub versions) are not included in the provided output.  
+- Full pre-commit hook environment (virtualenv, constraints file, or dependency installation steps) is not present, so we cannot confirm whether runtime vs. stub API divergence or an incomplete dependency install caused these errors.  
+- The top of the CI job log (setup, pip installs) and any earlier warnings/errors are not included.

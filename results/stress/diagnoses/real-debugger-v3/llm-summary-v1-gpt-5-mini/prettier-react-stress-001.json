@@ -1,0 +1,89 @@
+{
+  "case_id": "prettier-react-stress-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "Prettier found formatting errors causing the 'yarn prettier-check' step to exit with code 1; two files are listed as needing formatting.",
+  "root_cause_category": "formatting_failure",
+  "root_cause": "Prettier detected formatting issues in the repository (specifically in the listed files), causing 'yarn prettier-check' to exit with a non-zero status.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+    "compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts"
+  ],
+  "relevant_tests": [
+    "Complete job name: Run prettier",
+    "yarn prettier-check"
+  ],
+  "evidence": [
+    {
+      "quote": "yarn prettier-check",
+      "reason": "Shows the failing command used to run Prettier checks."
+    },
+    {
+      "quote": "$ node ./scripts/prettier/index.js",
+      "reason": "Indicates the Prettier script invoked by the check step."
+    },
+    {
+      "quote": "Please run yarn prettier-all and add changes to files listed below to your commit:",
+      "reason": "Direct instruction from the Prettier check indicating files must be reformatted and committed."
+    },
+    {
+      "quote": "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+      "reason": "One of the files listed by the Prettier check as needing formatting."
+    },
+    {
+      "quote": "compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts",
+      "reason": "Another file listed by the Prettier check as needing formatting."
+    },
+    {
+      "quote": "error Command failed with exit code 1.",
+      "reason": "Shows the Prettier-check command terminated with a non-zero exit code, causing the CI job to fail."
+    }
+  ],
+  "suggested_fix": "Run the project's formatter and commit the changes (e.g., run 'yarn prettier-all'), ensure the listed files are updated, and push the commit so 'yarn prettier-check' passes.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-gpt-5-mini/prettier-react-stress-001.txt",
+    "context_tokens_estimate": 595
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 595
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 13620.611,
+    "cache_key": "4a327f38f1aa46599f5dfc39b85e7751a269ffe5502455cd24f9fba247071275",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_openai.py",
+    "model_info": {
+      "provider_name": "openai",
+      "requested_model": "gpt-5-mini",
+      "resolved_model": "gpt-5-mini-2025-08-07",
+      "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
+      "max_completion_tokens": 4096,
+      "system_fingerprint": null,
+      "usage": {
+        "prompt_tokens": 1720,
+        "completion_tokens": 799,
+        "total_tokens": 2519,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 320,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8d5f6bb1e7382f07124c3096574e449b1db3361a9edfee83a2cea21aa4e1246b",
+    "shim_sha256": "af8381394b2d18c40bf85e7ccae20e2e8e329f05c391d37a44b9df0e2d10bd1f"
+  }
+}

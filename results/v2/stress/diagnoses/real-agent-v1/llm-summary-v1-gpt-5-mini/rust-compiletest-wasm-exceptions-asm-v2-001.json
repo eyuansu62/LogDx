@@ -1,0 +1,104 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The compiletest assembly-llvm suite test for wasm_exceptions.rs failed because FileCheck could not find the expected `catch_all` and `catch` patterns in the generated WebAssembly assembly. The generated assembly contains `unreachable` at the locations where these exception-handling instructions were expected, indicating a mismatch in the wasm exception handling code generation.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "FileCheck verification failed for tests/assembly-llvm/wasm_exceptions.rs: the generated wasm assembly does not contain the expected `catch_all` (checked at line 38) and `catch` (checked at line 62) instructions. Instead, the assembly has `unreachable` at those positions, meaning the wasm exception handling backend is not emitting the expected catch blocks.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "relevant_tests": [
+    "[assembly] tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "test [assembly] tests/assembly-llvm/wasm_exceptions.rs ... FAILED",
+      "reason": "Directly identifies the failing test in the assembly-llvm suite."
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:38:12: error: CHECK: expected string not found in input",
+      "reason": "FileCheck reports that the CHECK pattern at line 38 was not found in the generated assembly."
+    },
+    {
+      "quote": "// CHECK: catch_all",
+      "reason": "The expected pattern that was not found — the test expects a `catch_all` wasm instruction."
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:62:12: error: CHECK: expected string not found in input",
+      "reason": "FileCheck reports that the CHECK pattern at line 62 was also not found in the generated assembly."
+    },
+    {
+      "quote": "// CHECK: catch",
+      "reason": "The second expected pattern that was not found — the test expects a `catch` wasm instruction."
+    },
+    {
+      "quote": "unreachable",
+      "reason": "The assembly contains `unreachable` at the locations where `catch_all` and `catch` were expected, indicating the exception handling instructions are missing."
+    },
+    {
+      "quote": "error: verification with 'FileCheck' failed",
+      "reason": "Confirms the FileCheck verification step itself failed, causing the test to be marked FAILED."
+    },
+    {
+      "quote": "test result: FAILED. 550 passed; 1 failed; 103 ignored; 0 measured; 0 filtered out; finished in 15.38s",
+      "reason": "Shows exactly 1 test failed out of 550 passed, confirming this is an isolated test failure."
+    }
+  ],
+  "suggested_fix": "Investigate recent changes to the wasm exception handling backend (wasm32-wasip1 target) or the LLVM version used in CI that may have changed how `catch` and `catch_all` blocks are emitted. Update either the test's CHECK patterns to match the new assembly output, or fix the code generation regression so that `catch`/`catch_all` instructions are properly emitted instead of `unreachable`.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-gpt-5-mini/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 1743
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 922
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 16670.281,
+    "cache_key": "f219815900c571aaeec60610271c239231856498107e0144d7795d35895f04ae",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 5618,
+        "output_tokens": 957,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard",
+        "cost": 0.031209,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.031209,
+          "upstream_inference_prompt_cost": 0.016854,
+          "upstream_inference_completions_cost": 0.014355
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 1,
+    "tool_call_count": 0,
+    "tool_calls": [],
+    "total_input_tokens_consumed": 5618,
+    "total_output_tokens_consumed": 957,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 1
+  }
+}

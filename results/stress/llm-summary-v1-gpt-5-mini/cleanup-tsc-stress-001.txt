@@ -1,0 +1,48 @@
+# CI Failure Summary
+
+## Primary Failure
+The GitHub CLI (`gh`) command in the "Cleanup artifacts" job step failed with an authorization error: `gh: Resource not accessible by integration (HTTP 403)` causing the step to exit non‑zero and the job to fail.
+
+## Critical Evidence
+- `L000081: gh: Resource not accessible by integration (HTTP 403)`
+- `L000082: ##[error]Process completed with exit code 1.`
+- `L000052: [36;1mgh api \[0m`
+- `L000054: [36;1m  /repos/microsoft/TypeScript/actions/runs/24823635328/artifacts \[0m`
+- `L000055: [36;1m  --jq '.artifacts[].id' > artifact_ids.txt[0m`
+- `L000066: [36;1m  gh api \[0m`
+- `L000067: [36;1m    --silent \[0m`
+- `L000068: [36;1m    -X DELETE \[0m`
+- `L000069: [36;1m    -H "Accept: application/vnd.github+json" \[0m`
+- `L000070: [36;1m    /repos/microsoft/TypeScript/actions/artifacts/"$artifact_id"[0m`
+- `L000071: done < artifact_ids.txt`
+- `L000063: ##[group]Run echo "Deleting artifacts for run ID: 24823635328"`
+
+## Failed Tests / Checks
+- _(none identified)_
+
+## Relevant Files and Locations
+- `artifact_ids.txt` (output target for artifact IDs)
+- Workflow step name: `Complete job name: Cleanup artifacts` (L000028)
+
+## Commands and Exit Codes
+- Commands executed (as shown in log):
+  - `L000052: [36;1mgh api \[0m`
+  - `L000054: [36;1m  /repos/microsoft/TypeScript/actions/runs/24823635328/artifacts \[0m`
+  - `L000055: [36;1m  --jq '.artifacts[].id' > artifact_ids.txt[0m`
+  - `L000066: [36;1m  gh api \[0m`
+  - `L000067: [36;1m    --silent \[0m`
+  - `L000068: [36;1m    -X DELETE \[0m`
+  - `L000069: [36;1m    -H "Accept: application/vnd.github+json" \[0m`
+  - `L000070: [36;1m    /repos/microsoft/TypeScript/actions/artifacts/"$artifact_id"[0m`
+  - `L000071: done < artifact_ids.txt`
+- Exit code / CI error:
+  - `L000082: ##[error]Process completed with exit code 1.`
+
+## Possible Root Cause
+The CI attempted to call the GitHub API via `gh api` to list and delete artifacts but received an HTTP 403 error indicating the integration (token) lacks permission to access that resource. This suggests an authentication/permission problem for the token used by the `gh` CLI (e.g., insufficient scopes or running in a context where the token cannot access repository artifacts).
+
+## Uncertainties / Missing Context
+- Which credentials/token `gh` was using (GITHUB_TOKEN, personal access token, or other) is not shown.
+- Whether this run was from a forked PR or a protected context that restricts token permissions is not present in the log.
+- Contents of `artifact_ids.txt` (whether artifact IDs were successfully retrieved) are not shown.
+- No HTTP response body or GitHub API error payload is present to give more detail on the 403 cause.

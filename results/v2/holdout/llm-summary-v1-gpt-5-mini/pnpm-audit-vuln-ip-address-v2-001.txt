@@ -1,0 +1,37 @@
+# CI Failure Summary
+
+## Primary Failure
+The CI step `##[group]Run pnpm audit` (tool: `pnpm audit`) failed because the audit found a vulnerability and the job exited non-zero: `##[error]Process completed with exit code 1.`
+
+## Critical Evidence
+- `##[group]Run pnpm audit` (L000121)  
+- `^[[36;1mpnpm audit^[[0m` (L000122)  
+- `│ moderate            │ ip-address has XSS in Address6 HTML-emitting methods   │` (L000128)  
+- `│ Package             │ ip-address                                             │` (L000130)  
+- `│ Vulnerable versions │ <=10.1.0                                               │` (L000132)  
+- `│ Patched versions    │ >=10.1.1                                               │` (L000134)  
+- `│ Paths               │ network__fetch>@pnpm/network.agent>@pnpm/network.      │` (L000136)  
+- `│                     │ proxy-agent>socks-proxy-agent>socks>ip-address         │` (L000137)  
+- `│ More info           │ https://github.com/advisories/GHSA-v2v4-37r5-5v8g      │` (L000139)  
+- `1 vulnerabilities found` (L000141)  
+- `Severity: 1 moderate` (L000142)  
+- `##[error]Process completed with exit code 1.` (L000143)
+
+## Failed Tests / Checks
+- `##[group]Run pnpm audit` (step name as logged)  
+- `^[[36;1mpnpm audit^[[0m` (command run by that step)
+
+## Relevant Files and Locations
+- _(none identified)_
+
+## Commands and Exit Codes
+- Command run: `^[[36;1mpnpm audit^[[0m` (L000122)  
+- Exit: `##[error]Process completed with exit code 1.` (L000143)
+
+## Possible Root Cause
+The `pnpm audit` step discovered a moderate vulnerability in the `ip-address` package (vulnerable <=10.1.0, patched >=10.1.1) and the CI is configured to fail the job when vulnerabilities are reported, causing a non-zero exit. It appears via the dependency chain `network__fetch>@pnpm/network.agent>@pnpm/network.proxy-agent>socks-proxy-agent>socks>ip-address`.
+
+## Uncertainties / Missing Context
+- Whether the CI is explicitly configured to treat `pnpm audit` findings as a failure (exit-on-vuln) or if another error caused the non-zero exit.  
+- The `pnpm` version and audit configuration are not shown.  
+- Full install/log output (lockfile, resolved versions) and whether `ip-address` is direct or transitive dependency beyond the shown path.

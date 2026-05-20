@@ -1,0 +1,105 @@
+{
+  "case_id": "jest-nextjs-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest failed to discover test files, exiting with 'No tests found, exiting with code 1', preventing test execution and causing the runner to fail when reading non-existent results files. A Git ownership issue ('fatal: detected dubious ownership in repository at /work') in the Docker container likely affected file visibility in the mounted volume.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "Git repository at '/work' reports 'fatal: detected dubious ownership', which prevents proper file discovery and access in the mounted Docker volume. This ownership mismatch caused Jest to fail matching test files at specified paths despite global testMatch patterns finding 1861 files.",
+  "confidence": 0.68,
+  "relevant_files": [
+    "/work",
+    "/work/run-tests.js",
+    "examples/with-jest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts",
+    "examples/with-vitest/app/utils/add.test.ts"
+  ],
+  "relevant_tests": [
+    "examples/with-jest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts",
+    "examples/with-vitest/app/utils/add.test.ts"
+  ],
+  "evidence": [
+    {
+      "quote": "fatal: detected dubious ownership in repository at '/work'",
+      "reason": "Git 2.36+ blocks operations on repositories with owner mismatch; this can prevent file access and visibility in the mounted directory"
+    },
+    {
+      "quote": "No tests found, exiting with code 1",
+      "reason": "Jest could not discover any test files at the specified paths, indicating a file visibility or access problem"
+    },
+    {
+      "quote": "WARNING  failed to get git status for dirty hash: Git error: fatal: detected dubious ownership in repository at '/work'",
+      "reason": "Confirms the ownership issue persists throughout execution and affects git operations that may control workspace state"
+    },
+    {
+      "quote": "testMatch: **/*.test.js, **/*.test.ts, **/*.test.jsx, **/*.test.tsx - 1861 matches",
+      "reason": "Global pattern matched 1861 files, but specific test paths found 0 matches, indicating localized access failure"
+    },
+    {
+      "quote": "Failed to load test output Error: ENOENT: no such file or directory, open 'examples/with-jest/app/utils/add.test.ts.results.json'",
+      "reason": "Results file does not exist because Jest never executed (test discovery failure prevents test execution and output generation)"
+    },
+    {
+      "quote": "Run docker run --rm -v $(pwd):/work",
+      "reason": "Volume mount from host to container; Git ownership mismatch can cause file access issues in mounted volumes"
+    }
+  ],
+  "suggested_fix": "Execute 'git config --global --add safe.directory /work' before running tests in the Docker container, and verify proper UID/GID mapping for volume mounts to resolve the ownership issue",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-gpt-5-mini/jest-nextjs-001.txt",
+    "context_tokens_estimate": 1504
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 847
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 41971.569,
+    "cache_key": "79edee643567831d0524955c24f47a9785726ae5bfff73f53c84d766d201ea11",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "haiku",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 9,
+        "cache_creation_input_tokens": 4764,
+        "cache_read_input_tokens": 63202,
+        "output_tokens": 4263,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 4764,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 9,
+            "output_tokens": 4263,
+            "cache_read_input_tokens": 63202,
+            "cache_creation_input_tokens": 4764,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 4764
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "8608d0f6-468f-496e-9e04-6c29dd432936"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "ade4ac2160bff920d4d00a0acc2289b3e3cf8de3a70e06ecd399e7cb5a0bb356",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

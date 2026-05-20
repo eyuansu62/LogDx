@@ -1,0 +1,50 @@
+# CI Failure Summary
+
+## Primary Failure
+The GitHub Actions step running `docker buildx bake` failed during the image build when a `wget` of the nydus release asset returned an HTTP 502, causing the build to stop with `exit code: 1`. The failing tool reported as `buildx bake` (see `##[error]buildx bake failed with:`). 
+
+## Critical Evidence
+- `#72 0.149 wget: server returned error: HTTP/1.1 502 Bad Gateway or Proxy Error` (L001855)  
+- `#72 ERROR: process "/bin/bash -c wget https://github.com/dragonflyoss/nydus/releases/download/$NYDUS_VERSION/nydus-static-$NYDUS_VERSION-$TARGETOS-$TARGETARCH.tgz" did not complete successfully: exit code: 1` (L001856)  
+- `Dockerfile:336` (L001886)  
+- `ERROR: failed to solve: process "/bin/bash -c wget https://github.com/dragonflyoss/nydus/releases/download/$NYDUS_VERSION/nydus-static-$NYDUS_VERSION-$TARGETOS-$TARGETARCH.tgz" did not complete successfully: exit code: 1` (L001894)  
+- `##[error]buildx bake failed with: ERROR: failed to solve: process "/bin/bash -c wget https://github.com/dragonflyoss/nydus/releases/download/$NYDUS_VERSION/nydus-static-$NYDUS_VERSION-$TARGETOS-$TARGETARCH.tgz" did not complete successfully: exit code: 1` (L001901)  
+- `exit code: 1` (L001901)  
+- ` 336 | >>> RUN wget https://github.com/dragonflyoss/nydus/releases/download/$NYDUS_VERSION/nydus-static-$NYDUS_VERSION-$TARGETOS-$TARGETARCH.tgz` (L001890)  
+- `#1 0.014 fatal: Not a valid object name 9a62e8d2257e5914a98a66a1ac3722f9b636cbaf^{commit}` (L000928)  
+- `#1 6.363  * branch                9a62e8d2257e5914a98a66a1ac3722f9b636cbaf -> FETCH_HEAD` (L000930)  
+- `./codecov  upload-coverage -t <redacted> --git-service github --dir ./bin/testreports --disable-file-fixes --gcov-executable gcov` (L002297)  
+- `warning - 2026-05-06 19:55:13,641 -- No gcov data found.` (L002300)  
+- `Error: No coverage reports found. Please make sure you're generating reports successfully.` (L002303)  
+- `^[[0;31m==> Failed to run upload-coverage^[[0m` (L002304)
+
+## Failed Tests / Checks
+- `##[error]buildx bake failed with: ERROR: failed to solve: process "/bin/bash -c wget https://github.com/dragonflyoss/nydus/releases/download/$NYDUS_VERSION/nydus-static-$NYDUS_VERSION-$TARGETOS-$TARGETARCH.tgz" did not complete successfully: exit code: 1` (L001901)  
+- `#72 [nydus 1/2] RUN wget https://github.com/dragonflyoss/nydus/releases/download/v2.4.0/nydus-static-v2.4.0-linux-amd64.tgz` (L001853)  
+- `#73 [integration-tests-base 21/25] COPY --link --from=docker-buildx /buildx /usr/libexec/docker/cli-plugins/docker-buildx` (L001879) — step canceled (L001880)  
+- `./codecov  upload-coverage ...` resulting in `Error: No coverage reports found.` (L002297-L002303)
+
+## Relevant Files and Locations
+- `Dockerfile:336` (L001886, L001890)  
+- Bake metadata file path: `/home/runner/work/_temp/docker-actions-toolkit-eD6zyL/bake-metadata-02ae1d4c34.json` (L001270)  
+- Git buildkit fetch context: `/var/lib/buildkit/runc-overlayfs/snapshots/snapshots/1/fs/` (L000927)  
+- buildkit repository reference: `https://github.com/moby/buildkit.git#9a62e8d2257e5914a98a66a1ac3722f9b636cbaf` (L000923, L001270)  
+- codecov upload invocation in CI: `./codecov  upload-coverage -t <redacted> --git-service github --dir ./bin/testreports --disable-file-fixes --gcov-executable gcov` (L002297)
+
+## Commands and Exit Codes
+- `/usr/bin/docker buildx bake https://github.com/moby/buildkit.git#9a62e8d2257e5914a98a66a1ac3722f9b636cbaf --set *.cache-from=type=gha,scope=frontend-integration-tests --print integration-tests` (L000923)  
+- `/usr/bin/docker buildx bake https://github.com/moby/buildkit.git#9a62e8d2257e5914a98a66a1ac3722f9b636cbaf --allow fs=* --set *.cache-from=type=gha,scope=frontend-integration-tests --metadata-file /home/runner/work/_temp/docker-actions-toolkit-eD6zyL/bake-metadata-02ae1d4c34.json integration-tests --print` (L001270)  
+- `/usr/bin/docker buildx bake https://github.com/moby/buildkit.git#9a62e8d2257e5914a98a66a1ac3722f9b636cbaf --allow fs=* --set *.cache-from=type=gha,scope=frontend-integration-tests --metadata-file /home/runner/work/_temp/docker-actions-toolkit-eD6zyL/bake-metadata-02ae1d4c34.json integration-tests` (L001310)  
+- Failing RUN in Dockerfile: `"/bin/bash -c wget https://github.com/dragonflyoss/nydus/releases/download/$NYDUS_VERSION/nydus-static-$NYDUS_VERSION-$TARGETOS-$TARGETARCH.tgz"` — exited with `exit code: 1` (L001901 / L001894 / L001856)  
+- `#72 [nydus 1/2] RUN wget https://github.com/dragonflyoss/nydus/releases/download/v2.4.0/nydus-static-v2.4.0-linux-amd64.tgz` (L001853)  
+- Codecov upload command: `./codecov  upload-coverage -t <redacted> --git-service github --dir ./bin/testreports --disable-file-fixes --gcov-executable gcov` — reported `Error: No coverage reports found.` (L002297-L002303)
+
+## Possible Root Cause
+The build failed because `wget` returned `HTTP/1.1 502 Bad Gateway` when attempting to download the nydus release asset from GitHub, which caused the Docker layer build to exit with code 1 and cancel subsequent steps. This points to a transient or persistent network/remote-host issue (release asset unavailable or proxy/GitHub outage) rather than an internal build script error.
+
+## Uncertainties / Missing Context
+- It is unknown whether the `v2.4.0` nydus release asset actually exists at that URL or whether GitHub/hosting was temporarily returning 502.  
+- Possible CI network egress restrictions, proxy configuration, or intermittent GitHub outage are not visible in the log.  
+- The earlier `fatal: Not a valid object name 9a62e8d2257e5914a98a66a1ac3722f9b636cbaf^{commit}` (L000928) is present but immediately followed by a successful fetch line (L000930); it is unclear if this affected the bake input.  
+- No retry attempts or additional wget logs (headers, retries) are present to determine if the error is transient.  
+- Full upstream logs and environment (network, proxy, protected assets) are not included; credentials or access restrictions (if any) are not shown.

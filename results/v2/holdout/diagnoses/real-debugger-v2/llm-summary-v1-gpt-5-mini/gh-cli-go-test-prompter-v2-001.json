@@ -1,0 +1,92 @@
+{
+  "case_id": "gh-cli-go-test-prompter-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The Go test suite failed because `TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query` timed out waiting for `form.Run()` to complete. The test in `huh_prompter_test.go` did not finish within the allowed time, causing the `github.com/cli/cli/v2/internal/prompter` package to fail with exit code 1.",
+  "root_cause_category": "timeout_or_oom",
+  "root_cause": "The subtest `selections_persist_after_changing_search_query` hung while waiting for `form.Run()` to return, exceeding the test timeout. The test framework reported `form.Run() did not complete in time` at `huh_prompter_test.go:478`, indicating a hang or deadlock in the multi-select search persistence UI flow.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "huh_prompter_test.go"
+  ],
+  "relevant_tests": [
+    "TestHuhPrompterMultiSelectWithSearchPersistence",
+    "TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query"
+  ],
+  "evidence": [
+    {
+      "quote": "--- FAIL: TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query (5.13s)",
+      "reason": "Identifies the exact failing subtest and shows it ran for ~5 seconds before failing, consistent with a timeout."
+    },
+    {
+      "quote": "huh_prompter_test.go:478: form.Run() did not complete in time",
+      "reason": "Explicit timeout message from the test at line 478, confirming the root cause is `form.Run()` hanging or taking too long."
+    },
+    {
+      "quote": "FAIL\tgithub.com/cli/cli/v2/internal/prompter\t8.475s",
+      "reason": "Confirms the prompter package test run failed and provides the total elapsed time, consistent with a timeout scenario."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the CI step terminated with a non-zero exit code due to the test failure."
+    }
+  ],
+  "suggested_fix": "Investigate `huh_prompter_test.go:478` to determine whether the timeout threshold for `form.Run()` is too short for the macOS CI runner, or whether there is a deadlock/hang in the multi-select search persistence logic. Consider increasing the test timeout, adding debug logging around `form.Run()`, or checking for recent changes to the prompter code that may have introduced a blocking condition.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-gpt-5-mini/gh-cli-go-test-prompter-v2-001.txt",
+    "context_tokens_estimate": 631
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 738
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 22194.685,
+    "cache_key": "9d7537d6868ce68f91da06f4e196f3ff819b3d21c27bccc630b26304633eccc9",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 4381,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 685,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 4381,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 685,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 4381,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 4381
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "355c0011-a59a-4f53-a8ed-bb044bc30109"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

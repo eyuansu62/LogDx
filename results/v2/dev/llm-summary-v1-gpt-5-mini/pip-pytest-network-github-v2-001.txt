@@ -1,0 +1,40 @@
+# CI Failure Summary
+
+## Primary Failure
+Pytest run failed with one functional test failing: `tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]`. The failure was triggered by a pip install command returning a non-zero exit code due to an OSError (HTTP 502 responses). The test assertion in `tests/lib/__init__.py` raised `AssertionError: Script returned code: 1`. (Observed from `nox`/`pytest` orchestration and final GitHub Actions exit.)
+
+## Critical Evidence
+- `^[[36m [ 99%] ^[[0m^[[31mFAILED^[[0m tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]` (lines: L006392)
+- `^[[31m^[[1m____________________ test_no_truststore_can_install[GitHub] ____________________^[[0m` (lines: L006399)
+- `^[[1m^[[31mtests/functional/test_truststore.py^[[0m:32:` (lines: L006427)
+- `^[[1m^[[31mtests/functional/test_truststore.py^[[0m:13: in pip` (lines: L006429)
+- `^[[1m^[[31mtests/lib/__init__.py^[[0m:681: AssertionError` (lines: L006532)
+- `^[[1m^[[31mE       AssertionError: Script returned code: 1^[[0m` (lines: L006520)
+- `Script result: python -m pip install https://github.com/pypa/pip-test-package/archive/refs/heads/master.zip --use-deprecated=legacy-certs` (lines: L006534)
+- `  return code: 1` (lines: L006535)
+- `ERROR: Could not install packages due to an OSError: HTTPSConnectionPool(host='github.com', port=443): Max retries exceeded with url: /pypa/pip-test-package/archive/refs/heads/master.zip (Caused by ResponseError('too many 502 error responses'))` (lines: L006537)
+- `^[[31mFAILED^[[0m tests/functional/test_truststore.py::^[[1mtest_no_truststore_can_install[GitHub]^[[0m - AssertionError: Script returned code: 1` (lines: L006649)
+- `^[[36mnox > ^[[31mCommand pytest tests/functional --verbose --numprocesses auto --showlocals --durations=15 failed with exit code 1^[[0m` (lines: L006651)
+- `##[error]Process completed with exit code 1.` (lines: L006653)
+
+## Failed Tests / Checks
+- `tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]`
+
+## Relevant Files and Locations
+- `tests/functional/test_truststore.py:32` (stack location)
+- `tests/functional/test_truststore.py:13` (stack location, in `pip`)
+- `tests/lib/__init__.py:681` (AssertionError raised)
+
+## Commands and Exit Codes
+- `Script result: python -m pip install https://github.com/pypa/pip-test-package/archive/refs/heads/master.zip --use-deprecated=legacy-certs` (lines: L006534)
+- `return code: 1` (lines: L006535)
+- `^[[36mnox > ^[[31mCommand pytest tests/functional --verbose --numprocesses auto --showlocals --durations=15 failed with exit code 1^[[0m` (lines: L006651)
+- `##[error]Process completed with exit code 1.` (lines: L006653)
+
+## Possible Root Cause
+The pip install command failed due to network/server errors (HTTP 502 responses) when attempting to download `https://github.com/pypa/pip-test-package/...`, causing pip to raise an OSError and return exit code 1; the test framework asserted the script exit code and failed. This appears to be a transient/network or upstream server issue rather than a test logic error.
+
+## Uncertainties / Missing Context
+- It is unclear whether the 502 responses are caused by transient GitHub outages, CI network egress restrictions, or a proxy/load-balancer issue in the runner environment.
+- No full pip/network logs or timestamps are present in the provided output to determine if this was intermittent or persistent.
+- No information about retry/backoff logic in the test or whether the artifact is expected to be fetched from a cached mirror.

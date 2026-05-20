@@ -1,0 +1,24 @@
+{
+  "key_parts": {
+    "case_id": "docbuild-hf-stress-001",
+    "raw_sha": "43ef1103c13423270c911f90f000e2e7dceadcd7d7c3782f771c35ec23b87205",
+    "prompt_version": "llm_summary_v1",
+    "prompt_sha": "e3739738b7136af3956f3712e7b76babd9224b6854dcc60ff16546a3fbb16702",
+    "provider": "command",
+    "method": "llm-summary-v1-gpt-5-mini",
+    "chunk_index": -1,
+    "chunk_sha": "b54b27f95ddd6ed616f28e7750b64cc53e4eed276453aae99f8c9f2cec3f6160",
+    "temperature": 0.0,
+    "max_output_chars": 12000,
+    "stage": "reduce"
+  },
+  "response": {
+    "content": "# CI Failure Summary\n\n## Primary Failure\nGitHub Actions run failed: `##[error]Process completed with exit code 1.` The failure occurred in the job identified as `Complete job name: doc_build_status_check` when a shell conditional evaluated false and the script executed `exit 1`.\n\n## Critical Evidence\n- `L000029` `Complete job name: doc_build_status_check`\n- `L000030` `##[group]Run if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\`\n- `L000031` `\u001b[36;1mif [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\\u001b[0m`\n- `L000032` `\u001b[36;1m   [[ \"skipped\" == \"success\" || \"skipped\" == \"skipped\" ]]; then\u001b[0m`\n- `L000033` `\u001b[36;1m  echo \"OK\"\u001b[0m`\n- `L000034` `\u001b[36;1melse\u001b[0m`\n- `L000035` `\u001b[36;1m  exit 1\u001b[0m`\n- `L000036` `\u001b[36;1mfi\u001b[0m`\n- `L000037` `shell: /usr/bin/bash -e {0}`\n- `L000039` `##[error]Process completed with exit code 1.`\n\n## Failed Tests / Checks\n- `Complete job name: doc_build_status_check`\n\n## Relevant Files and Locations\n- _(none identified)_\n\n## Commands and Exit Codes\n- `L000031` `\u001b[36;1mif [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\\u001b[0m`\n- `L000032` `\u001b[36;1m   [[ \"skipped\" == \"success\" || \"skipped\" == \"skipped\" ]]; then\u001b[0m`\n- `L000033` `\u001b[36;1m  echo \"OK\"\u001b[0m`\n- `L000034` `\u001b[36;1melse\u001b[0m`\n- `L000035` `\u001b[36;1m  exit 1\u001b[0m`\n- `L000036` `\u001b[36;1mfi\u001b[0m`\n- `L000037` `shell: /usr/bin/bash -e {0}`\n- `L000039` `##[error]Process completed with exit code 1.`\n\n## Possible Root Cause\nThe shell conditional comparing literal status strings (`\"failure\" == \"success\"` etc.) evaluated to false, causing the `else` branch to run `exit 1`, which made the GitHub Actions job fail. It appears the intent was to allow the job to succeed only for certain combinations of statuses, but the actual values hit the failing branch.\n\n## Uncertainties / Missing Context\n- Which workflow variables or previous job outputs produced the literal values `\"failure\"` and `\"skipped\"`.\n- The surrounding workflow file or intent for the conditional (why those exact comparisons were used).\n- Full logs of earlier steps that set the statuses or influenced the conditional evaluation.",
+    "provider": "openai",
+    "model": "gpt-5-mini-2025-08-07",
+    "usage": {
+      "input_tokens": 918,
+      "output_tokens": 1593
+    }
+  }
+}

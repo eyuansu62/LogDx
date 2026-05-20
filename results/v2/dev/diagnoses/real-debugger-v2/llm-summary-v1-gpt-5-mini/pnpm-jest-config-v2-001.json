@@ -1,0 +1,99 @@
+{
+  "case_id": "pnpm-jest-config-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "A Jest test in test/config/get.ts failed because the code returned a registry URL with a trailing slash ('https://my-org.registry.example.com/') while the test asserted an exact match without a trailing slash ('https://my-org.registry.example.com'). This caused the jest process to exit with status 1, failing the GitHub Actions CI job.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The test at test/config/get.ts:32 performs a strict equality check expecting 'https://my-org.registry.example.com' but the actual value returned was 'https://my-org.registry.example.com/' (with a trailing slash), causing the assertion to fail.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "test/config/get.ts"
+  ],
+  "relevant_tests": [
+    "pnpm config get reads npm options but ignores other settings from .npmrc"
+  ],
+  "evidence": [
+    {
+      "quote": "Expected: \"https://my-org.registry.example.com\"",
+      "reason": "Shows the exact value the test expected — no trailing slash"
+    },
+    {
+      "quote": "Received: \"https://my-org.registry.example.com/\"",
+      "reason": "Shows the actual value returned by the code under test — includes a trailing slash, causing the mismatch"
+    },
+    {
+      "quote": "32 |     expect(stdout.toString().trim()).toBe('https://my-org.registry.example.com')",
+      "reason": "Identifies the exact line and assertion in test/config/get.ts that failed — a strict toBe equality check"
+    },
+    {
+      "quote": "at Object.<anonymous> (test/config/get.ts:32:38)",
+      "reason": "Confirms the failure location is test/config/get.ts at line 32, column 38"
+    },
+    {
+      "quote": "FAIL test/config/get.ts (17.807 s)",
+      "reason": "Confirms this specific test file failed"
+    },
+    {
+      "quote": "Exit status 1",
+      "reason": "Confirms the jest process exited non-zero due to the test failure"
+    }
+  ],
+  "suggested_fix": "Either update the assertion in test/config/get.ts:32 to accept a trailing slash (e.g., use .toBe('https://my-org.registry.example.com/') or strip trailing slashes before comparison), or fix the code under test to normalize registry URLs by trimming trailing slashes before returning them — depending on which behavior is intended.",
+  "input": {
+    "context_path": "results/v2/dev/llm-summary-v1-gpt-5-mini/pnpm-jest-config-v2-001.txt",
+    "context_tokens_estimate": 1137
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 704
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 28285.545,
+    "cache_key": "700811dd2299080eb2b6c1e71a697268badd735181ebf8e003bf7718ad54cb33",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 5032,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 659,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 5032,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 659,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 5032,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 5032
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "54e06277-81b2-4f99-8c18-1024dee0501a"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

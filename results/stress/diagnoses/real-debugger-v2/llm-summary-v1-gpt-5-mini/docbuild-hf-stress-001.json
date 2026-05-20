@@ -1,0 +1,89 @@
+{
+  "case_id": "docbuild-hf-stress-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The doc_build_status_check job failed because a shell conditional evaluating upstream job statuses hit the else branch and executed exit 1. The first condition `\"failure\" == \"success\" || \"failure\" == \"skipped\"` evaluated to false, meaning a required upstream job had failed rather than succeeded or been skipped. This caused the status-gate script to intentionally exit with code 1.",
+  "root_cause_category": "github_actions_config",
+  "root_cause": "An upstream job in the workflow reported a status of 'failure', causing the gate conditional `if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && [[ \"skipped\" == \"success\" || \"skipped\" == \"skipped\" ]]` to evaluate false, which triggered `exit 1` in the else branch of doc_build_status_check.",
+  "confidence": 0.85,
+  "relevant_files": [],
+  "relevant_tests": [
+    "doc_build_status_check"
+  ],
+  "evidence": [
+    {
+      "quote": "if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\",
+      "reason": "The literal string 'failure' is being compared against 'success' and 'skipped' — both comparisons are false, so the entire condition fails and the else branch runs."
+    },
+    {
+      "quote": "exit 1",
+      "reason": "The else branch unconditionally exits with code 1, which is the direct cause of the job failure."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the job terminated with a non-zero exit code, consistent with the else branch executing exit 1."
+    },
+    {
+      "quote": "Complete job name: doc_build_status_check",
+      "reason": "Identifies the specific job that failed, which is a status-gate check that verifies upstream job results."
+    }
+  ],
+  "suggested_fix": "Investigate which upstream job produced the 'failure' status that was injected into the conditional. Fix or re-run that upstream job so its result is 'success', or if the failure is expected/acceptable, update the workflow conditional to also allow 'failure' as a passing state for that dependency.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-gpt-5-mini/docbuild-hf-stress-001.txt",
+    "context_tokens_estimate": 529
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 675
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 27416.608,
+    "cache_key": "355242ef0d9b3f7546d454c3f812f01dfbdee4c6dfbfba7c36e31325e8f1c6dd",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 4296,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 561,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 4296,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 561,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 4296,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 4296
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "7e3c2993-acaf-407c-ba4d-3f6f552941a2"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

@@ -1,0 +1,40 @@
+# CI Failure Summary
+
+## Primary Failure
+Gradle test task failed: `Execution failed for task ':hibernate-core:test'.` A JUnit test failure occurred in `DbVersionTest.testCollectionVersion(SessionFactoryScope)` producing an `org.opentest4j.AssertionFailedError` with message `owner version not incremented`.
+
+## Critical Evidence
+- `L045536: 2026-05-08T06:44:07.1485280Z Gradle Test Executor 25 > DbVersionTest > testCollectionVersion(SessionFactoryScope) FAILED`
+- `L045537: 2026-05-08T06:44:07.1486958Z     org.opentest4j.AssertionFailedError: owner version not incremented ==> expected: <false> but was: <true>`
+- `L045543: 2026-05-08T06:44:07.1490576Z         at app//org.hibernate.orm.test.version.db.DbVersionTest.testCollectionVersion(DbVersionTest.java:60)`
+- `L045952: 16923 tests completed, 1 failed, 2596 skipped`
+- `L045955: > Task :hibernate-core:test FAILED`
+- `L045958: FAILURE: Build failed with an exception.`
+- `L045963: [Incubating] Problems report is available at: file:///home/runner/work/hibernate-orm/hibernate-orm/target/reports/problems/problems-report.html`
+- `L045966: > There were failing tests. See the report at: file:///home/runner/work/hibernate-orm/hibernate-orm/hibernate-core/target/reports/tests/test/index.html`
+- `L046009: Caused by: org.gradle.api.internal.exceptions.MarkedVerificationException: There were failing tests. See the report at: file:///home/runner/work/hibernate-orm/hibernate-orm/hibernate-core/target/reports/tests/test/index.html`
+- `L046120: BUILD FAILED in 17m 39s`
+- `L046121: ##[error]Process completed with exit code 1.`
+
+## Failed Tests / Checks
+- `Gradle Test Executor 25 > DbVersionTest > testCollectionVersion(SessionFactoryScope) FAILED`
+- `16923 tests completed, 1 failed, 2596 skipped`
+- `> Task :hibernate-core:test FAILED`
+
+## Relevant Files and Locations
+- `org.hibernate.orm.test.version.db.DbVersionTest.testCollectionVersion(DbVersionTest.java:60)`
+- `file:///home/runner/work/hibernate-orm/hibernate-orm/hibernate-core/target/reports/tests/test/index.html` (test report)
+- `file:///home/runner/work/hibernate-orm/hibernate-orm/target/reports/problems/problems-report.html` (problems report)
+
+## Commands and Exit Codes
+- CI/Gradle task failure: `Execution failed for task ':hibernate-core:test'.`
+- `L046121: ##[error]Process completed with exit code 1.`
+
+## Possible Root Cause
+The test `DbVersionTest.testCollectionVersion` expected the owner version to remain unchanged (`expected: <false>`), but the observed behavior incremented it (`but was: <true>`), indicating a regression or behavioral change in entity versioning or in the test's assumptions. It may be a code change affecting version increments or a flaky test/environment factor.
+
+## Uncertainties / Missing Context
+- The log does not include the source of recent code changes (commit/PR) that might have changed versioning behavior.
+- The test body and exact assertion code around `DbVersionTest.java:60` are not present; cannot verify whether the expectation or the observed operation is correct.
+- No full stack trace from the test (beyond the single location) or JVM/Gradle environment details (JDK version, platform differences) are provided.
+- The test report HTML contents and any related diffs are not included; additional details may be in those reports.

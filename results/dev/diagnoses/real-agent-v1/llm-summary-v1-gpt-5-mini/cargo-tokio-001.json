@@ -1,0 +1,115 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The trybuild test `compile_fail_full` in `tests-build::macros` failed because the actual compiler error output for `tests/fail/macros_type_mismatch.rs` did not match the blessed (expected) stderr. The Rust compiler produced different error messages than what was recorded in the `.stderr` snapshot file.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The trybuild compile-fail test for `tests/fail/macros_type_mismatch.rs` has a mismatch between the expected (blessed) stderr and the actual compiler output. The expected output shows `error[E0308]: mismatched types` at line 5:5 with `expected '()', found 'Result<(), _>'`, but the actual compiler output differs — indicating the Rust compiler version in CI produces different error messages or spans than what was previously blessed.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "tests/fail/macros_type_mismatch.rs",
+    "tests/macros.rs"
+  ],
+  "relevant_tests": [
+    "tests-build::macros compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "test tests/fail/macros_type_mismatch.rs [should fail to compile] ... mismatch",
+      "reason": "Trybuild reports a mismatch between expected and actual compiler output for this specific test file"
+    },
+    {
+      "quote": "1 of 10 tests failed",
+      "reason": "Confirms exactly one trybuild sub-test failed out of 10"
+    },
+    {
+      "quote": "FAIL [   9.875s] (396/396) tests-build::macros compile_fail_full",
+      "reason": "Identifies the failing test as compile_fail_full in tests-build::macros"
+    },
+    {
+      "quote": "note: If the actual output is the correct output you can bless it by rerunning\n      your test with the environment variable TRYBUILD=overwrite",
+      "reason": "Trybuild's own hint confirms this is a stderr snapshot mismatch that can be fixed by re-blessing"
+    },
+    {
+      "quote": "thread 'compile_fail_full' (25975) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/trybuild-1.0.116/src/run.rs:102:13:",
+      "reason": "The panic originates in trybuild's run.rs when it detects the mismatch, confirming this is a trybuild assertion failure"
+    }
+  ],
+  "suggested_fix": "Update the blessed stderr snapshot for `tests/fail/macros_type_mismatch.rs` by running the test locally with `TRYBUILD=overwrite cargo test compile_fail_full` in the `tests-build` crate, then commit the updated `.stderr` file.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-gpt-5-mini/cargo-tokio-001.txt",
+    "context_tokens_estimate": 101
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 862
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 25548.975,
+    "cache_key": "f67aa2acdf7d2f4ba730bdee3eb0cb3a1a49b72ebe8410488c8e2e594916f22b",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 16396,
+        "output_tokens": 825,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard",
+        "cost": 0.061563,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.061563,
+          "upstream_inference_prompt_cost": 0.049188,
+          "upstream_inference_completions_cost": 0.012375
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 3,
+    "tool_call_count": 2,
+    "tool_calls": [
+      {
+        "tool": "tail",
+        "args": {
+          "n": 200
+        },
+        "observation_tokens_estimate": 4685,
+        "runtime_ms": 3.005540998856304,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "trybuild|mismatch.*stderr|expected.*found|macros_type_mismatch",
+          "before": 5,
+          "after": 15,
+          "max_matches": 5
+        },
+        "observation_tokens_estimate": 2154,
+        "runtime_ms": 10.313499999028863,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 31720,
+    "total_output_tokens_consumed": 1047,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 3
+  }
+}

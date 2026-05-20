@@ -1,0 +1,65 @@
+# CI Failure Summary
+
+## Primary Failure
+FileCheck verification failed during the compiletest run for the assembly-llvm suite: `test [assembly] tests/assembly-llvm/wasm_exceptions.rs ... FAILED` (compiletest suite=assembly-llvm mode=assembly host=x86_64-unknown-linux-gnu target=wasm32-wasip1). The FileCheck run returned a non-zero exit (verification error), causing the job to fail. (See `FileCheck` invocation and exit status.)
+
+## Critical Evidence
+- `test [assembly] tests/assembly-llvm/wasm_exceptions.rs ... FAILED` (L030430)  
+- `/checkout/tests/assembly-llvm/wasm_exceptions.rs:38:12: error: CHECK: expected string not found in input` (L030469)  
+- ` // CHECK: catch_all` (L030470)  
+- `/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s:33:16: note: scanning from here` (L030472)  
+- ` call may_panic` (L030473)  
+- `/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s:37:5: note: possible intended match here` (L030475)  
+- ` unreachable` (L030476)  
+- `/checkout/tests/assembly-llvm/wasm_exceptions.rs:62:12: error: CHECK: expected string not found in input` (L030478)  
+- ` // CHECK: catch` (L030479)  
+- `/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s:68:16: note: scanning from here` (L030481)  
+- `/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s:72:4: note: possible intended match here` (L030484)  
+- ` unreachable` (L030485)  
+- `Input file: /checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s` (L030488)  
+- `Check file: /checkout/tests/assembly-llvm/wasm_exceptions.rs` (L030489)  
+- `check:38'0                    X error: no match found` (L030528)  
+- `check:62'0                    X error: no match found` (L030590)  
+- `error: verification with 'FileCheck' failed` (L030726)  
+- `status: exit status: 1` (L030727)  
+- `command: "/checkout/obj/build/x86_64-unknown-linux-gnu/ci-llvm/bin/FileCheck" "--input-file" "/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s" "/checkout/tests/assembly-llvm/wasm_exceptions.rs" "--check-prefix=CHECK" "--allow-unused-prefixes" "--dump-input-context" "100"` (L030728)  
+- `failures:` (L030989)  
+- `    [assembly] tests/assembly-llvm/wasm_exceptions.rs` (L030990)  
+- `test result: FAILED. 550 passed; 1 failed; 103 ignored; 0 measured; 0 filtered out; finished in 15.38s` (L030992)  
+- `Some tests failed in compiletest suite=assembly-llvm mode=assembly host=x86_64-unknown-linux-gnu target=wasm32-wasip1` (L030994)  
+- `Bootstrap failed while executing \`--stage 2 test --host= --target wasm32-wasip1 tests/run-make tests/run-make-cargo tests/ui tests/mir-opt tests/codegen-units tests/codegen-llvm tests/assembly-llvm library/core\`` (L030995)  
+- `##[error]Process completed with exit code 1.` (L030999)
+
+## Failed Tests / Checks
+- `[assembly] tests/assembly-llvm/wasm_exceptions.rs` (as reported in the test summary) (L030430, L030990)  
+- FileCheck checks referenced by the test: `check:38'0` and `check:62'0` (L030528, L030590)
+
+## Relevant Files and Locations
+- `/checkout/tests/assembly-llvm/wasm_exceptions.rs:38` (CHECK location) (L030469)  
+- `/checkout/tests/assembly-llvm/wasm_exceptions.rs:62` (CHECK location) (L030478)  
+- `/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s:33:16` (scan start) (L030472)  
+- `/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s:37:5` (possible intended match) (L030475)  
+- `/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s:68:16` (scan start) (L030481)  
+- `/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s:72:4` (possible intended match) (L030484)  
+- FileCheck binary invoked: `"/checkout/obj/build/x86_64-unknown-linux-gnu/ci-llvm/bin/FileCheck"` (L030728)  
+- CI script/checkout step where earlier git submodule messages appeared: `src/ci/scripts/checkout-submodules.sh` (L000731)  
+- Example submodule-related error strings from checkout (may be informational): `error: could not lock config file .git/modules/library/backtrace/config: No such file or directory` (L000755) and similar messages for other submodules (L000758..L000788).  
+- Submodule checkout success example: `Submodule path 'library/backtrace': checked out '28ec93b503bf0410745bc3d571bf3dc1caac3019'` (L000815)
+
+## Commands and Exit Codes
+- Git submodule command attempted (with retry):  
+  `Attempting with retry: sh -c git submodule deinit -f  src/doc/nomicon src/tools/cargo src/doc/reference src/doc/book src/doc/rust-by-example src/doc/edition-guide src/llvm-project src/doc/embedded-book library/backtrace src/tools/rustc-perf src/tools/enzyme src/gcc &&     git submodule sync &&     git submodule update -j 16 --init --recursive --depth 1  src/doc/nomicon src/tools/cargo src/doc/reference src/doc/book src/doc/rust-by-example src/doc/edition-guide src/llvm-project src/doc/embedded-book library/backtrace src/tools/rustc-perf src/tools/enzyme src/gcc` (L000754)  
+  - Several `error: could not lock config file .git/modules/...: No such file or directory` messages followed (L000755..L000788).  
+- FileCheck command that failed:  
+  `"/checkout/obj/build/x86_64-unknown-linux-gnu/ci-llvm/bin/FileCheck" "--input-file" "/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s" "/checkout/tests/assembly-llvm/wasm_exceptions.rs" "--check-prefix=CHECK" "--allow-unused-prefixes" "--dump-input-context" "100"` (L030728)  
+  - Result: `status: exit status: 1` (L030727)  
+- Final CI job exit: `##[error]Process completed with exit code 1.` (L030999)
+
+## Possible Root Cause
+The generated assembly for wasm_exceptions does not contain the expected `CHECK` patterns (`catch_all` and `catch`) from the test file; FileCheck reports no matches and fails. This suggests a change or mismatch in code generation (or the target/LLVM pipeline) for wasm exception handling that produced `unreachable` at the locations where `catch`/`catch_all` were expected.
+
+## Uncertainties / Missing Context
+- The full contents of `/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s` are not present in the log excerpt, so the exact assembly differences are unknown.  
+- Versions of LLVM/FileCheck, rustc, or any recent changes to exception handling/wasm backend are not shown in the provided logs.  
+- It is unclear whether the earlier git submodule `could not lock config file` messages impacted the test inputs or build completeness; those messages may be informational, but the log does not tie them to the FileCheck failure.  
+- No information on whether this failure is flaky or reproducible on other runs is available in the log.

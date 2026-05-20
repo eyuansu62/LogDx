@@ -1,0 +1,93 @@
+{
+  "case_id": "prettier-react-stress-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The 'Run prettier' CI job failed because Prettier detected unformatted code in two files. The `yarn prettier-check` command reported that `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` and `compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts` need to be formatted and committed.",
+  "root_cause_category": "formatting_failure",
+  "root_cause": "Prettier found formatting violations in two files (`packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` and `compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts`) causing `yarn prettier-check` to exit with code 1.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+    "compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts"
+  ],
+  "relevant_tests": [
+    "yarn prettier-check"
+  ],
+  "evidence": [
+    {
+      "quote": "Please run yarn prettier-all and add changes to files listed below to your commit:",
+      "reason": "Prettier's output explicitly states that the listed files need to be reformatted and committed."
+    },
+    {
+      "quote": "packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js",
+      "reason": "This file is explicitly listed by Prettier as having formatting violations."
+    },
+    {
+      "quote": "compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts",
+      "reason": "This file is explicitly listed by Prettier as having formatting violations."
+    },
+    {
+      "quote": "error Command failed with exit code 1.",
+      "reason": "Confirms that the prettier-check command failed with a non-zero exit code due to the formatting issues."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "GitHub Actions error marker confirming the job step failed."
+    }
+  ],
+  "suggested_fix": "Run `yarn prettier-all` locally to auto-format all files, then add the changes to the two listed files (`ReactDOMFragmentRefs-test.js` and `CodegenReactiveFunction.ts`) to the commit before pushing.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-gpt-5-mini/prettier-react-stress-001.txt",
+    "context_tokens_estimate": 595
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 711
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 11566.406,
+    "cache_key": "04c63bc68234453e40b2893b0af341b6c9e6e8f4ba8ec2068e22de811d113e90",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 3975,
+        "output_tokens": 686,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard",
+        "cost": 0.022215,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.022215,
+          "upstream_inference_prompt_cost": 0.011925,
+          "upstream_inference_completions_cost": 0.01029
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 1,
+    "tool_call_count": 0,
+    "tool_calls": [],
+    "total_input_tokens_consumed": 3975,
+    "total_output_tokens_consumed": 686,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 1
+  }
+}

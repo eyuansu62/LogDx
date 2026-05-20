@@ -1,0 +1,51 @@
+# CI Failure Summary
+
+## Primary Failure
+The test runner `jest` failed: one test in `test/config/get.ts` asserted an exact registry URL and received a value with a trailing slash, causing the test suite to exit non‑zero and the GitHub Actions job to fail. The failing command was the package test script that runs `jest` and returned exit status 1.
+
+## Critical Evidence
+- `FAIL test/config/get.ts (17.807 s)` (L002956, L003058)  
+- `● pnpm config get reads npm options but ignores other settings from .npmrc` (L002957, L003059)  
+- `Expected: "https://my-org.registry.example.com"` (L002961, L003063)  
+- `Received: "https://my-org.registry.example.com/"` (L002962, L003064)  
+- `32 |     expect(stdout.toString().trim()).toBe('https://my-org.registry.example.com')` (L002966, L003068)  
+- `at Object.<anonymous> (test/config/get.ts:32:38)` (L002972, L003074)  
+- `[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] pnpm@11.0.6 .test: \`cross-env NODE_OPTIONS="$NODE_OPTIONS --experimental-vm-modules --disable-warning=ExperimentalWarning --disable-warning=DEP0169" jest\`` (L003084)  
+- `Exit status 1` (L003085)  
+- `##[error]Process completed with exit code 1.` (L003090)
+
+## Failed Tests / Checks
+- `FAIL test/config/get.ts` (test file)  
+- `pnpm config get reads npm options but ignores other settings from .npmrc` (test title)  
+- `Test Suites: 1 failed, 3 skipped, 61 passed, 62 of 65 total` (L003077)  
+- `Tests:       1 failed, 9 skipped, 475 passed, 485 total` (L003078)
+
+## Relevant Files and Locations
+- `test/config/get.ts:32:38` (stack location referencing failing assertion) (L002972, L003074)  
+- Command entry points that ran the tests: `package test script invoking jest` / `cross-env ... jest` (L002864, L002885, L002395)  
+- CI orchestration step that reported final failure: GitHub Actions error line (L003090)
+
+Additional log entries present in the run (potentially relevant or noise):
+- `.../node_modules/unrs-resolver postinstall: [napi-postinstall@0.3.4] Failed to find package "@unrs/resolver-binding-linux-x64-gnu" on the file system` (L000193)  
+- `.../node_modules/fuse-native install: Error: spawn node-gyp EACCES` (errno/code/syscall/path/spawnargs lines L000212–L000224)  
+- Multiple `verdaccio` deprecation/warning lines: `(node:3178) [VERWAR007] VerdaccioDeprecation: the secret length is too long, it must be 32 characters long, please consider generate a new one` (L000538, L000648, L000936, etc.)  
+- Several `jest-haste-map: Haste module naming collision:` entries (e.g. `sub-pkg`, `has-glob`, `simple`, `foo`, `bar`) (L000931–L000934, L002396–L002411)
+
+## Commands and Exit Codes
+- `pn install` (invoked) (L000171)  
+- `pn run ci:test-branch` (L000322)  
+- `$ pn prepare-fixtures && pn test-pkgs-branch` (L000328)  
+- `$ node ../pnpm/dist/pnpm.mjs install -rf --frozen-lockfile --no-shared-workspace-lockfile --no-link-workspace-packages` (L000332)  
+- `$ node /home/runner/work/pnpm/pnpm/pnpm/bin/pnpm.mjs run -r build` (L001367)  
+- Test command that failed: `$ cross-env NODE_OPTIONS="$NODE_OPTIONS --experimental-vm-modules --disable-warning=ExperimentalWarning --disable-warning=DEP0169" jest` (L002395, L002864, L002885)  
+- Error reported by pnpm when running tests: `[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] pnpm@11.0.6 .test: ... jest` (L003084)  
+- Exit codes: `Exit status 1` (L003085); final CI step `##[error]Process completed with exit code 1.` (L003090)
+
+## Possible Root Cause
+The failing assertion is an exact string equality check that expects the registry URL without a trailing slash, but the code under test (or environment) returned the same URL with a trailing slash (`"https://my-org.registry.example.com/"`). This suggests either the code normalizes/returns registry values with a trailing slash or the test expectation is too strict about trailing slashes.
+
+## Uncertainties / Missing Context
+- It's not clear whether the intended behavior is to include or exclude a trailing slash for registry URLs; the log only shows the mismatch.  
+- The logs contain other warnings and errors (Verdaccio deprecations, `node-gyp EACCES`, package not found messages, haste-map name collisions) whose relationship to this failing test is unclear from the provided output.  
+- No source code diff or recent change is provided, so we cannot tell if this is a regression in code that formats registry URLs or a change in the test fixture/environment that added a slash.  
+- Full stdout/stderr around the failing test run is not present (only the assertion lines), so the code path that produced the value is not shown.

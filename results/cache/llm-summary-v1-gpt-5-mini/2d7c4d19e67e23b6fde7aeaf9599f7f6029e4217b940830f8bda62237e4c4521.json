@@ -1,0 +1,24 @@
+{
+  "key_parts": {
+    "case_id": "cleanup-k8s-stress-001",
+    "raw_sha": "03667b36bdcce28f24a719041e0fd6d4806e9d3310e90e0092cf9744bd6c7138",
+    "prompt_version": "llm_summary_v1",
+    "prompt_sha": "e3739738b7136af3956f3712e7b76babd9224b6854dcc60ff16546a3fbb16702",
+    "provider": "command",
+    "method": "llm-summary-v1-gpt-5-mini",
+    "chunk_index": -1,
+    "chunk_sha": "5dfeb386f6b5014678b39589219773e382d7a636a0d3540a21b614de43116e7c",
+    "temperature": 0.0,
+    "max_output_chars": 12000,
+    "stage": "reduce"
+  },
+  "response": {
+    "content": "# CI Failure Summary\n\n## Primary Failure\nThe GitHub CLI (`gh api`) call to delete Actions artifacts failed with an HTTP 403: `Resource not accessible by integration` during a step that deletes artifacts for run ID 23485708914 (`gh` returned an error and the job exited). Tool shown in the log: `gh api`.\n\n## Critical Evidence\n- `##[group]Run gh api \\` (L000051)  \n- `\u001b[36;1mgh api \\\u001b[0m` (L000052)  \n- `\u001b[36;1m  /repos/kubernetes/kubernetes/actions/runs/23485708914/artifacts \\\u001b[0m` (L000054)  \n- `\u001b[36;1m  --jq '.artifacts[].id' > artifact_ids.txt\u001b[0m` (L000055)  \n- `##[group]Run echo \"Deleting artifacts for run ID: 23485708914\"` (L000063)  \n- `\u001b[36;1m  gh api \\\u001b[0m` (L000066)  \n- `\u001b[36;1m    -X DELETE \\\u001b[0m` (L000068)  \n- `\u001b[36;1m    -H \"Accept: application/vnd.github+json\" \\\u001b[0m` (L000069)  \n- `\u001b[36;1m    /repos/kubernetes/kubernetes/actions/artifacts/\"$artifact_id\"\u001b[0m` (L000070)  \n- `gh: Resource not accessible by integration (HTTP 403)` (L000081)  \n- `##[error]Process completed with exit code 1.` (L000082)  \n- `2026-03-24T10:56:22.3449914Z   GITHUB_COPILOT_API_TOKEN: ***` (L000046)  \n- `2026-03-24T10:56:22.3451264Z   GH_TOKEN: ***` (L000047)  \n- `2026-03-24T10:56:22.3452403Z   GITHUB_TOKEN: ***` (L000048)\n\n## Failed Tests / Checks\n- `##[group]Run gh api \\` (L000051)  \n- `##[group]Run echo \"Deleting artifacts for run ID: 23485708914\"` (L000063)\n\n## Relevant Files and Locations\n- `/repos/kubernetes/kubernetes/actions/runs/23485708914/artifacts` (L000054)  \n- `/repos/kubernetes/kubernetes/actions/artifacts/\"$artifact_id\"` (L000070)\n\n## Commands and Exit Codes\n- Command (artifact list): `gh api  /repos/kubernetes/kubernetes/actions/runs/23485708914/artifacts --jq '.artifacts[].id' > artifact_ids.txt` (L000052, L000054, L000055)  \n- Command (delete): `gh api -X DELETE -H \"Accept: application/vnd.github+json\" /repos/kubernetes/kubernetes/actions/artifacts/\"$artifact_id\"` (L000066, L000068, L000069, L000070)  \n- Error/exit: `gh: Resource not accessible by integration (HTTP 403)` (L000081)  \n- Job exit: `##[error]Process completed with exit code 1.` (L000082)\n\n## Possible Root Cause\nThe token used by the `gh` CLI does not have permission to delete repository artifacts (the API returned HTTP 403 `Resource not accessible by integration`). The log shows masked environment variables for `GITHUB_COPILOT_API_TOKEN`, `GH_TOKEN`, and `GITHUB_TOKEN`, so the exact credential or its scopes are not visible.\n\n## Uncertainties / Missing Context\n- Which token (`GITHUB_TOKEN`, `GH_TOKEN`, or another) the `gh` CLI actually used is not shown.  \n- The OAuth/App identity and scopes associated with the token are not present in the log (tokens are masked).  \n- Whether the artifact IDs existed or belonged to a different repository/run is not visible.  \n- Any org-level policies, GitHub App permissions, or repository settings that could block deletion are not shown.  \n- No audit/GitHub API response body beyond the single 403 message is present to clarify the precise permission missing.",
+    "provider": "openai",
+    "model": "gpt-5-mini-2025-08-07",
+    "usage": {
+      "input_tokens": 1050,
+      "output_tokens": 2014
+    }
+  }
+}

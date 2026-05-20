@@ -1,0 +1,108 @@
+{
+  "case_id": "jest-nextjs-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest's configured `roots` does not include the `examples/` directory, so when `run-tests.js` invokes Jest with a test file path under `examples/with-jest/`, `examples/with-zones/`, or `examples/with-vitest/`, Jest finds 0 matches and exits with code 1. The runner then fails with ENOENT when it tries to read the missing results JSON files.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Jest's `roots` configuration is set to `/work/test`, `/work/packages/next/src`, and other package directories, but excludes `/work/examples/`. When the test runner invokes Jest with test file paths under `examples/`, Jest searches only its configured roots and reports 'Pattern: examples/with-jest/app/utils/add.test.ts - 0 matches', causing it to exit with code 1 and produce no results JSON file.",
+  "confidence": 0.9,
+  "relevant_files": [
+    "examples/with-jest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts",
+    "examples/with-vitest/app/utils/add.test.ts",
+    "/work/run-tests.js"
+  ],
+  "relevant_tests": [
+    "examples/with-jest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts",
+    "examples/with-vitest/app/utils/add.test.ts"
+  ],
+  "evidence": [
+    {
+      "quote": "roots: /work/test, /work/packages/next/src, /work/packages/next-codemod, /work/packages/eslint-plugin-internal, /work/packages/font/src, /work/packages/next-routing - 14634 matches",
+      "reason": "Jest's configured roots do not include /work/examples/, so test files under examples/ are never found"
+    },
+    {
+      "quote": "Pattern: examples/with-jest/app/utils/add.test.ts - 0 matches",
+      "reason": "Confirms that the specific test file path passed to Jest matched 0 files because it is outside the configured roots"
+    },
+    {
+      "quote": "No tests found, exiting with code 1",
+      "reason": "Jest exits with code 1 when no tests are found, triggering the cascade of failures"
+    },
+    {
+      "quote": "Failed to load test output Error: ENOENT: no such file or directory, open 'examples/with-jest/app/utils/add.test.ts.results.json'",
+      "reason": "Because Jest exited with code 1 without running, no results JSON was written, causing the runner to fail with ENOENT"
+    },
+    {
+      "quote": "testMatch: **/*.test.js, **/*.test.ts, **/*.test.jsx, **/*.test.tsx - 1861 matches",
+      "reason": "The testMatch pattern itself is correct and matches 1861 files globally, confirming the issue is the roots restriction, not the pattern"
+    }
+  ],
+  "suggested_fix": "Add `/work/examples` to the Jest `roots` configuration so that test files under the `examples/` directory are discoverable, or update `run-tests.js` to pass `--rootDir` or `--testPathPattern` arguments that include the examples directory when running example tests.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-gpt-5-mini/jest-nextjs-001.txt",
+    "context_tokens_estimate": 1504
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 909
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 25062.56,
+    "cache_key": "49bcbe57f3ed56db594bd5d836957db0f7d968dc79117107a60dec1df69ee0a3",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 7577,
+        "output_tokens": 937,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.036786,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.036786,
+          "upstream_inference_prompt_cost": 0.022731,
+          "upstream_inference_completions_cost": 0.014055
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 1,
+    "tool_calls": [
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 10457,
+          "radius": 20
+        },
+        "observation_tokens_estimate": 1184,
+        "runtime_ms": 7.82279200211633,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 12827,
+    "total_output_tokens_consumed": 1193,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

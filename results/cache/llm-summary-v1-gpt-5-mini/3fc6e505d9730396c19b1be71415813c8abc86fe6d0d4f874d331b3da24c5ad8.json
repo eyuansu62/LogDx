@@ -1,0 +1,24 @@
+{
+  "key_parts": {
+    "case_id": "pushpr-nextjs-001",
+    "raw_sha": "ea00599d3dc5f4e5caa785f65a5b1e42145ba0d4304f8ec6ccec4e3b3cf0a5a4",
+    "prompt_version": "llm_summary_v1",
+    "prompt_sha": "e3739738b7136af3956f3712e7b76babd9224b6854dcc60ff16546a3fbb16702",
+    "provider": "command",
+    "method": "llm-summary-v1-gpt-5-mini",
+    "chunk_index": -1,
+    "chunk_sha": "3d018124c889b3a62ff71e23d9815fbe06512f865d2d3fafa963cdfd6c03f1eb",
+    "temperature": 0.0,
+    "max_output_chars": 12000,
+    "stage": "reduce"
+  },
+  "response": {
+    "content": "# CI Failure Summary\n\n## Primary Failure\nThe CI run failed when a Git push command errored: `Error: Command failed with exit code 128 (Unknown system error -128): git push origin update/react/19.3.0-canary-142cfde8-20260422` — the push was rejected due to permission/HTTP 403 for the `nextjs-bot`, causing the job to exit non-zero. (Tool cited in log: `git push` / `execa`.)\n\n## Critical Evidence\n- `Error: Command failed with exit code 128 (Unknown system error -128): git push origin update/react/19.3.0-canary-142cfde8-20260422` (L000995)  \n- `  command: 'git push origin update/react/19.3.0-canary-142cfde8-20260422',` (L001000)  \n- `  exitCode: 128,` (L001001)  \n- `  exitCodeName: 'Unknown system error -128',` (L001002)  \n- `  stderr: 'remote: Permission to vercel/next.js.git denied to nextjs-bot.\\n' +` (L001004)  \n- `\"fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403\",` (L001005)  \n- `  all: 'remote: Permission to vercel/next.js.git denied to nextjs-bot.\\n' +` (L001006)  \n- `\"fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403\",` (L001007)  \n- ` ELIFECYCLE  Command failed with exit code 1.` (L001014)  \n- `##[error]Process completed with exit code 1.` (L001015)  \n- `An error occurred while minifying. The result will not be minified.` (L000886)  \n- `ncc: Version 0.34.0` (L000796)  \n- `ncc: Compiling file bundle.min.js into CJS` (L000797)\n\n## Failed Tests / Checks\n- `ncc: Compiling file bundle.min.js into CJS`  \n- `git push origin update/react/19.3.0-canary-142cfde8-20260422` (the push command that failed)\n\n## Relevant Files and Locations\n- `/home/runner/work/next.js/next.js/scripts/sync-react.js:645:5` (L000999)  \n- `/home/runner/work/next.js/next.js/node_modules/.pnpm/execa@2.0.3/node_modules/execa/lib/error.js:58:11` (L000996)  \n- `/home/runner/work/next.js/next.js/node_modules/.pnpm/execa@2.0.3/node_modules/execa/index.js:112:26` (L000997)  \n- Node internal stack: `node:internal/process/task_queues:95:5` (L000998)\n\n## Commands and Exit Codes\n- `git push origin update/react/19.3.0-canary-142cfde8-20260422` — `exitCode: 128` / `exitCodeName: 'Unknown system error -128'` (L000995, L001000-L001002)  \n- CLI stderr (from failed push): `'remote: Permission to vercel/next.js.git denied to nextjs-bot.\\n'` and `\"fatal: unable to access 'https://github.com/vercel/next.js/': The requested URL returned error: 403\"` (L001004-L001007)  \n- Lifecycle failure reported: ` ELIFECYCLE  Command failed with exit code 1.` (L001014)  \n- GitHub Actions final status: `##[error]Process completed with exit code 1.` (L001015)  \n- ncc step emitted: `An error occurred while minifying. The result will not be minified.` (L000886)\n\n## Possible Root Cause\nThe push was rejected due to permission issues for the `nextjs-bot` account when attempting to push to `vercel/next.js`, resulting in a Git HTTP 403 and an exit code 128 that terminated the workflow. Separately, `ncc` reported a minification error (non-minified output), but the log indicates the push failure is the fatal error that caused the job to fail.\n\n## Uncertainties / Missing Context\n- The log does not show why `nextjs-bot` lacks permission (expired/invalid token, missing write access, branch protection, or use of HTTPS vs. SSH).  \n- No full environment or auth configuration is included (secrets, PAT usage, or how the push credentials are provided).  \n- It is unclear whether the ncc minification error is non-fatal by design or contributed to the failure; no full ncc error stack or preceding logs are present.",
+    "provider": "openai",
+    "model": "gpt-5-mini-2025-08-07",
+    "usage": {
+      "input_tokens": 1207,
+      "output_tokens": 2102
+    }
+  }
+}

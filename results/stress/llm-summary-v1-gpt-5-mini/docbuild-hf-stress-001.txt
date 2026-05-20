@@ -1,0 +1,40 @@
+# CI Failure Summary
+
+## Primary Failure
+GitHub Actions run failed: `##[error]Process completed with exit code 1.` The failure occurred in the job identified as `Complete job name: doc_build_status_check` when a shell conditional evaluated false and the script executed `exit 1`.
+
+## Critical Evidence
+- `L000029` `Complete job name: doc_build_status_check`
+- `L000030` `##[group]Run if [[ "failure" == "success" || "failure" == "skipped" ]] && \`
+- `L000031` `[36;1mif [[ "failure" == "success" || "failure" == "skipped" ]] && \[0m`
+- `L000032` `[36;1m   [[ "skipped" == "success" || "skipped" == "skipped" ]]; then[0m`
+- `L000033` `[36;1m  echo "OK"[0m`
+- `L000034` `[36;1melse[0m`
+- `L000035` `[36;1m  exit 1[0m`
+- `L000036` `[36;1mfi[0m`
+- `L000037` `shell: /usr/bin/bash -e {0}`
+- `L000039` `##[error]Process completed with exit code 1.`
+
+## Failed Tests / Checks
+- `Complete job name: doc_build_status_check`
+
+## Relevant Files and Locations
+- _(none identified)_
+
+## Commands and Exit Codes
+- `L000031` `[36;1mif [[ "failure" == "success" || "failure" == "skipped" ]] && \[0m`
+- `L000032` `[36;1m   [[ "skipped" == "success" || "skipped" == "skipped" ]]; then[0m`
+- `L000033` `[36;1m  echo "OK"[0m`
+- `L000034` `[36;1melse[0m`
+- `L000035` `[36;1m  exit 1[0m`
+- `L000036` `[36;1mfi[0m`
+- `L000037` `shell: /usr/bin/bash -e {0}`
+- `L000039` `##[error]Process completed with exit code 1.`
+
+## Possible Root Cause
+The shell conditional comparing literal status strings (`"failure" == "success"` etc.) evaluated to false, causing the `else` branch to run `exit 1`, which made the GitHub Actions job fail. It appears the intent was to allow the job to succeed only for certain combinations of statuses, but the actual values hit the failing branch.
+
+## Uncertainties / Missing Context
+- Which workflow variables or previous job outputs produced the literal values `"failure"` and `"skipped"`.
+- The surrounding workflow file or intent for the conditional (why those exact comparisons were used).
+- Full logs of earlier steps that set the statuses or influenced the conditional evaluation.

@@ -1,0 +1,89 @@
+{
+  "case_id": "pip-pytest-network-github-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The functional test `test_no_truststore_can_install[GitHub]` failed because pip could not download a package from GitHub due to repeated HTTP 502 error responses. This is a transient network/upstream server issue, not a code defect.",
+  "root_cause_category": "network_or_flaky",
+  "root_cause": "The pip install command failed with an OSError caused by 'too many 502 error responses' when attempting to fetch https://github.com/pypa/pip-test-package/archive/refs/heads/master.zip from GitHub. The test asserted a zero exit code and raised AssertionError when pip returned exit code 1.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "tests/functional/test_truststore.py",
+    "tests/lib/__init__.py"
+  ],
+  "relevant_tests": [
+    "tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]"
+  ],
+  "evidence": [
+    {
+      "quote": "ERROR: Could not install packages due to an OSError: HTTPSConnectionPool(host='github.com', port=443): Max retries exceeded with url: /pypa/pip-test-package/archive/refs/heads/master.zip (Caused by ResponseError('too many 502 error responses'))",
+      "reason": "This is the direct error from pip showing the network failure — GitHub returned repeated 502 errors, exhausting all retries."
+    },
+    {
+      "quote": "AssertionError: Script returned code: 1",
+      "reason": "The test framework in tests/lib/__init__.py:681 asserted the pip subprocess returned exit code 0, but it returned 1 due to the network failure."
+    },
+    {
+      "quote": "Script result: python -m pip install https://github.com/pypa/pip-test-package/archive/refs/heads/master.zip --use-deprecated=legacy-certs",
+      "reason": "Identifies the exact command that failed, confirming the test was attempting a live network download from GitHub."
+    },
+    {
+      "quote": "FAILED tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]",
+      "reason": "Confirms the specific test that failed in the pytest run."
+    }
+  ],
+  "suggested_fix": "Re-run the CI job to see if the failure is transient (GitHub 502s are typically intermittent). If recurring, consider mocking the network call or using a cached/local artifact instead of fetching live from GitHub in the test.",
+  "input": {
+    "context_path": "results/v2/dev/llm-summary-v1-gpt-5-mini/pip-pytest-network-github-v2-001.txt",
+    "context_tokens_estimate": 887
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 733
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 12690.604,
+    "cache_key": "b53d4d5bfdfeaa1d0d35b177ca4c41a1ca8082bfe4a4233841628bf78bd5d77f",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 4418,
+        "output_tokens": 687,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.023559,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.023559,
+          "upstream_inference_prompt_cost": 0.013254,
+          "upstream_inference_completions_cost": 0.010305
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 1,
+    "tool_call_count": 0,
+    "tool_calls": [],
+    "total_input_tokens_consumed": 4418,
+    "total_output_tokens_consumed": 687,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 1
+  }
+}

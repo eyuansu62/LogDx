@@ -1,0 +1,42 @@
+# CI Failure Summary
+
+## Primary Failure
+TypeScript compilation failed when running `pnpm tsc` (invoked from `scripts/ci/prek/ts_compile_lint_ui.py`), causing the TypeScript compiler to exit non-zero and the CI job to fail. The failure surface is "tsc compile errors" (unused declarations and a type mismatch) which made the invoked command return a non-zero status.
+
+## Critical Evidence
+- `Running command: `pnpm tsc --p /home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json` in directory: `/home/runner/work/airflow/airflow/airflow-core/src/airflow/ui`` (lines: L003461)  
+- `^[[96msrc/layouts/Nav/UserSettingsButton.tsx^[[0m:^[[93m55^[[0m:^[[93m6^[[0m - ^[[91merror^[[0m^[[90m TS6196: ^[[0m'ColorMode' is declared but never used.` (lines: L003463)  
+- `^[[96msrc/pages/Connections/ConnectionForm.tsx^[[0m:^[[93m33^[[0m:^[[93m1^[[0m - ^[[91merror^[[0m^[[90m TS6133: ^[[0m'ParamsSpec' is declared but its value is never read.` (lines: L003468)  
+- `^[[96mtestsSetup.ts^[[0m:^[[93m78^[[0m:^[[93m3^[[0m - ^[[91merror^[[0m^[[90m TS2739: ^[[0mType 'SetupServer' is missing the following properties from type 'SetupServerApi': #private, network` (lines: L003473)  
+- `Found 3 errors in 3 files.` (lines: L003479)  
+- `File "/home/runner/work/airflow/airflow/airflow-core/../scripts/ci/prek/ts_compile_lint_ui.py", line 62, in <module>` (lines: L003486)  
+- `subprocess.CalledProcessError: Command '['pnpm', 'tsc', '--p', '/home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json']' returned non-zero exit status 2.` (lines: L003492)  
+- `##[error]Process completed with exit code 1.` (lines: L003762)
+
+## Failed Tests / Checks
+- `^[[96msrc/layouts/Nav/UserSettingsButton.tsx^[[0m:^[[93m55^[[0m:^[[93m6^[[0m - ^[[91merror^[[0m^[[90m TS6196: ^[[0m'ColorMode' is declared but never used.` (lines: L003463)  
+- `^[[96msrc/pages/Connections/ConnectionForm.tsx^[[0m:^[[93m33^[[0m:^[[93m1^[[0m - ^[[91merror^[[0m^[[90m TS6133: ^[[0m'ParamsSpec' is declared but its value is never read.` (lines: L003468)  
+- `^[[96mtestsSetup.ts^[[0m:^[[93m78^[[0m:^[[93m3^[[0m - ^[[91merror^[[0m^[[90m TS2739: ^[[0mType 'SetupServer' is missing the following properties from type 'SetupServerApi': #private, network` (lines: L003473)  
+- `Found 3 errors in 3 files.` (lines: L003479)
+
+## Relevant Files and Locations
+- `src/layouts/Nav/UserSettingsButton.tsx:55` (lines: L003463 / L003482)  
+- `src/pages/Connections/ConnectionForm.tsx:33` (lines: L003468 / L003483)  
+- `testsSetup.ts:78` (lines: L003473 / L003484)  
+- `scripts/ci/prek/ts_compile_lint_ui.py: line 62` (lines: L003486)  
+- `tmp tsconfig used by tsc: /home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json` (lines: L003461)  
+- working directory for tsc: `/home/runner/work/airflow/airflow/airflow-core/src/airflow/ui` (lines: L003461)
+
+## Commands and Exit Codes
+- Command run: ``pnpm tsc --p /home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json`` (executed in `/home/runner/work/airflow/airflow/airflow-core/src/airflow/ui`) (lines: L003461)  
+- Python exception: `subprocess.CalledProcessError: Command '['pnpm', 'tsc', '--p', '/home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json']' returned non-zero exit status 2.` (lines: L003492)  
+- GitHub Actions job exit: `##[error]Process completed with exit code 1.` (lines: L003762)
+
+## Possible Root Cause
+The TypeScript compiler (`tsc`) failed due to code-level TypeScript errors: unused declarations (`TS6196`, `TS6133`) and a type incompatibility/missing properties (`TS2739`), causing `tsc` to exit with status 2; the CI wrapper then surfaced this as a failing job. It is consistent with strict compiler settings treating these issues as errors.
+
+## Uncertainties / Missing Context
+- No full raw tsc output or surrounding lines beyond the three error summaries are present; other errors/warnings might be truncated.  
+- Unknown tsconfig/compile flags (e.g., `noUnusedLocals`/`noUnusedParameters` or `--noEmit`), and pnpm/TypeScript versions are not provided.  
+- Unknown whether these errors are newly introduced by a recent PR or preexisting in the branch (no VCS diff context).  
+- We don't have earlier CI steps/logs in this MAP output (steps like install, lint, or other preparatory steps) that might affect the environment.

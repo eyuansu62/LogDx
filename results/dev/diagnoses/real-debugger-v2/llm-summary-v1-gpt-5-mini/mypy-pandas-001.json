@@ -1,0 +1,122 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because both pyright and mypy type-checking hooks reported numerous errors related to pyarrow symbols being missing or unexported. Attributes such as 'is_null', 'utf8_length', 'list_value_length', 'month', 'bit_wise_not' were not found on pyarrow modules, and symbols like 'Expression' and 'FileSystem' were flagged as not exported from their respective pyarrow submodules. This indicates a mismatch between the pyarrow API/stubs expected by the type checkers and what is actually available in the CI environment.",
+  "root_cause_category": "type_error",
+  "root_cause": "The pyarrow stubs or installed pyarrow version used by pyright and mypy do not expose the symbols referenced in pandas source code (e.g., 'Expression' from 'pyarrow.compute', 'FileSystem' from 'pyarrow.fs', 'is_null', 'utf8_length', 'list_value_length', 'month', 'bit_wise_not' from pyarrow modules), causing 279 mypy errors across 9 files and 69+ pyright errors.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "pandas/compat/pyarrow.py",
+    "pandas/core/arrays/arrow/accessors.py",
+    "pandas/core/arrays/_arrow_string_mixins.py",
+    "pandas/core/arrays/datetimes.py",
+    "pandas/core/arrays/arrow/array.py",
+    "pandas/io/orc.py",
+    "pandas/io/parquet.py",
+    "pandas/io/feather_format.py",
+    "pandas/tests/reshape/test_get_dummies.py"
+  ],
+  "relevant_tests": [
+    "pyright",
+    "pyright reportGeneralTypeIssues",
+    "mypy",
+    "mypy (stubtest)"
+  ],
+  "evidence": [
+    {
+      "quote": "\"Expression\" is not exported from module \"pyarrow.compute\"",
+      "reason": "Pyright cannot find 'Expression' as a public export from pyarrow.compute, indicating a stub or version mismatch for the pyarrow package."
+    },
+    {
+      "quote": "\"FileSystem\" is not exported from module \"pyarrow.fs\"",
+      "reason": "Pyright cannot find 'FileSystem' as a public export from pyarrow.fs, further confirming pyarrow API/stub mismatch."
+    },
+    {
+      "quote": "\"is_null\" is not a known attribute of module \"pyarrow.compute\"",
+      "reason": "Both pyright (reportAttributeAccessIssue) and mypy (attr-defined) flag 'is_null' as missing from pyarrow.compute, a strong signal of stub/version incompatibility."
+    },
+    {
+      "quote": "pandas/compat/pyarrow.py:76: error: Module has no attribute \"is_null\"  [attr-defined]",
+      "reason": "Mypy confirms the same missing attribute as pyright, corroborating that the pyarrow stubs or installed version lack this symbol."
+    },
+    {
+      "quote": "pandas/core/arrays/arrow/array.py:863: error: Module has no attribute \"bit_wise_not\"  [attr-defined]",
+      "reason": "Another pyarrow attribute missing according to mypy, indicating a broad API surface mismatch across multiple pyarrow submodules."
+    },
+    {
+      "quote": "Found 279 errors in 9 files (checked 1458 source files)",
+      "reason": "The large number of errors concentrated in pyarrow-related files confirms this is a systematic stub/version issue rather than isolated code bugs."
+    },
+    {
+      "quote": "pyright..................................................................Failed",
+      "reason": "The pyright pre-commit hook exited non-zero, directly contributing to the CI job failure."
+    },
+    {
+      "quote": "mypy.....................................................................[41mFailed[m",
+      "reason": "The mypy pre-commit hook also exited non-zero, compounding the CI failure."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "The overall CI job exited with code 1, confirming the pre-commit type-checking failures caused the job to fail."
+    }
+  ],
+  "suggested_fix": "Align the pyarrow version and/or its type stubs used in the CI pre-commit environment with the pyarrow API surface referenced in the pandas source code (e.g., pin or upgrade pyarrow stubs via 'pyarrow-stubs' or adjust the pyarrow version constraint so that symbols like 'Expression', 'FileSystem', 'is_null', 'utf8_length', 'list_value_length', 'month', and 'bit_wise_not' are recognized by both pyright and mypy).",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-gpt-5-mini/mypy-pandas-001.txt",
+    "context_tokens_estimate": 1317
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1146
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 30089.37,
+    "cache_key": "3350e06681adb0ca2ccbccea9f8fc8da4938de0f61fa537bf7d1ba36d9520d68",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 6198,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 1235,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 6198,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 1235,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 6198,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 6198
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "da62b228-36bc-458b-8767-3ccb7dcc3686"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

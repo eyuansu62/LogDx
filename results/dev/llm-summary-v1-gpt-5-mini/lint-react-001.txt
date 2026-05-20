@@ -1,0 +1,37 @@
+# CI Failure Summary
+
+## Primary Failure
+The `##[group]Run yarn prettier-check` step failed: the Prettier formatting check (`yarn prettier-check`) detected formatting issues and exited non‑zero, causing the job to fail (`error Command failed with exit code 1.` and `##[error]Process completed with exit code 1.`).
+
+## Critical Evidence
+- `L000259` `##[group]Run yarn prettier-check`
+- `L000260` `yarn prettier-check`
+- `L000267` `$ node ./scripts/prettier/index.js`
+- `L000269` `This project uses prettier to format all JavaScript code.`
+- `L000270` `Please run yarn prettier-all and add changes to files listed below to your commit:`
+- `L000273` `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js`
+- `L000274` `error Command failed with exit code 1.`
+- `L000276` `##[error]Process completed with exit code 1.`
+
+## Failed Tests / Checks
+- `##[group]Run yarn prettier-check` (CI step)
+- `yarn prettier-check` (command)
+- File flagged: `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js`
+
+## Relevant Files and Locations
+- `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js`
+
+## Commands and Exit Codes
+- Command: `yarn prettier-check` (invoked by step `##[group]Run yarn prettier-check`) — `L000260`
+- Command: `$ node ./scripts/prettier/index.js` — `L000267`
+- Exit: `error Command failed with exit code 1.` — `L000274`
+- GitHub Actions job error: `##[error]Process completed with exit code 1.` — `L000276`
+
+## Possible Root Cause
+Prettier found formatting violations in `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js`, causing `yarn prettier-check` to fail. The CI enforces formatting, and the failure suggests the file needs to be formatted (run `yarn prettier-all`) before committing.
+
+## Uncertainties / Missing Context
+- The log does not include the specific formatting diffs or the exact lines within `ReactDOMFragmentRefs-test.js` that fail Prettier.
+- No Prettier version or configuration is shown; version/config drift could affect formatting.
+- It is unclear whether additional files were affected beyond the single listed file (the message implies a list but only one file is shown).
+- Full CI log and the output of `node ./scripts/prettier/index.js` (detailed errors) are not present.

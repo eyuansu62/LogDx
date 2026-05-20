@@ -1,0 +1,46 @@
+# CI Failure Summary
+
+## Primary Failure
+A Gradle build failure: the Gradle task `:module:spring-boot-actuator:checkFormatMain` failed due to formatting violations, causing the build to abort (`FAILURE: Build failed with an exception.`). (Gradle task failure as shown in the log.)
+
+## Critical Evidence
+- `> Task :module:spring-boot-actuator:checkFormatMain FAILED` (L006159)  
+- `FAILURE: Build failed with an exception.` (L006188)  
+- `Execution failed for task ':module:spring-boot-actuator:checkFormatMain'.` (L006191)  
+- `> Formatting violations found in the following files:` (L006192)  
+- `   * src/main/java/org/springframework/boot/actuate/sbom/SbomProperties.java` (L006193)  
+- `  Run `format` to fix.` (L006195)  
+- `> Run with --stacktrace option to get the stack trace.` (L006198)  
+- `> Run with --info or --debug option to get more log output.` (L006199)  
+- `[Incubating] Problems report is available at: file:///home/runner/work/spring-boot/spring-boot/build/reports/problems/problems-report.html` (L006180)  
+- `Error response from daemon: conflict: unable to delete f3b50677289c (cannot be forced) - image is being used by running container b5a3def0a0d8` (L006095)  
+- `Error response from daemon: conflict: unable to delete 05e540d2c2f6 (cannot be forced) - image has dependent child images` (L006097)  
+- `:system-test:spring-boot-image-system-tests:jar: No valid plugin descriptors were found in META-INF/gradle-plugins` (L005234)  
+- `BUILD FAILED in 11m 27s` (L006202)  
+- `##[error]Process completed with exit code 1.` (L006203)
+
+## Failed Tests / Checks
+- `> Task :module:spring-boot-actuator:checkFormatMain FAILED` (L006159)
+
+## Relevant Files and Locations
+- `src/main/java/org/springframework/boot/actuate/sbom/SbomProperties.java` (L006193)  
+- `file:///home/runner/work/spring-boot/spring-boot/build/reports/problems/problems-report.html` (L006180)  
+- `META-INF/gradle-plugins` (referenced by `:system-test:spring-boot-image-system-tests:jar` step) (L005234)
+
+## Commands and Exit Codes
+- Gradle reported: `FAILURE: Build failed with an exception.` (L006188)  
+- Gradle suggestion: `Run with --stacktrace option to get the stack trace.` (L006198) and `Run with --info or --debug option to get more log output.` (L006199)  
+- Docker errors during cleanup:  
+  - `Error response from daemon: conflict: unable to delete f3b50677289c (cannot be forced) - image is being used by running container b5a3def0a0d8` (L006095)  
+  - `Error response from daemon: conflict: unable to delete 05e540d2c2f6 (cannot be forced) - image has dependent child images` (L006097)  
+- GitHub Actions job exit: `##[error]Process completed with exit code 1.` (L006203)
+
+## Possible Root Cause
+The formatting check `:module:spring-boot-actuator:checkFormatMain` found formatting violations in `src/main/java/org/springframework/boot/actuate/sbom/SbomProperties.java`, which failed the check and caused the Gradle build to fail. Docker image deletion conflicts are present in the log and may reflect cleanup issues but are not clearly the cause of the build failure.
+
+## Uncertainties / Missing Context
+- The detailed stack trace and full Gradle output are not present; the log suggests running with `--stacktrace`/`--info`/`--debug` to get more detail (L006198-L006199).  
+- Contents of `SbomProperties.java` and the specific formatting rules violated are not shown.  
+- Which formatter/plugin is enforcing `checkFormatMain` (e.g., Spotless, google-java-format) and its configured version are not stated.  
+- Whether the Docker image deletion conflicts contributed to or occurred after the build failure is unclear.  
+- No information about whether `format` was run in CI or available as a remedy prior to failing the job.

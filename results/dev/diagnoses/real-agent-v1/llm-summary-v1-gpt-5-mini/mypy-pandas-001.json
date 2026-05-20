@@ -1,0 +1,111 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Both pyright and mypy type-checking hooks failed due to missing or unrecognized pyarrow module attributes and exports. The type checkers report that symbols like 'Expression', 'is_null', 'utf8_length', 'list_value_length', 'month', and 'bit_wise_not' are not exported or not known attributes of their respective pyarrow submodules. This indicates a mismatch between the pyarrow version/stubs in the CI environment and what the pandas codebase expects.",
+  "root_cause_category": "type_error",
+  "root_cause": "The installed pyarrow package (or its type stubs) in the CI environment does not expose the symbols that pandas code references, causing pyright and mypy to report attribute/export errors across multiple files. Specifically, pyarrow.compute, pyarrow.fs, and other pyarrow submodules are missing expected attributes/exports as seen by the type checkers, resulting in 279 mypy errors and 73 pyright errors.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "pandas/compat/pyarrow.py",
+    "pandas/core/arrays/arrow/accessors.py",
+    "pandas/core/arrays/_arrow_string_mixins.py",
+    "pandas/core/arrays/datetimes.py",
+    "pandas/core/arrays/arrow/array.py",
+    "pandas/io/orc.py",
+    "pandas/io/parquet.py",
+    "pandas/io/feather_format.py",
+    "pandas/tests/reshape/test_get_dummies.py"
+  ],
+  "relevant_tests": [
+    "pyright",
+    "pyright reportGeneralTypeIssues",
+    "mypy",
+    "mypy (stubtest)"
+  ],
+  "evidence": [
+    {
+      "quote": "\"Expression\" is not exported from module \"pyarrow.compute\" (reportPrivateImportUsage)",
+      "reason": "pyright reports that a pyarrow.compute symbol used in pandas is not exported, indicating a pyarrow API/stub mismatch"
+    },
+    {
+      "quote": "\"FileSystem\" is not exported from module \"pyarrow.fs\" (reportPrivateImportUsage)",
+      "reason": "Another pyarrow symbol missing from the type checker's view of the pyarrow module"
+    },
+    {
+      "quote": "pandas/compat/pyarrow.py:76: error: Module has no attribute \"is_null\"  [attr-defined]",
+      "reason": "mypy confirms pyarrow.compute does not have 'is_null' attribute, consistent with version/stub mismatch"
+    },
+    {
+      "quote": "pandas/core/arrays/_arrow_string_mixins.py:110: error: Module has no attribute \"utf8_length\"  [attr-defined]",
+      "reason": "Another missing pyarrow attribute detected by mypy"
+    },
+    {
+      "quote": "Found 279 errors in 9 files (checked 1458 source files)",
+      "reason": "Large number of mypy errors concentrated in pyarrow-related files confirms systematic API mismatch"
+    },
+    {
+      "quote": "69 errors, 0 warnings, 0 informations",
+      "reason": "pyright reportGeneralTypeIssues found 69 errors, further confirming widespread pyarrow attribute access issues"
+    },
+    {
+      "quote": "error: not checking stubs due to mypy build errors:",
+      "reason": "mypy stubtest also failed, indicating the pyarrow stubs themselves are problematic in this environment"
+    }
+  ],
+  "suggested_fix": "Pin or upgrade the pyarrow package and its type stubs (pyarrow-stubs) in the CI environment to a version compatible with the pyarrow API usage in the pandas codebase. Check the pre-commit hook's dependency constraints for pyarrow and ensure the stubs match the installed runtime version.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-gpt-5-mini/mypy-pandas-001.txt",
+    "context_tokens_estimate": 1317
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 972
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 20064.552,
+    "cache_key": "ed383eaeb7fb44e200cbb2b109ff0a290a8ccd8a7337e513d0ec5065df60e32a",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 5087,
+        "output_tokens": 1199,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard",
+        "cost": 0.033246,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.033246,
+          "upstream_inference_prompt_cost": 0.015261,
+          "upstream_inference_completions_cost": 0.017985
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 1,
+    "tool_call_count": 0,
+    "tool_calls": [],
+    "total_input_tokens_consumed": 5087,
+    "total_output_tokens_consumed": 1199,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 1
+  }
+}

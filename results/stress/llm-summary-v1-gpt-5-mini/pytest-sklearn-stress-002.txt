@@ -1,0 +1,41 @@
+# CI Failure Summary
+
+## Primary Failure
+The test run by `pytest` produced a doctest failure: `DocTestFailure` in `../doc/callbacks.rst` (tool: `pytest`, test shape: documentation doctest failure). The failure caused the CI job to exit non‑zero. (See `pytest` invocation and final exit code below.)
+
+## Critical Evidence
+- `2026-04-23T11:06:04.6575211Z [1m============================= test session starts ==============================[0m` (L004183)  
+- `platform linux -- Python 3.14.4, pytest-9.0.3, pluggy-1.6.0` (L004184)  
+- `[1m[31m/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst[0m:48: DocTestFailure` (L005618)  
+- `[31mFAILED[0m ../doc/callbacks.rst::[1mcallbacks.rst[0m` (L005620)  
+- `[31m======= [31m[1m1 failed[0m, [32m41 passed[0m, [33m2 skipped[0m, [33m59 warnings[0m[31m in 95.39s (0:01:35)[0m[31m ========[0m` (L005621)  
+- `##[error]Process completed with exit code 1.` (L005622)  
+- Example doctest output lines seen near failure: `    LogisticRegression - fit ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:03:12` (L005614) and `    LogisticRegression()` (L005616)
+
+## Failed Tests / Checks
+- `../doc/callbacks.rst::callbacks.rst` (reported as `FAILED`) (L005620)  
+- Overall pytest summary: `1 failed, 41 passed, 2 skipped, 59 warnings` (L005621)
+
+## Relevant Files and Locations
+- `/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst:48` (DocTestFailure reported) (L005618)  
+- doctest identifier: `../doc/callbacks.rst::callbacks.rst` (L005620)  
+- Build/compile warnings (may be unrelated):  
+  - `sklearn/neighbors/_kd_tree.cpython-314-x86_64-linux-gnu.so.p/_kd_tree.c:40235:22` (warning text present) (L002473–L002474)  
+  - `sklearn/neighbors/_kd_tree.cpython-314-x86_64-linux-gnu.so.p/_kd_tree.c:42126:24` (L002480)  
+  - `sklearn/neighbors/_ball_tree.cpython-314-x86_64-linux-gnu.so.p/_ball_tree.c:16538:21` (L002511)  
+  - _(see additional compile warning lines in the log for full list)_ (L002473–L002569)
+
+## Commands and Exit Codes
+- Command invoked:  
+  - `+ eval 'python -m pytest --showlocals --durations=20 --junitxml=test-data.xml -o junit_family=legacy --cov-config='\''/home/runner/work/scikit-learn/scikit-learn/.coveragerc'\'' --cov=sklearn --cov-report= -n4 --pyargs sklearn'` (L004181)  
+  - Expanded: `python -m pytest --showlocals --durations=20 --junitxml=test-data.xml -o junit_family=legacy --cov-config=/home/runner/work/scikit-learn/scikit-learn/.coveragerc --cov=sklearn --cov-report= -n4 --pyargs sklearn` (L004182)  
+- CI exit: `##[error]Process completed with exit code 1.` (L005622)
+
+## Possible Root Cause
+The doctest in `doc/callbacks.rst` failed (DocTestFailure at line 48). The log shows actual printed output like `LogisticRegression - fit ...` and `LogisticRegression()` which likely did not match the expected doctest output, causing the failure. It appears to be a documentation example mismatch rather than a unit test assertion in library code.
+
+## Uncertainties / Missing Context
+- The log does not include the doctest's expected vs actual diff or traceback details for the `DocTestFailure`, so the exact mismatch (whitespace, timing, repr change, or additional lines) is unknown.  
+- It is unclear whether any of the many C compile warnings (`-Wdiscarded-qualifiers`, `-Wmaybe-uninitialized`) are relevant to the doctest failure; they did not produce a hard compile error in the provided excerpts. (L002473–L002569, L002494–L002505)  
+- No full contents of `doc/callbacks.rst` or the failing doctest snippet were included in the log excerpts.  
+- Python/pytest versions available: `Python 3.14.4, pytest-9.0.3` (L004184) — changes in behavior across versions could matter but are not shown in the failure detail.

@@ -1,0 +1,85 @@
+{
+  "case_id": "cleanup-tsc-stress-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v3",
+  "mode": "root_cause_diagnosis",
+  "summary": "The gh CLI calls to list and delete artifacts failed with an HTTP 403, causing the 'Cleanup artifacts' step to exit non-zero.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "GitHub CLI (gh) API calls returned HTTP 403 'Resource not accessible by integration', indicating the token used by gh lacked permission to access/delete repository artifacts.",
+  "confidence": 0.78,
+  "relevant_files": [
+    "artifact_ids.txt"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "Shows the GitHub API returned a 403 authorization error for the gh command."
+    },
+    {
+      "quote": "gh api",
+      "reason": "Indicates the job used the gh CLI to call the GitHub API to list/delete artifacts."
+    },
+    {
+      "quote": "/repos/microsoft/TypeScript/actions/runs/24823635328/artifacts",
+      "reason": "Shows the workflow attempted to list artifacts for a specific run via the repository actions API."
+    },
+    {
+      "quote": "/repos/microsoft/TypeScript/actions/artifacts/\"$artifact_id\"",
+      "reason": "Shows the workflow attempted to delete individual artifact IDs via the actions artifacts API."
+    },
+    {
+      "quote": "artifact_ids.txt",
+      "reason": "Indicates artifact IDs were written to a file and then iterated for deletion, confirming deletion was attempted."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the authorization failure caused the step to exit non-zero and fail the job."
+    }
+  ],
+  "suggested_fix": "Ensure the gh CLI is authenticated with a token that has permission to list and delete repository artifacts (for example, use a PAT with appropriate repo scopes or configure GITHUB_TOKEN/workflow permissions to allow actions artifact access). Verify the workflow is not running in a forked context that restricts token permissions and re-run the cleanup step.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-gpt-5-mini/cleanup-tsc-stress-001.txt",
+    "context_tokens_estimate": 681
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 605
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 34451.785,
+    "cache_key": "39b259d43cceabee009a5bd4ff8282370eec1c7095fd1c07e363f6e9e238e101",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_openai.py",
+    "model_info": {
+      "provider_name": "openai",
+      "requested_model": "gpt-5-mini",
+      "resolved_model": "gpt-5-mini-2025-08-07",
+      "base_url": "https://api.openai.com/v1",
+      "base_url_sha256": "d9617135d6fdd0a2cde722d637a1dfcc3da37515708b3ea5d66ae607c8ac785e",
+      "max_completion_tokens": 4096,
+      "system_fingerprint": null,
+      "usage": {
+        "prompt_tokens": 1972,
+        "completion_tokens": 1869,
+        "total_tokens": 3841,
+        "prompt_tokens_details": {
+          "cached_tokens": 1792,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1408,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8d5f6bb1e7382f07124c3096574e449b1db3361a9edfee83a2cea21aa4e1246b",
+    "shim_sha256": "af8381394b2d18c40bf85e7ccae20e2e8e329f05c391d37a44b9df0e2d10bd1f"
+  }
+}

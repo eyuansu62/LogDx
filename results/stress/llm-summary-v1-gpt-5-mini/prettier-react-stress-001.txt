@@ -1,0 +1,40 @@
+# CI Failure Summary
+
+## Primary Failure
+The GitHub Actions job `Complete job name: Run prettier` failed because the `yarn prettier-check` step returned a non-zero exit code indicating formatting errors detected by Prettier. The failure is reported by the `yarn prettier-check` run and the workflow exited with code 1.
+
+## Critical Evidence
+- `Complete job name: Run prettier` (L000031)  
+- `[36;1myarn prettier-check[0m` (L000195)  
+- `yarn run v1.22.22` (L000201)  
+- `$ node ./scripts/prettier/index.js` (L000202)  
+- `This project uses prettier to format all JavaScript code.` (L000204)  
+- `Please run yarn prettier-all and add changes to files listed below to your commit:` (L000205)  
+- `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` (L000208)  
+- `compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts` (L000209)  
+- `error Command failed with exit code 1.` (L000210)  
+- `##[error]Process completed with exit code 1.` (L000212)
+
+## Failed Tests / Checks
+- `Complete job name: Run prettier`  
+- `yarn prettier-check`
+
+## Relevant Files and Locations
+- `packages/react-dom/src/__tests__/ReactDOMFragmentRefs-test.js` (L000208)  
+- `compiler/packages/babel-plugin-react-compiler/src/ReactiveScopes/CodegenReactiveFunction.ts` (L000209)
+
+## Commands and Exit Codes
+- Command: `[36;1myarn prettier-check[0m` (invoked) (L000195)  
+- Command: `yarn run v1.22.22` (L000201)  
+- Command: `$ node ./scripts/prettier/index.js` (L000202)  
+- Exit: `error Command failed with exit code 1.` (L000210)  
+- GitHub Actions error marker: `##[error]Process completed with exit code 1.` (L000212)
+
+## Possible Root Cause
+Prettier detected formatting issues in the repository (specifically in the two files listed) causing `yarn prettier-check` to fail. The CI job requires files to be formatted; the listed files need to be formatted and committed (e.g., via `yarn prettier-all`).
+
+## Uncertainties / Missing Context
+- The detailed prettier diff or exact formatting violations are not present in the log provided.  
+- Prettier version, configuration, or whether auto-fix was attempted is not shown.  
+- It is not shown whether other files beyond the two listed also failed (log may be truncated).  
+- Whether the repository has pre-commit hooks or auto-format CI steps that should have already fixed these files is not included.

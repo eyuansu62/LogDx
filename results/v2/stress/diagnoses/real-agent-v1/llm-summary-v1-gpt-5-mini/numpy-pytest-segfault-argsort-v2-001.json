@@ -1,0 +1,97 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The pytest run crashed with a native segmentation fault (SIGSEGV) inside numpy's C-extension code during the test `test_datetime_nat_argsort_stability`. The build environment was missing BLAS libraries (openblas, mkl_rt) and various headers/math functions, suggesting an incomplete or broken native extension build that caused runtime memory corruption.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "A segmentation fault occurred in numpy's C-extension code (`numpy._core.fromnumeric._wrapfunc` → `argsort`) while running `test_datetime_nat_argsort_stability`, causing the Python process to crash with exit code 245 (SIGSEGV). The build environment lacked required BLAS libraries and headers, likely resulting in a broken native extension.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py",
+    "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py"
+  ],
+  "relevant_tests": [
+    "test_datetime_nat_argsort_stability"
+  ],
+  "evidence": [
+    {
+      "quote": "Fatal Python error: Segmentation fault",
+      "reason": "Confirms the process crashed with a native SIGSEGV during test execution."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
+      "reason": "Identifies the specific test that was running when the segfault occurred."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 54 in _wrapfunc",
+      "reason": "Shows the segfault originated inside numpy's C-extension dispatch code."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 245.",
+      "reason": "Exit code 245 = 256 - 11 (SIGSEGV), confirming the process was killed by a segmentation fault signal."
+    },
+    {
+      "quote": "/usr/bin/ld: cannot find -lopenblas: No such file or directory",
+      "reason": "Missing BLAS library during build indicates the native extensions may have been built without proper linear algebra support, potentially causing runtime instability."
+    },
+    {
+      "quote": "Run-time dependency openblas found: NO (tried pkgconfig, pkgconfig, pkgconfig, system and cmake)",
+      "reason": "Confirms the build environment lacked required runtime BLAS dependencies, contributing to a potentially broken native build."
+    }
+  ],
+  "suggested_fix": "Investigate the `test_datetime_nat_argsort_stability` test and the `argsort` implementation for NaT (Not-a-Time) datetime values to find the memory safety bug causing the segfault. Additionally, ensure the CI environment provides required BLAS libraries (openblas or mkl) and all necessary headers to produce a complete, stable native extension build.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-gpt-5-mini/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 1901
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 906
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 18228.46,
+    "cache_key": "2a0dcb60c2f63372b080b28784768ad56fcfd0014538a1c081ef3e6e28e11efc",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 5912,
+        "output_tokens": 1037,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard",
+        "cost": 0.033291,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.033291,
+          "upstream_inference_prompt_cost": 0.017736,
+          "upstream_inference_completions_cost": 0.015555
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 1,
+    "tool_call_count": 0,
+    "tool_calls": [],
+    "total_input_tokens_consumed": 5912,
+    "total_output_tokens_consumed": 1037,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 1
+  }
+}

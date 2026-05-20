@@ -1,0 +1,115 @@
+{
+  "case_id": "pytest-pandas-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "NumPy nightly (2.5.0.dev0) emits a DeprecationWarning for use of the 'generic' timedelta unit. Pytest promotes these warnings to errors, causing 52 collection errors and 45 test failures across the pandas test suite, resulting in exit code 1.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "NumPy 2.5.0.dev0 introduced a DeprecationWarning ('The generic unit for NumPy timedelta is deprecated') triggered when pandas uses np.datetime64('NaT') or bare integer timedelta operations without an explicit unit. Pytest's warning filters treat this DeprecationWarning as an error, causing widespread collection failures and test failures.",
+  "confidence": 0.9,
+  "relevant_files": [
+    "pandas/tests/arrays/masked/test_indexing.py",
+    "pandas/tests/arrays/test_timedeltas.py",
+    "pandas/tests/dtypes/test_inference.py",
+    "pandas/tests/dtypes/test_missing.py",
+    "pandas/tests/frame/indexing/test_indexing.py",
+    "pandas/tests/frame/test_constructors.py",
+    "pandas/tests/indexes/datetimes/methods/test_insert.py",
+    "pandas/tests/tslibs/test_array_to_datetime.py",
+    "pandas/tests/util/test_assert_index_equal.py",
+    "pandas/tests/frame/methods/test_rank.py",
+    "pandas/tests/arithmetic/test_datetime64.py"
+  ],
+  "relevant_tests": [
+    "TestArrayToDatetimeResolutionInference.test_infer_with_nat_int_float_str[nan]",
+    "TestArrayToDatetimeResolutionInference.test_infer_with_nat_int_float_str[-9223372036854775808]",
+    "TestArrayToDatetimeResolutionInference.test_infer_with_nat_int_float_str[-9.223372036854776e+18]",
+    "TestArrayToDatetimeResolutionInference.test_infer_with_nat_int_float_str[NaT]",
+    "test_assert_index_equal_different_inferred_types",
+    "TestRank.test_rank_inf_and_nan[DataFrame-contents0-float64]",
+    "TestRank.test_rank_inf_and_nan[DataFrame-contents5-datetime64]",
+    "TestRank.test_rank_inf_and_nan[Series-contents0-float64]",
+    "TestRank.test_rank_inf_and_nan[Series-contents4-object]",
+    "pandas/tests/arithmetic/test_datetime64.py::TestDatetimeIndexComparisons::test_dti_cmp_nat_behaves_like_float_cmp_nan"
+  ],
+  "evidence": [
+    {
+      "quote": "numpy                     2.5.0.dev0                                      [34mpypi[0m   https://pypi.anaconda.org/scientific-python-nightly-wheels/simple/numpy/2.5.0.dev0/numpy-2.5.0.dev0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "reason": "Confirms the NumPy nightly dev build (2.5.0.dev0) is installed, which introduced the new DeprecationWarning for generic timedelta units."
+    },
+    {
+      "quote": "E   DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific unit instead.",
+      "reason": "This is the exact warning raised by NumPy 2.5.0.dev0 that pytest promotes to an error, causing collection failures and test failures."
+    },
+    {
+      "quote": "_________ ERROR collecting pandas/tests/arrays/masked/test_indexing.py _________",
+      "reason": "Shows that the DeprecationWarning causes collection-time errors, not just runtime test failures."
+    },
+    {
+      "quote": ">       expected = np.array([dt, np.datetime64(\"NaT\")], dtype=\"M8[us]\")",
+      "reason": "Concrete pandas test location where np.datetime64('NaT') without an explicit unit triggers the generic unit DeprecationWarning."
+    },
+    {
+      "quote": "= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s (0:12:39) =",
+      "reason": "Summarizes the overall impact: 45 test failures and 52 collection errors caused by the deprecation warning being treated as an error."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the CI job failed with a non-zero exit code."
+    }
+  ],
+  "suggested_fix": "Update pandas code to use explicit units when creating np.datetime64('NaT') and np.timedelta64 values (e.g., np.datetime64('NaT', 'ns') instead of np.datetime64('NaT')), or add a pytest filterwarnings entry to ignore this specific NumPy DeprecationWarning until pandas is fully updated for NumPy 2.5 compatibility.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-gpt-5-mini/pytest-pandas-001.txt",
+    "context_tokens_estimate": 1772
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1192
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 37461.844,
+    "cache_key": "86c26f7c59678e502e75c4accedd8402385146ba266e47b9899dc22d0fd699b3",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 7237,
+        "output_tokens": 1392,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.042591,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.042591,
+          "upstream_inference_prompt_cost": 0.021711,
+          "upstream_inference_completions_cost": 0.02088
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 0,
+    "tool_calls": [],
+    "total_input_tokens_consumed": 12950,
+    "total_output_tokens_consumed": 2892,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

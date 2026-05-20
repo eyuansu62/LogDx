@@ -1,0 +1,49 @@
+# CI Failure Summary
+
+## Primary Failure
+A fourslash test assertion failed during the test runner (`runtests-parallel`), causing the CI job to exit with code 1. The failure is an `AssertionError` originating from the test harness while verifying a code fix in `tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts`.
+
+## Critical Evidence
+- `1 failing` (L000301)  
+- `fourslash tests` (L000305)  
+- `tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts` (L000306)  
+- `fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts runs correctly:` (L000307)  
+- `AssertionError: expected 'Add return type \'Foo<string>\'' to equal 'Add return type \'Foo<string, string[…'` (L000308)  
+- `at _TestState.verifyCodeFix (src/harness/fourslashImpl.ts:3435:20)` (L000309)  
+- `at Verify.codeFix (src/harness/fourslashInterfaceImpl.ts:206:20)` (L000310)  
+- `at eval (codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.js:13:8)` (L000311)  
+- `Error: Process exited with code: 1` (L000322)  
+- `##[error]Process completed with exit code 1.` (L000325)
+
+## Failed Tests / Checks
+- `1 failing` (L000301)  
+- `fourslash tests` (L000305)  
+- `tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts` (L000306)  
+- `fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts runs correctly:` (L000307)
+
+## Relevant Files and Locations
+- `tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts` (L000306)  
+- `codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.js:13:8` (L000311)  
+- `src/harness/fourslashImpl.ts:3435:20` (L000309)  
+- `src/harness/fourslashImpl.ts:4711:9` (L000312)  
+- `src/harness/fourslashImpl.ts:4682:5` (L000313)  
+- `src/harness/fourslashImpl.ts:4665:5` (L000314)  
+- `src/harness/fourslashInterfaceImpl.ts:206:20` (L000310)  
+- `src/testRunner/fourslashRunner.ts:59:39` (L000315)
+
+## Commands and Exit Codes
+- `npm test -- --no-lint --coverage` (L000258)  
+- `> hereby runtests-parallel --light=false --no-lint --coverage` (L000263)  
+- Step failed: `Error in [31mdo-runtests-parallel[39m in 10m 38.9s` (L000321)  
+- `Error: Process exited with code: 1` (L000322)  
+- Completed step with errors: `Completed [34mruntests-parallel[39m[31m with errors[39m in 10m 58.4s` (L000323)  
+- Failed tasks: `[31mdo-runtests-parallel[39m` (L000324)  
+- GitHub Actions final error: `##[error]Process completed with exit code 1.` (L000325)
+
+## Possible Root Cause
+The test harness assertion indicates the code-fix description returned by the tool does not match the test's expected description (`'Add return type \'Foo<string>\''` vs `'Add return type \'Foo<string, string[…'`), causing `_TestState.verifyCodeFix` to throw. This suggests either the produced code fix text changed (different generic parameters or formatting) or the test expectation is stale.
+
+## Uncertainties / Missing Context
+- The log includes a truncated/ellipsized expected string (`'Foo<string, string[…'`); the full actual and expected messages are not present in the MAP output.  
+- The test source (the fourslash test content) and the full code-fix output are not included, so it's unclear whether the failure is due to a legitimate code-fix behavior change or a test expectation mismatch.  
+- Environment details (Node/npm versions, exact test runner options beyond those listed) are not present and might affect string formatting or behavior.

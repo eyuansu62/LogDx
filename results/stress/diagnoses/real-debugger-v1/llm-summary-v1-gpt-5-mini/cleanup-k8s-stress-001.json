@@ -1,0 +1,90 @@
+{
+  "case_id": "cleanup-k8s-stress-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "GitHub CLI (gh api) failed to delete Actions artifacts with HTTP 403 'Resource not accessible by integration'. The token used by the gh CLI lacks the necessary permissions to delete repository artifacts.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GitHub token (GH_TOKEN, GITHUB_TOKEN, or similar) used by the gh CLI does not have permission to delete Actions artifacts. The API explicitly rejected the DELETE request with HTTP 403, indicating an authorization failure rather than a transient network issue.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "/repos/kubernetes/kubernetes/actions/artifacts",
+    "/repos/kubernetes/kubernetes/actions/runs/23485708914/artifacts"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "Direct error message from the gh CLI indicating the token lacks required permissions for the DELETE operation on artifacts."
+    },
+    {
+      "quote": "GITHUB_COPILOT_API_TOKEN: ***\n   GH_TOKEN: ***\n   GITHUB_TOKEN: ***",
+      "reason": "Shows that multiple GitHub tokens are present in the environment (masked), but their actual scopes/permissions are not visible, confirming a token is being used but likely with insufficient scope."
+    },
+    {
+      "quote": "gh api -X DELETE -H \"Accept: application/vnd.github+json\" /repos/kubernetes/kubernetes/actions/artifacts/\"$artifact_id\"",
+      "reason": "The DELETE operation on the artifacts endpoint requires specific permissions (actions:write or equivalent) that the token apparently does not have."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Exit code 1 confirms the command failed due to the 403 error, not a transient/network issue."
+    }
+  ],
+  "suggested_fix": "Ensure the GitHub token used by gh (check which of GH_TOKEN or GITHUB_TOKEN is being used) has sufficient permissions to delete Actions artifacts. If using GITHUB_TOKEN in GitHub Actions, verify the job has 'actions: write' or broader permissions in the workflow permissions configuration.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-gpt-5-mini/cleanup-k8s-stress-001.txt",
+    "context_tokens_estimate": 752
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 689
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 21501.757,
+    "cache_key": "8f1f06aac2b6d62e8cbc1e42a598f5de44bd1fe42aa3c434aee279fa70054393",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "haiku",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 9,
+        "cache_creation_input_tokens": 3794,
+        "cache_read_input_tokens": 63202,
+        "output_tokens": 1287,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 3794,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 9,
+            "output_tokens": 1287,
+            "cache_read_input_tokens": 63202,
+            "cache_creation_input_tokens": 3794,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 3794
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "b138ec85-8492-45ae-b93a-6d84690a7d9a"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "ade4ac2160bff920d4d00a0acc2289b3e3cf8de3a70e06ecd399e7cb5a0bb356",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

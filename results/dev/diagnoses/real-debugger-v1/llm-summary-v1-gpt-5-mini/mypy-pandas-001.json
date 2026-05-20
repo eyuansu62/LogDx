@@ -1,0 +1,111 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Type checkers pyright and mypy failed with 279 errors across 9 files due to missing or unavailable symbols in pyarrow modules (Expression, FileSystem, is_null, utf8_length, list_value_length, month, bit_wise_not, fill_null), indicating a version or stub compatibility mismatch.",
+  "root_cause_category": "type_error",
+  "root_cause": "pyarrow API or stub version mismatch: symbols imported and used in pandas code are not exported from or not available as attributes in the pyarrow modules according to pyright and mypy type information",
+  "confidence": 0.82,
+  "relevant_files": [
+    "pandas/core/arrays/arrow/accessors.py",
+    "pandas/io/orc.py",
+    "pandas/compat/pyarrow.py",
+    "pandas/core/arrays/_arrow_string_mixins.py",
+    "pandas/core/arrays/datetimes.py",
+    "pandas/core/arrays/arrow/array.py"
+  ],
+  "relevant_tests": [
+    "pyright",
+    "pyright reportGeneralTypeIssues",
+    "mypy",
+    "mypy (stubtest)"
+  ],
+  "evidence": [
+    {
+      "quote": "\"Expression\" is not exported from module \"pyarrow.compute\"",
+      "reason": "Direct pyright error showing the symbol is missing from pyarrow.compute in the type information available to the type checker"
+    },
+    {
+      "quote": "\"FileSystem\" is not exported from module \"pyarrow.fs\"",
+      "reason": "Direct pyright error showing another missing export from a pyarrow submodule"
+    },
+    {
+      "quote": "Module has no attribute \"is_null\"",
+      "reason": "mypy attribute error indicating pyarrow.compute lacks the is_null attribute that pandas code expects"
+    },
+    {
+      "quote": "Found 279 errors in 9 files (checked 1458 source files)",
+      "reason": "Systematic error pattern across multiple files and modules, characteristic of a global type information mismatch rather than isolated code bugs"
+    },
+    {
+      "quote": "Type-checking failures are concentrated on `pyarrow` symbols... suggests a mismatch between the expected `pyarrow` API/stubs and the environment used by pyright/mypy (stub/version incompatibility)",
+      "reason": "Context explicitly identifies the root cause as a stub or version incompatibility with pyarrow"
+    },
+    {
+      "quote": "pyright..................................................................Failed\n- exit code: 1",
+      "reason": "Pre-commit hook failed with exit code 1 during pyright execution"
+    },
+    {
+      "quote": "mypy.....................................................................[41mFailed[m\n- exit code: 1",
+      "reason": "Pre-commit hook failed with exit code 1 during mypy execution"
+    }
+  ],
+  "suggested_fix": "Verify the installed pyarrow version and its type stubs; update pyarrow and its type stubs to versions compatible with the pandas code, or update the pandas code to use only the symbols available in the current pyarrow version",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-gpt-5-mini/mypy-pandas-001.txt",
+    "context_tokens_estimate": 1317
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 840
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 32904.565,
+    "cache_key": "75df3718b393385caef2b9a8d1d701e251049ce0a9eddf336b37c32cefa2f7cb",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "haiku",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 9,
+        "cache_creation_input_tokens": 4601,
+        "cache_read_input_tokens": 63202,
+        "output_tokens": 3166,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 4601,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 9,
+            "output_tokens": 3166,
+            "cache_read_input_tokens": 63202,
+            "cache_creation_input_tokens": 4601,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 4601
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "3badd94d-3bea-4597-9a37-bffb1fc30556"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "ade4ac2160bff920d4d00a0acc2289b3e3cf8de3a70e06ecd399e7cb5a0bb356",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

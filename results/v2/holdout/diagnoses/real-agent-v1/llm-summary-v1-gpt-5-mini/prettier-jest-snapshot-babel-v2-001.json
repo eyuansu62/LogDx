@@ -1,0 +1,107 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest snapshot tests failed because parser error messages and error positions changed. The Babel parser now reports different error messages (e.g., '`import()` requires exactly one or two arguments. (1:1)' instead of 'Unexpected token (1:8)') and different caret positions for TypeScript errors, causing 13 snapshots to fail across 3 test suites.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Snapshot mismatches caused by changed Babel/TypeScript parser error messages and error positions. The parser now emits different error text and/or points to different source locations than what the snapshots expect, indicating a parser version change or behavioral update that was not reflected in updated snapshots.",
+  "confidence": 0.85,
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js",
+    "src/common/parser-create-error.js",
+    "src/language-js/parse/utilities/create-babel-parse-error.js",
+    "src/language-js/parse/babel.js"
+  ],
+  "relevant_tests": [
+    "snippet: #0 > format[babel]",
+    "snippet: #0 > format[babel-flow]",
+    "snippet: #0 > format[babel-ts]",
+    "snippet: #1 > format[babel]",
+    "snippet: #1 > format[babel-flow]",
+    "snippet: #2 > format[babel]",
+    "snippet: #3 > format[babel]"
+  ],
+  "evidence": [
+    {
+      "quote": "- Unexpected token (1:8)\n+ `import()` requires exactly one or two arguments. (1:1)",
+      "reason": "Shows the snapshot expected one error message but the parser now produces a different error message and position, confirming parser behavior changed."
+    },
+    {
+      "quote": "SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)\n> 3 |     constructor(x = 1);",
+      "reason": "TypeScript parser now throws a SyntaxError for constructor parameter initializers in ambient contexts, which differs from the stored snapshot expectation."
+    },
+    {
+      "quote": "- An implementation cannot be declared in ambient contexts. (1:1)\n+ An implementation cannot be declared in ambient contexts. (1:24)",
+      "reason": "The error position (caret location) changed from column 1 to column 24 for the same error, indicating the parser now points to a different token."
+    },
+    {
+      "quote": "Snapshots:   13 failed, 12086 passed, 12099 total",
+      "reason": "Confirms 13 snapshot mismatches caused the overall test failure."
+    },
+    {
+      "quote": "Test Suites: 3 failed, 1500 passed, 1503 total",
+      "reason": "Confirms exactly 3 test suites failed, all related to parser error formatting."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the CI job exited with a non-zero exit code due to the test failures."
+    }
+  ],
+  "suggested_fix": "Update the failing snapshots to match the new parser error messages and positions by running `jest --updateSnapshot` (or `jest -u`) for the affected test files, after verifying that the new parser behavior is correct and intentional (e.g., after a Babel or TypeScript parser dependency upgrade).",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-gpt-5-mini/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 1298
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 969
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 20877.402,
+    "cache_key": "dbb27fdd0ddf707cc861d1174f49cd68ac4df8471df2e510737b1820f9ca48f3",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 4911,
+        "output_tokens": 1105,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.031308,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.031308,
+          "upstream_inference_prompt_cost": 0.014733,
+          "upstream_inference_completions_cost": 0.016575
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 1,
+    "tool_call_count": 0,
+    "tool_calls": [],
+    "total_input_tokens_consumed": 4911,
+    "total_output_tokens_consumed": 1105,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 1
+  }
+}

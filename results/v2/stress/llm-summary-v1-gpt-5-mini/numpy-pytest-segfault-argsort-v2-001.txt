@@ -1,0 +1,73 @@
+# CI Failure Summary
+
+## Primary Failure
+The pytest run crashed with a native crash: `Fatal Python error: Segmentation fault` during test execution (the test runner invoked via Python/pytest). The crash occurred while running numpy tests, with the stack showing a segfault inside numpy C-extension code called from `numpy._core.fromnumeric._wrapfunc` and `numpy._core.tests.test_datetime.test_datetime_nat_argsort_stability`. (Tool: `pytest` as invoked by Python; failure shape: native SIGSEGV during test run.)
+
+## Critical Evidence
+- `L005463` `Fatal Python error: Segmentation fault`
+- `L005465` `  File "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py", line 54 in _wrapfunc`
+- `L005466` `  File "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py", line 1231 in argsort`
+- `L005467` `  File "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py", line 226 in test_datetime_nat_argsort_stability`
+- `L005502` `##[error]Process completed with exit code 245.`
+- `L001812` `/usr/bin/ld: cannot find -lmkl_rt: No such file or directory`
+- `L001877` `/usr/bin/ld: cannot find -lopenblas: No such file or directory`
+- `L002586` `/home/runner/work/numpy/numpy/build/meson-private/tmpati5_57k/testfile.c:9:32: error: 'isfinite' undeclared (first use in this function)`
+- `L002654` `/home/runner/work/numpy/numpy/build/meson-private/tmpktaptscn/testfile.c:9:32: error: 'isinf' undeclared (first use in this function); did you mean 'sinf'?`
+- `L002723` `/home/runner/work/numpy/numpy/build/meson-private/tmp_plgfkr4/testfile.c:9:32: error: 'isnan' undeclared (first use in this function); did you mean 'nan'?`
+- `L002792` `/home/runner/work/numpy/numpy/build/meson-private/tmpmfkk_fp3/testfile.c:9:32: error: 'signbit' undeclared (first use in this function)`
+- `L003043` `/home/runner/work/numpy/numpy/build/meson-private/tmpqy8_w1nz/testfile.c:4:12: error: #error "Header 'xlocale.h' could not be found"`
+- `L003090` `/home/runner/work/numpy/numpy/build/meson-private/tmpasac2xtx/testfile.c:4:12: error: #error "Header 'libunwind.h' could not be found"`
+- `L001792` `Run-time dependency scipy-openblas found: NO (tried pkgconfig)`
+- `L001918` `Run-time dependency openblas found: NO (tried pkgconfig, pkgconfig, pkgconfig, system and cmake)`
+
+## Failed Tests / Checks
+- `test_datetime_nat_argsort_stability` (from `/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py`, L226) — segfault occurred while running this test (stack trace points here).  
+- `Checking if "thread_local" compiles: NO` (L002863)
+- `Checking if "__declspec(thread)" compiles: NO` (L002930)
+- `Has header "xlocale.h" : NO` (L003047)
+- `Has header "libunwind.h" : NO` (L003094)
+- `Has header "sys/endian.h" : NO` (L003426)
+- (Build/runtime dependency checks) `Run-time dependency scipy-openblas found: NO` (L001792)  
+- (Build/runtime dependency checks) `Run-time dependency openblas found: NO` (L001918)
+- Various small compile checks failing due to missing math macros/functions (`'isfinite' undeclared`, `'isinf' undeclared`, `'isnan' undeclared`, `'signbit' undeclared`) (L002586, L002654, L002723, L002792)
+
+## Relevant Files and Locations
+- `/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py:54` (L005465)
+- `/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py:1231` (L005466)
+- `/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py:226` (L005467)
+- Meson private compile test files (examples):
+  - `/home/runner/work/numpy/numpy/build/meson-private/tmpati5_57k/testfile.c` (isfinite error) (L002586)
+  - `/home/runner/work/numpy/numpy/build/meson-private/tmpktaptscn/testfile.c` (isinf error) (L002654)
+  - `/home/runner/work/numpy/numpy/build/meson-private/tmp_plgfkr4/testfile.c` (isnan error) (L002723)
+  - `/home/runner/work/numpy/numpy/build/meson-private/tmpmfkk_fp3/testfile.c` (signbit error) (L002792)
+  - `/home/runner/work/numpy/numpy/build/meson-private/tmpqy8_w1nz/testfile.c` (missing xlocale.h) (L003043)
+  - `/home/runner/work/numpy/numpy/build/meson-private/tmpasac2xtx/testfile.c` (missing libunwind.h) (L003090)
+  - `/home/runner/work/numpy/numpy/build/meson-private/tmpmu5_owzu/testfile.c` (missing sys/endian.h) (L003422)
+  - `/home/runner/work/numpy/numpy/build/meson-private/tmp_0k3de_9/testfile.cpp` (C++ compile checks; _LIBCPP_VERSION errors) (L004006-L004009, L004284)
+- Linker complaints:
+  - `/usr/bin/ld: cannot find -lmkl_rt: No such file or directory` (L001812)
+  - `/usr/bin/ld: cannot find -lopenblas: No such file or directory` (L001877)
+
+## Commands and Exit Codes
+- `/opt/hostedtoolcache/Python/3.12.13/x64/bin/python vendored-meson/meson/meson.py install --no-rebuild --only-changed -C build --destdir ../build-install` (invoked) (L001460)
+- `/usr/bin/pkg-config --modversion scipy-openblas` -> exit code `1` (pkg-config reports not found) (L001785, L001792)
+- C++ compile (mkl test): `c++ ... -lmkl_rt -Wl,--allow-shlib-undefined` -> exit code `1` (linker error: cannot find -lmkl_rt) (L001810-L001813)
+- C++ compile (openblas test): `c++ ... -lopenblas -Wl,--allow-shlib-undefined` -> exit code `1` (linker error: cannot find -lopenblas) (L001875-L001878)
+- `cc ... -std=c11 -lm` test compile commands repeatedly -> many returned exit code `1` for various feature/header checks (examples shown L002583, L002651, L002720, L002857)
+- Cached C++ compile commands for C++ feature checks (multiple) show compile failures for `_LIBCPP_VERSION` and `version` header (L004289, L004304, L004757, L004772)
+- Meson compile and test invocation:
+  - `$ /opt/hostedtoolcache/Python/3.12.13/x64/bin/python vendored-meson/meson/meson.py compile -C build` (L005379)
+  - `$ /opt/hostedtoolcache/Python/3.12.13/x64/bin/python -P -m pytest -m 'not slow' --durations=10 --timeout=600` (L005391)
+- Runtime failure/CI exit:
+  - `Fatal Python error: Segmentation fault` (L005463)
+  - `##[error]Process completed with exit code 245.` (L005502)
+
+## Possible Root Cause
+The immediate failure is a segmentation fault in a numpy C-extension during pytest (stack traces into installed numpy C code). The build logs also show multiple compile-time failures and missing runtime dependencies (missing BLAS libs like `-lmkl_rt` and `-lopenblas`, missing headers such as `xlocale.h`, `libunwind.h`, `sys/endian.h`, and undeclared math functions), suggesting the build environment is missing libraries/headers or there was an inconsistent/incomplete build of native extensions leading to ABI/runtime corruption.
+
+## Uncertainties / Missing Context
+- The log does not show whether the build completed successfully for all C extensions before tests (some failures occurred during feature detection but final build status for each extension is not fully visible).  
+- No full pytest output or test ordering is included, only the stack trace at the point of crash; it's unclear whether a single extension is broken or multiple.  
+- System/compiler details (glibc vs musl, exact gcc/clang versions, configured CFLAGS/CXXFLAGS, and environment variables) are not present in the provided chunks.  
+- The mapping of exit code `245` to the underlying OS signal/termination reason is not detailed in the log excerpts.  
+- It is not shown whether BLAS/LAPACK absence is expected for this job or should have been provided via the CI environment.

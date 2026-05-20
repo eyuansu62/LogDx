@@ -1,0 +1,39 @@
+# CI Failure Summary
+
+## Primary Failure
+The `go test -race -tags=integration ./...` step failed due to a Go test timeout: `TestHuhPrompterMultiSelectWithSearchPersistence` (subtest `selections_persist_after_changing_search_query`) in the prompter package did not complete because `form.Run()` "did not complete in time".
+
+## Critical Evidence
+- `##[group]Run go test -race -tags=integration ./...` (L000204)  
+- `^[[36;1mgo test -race -tags=integration ./...^[[0m` (L000205)  
+- `--- FAIL: TestHuhPrompterMultiSelectWithSearchPersistence (5.19s)` (L000243)  
+- `--- FAIL: TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query (5.13s)` (L000244)  
+- `huh_prompter_test.go:478: form.Run() did not complete in time` (L000245)  
+- `FAIL` (L000246)  
+- `FAIL	github.com/cli/cli/v2/internal/prompter	8.475s` (L000247)  
+- `?   	github.com/cli/cli/v2/utils	[no test files]` (L000509)  
+- `##[error]Process completed with exit code 1.` (L000511)
+
+## Failed Tests / Checks
+- `TestHuhPrompterMultiSelectWithSearchPersistence`  
+- `TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query`  
+- `FAIL	github.com/cli/cli/v2/internal/prompter`
+
+## Relevant Files and Locations
+- `huh_prompter_test.go:478`  
+- package: `github.com/cli/cli/v2/internal/prompter` (as shown in fail line)
+
+## Commands and Exit Codes
+- Command run: `^[[36;1mgo test -race -tags=integration ./...^[[0m` (L000205)  
+- Step label: `##[group]Run go test -race -tags=integration ./...` (L000204)  
+- CI final exit: `##[error]Process completed with exit code 1.` (L000511)
+
+## Possible Root Cause
+The test timed out waiting for a UI/form routine: `form.Run()` did not finish within the test's allowed time, causing the subtest to fail. This likely indicates a hang or deadlock (or a test timeout that is too short) in the multi-select search persistence flow of the prompter tests.
+
+## Uncertainties / Missing Context
+- The full test output/stack trace around the timeout is not present (only the single timeout line).  
+- The configured test timeout value and whether the test uses custom timeouts is not shown.  
+- Go version, CI runner environment, and any recent changes to `huh_prompter_test.go` or the prompter code are not provided.  
+- It is unknown whether this is a flaky/intermittent failure or reproducible locally.  
+- The presence of `?   	github.com/cli/cli/v2/utils	[no test files]` (L000509) appears informational and unrelated to the failure but context is missing.

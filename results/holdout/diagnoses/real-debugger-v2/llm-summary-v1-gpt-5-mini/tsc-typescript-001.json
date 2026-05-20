@@ -1,0 +1,98 @@
+{
+  "case_id": "tsc-typescript-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "A fourslash test assertion failed because the code-fix description produced by the TypeScript compiler does not match the expected string in the test. The actual description was 'Add return type 'Foo<string>'' while the test expected something like 'Add return type 'Foo<string, string[…'', indicating the produced generic type annotation is missing one or more type parameters.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The verifyCodeFix assertion in the fourslash test harness failed because the actual code-fix description string ('Add return type \\'Foo<string>\\'') does not match the expected description ('Add return type \\'Foo<string, string[…\\'') for the test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts. The code fix implementation is producing a simplified generic type with fewer type arguments than the test expects.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts",
+    "src/harness/fourslashImpl.ts",
+    "src/harness/fourslashInterfaceImpl.ts",
+    "src/testRunner/fourslashRunner.ts"
+  ],
+  "relevant_tests": [
+    "fourslash test codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts runs correctly:"
+  ],
+  "evidence": [
+    {
+      "quote": "AssertionError: expected 'Add return type \\'Foo<string>\\'' to equal 'Add return type \\'Foo<string, string[…'",
+      "reason": "This is the direct assertion mismatch: the actual code-fix title is 'Foo<string>' (one type argument) but the test expects 'Foo<string, string[…' (at least two type arguments), confirming the code fix is over-simplifying generic annotations."
+    },
+    {
+      "quote": "at _TestState.verifyCodeFix (src/harness/fourslashImpl.ts:3435:20)",
+      "reason": "Identifies the exact harness method that threw the AssertionError, confirming this is a test assertion failure in the code-fix verification path."
+    },
+    {
+      "quote": "tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts",
+      "reason": "Names the specific fourslash test file that failed, whose name itself references 'generics-oversimplification', consistent with the observed mismatch of fewer type parameters."
+    },
+    {
+      "quote": "1 failing",
+      "reason": "Confirms exactly one test failed in the test run, isolating the failure to this single fourslash case."
+    },
+    {
+      "quote": "Error: Process exited with code: 1",
+      "reason": "Confirms the test runner exited with a non-zero code due to the failing test, causing the CI job to fail."
+    }
+  ],
+  "suggested_fix": "Update the fourslash test file tests/cases/fourslash/codeFixMissingTypeAnnotationOnExports52-generics-oversimplification.ts so that its expected code-fix description matches the currently produced output ('Add return type \\'Foo<string>\\''), or fix the code-fix implementation to produce the full generic type with all expected type arguments (e.g., 'Foo<string, string>') as the test originally required.",
+  "input": {
+    "context_path": "results/holdout/llm-summary-v1-gpt-5-mini/tsc-typescript-001.txt",
+    "context_tokens_estimate": 892
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 917
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 24073.672,
+    "cache_key": "273bd84d52e3a46ecaf3af034b4690abc4c7374f00b975f106b848fb02f96da6",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 4768,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 880,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 4768,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 880,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 4768,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 4768
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "b955d401-98a7-460c-8dd6-998f2947396f"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

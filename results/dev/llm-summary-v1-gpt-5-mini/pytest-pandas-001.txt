@@ -1,0 +1,71 @@
+# CI Failure Summary
+
+## Primary Failure
+The pytest run (command shown as `✨ Pixi task (ci-test-pandas in numpy-nightly): python -m pytest ...`) fails during test collection and later tests because a `DeprecationWarning` from NumPy about the "'generic' unit for NumPy timedelta" is being reported as an error. The warning originates from creating/using `np.datetime64("NaT")` / `np.timedelta64`-related constructs with an implicit/generic unit in the NumPy nightly build (`numpy 2.5.0.dev0`) and is surfaced as `E   DeprecationWarning` by pytest, causing collection errors and many test failures.
+
+## Critical Evidence
+- `✨ Pixi task (ci-test-pandas in numpy-nightly): python -m pytest -r fE "-m not slow and not network and not single_cpu" --numprocesses=auto --dist=worksteal --capture=no --cov=pandas --cov-report=xml --cov-append pandas` (L001263)
+- `numpy                     2.5.0.dev0                                      [34mpypi[0m   https://pypi.anaconda.org/scientific-python-nightly-wheels/simple/numpy/2.5.0.dev0/numpy-2.5.0.dev0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl` (L000965)
+- `============================= test session starts ==============================` (L001266)
+- `platform linux -- Python 3.13.13, pytest-9.0.3, pluggy-1.6.0` (L001267)
+- `_________ ERROR collecting pandas/tests/arrays/masked/test_indexing.py _________` (L001276)
+- `E   DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific unit instead.` (L001282)
+- `E   DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific unit instead.` (repeated in many locations, e.g. L001310, L001338, L001350, L001386, L001414, L001442)
+- `>       expected = np.array([dt, np.datetime64("NaT")], dtype="M8[us]")` with `DeprecationWarning` (L002393-L002396)
+- `FAILED pandas/tests/arithmetic/test_datetime64.py::TestDatetimeIndexComparisons::test_dti_cmp_nat_behaves_like_float_cmp_nan - DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated ...` (L003522)
+- `= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s (0:12:39) =` (L003619)
+- `##[error]Process completed with exit code 1.` (L003620)
+
+## Failed Tests / Checks
+- `_________ ERROR collecting pandas/tests/arrays/masked/test_indexing.py _________` (L001276)
+- `___________ ERROR collecting pandas/tests/arrays/test_timedeltas.py ____________` (L001304)
+- `____________ ERROR collecting pandas/tests/dtypes/test_inference.py ____________` (L001332)
+- `_____________ ERROR collecting pandas/tests/dtypes/test_missing.py _____________` (L001346)
+- `__________ ERROR collecting pandas/tests/frame/indexing/test_indexing.py _________` (L001380)
+- `__________ ERROR collecting pandas/tests/frame/test_constructors.py ___________` (L001408)
+- `____ ERROR collecting pandas/tests/indexes/datetimes/methods/test_insert.py ____` (L001436)
+- `TestArrayToDatetimeResolutionInference.test_infer_with_nat_int_float_str[nan]` (L002376 / L002393-L002396)
+- `TestArrayToDatetimeResolutionInference.test_infer_with_nat_int_float_str[-9223372036854775808]` (L002398)
+- `TestArrayToDatetimeResolutionInference.test_infer_with_nat_int_float_str[-9.223372036854776e+18]` (L002420)
+- `TestArrayToDatetimeResolutionInference.test_infer_with_nat_int_float_str[NaT]` (L002442)
+- `test_assert_index_equal_different_inferred_types` (L002486 / L002498-L002502)
+- `TestRank.test_rank_inf_and_nan[DataFrame-contents0-float64]` (L002503 / L002575-L002579)
+- `TestRank.test_rank_inf_and_nan[DataFrame-contents5-datetime64]` (L002893 / L002887-L002892)
+- `TestRank.test_rank_inf_and_nan[Series-contents0-float64]` (L002971)
+- `TestRank.test_rank_inf_and_nan[Series-contents4-object]` (L003283)
+- `pandas/tests/arithmetic/test_datetime64.py::TestDatetimeIndexComparisons::test_dti_cmp_nat_behaves_like_float_cmp_nan` (L003522)
+- Summary line showing overall totals: `= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s (0:12:39) =` (L003619)
+
+## Relevant Files and Locations
+- `pandas/tests/arrays/masked/test_indexing.py:11` (L001277)
+- `pandas/tests/arrays/masked/test_indexing.py:43` (L001279)
+- `pandas/tests/arrays/test_timedeltas.py:196` (L001305)
+- `pandas/tests/arrays/test_timedeltas.py:233` (L001307)
+- `pandas/tests/dtypes/test_inference.py:1109` (L001333)
+- `pandas/tests/dtypes/test_inference.py:1344` (L001335)
+- `pandas/tests/dtypes/test_missing.py:769` (L001347)
+- `pandas/tests/frame/indexing/test_indexing.py:1889` (L001381)
+- `pandas/tests/frame/indexing/test_indexing.py:1921` (L001383)
+- `pandas/tests/frame/test_constructors.py:77` (L001409)
+- `pandas/tests/frame/test_constructors.py:2041` (L001411)
+- `pandas/tests/indexes/datetimes/methods/test_insert.py:18` (L001437)
+- `pandas/tests/indexes/datetimes/methods/test_insert.py:19` (L001439)
+- `pandas/tests/tslibs/test_array_to_datetime.py:101` (L002397)
+- `pandas/tests/util/test_assert_index_equal.py:262` (L002502)
+- `pandas/tests/frame/methods/test_rank.py:391` (L002580 / L002892 / L003360 / L003433)
+- `pandas/tests/arithmetic/test_datetime64.py` (test shown at L003522)
+- CI summary: overall test summary lines (L003619)
+
+## Commands and Exit Codes
+- Command run: `✨ Pixi task (ci-test-pandas in numpy-nightly): python -m pytest -r fE "-m not slow and not network and not single_cpu" --numprocesses=auto --dist=worksteal --capture=no --cov=pandas --cov-report=xml --cov-append pandas` (L001263)
+- Installed package: `numpy 2.5.0.dev0` wheel (L000965)
+- Exit: `##[error]Process completed with exit code 1.` (L003620)
+
+## Possible Root Cause
+NumPy nightly (`numpy 2.5.0.dev0`) is emitting a `DeprecationWarning` for use of the "generic" timedelta unit (message: `The 'generic' unit for NumPy timedelta is deprecated ... Please use a specific unit instead.`) when creating/using `np.datetime64("NaT")` or implicit unit `np.timedelta64` operations. Those warnings are being treated as errors by the pytest run (shown as `E   DeprecationWarning`), causing collection to fail and many tests to error out.
+
+## Uncertainties / Missing Context
+- The logs do not show pytest warning filters or pytest.ini/pyproject.toml settings; it's unclear whether warnings are globally treated as errors via `-W error`, `filterwarnings`, or environment variables (e.g., `PYTHONWARNINGS`).
+- We do not have the NumPy or Pandas source lines where the implicit-generic timedelta usage occurs beyond the test locations; exact call sites causing the deprecation are not shown.
+- It is not explicit whether this is an intentional behavior change in the NumPy nightly or an unintended side effect; further investigation against NumPy 2.5.0.dev0 release notes or upstream commits is needed.
+- Full traceback/context for each `DeprecationWarning` is not present in the concatenated chunks, limiting pinpointing of the precise code path(s) triggering the warning.

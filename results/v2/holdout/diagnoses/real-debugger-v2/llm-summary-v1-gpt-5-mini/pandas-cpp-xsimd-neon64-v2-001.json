@@ -1,0 +1,111 @@
+{
+  "case_id": "pandas-cpp-xsimd-neon64-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "C++ compilation failed during a ninja/pip editable wheel build because explicit template instantiations of `accumulate_moments_simd::operator()` use `xsimd::neon64` but the candidate function template is defined for `xsimd::neon`, causing a type mismatch that the clang++ compiler rejects with 'explicit instantiation does not refer to a function template'. This stops ninja and causes pip's editable metadata preparation to fail with exit code 1.",
+  "root_cause_category": "compile_error",
+  "root_cause": "Explicit template instantiation mismatch between `xsimd::neon64` (used in instantiation sites) and `xsimd::neon` (the actual template parameter type in the function template definition), causing clang++ to emit 'explicit instantiation of operator() does not refer to a function template' errors in moments_inst_neon.cpp and moments_simd.hpp.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "../../pandas/_libs/include/pandas/simd/moments_simd.hpp",
+    "../../pandas/_libs/simd/moments_inst_neon.cpp",
+    "../../pandas/_libs/simd/moments.cpp"
+  ],
+  "relevant_tests": [
+    "FAILED: [code=1] pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o",
+    "FAILED: [code=1] pandas/_libs/simd/libmoments_base.a.p/moments.cpp.o",
+    "× Preparing editable metadata (pyproject.toml) did not run successfully."
+  ],
+  "evidence": [
+    {
+      "quote": "../../pandas/_libs/include/pandas/simd/moments_simd.hpp:255:50: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "reason": "Directly states the C++ compile error: the explicit instantiation is invalid because the compiler cannot match it to any template."
+    },
+    {
+      "quote": "extern template Moments accumulate_moments_simd::operator()<xsimd::neon64>(",
+      "reason": "Shows the instantiation site uses `xsimd::neon64` as the template argument."
+    },
+    {
+      "quote": "could not match 'Moments (xsimd::neon64, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int) noexcept' (aka 'Moments (xsimd::neon64, span<const double>, int, optional<span<const unsigned char>>, int) noexcept') against 'Moments (xsimd::neon, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int)'",
+      "reason": "Explicitly identifies the type mismatch: the instantiation uses `xsimd::neon64` but the template definition uses `xsimd::neon`, confirming the root cause."
+    },
+    {
+      "quote": "../../pandas/_libs/simd/moments_inst_neon.cpp:14:43: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "reason": "Same error appears in the .cpp instantiation file, confirming both the header and source file have mismatched `xsimd::neon64` vs `xsimd::neon` instantiations."
+    },
+    {
+      "quote": "2 errors generated.",
+      "reason": "Confirms clang++ produced compilation errors that caused the object file build to fail."
+    },
+    {
+      "quote": "ninja: build stopped: subcommand failed.",
+      "reason": "Shows that the C++ compile errors propagated to stop the entire ninja build."
+    },
+    {
+      "quote": "× Preparing editable metadata (pyproject.toml) did not run successfully.",
+      "reason": "Confirms that the ninja build failure caused pip's editable metadata step to fail, which is the final CI-visible failure."
+    },
+    {
+      "quote": "-I../../subprojects/xsimd-14.2.0/include",
+      "reason": "Identifies the xsimd version (14.2.0) being used, which may define `xsimd::neon` and `xsimd::neon64` differently from what the pandas source code expects."
+    }
+  ],
+  "suggested_fix": "Update the explicit template instantiation sites in `pandas/_libs/simd/moments_inst_neon.cpp` and `pandas/_libs/include/pandas/simd/moments_simd.hpp` (around line 255) to use `xsimd::neon` instead of `xsimd::neon64`, or align the template definition in `moments_simd.hpp` (around line 182) to accept `xsimd::neon64` — whichever matches the correct xsimd 14.2.0 type for the arm64/NEON architecture target.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-gpt-5-mini/pandas-cpp-xsimd-neon64-v2-001.txt",
+    "context_tokens_estimate": 1624
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1173
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 29896.566,
+    "cache_key": "f18b87144c9607c21cba1b6c78cf35f7fb085c11a3d1d92cc26002e72ff57328",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 6747,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 1256,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 6747,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 1256,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 6747,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 6747
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "f6c690b1-e164-495b-a424-db921213341b"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "case_id": "docbuild-hf-stress-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The `doc_build_status_check` job failed because an upstream documentation build job completed with status 'failure'. The status-check script requires both monitored jobs to be 'success' or 'skipped', but the first job returned 'failure', causing the shell conditional to evaluate false and execute `exit 1`.",
+  "root_cause_category": "github_actions_config",
+  "root_cause": "An upstream job in the 'Build documentation' workflow completed with status 'failure' (not 'success' or 'skipped'). The `doc_build_status_check` job's shell script checks `[[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]]`, which evaluates to false, so the else branch runs `exit 1`, failing the status-check job.",
+  "confidence": 0.92,
+  "relevant_files": [],
+  "relevant_tests": [
+    "doc_build_status_check"
+  ],
+  "evidence": [
+    {
+      "quote": "if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\",
+      "reason": "The first condition compares the upstream job's actual status 'failure' against 'success' and 'skipped' — both comparisons are false, so the overall condition fails."
+    },
+    {
+      "quote": "  exit 1",
+      "reason": "The else branch executes exit 1 when the condition is false, directly causing the job failure."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the job exited with code 1, matching the `exit 1` in the else branch."
+    },
+    {
+      "quote": "Complete job name: doc_build_status_check",
+      "reason": "Identifies the failing job as the documentation build status check."
+    }
+  ],
+  "suggested_fix": "Investigate and fix the upstream documentation build job that produced status 'failure'. Once the upstream doc build succeeds, the `doc_build_status_check` condition will evaluate true and the status-check job will pass.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-gpt-5-mini/docbuild-hf-stress-001.txt",
+    "context_tokens_estimate": 529
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 677
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 17348.619,
+    "cache_key": "965d62c52ac6b7ed1f250421f8407d9c42dee491684cb030d593cdf30d540e31",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 5512,
+        "output_tokens": 592,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.025416,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.025416,
+          "upstream_inference_prompt_cost": 0.016536,
+          "upstream_inference_completions_cost": 0.00888
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 2,
+    "tool_call_count": 1,
+    "tool_calls": [
+      {
+        "tool": "read_file",
+        "args": {
+          "start_line": 1,
+          "end_line": 50
+        },
+        "observation_tokens_estimate": 653,
+        "runtime_ms": 1.1475419996713754,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 9531,
+    "total_output_tokens_consumed": 762,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 2
+  }
+}

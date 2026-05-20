@@ -1,0 +1,99 @@
+{
+  "case_id": "pandas-cpp-xsimd-neon64-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "C++ compilation failed during editable wheel build because explicit template instantiations of `accumulate_moments_simd::operator()` use `xsimd::neon64` but the template definition only matches `xsimd::neon`, causing clang++ to reject the instantiation with 'does not refer to a function template'. This stops ninja and causes pip's editable metadata preparation to fail.",
+  "root_cause_category": "compile_error",
+  "root_cause": "Type mismatch between `xsimd::neon64` (used in explicit instantiation in moments_inst_neon.cpp and moments_simd.hpp:255) and `xsimd::neon` (the actual template parameter type in the candidate at moments_simd.hpp:182). The compiler cannot match the explicit instantiation to any function template, generating 2 errors and aborting the build.",
+  "confidence": 0.93,
+  "relevant_files": [
+    "pandas/_libs/include/pandas/simd/moments_simd.hpp",
+    "pandas/_libs/simd/moments_inst_neon.cpp",
+    "pandas/_libs/simd/moments.cpp"
+  ],
+  "relevant_tests": [
+    "FAILED: [code=1] pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o",
+    "FAILED: [code=1] pandas/_libs/simd/libmoments_base.a.p/moments.cpp.o"
+  ],
+  "evidence": [
+    {
+      "quote": "../../pandas/_libs/include/pandas/simd/moments_simd.hpp:255:50: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "reason": "Clang++ explicitly reports that the instantiation at line 255 of moments_simd.hpp does not match any template, which is the direct compile error."
+    },
+    {
+      "quote": "candidate template ignored: could not match 'Moments (xsimd::neon64, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int) noexcept' ... against 'Moments (xsimd::neon, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int)'",
+      "reason": "The compiler shows the instantiation uses `xsimd::neon64` but the only candidate template uses `xsimd::neon`, confirming the type mismatch is the root cause."
+    },
+    {
+      "quote": "../../pandas/_libs/simd/moments_inst_neon.cpp:14:43: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "reason": "A second instantiation site in moments_inst_neon.cpp also fails with the same error, confirming the issue is systemic across the neon64 instantiation files."
+    },
+    {
+      "quote": "2 errors generated.",
+      "reason": "Confirms two compile errors were produced, causing the object file to not be built."
+    },
+    {
+      "quote": "ninja: build stopped: subcommand failed.",
+      "reason": "The compile errors caused ninja to abort the build, which then propagated to pip's editable metadata preparation failure."
+    },
+    {
+      "quote": "× Preparing editable metadata (pyproject.toml) did not run successfully.",
+      "reason": "The downstream effect of the ninja build failure is that pip cannot prepare the editable install metadata, causing the CI job to exit with code 1."
+    }
+  ],
+  "suggested_fix": "Update the explicit template instantiations in `moments_inst_neon.cpp` and `moments_simd.hpp` to use `xsimd::neon` instead of `xsimd::neon64`, or update the template definition in `moments_simd.hpp` to accept `xsimd::neon64` as a valid architecture type. Check whether a recent xsimd version change (e.g., xsimd-14.2.0) renamed or split the `neon` type into `neon`/`neon64`, and align the instantiation sites accordingly.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-gpt-5-mini/pandas-cpp-xsimd-neon64-v2-001.txt",
+    "context_tokens_estimate": 1624
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1054
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 21686.629,
+    "cache_key": "72631f2df99a151cfebbfc9eb0919d00bdcdabc69bdf2af303659502f90690b7",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 5636,
+        "output_tokens": 1136,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.033948,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.033948,
+          "upstream_inference_prompt_cost": 0.016908,
+          "upstream_inference_completions_cost": 0.01704
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 1,
+    "tool_call_count": 0,
+    "tool_calls": [],
+    "total_input_tokens_consumed": 5636,
+    "total_output_tokens_consumed": 1136,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 1
+  }
+}

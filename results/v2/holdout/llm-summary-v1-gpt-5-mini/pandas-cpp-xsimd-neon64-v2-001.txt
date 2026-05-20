@@ -1,0 +1,53 @@
+# CI Failure Summary
+
+## Primary Failure
+Ninja/C++ compilation failed during wheel editable build which caused pip's metadata preparation to fail. Evidence shows `ninja: build stopped: subcommand failed.` and `× Preparing editable metadata (pyproject.toml) did not run successfully.` (both appear in the log).
+
+## Critical Evidence
+- `FAILED: [code=1] pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o` (L001006)  
+- `arm64-apple-darwin20.0.0-clang++ -Ipandas/_libs/simd/libmoments_simd_neon.a.p -Ipandas/_libs/simd -I../../pandas/_libs/simd -I../../pandas/_libs/include -I../../subprojects/xsimd-14.2.0/include -fdiagnostics-color=always -DNDEBUG -Wall -Winvalid-pch -Wextra -Werror -std=c++20 -O3 -DNPY_NO_DEPRECATED_API=0 -DNPY_TARGET_VERSION=NPY_1_21_API_VERSION -ftree-vectorize -fPIC -fstack-protector-strong -O2 -pipe -stdlib=libc++ -fvisibility-inlines-hidden -fmessage-length=0 -isystem /Users/runner/work/pandas/pandas/.pixi/envs/py312/include -D_FORTIFY_SOURCE=2 -isystem /Users/runner/work/pandas/pandas/.pixi/envs/py312/include -DPANDAS_SIMD_NEON -MD -MQ pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o -MF pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o.d -o pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o -c ../../pandas/_libs/simd/moments_inst_neon.cpp` (L001007)  
+- `../../pandas/_libs/include/pandas/simd/moments_simd.hpp:255:50: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member` (L001009)  
+- `extern template Moments accumulate_moments_simd::operator()<xsimd::neon64>(` (L001010)  
+- `../../pandas/_libs/include/pandas/simd/moments_simd.hpp:182:34: note: candidate template ignored: could not match 'Moments (xsimd::neon64, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int) noexcept' (aka 'Moments (xsimd::neon64, span<const double>, int, optional<span<const unsigned char>>, int) noexcept') against 'Moments (xsimd::neon, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int)' (aka 'Moments (xsimd::neon, span<const double>, int, optional<span<const unsigned char>>, int)')` (L001012)  
+- `../../pandas/_libs/simd/moments_inst_neon.cpp:14:43: error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member` (L001015)  
+- `template Moments accumulate_moments_simd::operator()<xsimd::neon64>(` (L001016)  
+- `2 errors generated.` (L001021)  
+- `FAILED: [code=1] pandas/_libs/simd/libmoments_base.a.p/moments.cpp.o` (L001023)  
+- `1 error generated.` (L001032)  
+- `ninja: build stopped: subcommand failed.` (L001036)  
+- `error: subprocess-exited-with-error` (L001037)  
+- `× Preparing editable metadata (pyproject.toml) did not run successfully.` (L001039)  
+- `Preparing editable metadata (pyproject.toml): finished with status 'error'` (L001040)  
+- `│ exit code: 1` (L001041)  
+- `full command: /Users/runner/work/pandas/pandas/.pixi/envs/py312/bin/python /Users/runner/work/pandas/pandas/.pixi/envs/py312/lib/python3.12/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py prepare_metadata_for_build_editable /var/folders/tb/y368xp_x10s3ty1b_mtl5mxr0000gn/T/tmp2hvklo8b` (L001045)  
+- `##[error]Process completed with exit code 1.` (L001054)
+
+## Failed Tests / Checks
+- `FAILED: [code=1] pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o` (L001006)  
+- `FAILED: [code=1] pandas/_libs/simd/libmoments_base.a.p/moments.cpp.o` (L001023)  
+- `× Preparing editable metadata (pyproject.toml) did not run successfully.` (L001039)
+
+## Relevant Files and Locations
+- `../../pandas/_libs/include/pandas/simd/moments_simd.hpp:255` (L001009)  
+- `../../pandas/_libs/include/pandas/simd/moments_simd.hpp:182` (L001012)  
+- `../../pandas/_libs/simd/moments_inst_neon.cpp:14:43` (L001015)  
+- `../../pandas/_libs/simd/moments.cpp` (L001024)  
+- Target/object paths produced by ninja:  
+  - `pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o` (L001006)  
+  - `pandas/_libs/simd/libmoments_base.a.p/moments.cpp.o` (L001023)
+
+## Commands and Exit Codes
+- Ninja invocation (reported failure): `/Users/runner/work/pandas/pandas/.pixi/envs/py312/bin/ninja` (L000992-L000993)  
+- Clang++ compile command (neon instantiation): `arm64-apple-darwin20.0.0-clang++ -Ipandas/_libs/simd/libmoments_simd_neon.a.p -Ipandas/_libs/simd -I../../pandas/_libs/simd -I../../pandas/_libs/include -I../../subprojects/xsimd-14.2.0/include ... -c ../../pandas/_libs/simd/moments_inst_neon.cpp` (L001007)  
+- Clang++ compile command (base moments): `arm64-apple-darwin20.0.0-clang++ -Ipandas/_libs/simd/libmoments_base.a.p -Ipandas/_libs/simd -I../../pandas/_libs/simd -I../../pandas/_libs/include -I../../subprojects/xsimd-14.2.0/include ... -c ../../pandas/_libs/simd/moments.cpp` (L001024)  
+- Pip editable metadata prepare command (failed): `/Users/runner/work/pandas/pandas/.pixi/envs/py312/bin/python /Users/runner/work/pandas/pandas/.pixi/envs/py312/lib/python3.12/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py prepare_metadata_for_build_editable /var/folders/tb/y368xp_x10s3ty1b_mtl5mxr0000gn/T/tmp2hvklo8b` (L001045) — `│ exit code: 1` (L001041)  
+- CI exit: `##[error]Process completed with exit code 1.` (L001054)
+
+## Possible Root Cause
+The compiler errors indicate an explicit template instantiation mismatch: code instantiates `accumulate_moments_simd::operator()<xsimd::neon64>` but the candidate template on the declaration appears to use `xsimd::neon` (mismatch between `xsimd::neon64` and `xsimd::neon`), causing the instantiation to be invalid and the C++ compilation to fail. This compile failure stops ninja and causes pip's editable metadata preparation to fail.
+
+## Uncertainties / Missing Context
+- It is not shown whether `xsimd` typedefs/types changed (e.g., `xsimd::neon` vs `xsimd::neon64`) due to xsimd version or target platform differences.  
+- Full surrounding source lines for the templates and the instantiation site are not included; the exact intended signature/location of `operator()` is not shown.  
+- Complete earlier build log and configuration (compiler flags or cmake/ninja generator settings) that might affect symbol types/defines are not present.  
+- It is unclear whether this is specific to the arm64-darwin toolchain or a general source/compatibility regression.

@@ -1,0 +1,124 @@
+{
+  "case_id": "pytest-sklearn-stress-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-agent-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "A doctest in `doc/callbacks.rst` (line 48) failed during the documentation test run. The test expected a progress bar output from `estimator.fit(X, y)` but received `LogisticRegression()` instead, indicating the callback/progress bar feature did not produce the expected output. The main pytest suite passed (41234 tests), but this doctest failure caused the job to exit with code 1.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The doctest in `doc/callbacks.rst:48` expected `estimator.fit(X, y)` to print a progress bar line (`LogisticRegression - fit ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:03:12`) but got `LogisticRegression()` (the plain estimator repr), meaning the callback/progress bar was not triggered or not producing output during the doctest run.",
+  "confidence": 0.97,
+  "relevant_files": [
+    "doc/callbacks.rst"
+  ],
+  "relevant_tests": [
+    "../doc/callbacks.rst::callbacks.rst"
+  ],
+  "evidence": [
+    {
+      "quote": "FAILED ../doc/callbacks.rst::callbacks.rst",
+      "reason": "Explicit pytest FAILED marker identifying the failing doctest"
+    },
+    {
+      "quote": "/home/runner/work/scikit-learn/scikit-learn/doc/callbacks.rst:48: DocTestFailure",
+      "reason": "Pinpoints the exact file and line of the doctest failure"
+    },
+    {
+      "quote": "Expected:\n    LogisticRegression - fit ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:03:12\nGot:\n    LogisticRegression()",
+      "reason": "Shows the mismatch: expected progress bar output, got plain estimator repr"
+    },
+    {
+      "quote": "1 failed, 41 passed, 2 skipped, 59 warnings in 71.85s",
+      "reason": "Confirms exactly one test failed in the doc test run"
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the job failed due to this doctest failure"
+    }
+  ],
+  "suggested_fix": "Update the doctest in `doc/callbacks.rst` line 48 to either add a `# doctest: +SKIP` directive (like the preceding example at line 39) or fix the callback registration so the progress bar output is actually produced during the doctest execution.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-gpt-5-mini/pytest-sklearn-stress-001.txt",
+    "context_tokens_estimate": 1406
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 824
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "51986cc58f73058e9f4724708309257c5ccf98f06c6343618cd80b8ce240c6bd",
+    "runtime_ms": 33082.111,
+    "cache_key": "d802bd1ae21611f20ad3ff469ffcb5ce787884f3d702d3d690ebe558b028e9bf",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_agent.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "anthropic/claude-sonnet-4.6",
+      "resolved_model": "anthropic/claude-4.6-sonnet-20260217",
+      "base_url": "https://openrouter.ai",
+      "usage": {
+        "input_tokens": 27370,
+        "output_tokens": 777,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": null,
+        "inference_geo": null,
+        "server_tool_use": null,
+        "service_tier": null,
+        "speed": "standard",
+        "cost": 0.093765,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.093765,
+          "upstream_inference_prompt_cost": 0.08211,
+          "upstream_inference_completions_cost": 0.011655
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "268f0ea3cf1c023a2943388c56e0d6a71112364ddf947a910ba9b758344617f8",
+    "shim_sha256": "25bed12c8bbfd3c6992d4efe197f4681cd2f19b7aca380da4a2e275ad3b33d42"
+  },
+  "agent_metadata": {
+    "iterations": 4,
+    "tool_call_count": 3,
+    "tool_calls": [
+      {
+        "tool": "tail",
+        "args": {
+          "n": 200
+        },
+        "observation_tokens_estimate": 7974,
+        "runtime_ms": 6.91283400010434,
+        "error": null
+      },
+      {
+        "tool": "grep",
+        "args": {
+          "pattern": "FAILED|failed|short test summary|error|##\\[error\\]",
+          "before": 2,
+          "after": 5,
+          "max_matches": 30
+        },
+        "observation_tokens_estimate": 3229,
+        "runtime_ms": 47.51070900238119,
+        "error": null
+      },
+      {
+        "tool": "view_log_lines",
+        "args": {
+          "center_line": 5665,
+          "radius": 30
+        },
+        "observation_tokens_estimate": 1741,
+        "runtime_ms": 0.32854199889698066,
+        "error": null
+      }
+    ],
+    "total_input_tokens_consumed": 74681,
+    "total_output_tokens_consumed": 1075,
+    "budget_exhausted": false,
+    "final_diagnosis_turn": 4
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "FileCheck verification failed for WASM exception handling assembly test; the generated assembly does not contain the expected `catch_all` and `catch` exception handling patterns at lines 38 and 62, producing `unreachable` instead.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The generated WASM assembly from tests/assembly-llvm/wasm_exceptions.rs does not contain the expected exception handling patterns. FileCheck expected `catch_all` at line 38 and `catch` at line 62, but found `unreachable` at those locations instead, causing the FileCheck verification to fail with exit code 1.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "/checkout/tests/assembly-llvm/wasm_exceptions.rs",
+    "/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s"
+  ],
+  "relevant_tests": [
+    "[assembly] tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "test [assembly] tests/assembly-llvm/wasm_exceptions.rs ... FAILED",
+      "reason": "Explicit test failure statement confirming the assembly check test did not pass"
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:38:12: error: CHECK: expected string not found in input",
+      "reason": "FileCheck error at line 38 indicating the CHECK pattern was not found in the generated assembly"
+    },
+    {
+      "quote": "// CHECK: catch_all",
+      "reason": "The expected pattern at line 38 that was not found"
+    },
+    {
+      "quote": "/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s:37:5: note: possible intended match here\\n unreachable",
+      "reason": "Shows the generated assembly contains unreachable instead of catch_all at the expected location"
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:62:12: error: CHECK: expected string not found in input",
+      "reason": "FileCheck error at line 62 indicating a second CHECK pattern was not found in the generated assembly"
+    },
+    {
+      "quote": "// CHECK: catch",
+      "reason": "The expected pattern at line 62 that was not found"
+    },
+    {
+      "quote": "error: verification with 'FileCheck' failed",
+      "reason": "Confirmation that FileCheck verification failed due to pattern mismatches"
+    },
+    {
+      "quote": "status: exit status: 1",
+      "reason": "The FileCheck command returned exit status 1, indicating failure"
+    }
+  ],
+  "suggested_fix": "Investigate recent changes to WASM exception handling code generation in the Rust compiler or LLVM backend. The generated assembly is producing `unreachable` instructions instead of the expected exception handling patterns (`catch_all` and `catch`). Either fix the code generation or update the test expectations if the behavior change is intentional.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-gpt-5-mini/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 1743
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 843
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 27369.619,
+    "cache_key": "4b989f4fc3e6c33e1ddc9f309d0900318a9bcca9d0e66215f8ef162c91135480",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "haiku",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 9,
+        "cache_creation_input_tokens": 5132,
+        "cache_read_input_tokens": 44442,
+        "output_tokens": 2379,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 5132,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 9,
+            "output_tokens": 2379,
+            "cache_read_input_tokens": 44442,
+            "cache_creation_input_tokens": 5132,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 5132
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "6f651b26-1625-4a21-a445-b5b9511a91a5"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "ade4ac2160bff920d4d00a0acc2289b3e3cf8de3a70e06ecd399e7cb5a0bb356",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

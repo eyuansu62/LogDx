@@ -1,0 +1,60 @@
+# CI Failure Summary
+
+## Primary Failure
+Ginkgo test suite failure: `--- FAIL: TestGinkgoSuite (179.28s)` — the `PubSub` spec `"[It] should ChannelMessage"` timed out while waiting on a channel, causing the test run to fail. The overall CI run then failed via `make` / CI exit codes.
+
+## Critical Evidence
+- `^[[38;5;9m• [FAILED] [1.014 seconds]^[[0m` (L001102)  
+- `^[[0mPubSub ^[[38;5;9m^[[1m[It] should ChannelMessage^[[0m` (L001103)  
+- `^[[38;5;243m/home/runner/work/go-redis/go-redis/pubsub_test.go:645^[[0m` (L001104)  
+- `  ^[[38;5;9m[FAILED] Timed out after 1.001s.` (L001106)  
+- `  Expected` (L001107)  
+- `      <<-chan *redis.Message | len:0, cap:10>: 0xc0012d96c0` (L001108)  
+- `  to receive something.^[[0m` (L001109)  
+- `  ^[[38;5;9mIn ^[[1m[It]^[[0m^[[38;5;9m at: ^[[1m/home/runner/work/go-redis/go-redis/pubsub_test.go:661^[[0m ^[[38;5;243m@ 05/07/26 17:29:02.697^[[0m` (L001110)  
+- `  ^[[38;5;9m^[[1mSummarizing 1 Failure:^[[0m` (L001166)  
+- `  ^[[38;5;9m[FAIL]^[[0m ^[[0mPubSub ^[[38;5;9m^[[1m[It] should ChannelMessage^[[0m` (L001167)  
+- `  ^[[38;5;243m/home/runner/work/go-redis/go-redis/pubsub_test.go:661^[[0m` (L001168)  
+- `^[[38;5;9m^[[1mRan 1224 of 1274 Specs in 179.248 seconds^[[0m` (L001170)  
+- `^[[38;5;9m^[[1mFAIL!^[[0m -- ^[[38;5;10m^[[1m1223 Passed^[[0m | ^[[38;5;9m^[[1m1 Failed^[[0m | ^[[38;5;11m^[[1m0 Pending^[[0m | ^[[38;5;14m^[[1m50 Skipped^[[0m` (L001171)  
+- `--- FAIL: TestGinkgoSuite (179.28s)` (L001172)  
+- `FAIL	github.com/redis/go-redis/v9	185.245s` (L001333)  
+- `redis: 2026/05/07 17:27:19 push_notification_handler.go:410: invalid SMIGRATED (triplets array) notification: not an array` (L002376)  
+- `push_test.go:782: Expected panic when accessing nil registry: runtime error: invalid memory address or nil pointer dereference` (L002590)  
+- `redis: 2026/05/07 17:27:20 processor.go:105: push: error handling push notification: handler error` (L002604)  
+- `redis: 2026/05/07 17:27:20 processor.go:86: push: error reading push notification: EOF` (L002631)  
+- `redis: 2026/05/07 17:27:20 processor.go:86: push: error reading push notification: EOF` (L002633)  
+- `make: *** [Makefile:46: test.ci] Error 1` (L002680)  
+- `##[error]Process completed with exit code 2.` (L002681)
+
+## Failed Tests / Checks
+- `PubSub [It] should ChannelMessage` (as shown in the Ginkgo output)  
+- `--- FAIL: TestGinkgoSuite (179.28s)`  
+- `FAIL	github.com/redis/go-redis/v9	185.245s`  
+- `make: *** [Makefile:46: test.ci] Error 1`  
+- `##[error]Process completed with exit code 2.`
+
+## Relevant Files and Locations
+- `/home/runner/work/go-redis/go-redis/pubsub_test.go:645` (L001104)  
+- `/home/runner/work/go-redis/go-redis/pubsub_test.go:661` (L001110, L001168)  
+- `push_notification_handler.go:410` (L002376)  
+- `push_test.go:782` (L002590)  
+- `processor.go:105` (L002604)  
+- `processor.go:86` (L002631, L002633)  
+- `Makefile:46` (L002680)  
+- Package path: `github.com/redis/go-redis/v9` (L001333)
+
+## Commands and Exit Codes
+- Test run failure line: `FAIL	github.com/redis/go-redis/v9	185.245s` (L001333)  
+- Ginkgo suite summary: `--- FAIL: TestGinkgoSuite (179.28s)` (L001172)  
+- Make failed: `make: *** [Makefile:46: test.ci] Error 1` (L002680)  
+- GitHub Actions/CI reported: `##[error]Process completed with exit code 2.` (L002681)
+
+## Possible Root Cause
+The `PubSub` spec timed out waiting to receive from a channel (`<<-chan *redis.Message | len:0, cap:10>`), indicating a published message was not observed within the test timeout window. Separately, push-processing logs show malformed notification handling (`invalid SMIGRATED ... not an array`) and `EOF`/handler errors, plus a failing assertion about an expected panic in `push_test.go`, suggesting related issues with incoming message formats or the test harness/setup (e.g., mock server behavior or concurrency/timing).
+
+## Uncertainties / Missing Context
+- Whether the PubSub timeout is due to a code regression, test flakiness (timing-sensitive), or CI environment/resource differences is not shown in the logs.  
+- Full, contiguous test logs and the pre-test setup steps (Redis server version, network/mocks, environment variables) are not included.  
+- It's unclear if the push-related errors are directly related to the PubSub timeout failure or separate test failures in the same job.  
+- No stack traces beyond file:line or the surrounding test code snippets are available in the provided output.

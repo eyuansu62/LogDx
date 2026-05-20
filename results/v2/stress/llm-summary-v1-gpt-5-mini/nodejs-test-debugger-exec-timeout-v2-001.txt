@@ -1,0 +1,52 @@
+# CI Failure Summary
+
+## Primary Failure
+The test runner invoked by `tools/test.py` (the Node.js test harness) reported a single test failure: the `parallel/test-debugger-exec` test timed out waiting for the debugger initial break. This caused `make` to fail (`make: *** [test-ci] Error 1`) and the GitHub Actions job to exit (`##[error]Process completed with exit code 2.`).
+
+## Critical Evidence
+- `L010724: Error: Timeout (15000) while waiting for /break (?:on start )?in/i`
+- `L010720: /Users/runner/work/node/node/node/test/common/debugger.js:92`
+- `L010735-L010740:  output: '< Debugger listening on ws://127.0.0.1:49508/1fd32687-38b3-450e-96e5-4a28a88f601e\n' +`  
+  `'< For help, see: https://nodejs.org/en/docs/inspector\n' +`  
+  `'< \n' +`  
+  `'connecting to 127.0.0.1:49508 ...\n' +`  
+  `' ok\n' +`  
+  `'< Debugger attached.\n' +`
+- `L010747: Command: out/Release/node /Users/runner/work/node/node/node/test/parallel/test-debugger-exec.js`
+- `L010611: Running 5175 tests`
+- `L010750: === 1 tests failed`
+- `L010753-L010754: Failed tests:` / `out/Release/node /Users/runner/work/node/node/node/test/parallel/test-debugger-exec.js`
+- `L010755: make: *** [test-ci] Error 1`
+- `L010756: ##[error]Process completed with exit code 2.`
+
+## Failed Tests / Checks
+- `parallel/test-debugger-exec` (test path shown as `Path: parallel/test-debugger-exec`, L010718)
+- Test runner command: `out/Release/node /Users/runner/work/node/node/node/test/parallel/test-debugger-exec.js` (L010747, L010754)
+
+## Relevant Files and Locations
+- `/Users/runner/work/node/node/node/test/common/debugger.js:92` (timeout thrown) (L010720-L010725)
+- `/Users/runner/work/node/node/node/test/common/debugger.js:67` (waitFor implementation) (L010727)
+- `/Users/runner/work/node/node/node/test/common/debugger.js:116` (waitForInitialBreak) (L010728)
+- `/Users/runner/work/node/node/node/test/parallel/test-debugger-exec.js:15` (waitInitialBreak call) (L010729)
+- `/Users/runner/work/node/node/node/test/parallel/test-debugger-exec.js:73` (test entry) (L010730)
+- Test runner invocation: `/Library/Frameworks/Python.framework/Versions/3.14/bin/python3 tools/test.py  -p tap --logfile test.tap \` (L010608-L010610)
+
+(There are many compile-time deprecation warnings in `../deps/ncrypto/*` and OpenSSL headers earlier in the log — see full log for `../deps/ncrypto/ncrypto.cc`, `../deps/ncrypto/ncrypto.h`, `../deps/ncrypto/engine.cc` — but no compile-time error lines are shown that stop the build.)
+
+## Commands and Exit Codes
+- Test harness start:  
+  `/Library/Frameworks/Python.framework/Versions/3.14/bin/python3 tools/test.py  -p tap --logfile test.tap \` (L010608-L010610)
+- Individual failing test command:  
+  `Command: out/Release/node /Users/runner/work/node/node/node/test/parallel/test-debugger-exec.js` (L010747)
+- Make failure: `make: *** [test-ci] Error 1` (L010755)
+- GitHub Actions exit: `##[error]Process completed with exit code 2.` (L010756)
+
+## Possible Root Cause
+The `parallel/test-debugger-exec` test timed out waiting (15,000 ms) for the debugger to signal an initial break: the debug output shows the inspector was listening and "Debugger attached" but the expected `/break` event (pattern `/break (?:on start )?in/i`) was not observed within the timeout. This is consistent with a timing/flakiness issue or a change in inspector behavior that prevents the test from observing the initial break.
+
+## Uncertainties / Missing Context
+- The TAP logfile `test.tap` (full test output) is not included here; additional context on retries/flakiness and surrounding test output is missing.  
+- It's unknown whether this is a one-off transient (flaky) failure or reproducible across runs. The harness was invoked with `--flaky-tests=keep_retrying` and `--measure-flakiness 9` (L010610), but retry outcomes are not shown.  
+- The log contains extensive OpenSSL / ncrypto deprecation warnings (many `OSSL_DEPRECATEDIN_3_0` notes) (multiple lines earlier), but no direct evidence links them to the debugger test failure.  
+- The environment details (exact Node build id, OS image beyond macOS SDK references, or inspector/agent versions) that could affect debugger timing are not fully present in the provided excerpts.  
+- One additional log line flagged as uncertain: `L010550: 2026-05-07T11:41:10.7615340Z [ RUN      ] SocketAddressBlockList.Simple` — its relation to this failure is unknown.

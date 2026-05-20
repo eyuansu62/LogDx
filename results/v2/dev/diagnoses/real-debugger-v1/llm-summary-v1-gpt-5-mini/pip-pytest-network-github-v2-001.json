@@ -1,0 +1,88 @@
+{
+  "case_id": "pip-pytest-network-github-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "Test `test_no_truststore_can_install[GitHub]` failed when a pip install command received HTTP 502 Bad Gateway responses from github.com, causing pip to fail with exit code 1 and triggering a test assertion failure.",
+  "root_cause_category": "network_or_flaky",
+  "root_cause": "HTTP 502 responses from github.com exceeded pip's retry limit when attempting to download https://github.com/pypa/pip-test-package/archive/refs/heads/master.zip, causing the install command to return exit code 1.",
+  "confidence": 0.95,
+  "relevant_files": [
+    "tests/functional/test_truststore.py",
+    "tests/lib/__init__.py"
+  ],
+  "relevant_tests": [
+    "tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]"
+  ],
+  "evidence": [
+    {
+      "quote": "ERROR: Could not install packages due to an OSError: HTTPSConnectionPool(host='github.com', port=443): Max retries exceeded with url: /pypa/pip-test-package/archive/refs/heads/master.zip (Caused by ResponseError('too many 502 error responses'))",
+      "reason": "Directly identifies the root cause: HTTP 502 responses from github.com exceeded pip's retry limit"
+    },
+    {
+      "quote": "AssertionError: Script returned code: 1",
+      "reason": "Shows the test assertion failure triggered when the pip install command returned exit code 1 instead of success"
+    },
+    {
+      "quote": "Script result: python -m pip install https://github.com/pypa/pip-test-package/archive/refs/heads/master.zip --use-deprecated=legacy-certs",
+      "reason": "The failed command was attempting to download from github.com, which returned 502 errors"
+    }
+  ],
+  "suggested_fix": "Retry the CI job; this is a transient network/server issue from github.com rather than a code defect in the repository.",
+  "input": {
+    "context_path": "results/v2/dev/llm-summary-v1-gpt-5-mini/pip-pytest-network-github-v2-001.txt",
+    "context_tokens_estimate": 887
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 602
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 25324.676,
+    "cache_key": "c2230f35ce12796b86784685886137e897802cbbd6ba8c0df13d06dfb64eac7a",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "haiku",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 9,
+        "cache_creation_input_tokens": 3932,
+        "cache_read_input_tokens": 63202,
+        "output_tokens": 2006,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 3932,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 9,
+            "output_tokens": 2006,
+            "cache_read_input_tokens": 63202,
+            "cache_creation_input_tokens": 3932,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 3932
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "0bef5b0d-b2bf-41c5-8a56-5ff410a18990"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "ade4ac2160bff920d4d00a0acc2289b3e3cf8de3a70e06ecd399e7cb5a0bb356",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

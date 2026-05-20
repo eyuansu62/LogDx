@@ -1,0 +1,85 @@
+{
+  "case_id": "docbuild-hf-stress-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "The doc_build_status_check job failed because its status validation conditional evaluated to false. The conditional checks if previous jobs are in allowed states (success or skipped), but one job has status 'failure', which is not in the allowed set, causing the else branch to execute exit 1.",
+  "root_cause_category": "github_actions_config",
+  "root_cause": "The shell conditional in doc_build_status_check requires all previous jobs to have status 'success' or 'skipped', but a previous job has status 'failure', which does not satisfy the condition [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]], causing the else branch to execute exit 1.",
+  "confidence": 0.72,
+  "relevant_files": [],
+  "relevant_tests": [
+    "doc_build_status_check"
+  ],
+  "evidence": [
+    {
+      "quote": "if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && [[ \"skipped\" == \"success\" || \"skipped\" == \"skipped\" ]]; then",
+      "reason": "The conditional checks if the first job is success or skipped. Since the first job is 'failure', this first check evaluates false, causing the overall condition (with AND operator) to be false."
+    },
+    {
+      "quote": "else exit 1",
+      "reason": "When the conditional is false, the else branch executes exit 1, which terminates the job with failure."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms that the job terminated with exit code 1 due to the failed conditional."
+    }
+  ],
+  "suggested_fix": "Investigate which upstream job in the Build documentation workflow produced status 'failure' and resolve that failure. Alternatively, if 'failure' status is expected to be handled, update the doc_build_status_check conditional to include 'failure' in the allowed statuses, though this would mask actual failures.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-gpt-5-mini/docbuild-hf-stress-001.txt",
+    "context_tokens_estimate": 529
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 626
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 64135.654,
+    "cache_key": "9b74d5fece80536e60414ef9dd2c39e74a479dcaaa9dc096231087dddb1350e0",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "haiku",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 9,
+        "cache_creation_input_tokens": 3533,
+        "cache_read_input_tokens": 63202,
+        "output_tokens": 6212,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 3533,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 9,
+            "output_tokens": 6212,
+            "cache_read_input_tokens": 63202,
+            "cache_creation_input_tokens": 3533,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 3533
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "5fba2aaf-12a7-48b8-b250-ac775c4d9013"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "ade4ac2160bff920d4d00a0acc2289b3e3cf8de3a70e06ecd399e7cb5a0bb356",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

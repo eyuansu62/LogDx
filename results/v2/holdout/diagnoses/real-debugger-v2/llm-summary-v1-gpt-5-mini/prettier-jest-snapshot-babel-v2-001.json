@@ -1,0 +1,113 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest snapshot tests failed because parser error messages and error positions changed from what was previously recorded in snapshots. Specifically, the Babel parser now reports different error text (e.g., '`import()` requires exactly one or two arguments. (1:1)' instead of 'Unexpected token (1:8)') and TypeScript parser error caret positions shifted, causing 13 snapshot mismatches across 3 test suites.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Snapshot tests fail because the Babel/TypeScript parser error messages and error positions no longer match stored snapshots. The parser now produces different error text for invalid import expressions and different caret positions for TypeScript constructor parameter initializer and declare-function-with-body errors, indicating a parser behavioral change (likely a dependency version change) that was not accompanied by snapshot updates.",
+  "confidence": 0.82,
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js",
+    "tests/config/format-test/test-format.js",
+    "src/common/parser-create-error.js",
+    "src/language-js/parse/utilities/create-babel-parse-error.js",
+    "src/language-js/parse/babel.js",
+    "src/main/parse.js",
+    "src/main/core.js"
+  ],
+  "relevant_tests": [
+    "snippet: #0 > format[babel]",
+    "snippet: #0 > format[babel-flow]",
+    "snippet: #0 > format[babel-ts]",
+    "snippet: #1 > format[babel]",
+    "snippet: #1 > format[babel-flow]",
+    "snippet: #2 > format[babel]",
+    "snippet: #3 > format[babel]"
+  ],
+  "evidence": [
+    {
+      "quote": "- Unexpected token (1:8)\n+ `import()` requires exactly one or two arguments. (1:1)",
+      "reason": "Shows the exact snapshot mismatch: the stored snapshot expected 'Unexpected token (1:8)' but the parser now produces a different error message at a different position, confirming the parser error text changed."
+    },
+    {
+      "quote": "SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)",
+      "reason": "Confirms that the TypeScript parser is throwing a SyntaxError for constructor parameter initializer cases, which now differs from the stored snapshot expectation."
+    },
+    {
+      "quote": "- An implementation cannot be declared in ambient contexts. (1:1)\n+ An implementation cannot be declared in ambient contexts. (1:24)",
+      "reason": "Shows the error message text is the same but the error position (column) shifted from 1:1 to 1:24, causing snapshot mismatch for the declare-function-with-body test."
+    },
+    {
+      "quote": "› 13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "Jest output explicitly states snapshots failed and suggests re-running with -u to update, confirming these are snapshot assertion failures."
+    },
+    {
+      "quote": "Test Suites: 3 failed, 1500 passed, 1503 total",
+      "reason": "Scope of failure — 3 test suites failed out of 1503, consistent with parser behavior changes affecting specific error-formatting test suites."
+    },
+    {
+      "quote": "Error: expect(received).rejects.toThrowErrorMatchingSnapshot()",
+      "reason": "The assertion type used is toThrowErrorMatchingSnapshot(), confirming these are snapshot-based assertions on thrown parser errors, not general logic failures."
+    }
+  ],
+  "suggested_fix": "Re-run jest with `-u` to update the failing snapshots (as suggested in the log: 're-run jest with `-u` to update them'), then review the updated snapshots to confirm the new parser error messages and positions are correct. If the changes are due to an unintentional dependency upgrade, pin the affected parser dependency (Babel or TypeScript) back to the previously working version.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-gpt-5-mini/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 1298
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1127
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 28181.822,
+    "cache_key": "8396f2d54c64856f7acb202948fbabf54183b10b05d72a66e9a6aae854e6b2e7",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 6022,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 1089,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 6022,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 1089,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 6022,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 6022
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "67823068-398b-4754-b416-f9b675dfdeda"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "key_parts": {
+    "case_id": "pip-pytest-network-github-v2-001",
+    "raw_sha": "f26bb74f7d75f0d06b820959743436e2ee03f2824847b6dfa1454271de3559ba",
+    "prompt_version": "llm_summary_v1",
+    "prompt_sha": "e3739738b7136af3956f3712e7b76babd9224b6854dcc60ff16546a3fbb16702",
+    "provider": "command",
+    "method": "llm-summary-v1-gpt-5-mini",
+    "chunk_index": -1,
+    "chunk_sha": "08378fbcfee236acd7bf12644a90c856c2663e11c428bf9d42cc0dc99705a014",
+    "temperature": 0.0,
+    "max_output_chars": 12000,
+    "stage": "reduce"
+  },
+  "response": {
+    "content": "# CI Failure Summary\n\n## Primary Failure\nPytest run failed with one functional test failing: `tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]`. The failure was triggered by a pip install command returning a non-zero exit code due to an OSError (HTTP 502 responses). The test assertion in `tests/lib/__init__.py` raised `AssertionError: Script returned code: 1`. (Observed from `nox`/`pytest` orchestration and final GitHub Actions exit.)\n\n## Critical Evidence\n- `^[[36m [ 99%] ^[[0m^[[31mFAILED^[[0m tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]` (lines: L006392)\n- `^[[31m^[[1m____________________ test_no_truststore_can_install[GitHub] ____________________^[[0m` (lines: L006399)\n- `^[[1m^[[31mtests/functional/test_truststore.py^[[0m:32:` (lines: L006427)\n- `^[[1m^[[31mtests/functional/test_truststore.py^[[0m:13: in pip` (lines: L006429)\n- `^[[1m^[[31mtests/lib/__init__.py^[[0m:681: AssertionError` (lines: L006532)\n- `^[[1m^[[31mE       AssertionError: Script returned code: 1^[[0m` (lines: L006520)\n- `Script result: python -m pip install https://github.com/pypa/pip-test-package/archive/refs/heads/master.zip --use-deprecated=legacy-certs` (lines: L006534)\n- `  return code: 1` (lines: L006535)\n- `ERROR: Could not install packages due to an OSError: HTTPSConnectionPool(host='github.com', port=443): Max retries exceeded with url: /pypa/pip-test-package/archive/refs/heads/master.zip (Caused by ResponseError('too many 502 error responses'))` (lines: L006537)\n- `^[[31mFAILED^[[0m tests/functional/test_truststore.py::^[[1mtest_no_truststore_can_install[GitHub]^[[0m - AssertionError: Script returned code: 1` (lines: L006649)\n- `^[[36mnox > ^[[31mCommand pytest tests/functional --verbose --numprocesses auto --showlocals --durations=15 failed with exit code 1^[[0m` (lines: L006651)\n- `##[error]Process completed with exit code 1.` (lines: L006653)\n\n## Failed Tests / Checks\n- `tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]`\n\n## Relevant Files and Locations\n- `tests/functional/test_truststore.py:32` (stack location)\n- `tests/functional/test_truststore.py:13` (stack location, in `pip`)\n- `tests/lib/__init__.py:681` (AssertionError raised)\n\n## Commands and Exit Codes\n- `Script result: python -m pip install https://github.com/pypa/pip-test-package/archive/refs/heads/master.zip --use-deprecated=legacy-certs` (lines: L006534)\n- `return code: 1` (lines: L006535)\n- `^[[36mnox > ^[[31mCommand pytest tests/functional --verbose --numprocesses auto --showlocals --durations=15 failed with exit code 1^[[0m` (lines: L006651)\n- `##[error]Process completed with exit code 1.` (lines: L006653)\n\n## Possible Root Cause\nThe pip install command failed due to network/server errors (HTTP 502 responses) when attempting to download `https://github.com/pypa/pip-test-package/...`, causing pip to raise an OSError and return exit code 1; the test framework asserted the script exit code and failed. This appears to be a transient/network or upstream server issue rather than a test logic error.\n\n## Uncertainties / Missing Context\n- It is unclear whether the 502 responses are caused by transient GitHub outages, CI network egress restrictions, or a proxy/load-balancer issue in the runner environment.\n- No full pip/network logs or timestamps are present in the provided output to determine if this was intermittent or persistent.\n- No information about retry/backoff logic in the test or whether the artifact is expected to be fetched from a cached mirror.",
+    "provider": "openai",
+    "model": "gpt-5-mini-2025-08-07",
+    "usage": {
+      "input_tokens": 1116,
+      "output_tokens": 1512
+    }
+  }
+}

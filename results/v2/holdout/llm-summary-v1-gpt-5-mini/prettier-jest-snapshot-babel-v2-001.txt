@@ -1,0 +1,95 @@
+# CI Failure Summary
+
+## Primary Failure
+Jest tests failed during "yarn test" with multiple snapshot mismatches and parser syntax errors causing 3 test suites to fail. The failures include snapshot expectation mismatches for several `snippet` cases in `tests/format/js/_errors_/import/format.test.js` and SyntaxError parse failures in TypeScript-related tests (constructor parameter initializer and declare-function-with-body). (References in logs: `##[group]Run yarn test`, multiple `Error: expect(received).rejects.toThrowErrorMatchingSnapshot()`, and `##[error]Process completed with exit code 1.`)
+
+## Critical Evidence
+- ```L000399
+FAIL tests/format/js/_errors_/import/format.test.js
+```
+- ```L000625
+› 12 snapshots failed.
+```
+- ```L002240
+› 13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.
+```
+- ```L002242
+Test Suites: 3 failed, 1500 passed, 1503 total
+```
+- ```L002243
+Tests:       14 failed, 5 skipped, 29634 passed, 29653 total
+```
+- ```L002244
+Snapshots:   13 failed, 12086 passed, 12099 total
+```
+- ```L002247
+##[error]Process completed with exit code 1.
+```
+- Example snapshot mismatch showing changed parser error message (from chunk 0):
+  ```L000408
+- Unexpected token (1:8)
++ `import()` requires exactly one or two arguments. (1:1)
+```
+- Example parser SyntaxError in TypeScript test (from chunk 1 / chunk 4):
+  ```L000657
+SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)
+> 3 |     constructor(x = 1);
+|                 ^
+```
+- Example snapshot position difference in declare-function-with-body test (from chunk 1):
+  ```L000777
+- An implementation cannot be declared in ambient contexts. (1:1)
++ An implementation cannot be declared in ambient contexts. (1:24)
+> 1 | declare function foo() {}
+-     | ^
++     |                        ^
+```
+
+## Failed Tests / Checks
+- `FAIL tests/format/js/_errors_/import/format.test.js` (multiple `snippet: #0..#3 > format[...]` failures)
+- `FAIL tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js`
+- `FAIL tests/format/typescript/_errors_/declare-function-with-body/format.test.js`
+- Example failing snippet identifiers (exact strings from logs):
+  - `snippet: #0 > format[babel]`
+  - `snippet: #0 > format[babel-flow]`
+  - `snippet: #0 > format[babel-ts]`
+  - `snippet: #1 > format[babel]`
+  - `snippet: #1 > format[babel-flow]`
+  - `snippet: #2 > format[babel]`
+  - `snippet: #3 > format[babel]`
+
+## Relevant Files and Locations
+- Test files:
+  - `tests/format/js/_errors_/import/format.test.js` (L000399, L001973)
+  - `tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js` (L000655, L001999)
+  - `tests/format/typescript/_errors_/declare-function-with-body/format.test.js` (L000768, L002218)
+- Stack traces / parser code referenced:
+  - `file:///home/runner/work/prettier/prettier/tests/config/format-test/test-format.js:17:48` (assertion call site) (L000416, L000492, L000785)
+  - `file:///home/runner/work/prettier/prettier/src/common/parser-create-error.js:5:17` (createError) (L000665, L002209)
+  - `file:///home/runner/work/prettier/prettier/src/language-js/parse/utilities/create-babel-parse-error.js:33:10` (L000666)
+  - `file:///home/runner/work/prettier/prettier/src/language-js/parse/babel.js:176:13` (parse) (L000667, L002211)
+  - `file:///home/runner/work/prettier/prettier/src/main/parse.js:13:24` (L000668)
+  - `file:///home/runner/work/prettier/prettier/src/main/core.js:33:25` (coreFormat) (L000669)
+
+- Example source lines shown in failing output:
+  - `> 1 | import(/* comment */);` (L000486)
+  - `> 1 | new import('./a.mjs');` (L000524)
+  - `> 1 | new import();` (L000578)
+  - `> 3 |     constructor(x = 1);` (L000660 / L002204)
+  - `> 1 | declare function foo() {}` (L000779)
+
+## Commands and Exit Codes
+- Commands shown in CI:
+  - `yarn install --immutable` (L000158)
+  - `yarn test` (L000195)
+- CI failure exit:
+  - `##[error]Process completed with exit code 1.` (L002247)
+
+## Possible Root Cause
+The test failures are consistent with parser error messages or positions changing (e.g., `Unexpected token (1:8)` vs `` `import()` requires exactly one or two arguments. (1:1) ``) and TypeScript parsing behavior changing for constructor parameter initializers and declare-function implementations. This suggests a change (or version mismatch) in the JavaScript/TypeScript parser (Babel/TS parser) or in error formatting that altered snapshot text and caret positions, causing snapshot tests to fail.
+
+## Uncertainties / Missing Context
+- The logs do not show package versions (Babel, @babel/parser, TypeScript, Prettier) or recent code changes/commits that could explain the changed error messages.
+- It's unclear whether snapshots were intentionally updated upstream (i.e., expected change) or if a dependency upgrade introduced behavioral changes.
+- Full yarn install output and lockfile diff are not included, so dependency resolution/version drift cannot be confirmed.
+- We don't have the exact Jest runner command or environment variables used (node version, OS) beyond provided stack paths.

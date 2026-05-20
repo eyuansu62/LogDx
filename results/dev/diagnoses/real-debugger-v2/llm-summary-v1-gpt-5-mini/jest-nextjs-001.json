@@ -1,0 +1,104 @@
+{
+  "case_id": "jest-nextjs-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v2",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest exited with 'No tests found, exiting with code 1' when the test runner invoked it with specific test file paths (e.g. 'examples/with-jest/app/utils/add.test.ts'), resulting in missing JSON output files that caused ENOENT errors in the custom runner. The testRegex reported 0 matches for the targeted paths despite testMatch globally reporting 1861 matches, indicating the test files were not resolvable from Jest's working directory inside the Docker container.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Jest was invoked with explicit test file paths that resolved to 0 matches (testRegex: 0 matches), causing it to exit with code 1 and skip writing the expected --outputFile JSON results; the custom test runner (run-tests.js) then failed with ENOENT when attempting to read those missing result files. The Docker volume mount (-v $(pwd):/work) combined with the git 'dubious ownership' error suggests file visibility or path resolution inside the container may have prevented Jest from locating the test files.",
+  "confidence": 0.78,
+  "relevant_files": [
+    "/work/run-tests.js",
+    "examples/with-jest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts",
+    "examples/with-vitest/app/utils/add.test.ts"
+  ],
+  "relevant_tests": [
+    "examples/with-jest/app/utils/add.test.ts",
+    "examples/with-zones/home/test/next-config.test.ts",
+    "examples/with-vitest/app/utils/add.test.ts"
+  ],
+  "evidence": [
+    {
+      "quote": "No tests found, exiting with code 1",
+      "reason": "Jest explicitly reported it could not find the targeted test files and exited with a non-zero code, which is the direct trigger for the cascade of failures."
+    },
+    {
+      "quote": "testRegex:  - 0 matches",
+      "reason": "While testMatch reported 1861 global matches, the testRegex filter for the specific targeted path returned 0 matches, confirming Jest could not resolve the given file path."
+    },
+    {
+      "quote": "Failed to load test output Error: ENOENT: no such file or directory, open 'examples/with-jest/app/utils/add.test.ts.results.json'",
+      "reason": "Because Jest exited without running tests, it never wrote the --outputFile JSON, causing run-tests.js to fail when reading the expected results file."
+    },
+    {
+      "quote": "fatal: detected dubious ownership in repository at '/work'",
+      "reason": "The git ownership error inside the Docker container indicates a UID/GID mismatch from the volume mount (-v $(pwd):/work), which may have affected file system access and path resolution for the test runner."
+    },
+    {
+      "quote": "testMatch: **/*.test.js, **/*.test.ts, **/*.test.jsx, **/*.test.tsx - 1861 matches",
+      "reason": "The global testMatch found 1861 files, confirming test files exist in the container, but the specific path argument passed to Jest still matched 0 files, pointing to a path resolution or working-directory mismatch rather than missing files globally."
+    },
+    {
+      "quote": "examples/with-vitest/app/utils/add.test.ts failed due to Error: failed with code: 1",
+      "reason": "The same failure pattern (No tests found → ENOENT) repeated across multiple example directories, indicating a systematic path resolution issue rather than a single broken test file."
+    }
+  ],
+  "suggested_fix": "Investigate the working directory inside the Docker container when Jest is invoked: ensure the CWD matches the path prefix used in the test file arguments (e.g. run Jest from /work so that 'examples/with-jest/app/utils/add.test.ts' resolves correctly). Additionally, fix the git dubious ownership error by adding 'git config --global --add safe.directory /work' before running tests (as suggested at L001150), and verify that the volume-mounted files are accessible with the correct UID/GID inside the mcr.microsoft.com/playwright container.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-gpt-5-mini/jest-nextjs-001.txt",
+    "context_tokens_estimate": 1504
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1108
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 28891.141,
+    "cache_key": "8dbf7656d6cb8b411519ab0e250647c5e556982400b1673ed5cfcd413a067e42",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "sonnet",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 3,
+        "cache_creation_input_tokens": 5527,
+        "cache_read_input_tokens": 10699,
+        "output_tokens": 1058,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 5527,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 3,
+            "output_tokens": 1058,
+            "cache_read_input_tokens": 10699,
+            "cache_creation_input_tokens": 5527,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 5527
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "c8b68807-b162-4119-9704-6531bfa57515"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "32b8c802568a9aa360baefa17988bd323b7a269c8adac850ff5cea662f03fd8c",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}

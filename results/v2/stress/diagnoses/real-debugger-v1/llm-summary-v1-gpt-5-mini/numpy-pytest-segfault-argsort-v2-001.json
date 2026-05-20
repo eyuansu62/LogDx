@@ -1,0 +1,112 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "real-debugger-v1",
+  "mode": "root_cause_diagnosis",
+  "summary": "pytest crashed with a segmentation fault in numpy C extension code (argsort function) during test_datetime_nat_argsort_stability. Build-time logs show missing BLAS/LAPACK runtime dependencies and system headers, suggesting incomplete or misconfigured numpy build.",
+  "root_cause_category": "other",
+  "root_cause": "Segmentation fault in numpy C extension (fromnumeric.argsort) likely caused by incomplete or misconfigured build due to unavailable BLAS/LAPACK dependencies (openblas, mkl_rt) and missing system headers",
+  "confidence": 0.55,
+  "relevant_files": [
+    "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py",
+    "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py"
+  ],
+  "relevant_tests": [
+    "test_datetime_nat_argsort_stability"
+  ],
+  "evidence": [
+    {
+      "quote": "Fatal Python error: Segmentation fault",
+      "reason": "Confirms that the CI job failed due to a native segmentation fault during test execution"
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 1231 in argsort",
+      "reason": "Stack trace shows segfault occurred inside numpy's C extension argsort function"
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
+      "reason": "Identifies the specific test that triggered the crash"
+    },
+    {
+      "quote": "Run-time dependency openblas found: NO (tried pkgconfig, pkgconfig, pkgconfig, system and cmake)",
+      "reason": "Critical BLAS library openblas not found despite multiple search methods"
+    },
+    {
+      "quote": "/usr/bin/ld: cannot find -lmkl_rt: No such file or directory",
+      "reason": "Linker failed to find Intel MKL BLAS library during build"
+    },
+    {
+      "quote": "/usr/bin/ld: cannot find -lopenblas: No such file or directory",
+      "reason": "Linker failed to find OpenBLAS library during build"
+    },
+    {
+      "quote": "#error \"Header 'xlocale.h' could not be found\"",
+      "reason": "Build environment missing system headers required for proper C extension compilation"
+    },
+    {
+      "quote": "'isfinite' undeclared (first use in this function)",
+      "reason": "Math functions not properly available in build environment, indicating incomplete system headers"
+    },
+    {
+      "quote": "##[error]Process completed with exit code 245.",
+      "reason": "Exit code 245 corresponds to SIGSEGV termination"
+    }
+  ],
+  "suggested_fix": "Install BLAS/LAPACK development libraries (libopenblas-dev or equivalent) and system headers (xlocale, libunwind) in the CI environment before building numpy",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-gpt-5-mini/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 1901
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 845
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 69729.026,
+    "cache_key": "d5fede7361c72631c339262c983e15c07eafc42684ef2441d1e47aa028087a05",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 /Users/eyuansu62/llm_judge/cli-token-killer/cilog-bench/examples/diagnosis_shim_claude_cli.py",
+    "model_info": {
+      "provider_name": "anthropic",
+      "requested_model": "haiku",
+      "resolved_model": null,
+      "usage": {
+        "input_tokens": 9,
+        "cache_creation_input_tokens": 5426,
+        "cache_read_input_tokens": 44442,
+        "output_tokens": 6996,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 5426,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [
+          {
+            "input_tokens": 9,
+            "output_tokens": 6996,
+            "cache_read_input_tokens": 44442,
+            "cache_creation_input_tokens": 5426,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 5426
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "session_id": "c467e018-c7c8-45cc-a9bb-1dde2a14e3a1"
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "ade4ac2160bff920d4d00a0acc2289b3e3cf8de3a70e06ecd399e7cb5a0bb356",
+    "shim_sha256": "c0bd17c0508b7e1dc7b535aca4b1d1c0da0e61d7a203dccdeb4be0690168ddf7"
+  }
+}
