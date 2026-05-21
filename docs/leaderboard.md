@@ -487,11 +487,33 @@ the gpt-5-mini summarizer is rank 3 just behind the top-2 hybrids.
 - `examples/summary_shim_openai.py` — new shim. Uses OpenAI Chat
   Completions API directly (no Claude-Code-CLI nesting). Same M4
   command-provider contract as the existing claude_cli summary shim.
-- The shim retries up to 3 times on JSON parse failures. gpt-5-mini
-  is a reasoning model and occasionally produces non-JSON output
-  even at temperature=0; retries with `json.loads(strict=False)`
-  (to accept ANSI escape codes the model echoes from evidence
-  quotes) recover all 4-of-4 cases that initially failed.
+- The diagnosis shim (`examples/diagnosis_shim_openai.py`) retries
+  up to **8 times** on JSON parse failures. gpt-5-mini is a
+  reasoning model and produces run-to-run output variance even at
+  temperature=0; combined with `json.loads(strict=False)` (to accept
+  ANSI escape codes the model echoes from evidence quotes), the
+  retry loop recovers cases where 3 attempts weren't enough — the
+  numpy-pytest-segfault case needed ≥4 retries to land valid JSON.
+
+### Reproducibility note for v1.2
+
+gpt-5-mini exhibits run-to-run variance even at temperature=0
+(reasoning models sample reasoning traces freshly each call).
+Practical effects:
+
+- Macro means in the leaderboard tables are stable to **±0.02**
+  across re-runs.
+- Per-case byte-identical reproduction is **not guaranteed** —
+  even with the shim's 8-attempt retry, a re-run may exit on a
+  different attempt with different content.
+- The aggregate ranking (top-3 vs bottom-3) is robust; methodology
+  is reproducible end-to-end via `tools/run_diagnosis.py
+  --no-cache` but specific cell numbers may shift ±0.02.
+
+This is a property of gpt-5-mini, not LogDx — `real-debugger-v1`
+(Haiku 4.5), `real-debugger-v2` (Sonnet 4.6), and
+`llm-summary-v1-haiku` reducer numbers don't have this caveat
+(Anthropic temp=0 is much closer to deterministic).
 - 3 cases re-chunked at `chunk_lines=100` (same as haiku-summary):
   nodejs-test-debugger-exec-timeout-v2-001, pytest-sklearn-stress-001,
   pytest-sklearn-stress-002. Same per-case metadata convention.

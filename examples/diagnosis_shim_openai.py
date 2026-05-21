@@ -524,7 +524,12 @@ def main() -> int:
     # it would mask real bugs. So retry the API call up to 3 times if
     # the returned content can't be parsed as JSON. Only the last
     # attempt's outcome is persisted.
-    PARSE_RETRY_ATTEMPTS = 3
+    # 2026-05-21: bumped from 3 to 8 — for the rare cases where
+    # gpt-5-mini deterministically refuses (e.g. numpy-pytest-
+    # segfault-argsort-v2-001 in v3 v2/stress), 3 retries weren't
+    # enough but 8 should virtually guarantee success unless the
+    # model has truly latched onto a refusal mode for this input.
+    PARSE_RETRY_ATTEMPTS = 8
     try:
         wrapper = invoke_openai(
             system_prompt, user_message, model, timeout_s, api_key, base_url
