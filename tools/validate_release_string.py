@@ -27,20 +27,17 @@ import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
-# Files that must carry the current release string in a recognizable form.
-# Pattern: "Current release" anywhere on the line, followed by an inline
-# version token like `v1.2` (markdown code) or **v1.2** (markdown bold).
-# Add new files here as the project grows; the validator fails if a file
-# is listed but doesn't contain ANY "Current release" mention.
+# Files that must carry the current release version. Each entry is a
+# (path, regex) pair; the regex must have ONE capture group that produces
+# the version token. The expected form is the latest git tag — e.g. `v1.2`.
+# CITATION.cff uses a bare "1.2.0" (no leading v); the validator strips the
+# leading 'v' from the tag when comparing against bare-version files.
 RELEASE_STRING_FILES = (
-    "docs/index.md",
-)
-
-# Match `vX.Y` or `vX.Y.Z` inside backticks or after a colon/whitespace,
-# anywhere on the same line as "Current release".
-_RELEASE_RE = re.compile(
-    r"Current release.*?[`*]?(v\d+\.\d+(?:\.\d+)?)[`*]?",
-    re.IGNORECASE,
+    # path, regex, strip-leading-v-from-tag-when-comparing?
+    ("docs/index.md",         r"Current release\W+`?(v\d+\.\d+(?:\.\d+)?)`?", False),
+    ("README.md",             r"Current release:\s*`?(v\d+\.\d+(?:\.\d+)?)`?", False),
+    ("huggingface/README.md", r"Current release\*\*:\s*`?(v\d+\.\d+(?:\.\d+)?)`?", False),
+    ("CITATION.cff",          r"^version:\s*\"(\d+\.\d+(?:\.\d+)?)\"", True),
 )
 
 # Match tag shape `vMAJOR.MINOR[.PATCH]`. Pre-release suffixes (-rc, etc.)
@@ -69,14 +66,16 @@ def latest_release_tag() -> str | None:
     return None
 
 
-def doc_release_strings(file_path: pathlib.Path) -> list[tuple[int, str]]:
-    """Return [(line_number, matched_version), ...] for every
-    'Current release ... vX.Y[.Z]' line in the file."""
+def doc_release_strings(
+    file_path: pathlib.Path, pattern: re.Pattern
+) -> list[tuple[int, str]]:
+    """Return [(line_number, matched_version), ...] for every line in
+    the file whose content matches `pattern` (one capture group)."""
     matches = []
     if not file_path.exists():
         return matches
     for i, line in enumerate(file_path.read_text(encoding="utf-8").splitlines(), 1):
-        for m in _RELEASE_RE.finditer(line):
+        for m in pattern.finditer(line):
             matches.append((i, m.group(1)))
     return matches
 
@@ -96,33 +95,46 @@ def main() -> int:
         return 0
 
     fail = False
-    for rel_path in RELEASE_STRING_FILES:
+    for rel_path, regex_str, strip_v in RELEASE_STRING_FILES:
         fp = ROOT / rel_path
+        pattern = re.compile(regex_str, re.MULTILINE)
+        expected_for_file = expected.lstrip("v") if strip_v else expected
         if not fp.exists():
             sys.stderr.write(
                 f"FAIL: {rel_path} listed in RELEASE_STRING_FILES but does not exist.\n"
             )
             fail = True
             continue
-        matches = doc_release_strings(fp)
+        matches = doc_release_strings(fp, pattern)
         if not matches:
             sys.stderr.write(
-                f"FAIL: {rel_path} has no 'Current release ... vX.Y[.Z]' line. "
-                f"Either add a banner referencing the latest tag ({expected}) "
-                f"or remove this file from RELEASE_STRING_FILES.\n"
+                f"FAIL: {rel_path} has no line matching r'{regex_str}'. "
+                f"Either add a release-version line referencing the latest "
+                f"tag ({expected_for_file}) or remove this file from "
+                f"RELEASE_STRING_FILES.\n"
             )
             fail = True
             continue
+        # Normalize: `v1.2` and `1.2.0` are equivalent — pad missing
+        # patch component to 0 before comparing. CITATION.cff uses the
+        # semver-strict `1.2.0` form while git tags use `v1.2` (no .Z
+        # for major minor releases); both should round-trip equal.
+        def _normalize(v: str) -> tuple[int, int, int]:
+            parts = v.lstrip("v").split(".")
+            while len(parts) < 3:
+                parts.append("0")
+            return tuple(int(p) for p in parts[:3])
+
         for line_no, found in matches:
-            if found != expected:
+            if _normalize(found) != _normalize(expected_for_file):
                 sys.stderr.write(
-                    f"FAIL: {rel_path}:{line_no} says 'Current release {found}' "
-                    f"but the latest git tag is {expected}.\n"
-                    f"  Edit the banner to match, then commit.\n"
+                    f"FAIL: {rel_path}:{line_no} contains version {found} "
+                    f"but the latest git tag is {expected_for_file}.\n"
+                    f"  Edit to match, then commit.\n"
                 )
                 fail = True
             else:
-                print(f"OK: {rel_path}:{line_no} matches latest tag ({expected})")
+                print(f"OK: {rel_path}:{line_no} matches latest tag ({expected_for_file})")
 
     if fail:
         return 1

@@ -45,8 +45,8 @@ diagnosis?
 - **Homepage**: <https://logdx-bench.github.io/>
 - **Code & evaluator**: <https://github.com/eyuansu62/LogDx>
 - **Headline report**: [`reports/e10_v2_generalization_partial.md`](https://github.com/eyuansu62/LogDx/blob/main/reports/e10_v2_generalization_partial.md)
-- **Release notes**: [`RELEASE_NOTES.md`](https://github.com/eyuansu62/LogDx/blob/main/RELEASE_NOTES.md)
-- **Current release**: `v1.0`
+- **Release notes**: [`RELEASE_NOTES.md`](https://github.com/eyuansu62/LogDx/blob/main/RELEASE_NOTES.md) (latest: [`RELEASE_NOTES_v1_2.md`](https://github.com/eyuansu62/LogDx/blob/main/RELEASE_NOTES_v1_2.md))
+- **Current release**: `v1.2`
 - **License**: CC-BY-4.0 (data, this repo); Apache-2.0 (code, GH repo)
 
 ## What this dataset contains
@@ -160,21 +160,26 @@ recorded across all 35 cases on the 2026-06-22 release pass.
 
 ## Caveats
 
-This is the **v1.0 preprint** release. The cross-family direction
+This is the **v1.2 preprint** release. The cross-family direction
 is robust to ship; per-case magnitudes are preliminary. Headline
 limitations:
 
-1. **35 cases** — corpus target 50+ for v1.1.
+1. **35 cases** — corpus target 50+ for v1.3.
 2. **Ground truth is AI-drafted (Claude Opus 4.7) + single-author
    verified** by the project author. Not independent human
    annotation.
-3. **Three model families tested.** Adding GPT-4o / Gemini / Llama
-   variants is the most-leveraged follow-up.
-4. **No independent human review of v1.0 diagnoses** (an earlier
-   16-case prototype subset had E2/E2b model-as-judge + E9
-   AI-assisted human review; the full 35-case set has not been
-   re-scored).
-5. **20 historical exclusions** documented in
+3. **Three model families tested** (Anthropic Haiku 4.5 + Sonnet
+   4.6 via OAuth / API; OpenAI gpt-5-mini via API; OpenRouter
+   Sonnet 4.6 for the agent-loop diagnoser). Two unique vendors;
+   adding Gemini / Llama / DeepSeek is the most-leveraged follow-up.
+4. **No independent third-party reproduction** (an earlier 16-case
+   prototype subset had E2/E2b model-as-judge + E9 AI-assisted
+   human review; the full 35-case set has not been re-scored by
+   an outside party).
+5. **gpt-5-mini reproducibility caveat**: reasoning-model variance
+   means macro means are stable to ±0.02 across re-runs but
+   per-case byte-equality is not guaranteed.
+6. **20 historical exclusions** documented in
    `configs/historical_provider_error_exclusions.json` (in the
    code repo); the eval injects zero-score abstentions for those
    tuples so the denominator stays correct.
@@ -191,7 +196,7 @@ for the full list.
   author = {Qin, Bowen},
   year   = {2026},
   howpublished = {\url{https://github.com/eyuansu62/LogDx}},
-  note   = {v1.0 release; cases corpus at
+  note   = {v1.2 release; cases corpus at
            \url{https://huggingface.co/datasets/eyuansu71/logdx-ci}},
 }
 ```

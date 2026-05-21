@@ -89,7 +89,7 @@ cache replay), see the [reproducibility section in
 
 ## Caveats
 
-This is a **v1.0** preprint release; we'll add cases + model
+**Current release: `v1.2`** (preprint). We'll add cases + model
 families before calling it stable.
 
 - 35 cases (target: 50+ with broader ecosystem coverage)
@@ -113,7 +113,7 @@ Full caveats in the
   author = {Qin, Bowen},
   year   = {2026},
   howpublished = {\url{https://github.com/eyuansu62/LogDx}},
-  note   = {v1.0 release; cases corpus at
+  note   = {v1.2 release; cases corpus at
            \url{https://huggingface.co/datasets/eyuansu71/logdx-ci}},
 }
 ```

@@ -1,15 +1,17 @@
 # LogDx-CI Roadmap
 
-Status as of 2026-05-18.
+Status as of 2026-05-21.
 
 | Release | Status | Highlights |
 |---|---|---|
 | **v1.0** | shipped 2026-05-18 | 35-case corpus × 3 model families. [Release notes](RELEASE_NOTES.md) · [Homepage](https://logdx-bench.github.io/) |
 | **v1.0.1** | shipped 2026-05-18 | Added `confident_error_rate_v1_1` and `total_tokens` columns to the leaderboard, plus a cost-quality Pareto plot. |
-| **v1.1** | shipped 2026-05-18 | Adds the agent-loop leaderboard. Every method gains in agent-loop, the quality range collapses 6× (0.42 → 0.069), confident-error rates drop to 0% on 8 of 10 methods. See [analysis/agent-loop-vs-single-shot.md](docs/analysis/agent-loop-vs-single-shot.md). |
-| **v1.2** | exploratory | Haiku + gpt-5-mini agent variants; configured-RTK baseline; corpus expansion. |
-| **v1.2** | exploratory | Patches caught by codex review #3 on v1.1 (endpoint-cache binding, forced-final error surfacing), Haiku + gpt-5-mini agent variants. |
-| **v2** | exploratory | Train/holdout decoupling, GPT-4o + Gemini families, `fix_action` evaluation. |
+| **v1.1** | shipped 2026-05-18 | Agent-loop leaderboard. Every method gains in agent-loop, the quality range collapses 6× (0.42 → 0.069), confident-error rates drop to 0% on 8 of 10 methods. See [analysis/agent-loop-vs-single-shot.md](docs/analysis/agent-loop-vs-single-shot.md). |
+| **v1.1.1** | shipped 2026-05-20 | Promoted real `llm-summary-v1-haiku` to the headline (replaces the `llm-summary-v1-mock` stub); single-shot score +0.24 to +0.36 across diagnoser families. Fixed stale `v2-partial` lock that had been failing CI since `a5a22f6`. |
+| **v1.1.2** | shipped 2026-05-20 | Polish release: USD cost column, mock moved to appendix, v1.1.1 protocol lock frozen, `protocols/legacy/` cleanup, HF dataset drift gate, v1.3 historical-doc deprecation banners, chunk_lines=100 caveat. |
+| **v1.2** | shipped 2026-05-20 | Cross-family LLM-summary: `llm-summary-v1-gpt-5-mini` (real OpenAI gpt-5-mini map-reduce summarizer) becomes new agent-loop #1 at 0.749 with 0.37 tools/case. Cross-pair beats self-pair → self-call-bias hypothesis falsified. 10× cheaper than haiku-summary. |
+| **v1.3** | exploratory | See [`docs/plans/`](docs/plans/) (local, not committed) for current drafts: model-family expansion (Gemini / Llama), cost-integrated ranking + dynamic-mode agent benchmark, hybrid + LLM-summary fallback router. |
+| **v2** | exploratory | Train/holdout decoupling, GPT-4o / DeepSeek families, `fix_action` evaluation, third-party independent reproduction. |
 
 This roadmap is informed by the RTK community's
 "signal-loss-during-aggressive-compression" issue cluster
