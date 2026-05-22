@@ -351,6 +351,9 @@ reducer overhead per case dominates total end-to-end cost.
 For the full mechanism analysis (why agents rescue weak methods
 without hurting strong ones, why confident_error vanishes), see
 [`docs/analysis/agent-loop-vs-single-shot.md`](analysis/agent-loop-vs-single-shot.md).
+For the per-trajectory token-flow breakdown (input dominates output
+40×, agents barely use `read_file`, tail-risk is 4-5×), see
+[`docs/analysis/agent-trajectory-token-anatomy.md`](analysis/agent-trajectory-token-anatomy.md).
 
 ### Agent-loop caveats
 
