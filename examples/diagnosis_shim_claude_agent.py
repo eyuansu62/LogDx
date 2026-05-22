@@ -952,8 +952,10 @@ def run_agent_loop(
                 try:
                     final = normalize(parse_diagnosis_json(text))
                     final_turn = turn
+                    messages.append({"role": "assistant", "content": content})
                     break
                 except Exception:
+                    messages.append({"role": "assistant", "content": content})
                     final = unknown_body(
                         "agent produced text without tool_use and "
                         "without final JSON"
@@ -1026,6 +1028,15 @@ def run_agent_loop(
         try:
             final = normalize(parse_diagnosis_json(text))
             final_turn = turn
+            # Persist the model's FINAL assistant turn into messages so
+            # the optional trajectory dump (CILOGBENCH_AGENT_V1_TRAJECTORY_DIR)
+            # captures every assistant emission, not N-1 turns. Without
+            # this, the dump's `messages` ends with the user-role
+            # tool_result that precedes the final answer — the JSON
+            # answer itself lives in the returned `final` dict but any
+            # intermediate text the model emitted on the answering turn
+            # would be silently lost from the trajectory record.
+            messages.append({"role": "assistant", "content": content})
             break
         except Exception:
             # Agent emitted prose without JSON — give it one nudge if
@@ -1040,6 +1051,7 @@ def run_agent_loop(
                     ),
                 })
                 continue
+            messages.append({"role": "assistant", "content": content})
             final = unknown_body(
                 "agent emitted non-JSON text and exhausted retries"
             )
@@ -1088,6 +1100,9 @@ def run_agent_loop(
                 for b in forced_content
                 if b.get("type") == "text"
             )
+            # Persist the forced final turn into messages so the
+            # trajectory dump captures the no-tools cleanup response.
+            messages.append({"role": "assistant", "content": forced_content})
             try:
                 final = normalize(parse_diagnosis_json(forced_text))
                 # Use max_iterations+1 to signal "forced cleanup turn"
@@ -1150,6 +1165,60 @@ def run_agent_loop(
         "budget_exhausted": budget_exhausted,
         "final_diagnosis_turn": final_turn,
     }
+
+    # 2026-05-21: optional full-trajectory dump for deep analysis. The
+    # default per-case JSON only carries `agent_metadata.tool_calls`
+    # (skeleton: tool name + args + obs-token estimate), NOT the
+    # observation strings the model actually saw or the model's
+    # intermediate text outputs. Setting `CILOGBENCH_AGENT_V1_TRAJECTORY_DIR`
+    # enables a one-file-per-case dump of the full `messages` list
+    # (assistant text + tool_use blocks + tool_result observations)
+    # so a follow-up analysis can answer "what did the agent actually
+    # see on turn 2" / "where did its reasoning latch onto a wrong
+    # category" type questions. Filename:
+    #     <trajectory_dir>/<case_id>__<context_method>.json
+    # Default OFF — zero impact on existing run_diagnosis.py flows that
+    # don't set the env var. Each dump is ~50-200 KB depending on log
+    # size; 35 cases × 12 methods = ~5-100 MB total at full coverage.
+    trajectory_dir = os.environ.get("CILOGBENCH_AGENT_V1_TRAJECTORY_DIR", "")
+    if trajectory_dir:
+        case_id = payload.get("case_id") or "unknown_case"
+        context_method = payload.get("context_method") or "unknown_method"
+        try:
+            import pathlib as _pl
+            tdir = _pl.Path(trajectory_dir)
+            tdir.mkdir(parents=True, exist_ok=True)
+            # Sanitize both filename components: case_id and context_method
+            # may in principle contain "/" or ".." which would write to
+            # unexpected locations. Production case_ids are kebab-case-NNN
+            # so this is defense-in-depth, not a known exploit path.
+            def _safe(s: str) -> str:
+                return (s.replace("/", "_").replace("\\", "_")
+                         .replace("..", "_"))
+            safe_case = _safe(case_id)
+            safe_method = _safe(context_method)
+            target = tdir / f"{safe_case}__{safe_method}.json"
+            target.write_text(json.dumps({
+                "case_id": case_id,
+                "context_method": context_method,
+                "model": model,
+                "resolved_model": resolved_model,
+                "system_prompt_sha256": hashlib.sha256(
+                    system_prompt.encode("utf-8")
+                ).hexdigest(),
+                "agent_config": agent_config,
+                "messages": messages,
+                "agent_metadata": agent_metadata,
+            }, ensure_ascii=False, indent=2))
+        except Exception as e:
+            # Trajectory dump is best-effort — never block the actual
+            # diagnosis return on a filesystem error. Emit to stderr
+            # so the caller's log shows the failure.
+            sys.stderr.write(
+                f"diagnosis_shim_claude_agent: trajectory dump failed: "
+                f"{type(e).__name__} (case={payload.get('case_id', '?')})\n"
+            )
+
     return final, agent_metadata, model_info
 
 

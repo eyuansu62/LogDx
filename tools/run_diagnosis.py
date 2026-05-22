@@ -1886,6 +1886,26 @@ def run(
     diag_out_root = results_dir / split / "diagnoses" / diagnoser_name
     cache_dir = results_dir / split / ".cache" / "diagnosis"
 
+    # 2026-05-21: auto-enable full-trajectory dump for agent shims. The
+    # shim itself reads `CILOGBENCH_AGENT_V1_TRAJECTORY_DIR` and is a
+    # no-op when unset (default OFF in standalone shim use). The runner
+    # opts in by default so every agent_v1 sweep on this machine
+    # captures the trajectory record alongside the standard per-row
+    # diagnosis output, gated on the shim path name to avoid leaking
+    # the env into single-shot shims (which would simply ignore it
+    # anyway). User can override by setting the var explicitly in their
+    # environment — the build_shim_env path inherits parent env, so any
+    # pre-existing value wins. Trajectories are gitignored
+    # (`results/**/__trajectories/`) and shipped via
+    # `huggingface/upload_trajectories.sh` separately from the corpus.
+    shim_path = shim_path_from_command(command_str)
+    is_agent_shim = shim_path is not None and "agent" in shim_path.name
+    # Snapshot the user's explicit value (if any) BEFORE the method loop
+    # mutates shim_env per-method. Without this, the first method's
+    # runner-set value would be mistaken for a user override on the
+    # second method and stick to method 1's dir for the entire sweep.
+    user_traj_override = shim_env.get("CILOGBENCH_AGENT_V1_TRAJECTORY_DIR")
+
     had_failure = False
     for method in methods:
         rows = load_manifest_rows(results_dir, split, method)
@@ -1895,6 +1915,16 @@ def run(
         method_dir = diag_out_root / method
         method_dir.mkdir(parents=True, exist_ok=True)
         manifest_path = diag_out_root / f"{method}.jsonl"
+
+        # Per-method trajectory dir — sibling of `<method>.jsonl` and
+        # `<method>/`. Only injected when we detected an agent shim AND
+        # the user hasn't already set the env var explicitly (snapshot
+        # taken before the loop; runner-mutated values do NOT count as
+        # an override and must be refreshed for each method).
+        if is_agent_shim and not user_traj_override:
+            traj_dir = diag_out_root / f"{method}__trajectories"
+            traj_dir.mkdir(parents=True, exist_ok=True)
+            shim_env["CILOGBENCH_AGENT_V1_TRAJECTORY_DIR"] = str(traj_dir)
 
         out_rows: list[dict] = []
         method_cache_hits = 0
