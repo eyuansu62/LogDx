@@ -36,6 +36,15 @@ description: "A benchmark for CI log reduction tools — do they preserve enough
 > agent rescues weak contexts via tool calls. See the
 > [agent-loop leaderboard](leaderboard.html#agent-loop-leaderboard--v11).
 
+> *Recent finding (2026-05-21, from the 420-row agent-loop
+> trajectory dataset)*: **input tokens dominate output by 40×**
+> (97.6% vs 2.4%) in agent-loop diagnosis, and agents barely use
+> `read_file` (2.2% of tool calls in CI diagnosis — the rest is
+> grep / tail / view_log_lines). Worst-case agent runs cost 4-5×
+> the median, all on v2/stress huge logs. Implications for
+> reduction-tool design in
+> [`docs/analysis/agent-trajectory-token-anatomy.md`](https://github.com/eyuansu62/LogDx/blob/main/docs/analysis/agent-trajectory-token-anatomy.md).
+
 ## What it measures
 
 LogDx-CI compares **11 context providers** — `raw`, `tail`, `grep`,
