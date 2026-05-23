@@ -61,7 +61,7 @@ second LLM-as-judge from a different model family. Findings:
 
 This remains expert-model review across two model families (Claude Opus
 in E2 and ChatGPT in this pass), **not** human review. See
-`reports/e9_cross_model_expert_style_review.md` for the full memo.
+`reports/experiments/e9_cross_model_expert_style_review.md` for the full memo.
 
 **(b) AI-assisted human review (E9, 2026-05-06).** A single human
 reviewer (the project author of `hybrid-grep-4k-rtk-err-cat-v1`) worked
@@ -72,7 +72,7 @@ override. Verdict per the E9 plan: **`WEAKEN_HEADLINE`** — the v1.3
 technical report's headline phrasing was changed from "matched or beat
 grep" to "matched grep on quality at ~⅓ the token cost," with the
 8-to-2 pairwise grep lean noted explicitly. See
-`reports/e9_human_verified_v1_3_review.md` for the full memo.
+`reports/experiments/e9_human_verified_v1_3_review.md` for the full memo.
 
 Caveats that **remain unfixed** by this E9 pass:
 

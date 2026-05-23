@@ -14,7 +14,7 @@
 > baseline, verified all 48 items of a ChatGPT-generated draft). This is
 > *not* independent human review. Results are directional, not statistical.
 > See [`cilogbench_v1_3_technical_report.md`](cilogbench_v1_3_technical_report.md)
-> §8b and `reports/e9_human_verified_v1_3_review.md` for details.
+> §8b and `reports/experiments/e9_human_verified_v1_3_review.md` for details.
 
 > 🚨 **v2 generalization caveat (added 2026-05-07, refreshed at the
 > 13-case v2-checkpoint-13 state):**
@@ -187,7 +187,7 @@ In priority order:
 - Limitations: `docs/reports/cilogbench_v1_3_limitations.md`
 - Frozen protocol: `protocols/legacy/cilogbench-v1.3.lock.json`
 - Per-experiment reports: `reports/e{2b,3,4,5}_*`,
-  `reports/e6_second_debugger_cilogbench_v1_3_real-debugger-v2.md`,
-  `reports/e7_mcp_search_agent_cilogbench_v1_3_mcp-search-agent-v1-sonnet.md`,
-  `reports/e8_hybrid_first_search_fallback_cilogbench_v1_3.md`,
-  `reports/e9_human_verified_v1_3_review.md`
+  `reports/experiments/e6_second_debugger_cilogbench_v1_3_real-debugger-v2.md`,
+  `reports/experiments/e7_mcp_search_agent_cilogbench_v1_3_mcp-search-agent-v1-sonnet.md`,
+  `reports/experiments/e8_hybrid_first_search_fallback_cilogbench_v1_3.md`,
+  `reports/experiments/e9_human_verified_v1_3_review.md`

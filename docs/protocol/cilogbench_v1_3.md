@@ -33,7 +33,7 @@ Nothing else moves. Re-running every locked v1.2 method on v1.3 is byte-stable.
 
 ## 2. Why hybrid was added
 
-E5 (`reports/e5_hybrid_grep_fallback_cilogbench_v1_2.md`) showed that the
+E5 (`reports/experiments/e5_hybrid_grep_fallback_cilogbench_v1_2.md`) showed that the
 deterministic policy `grep-if-fits-else-rtk-err-cat @4k` passed every
 freeze criterion when implemented as a first-class baseline:
 
@@ -127,7 +127,7 @@ in code).
 
 ## 6. Primary score
 
-`diagnosis_score_v1_1` — calibrated in E2b (`reports/e2b_score_calibration_v1_1.md`)
+`diagnosis_score_v1_1` — calibrated in E2b (`reports/experiments/e2b_score_calibration_v1_1.md`)
 and adopted as primary in v1.2. v1.3 inherits this without change.
 
 ## 7. Secondary score

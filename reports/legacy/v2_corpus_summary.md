@@ -2,13 +2,13 @@
 
 > Generated 2026-05-07 from `tools/build_split_manifest.py` outputs +
 > in-tree `tags.json` files. Source data:
-> [`results/v2_corpus_summary.json`](../results/v2_corpus_summary.json)
+> [`results/v2_corpus_summary.json`](../../results/v2_corpus_summary.json)
 > (full per-case record table) and per-split manifests at
 > `cases/<split>/split_manifest.json`.
 >
 > This is one of the three Phase 2 acceptance-criteria-C deliverables
 > per the E10 Phase 2 plan. Companions:
-> [`v2_split_balance.md`](v2_split_balance.md) (already generated) and
+> [`v2_split_balance.md`](../experiments/v2_split_balance.md) (already generated) and
 > [`v2_contamination_check.md`](v2_contamination_check.md).
 
 ## Counts

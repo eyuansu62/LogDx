@@ -3,7 +3,7 @@
 > Refreshed 2026-05-07 from `tools/check_split_balance.py
 > --splits dev,holdout,stress,v2/dev,v2/holdout,v2/stress`. The full
 > machine-readable output is at
-> [`results/split_balance.json`](../results/split_balance.json) and a
+> [`results/split_balance.json`](../../results/split_balance.json) and a
 > richer flag-by-flag dump is at
 > [`reports/split_balance.md`](split_balance.md). This file is the
 > short narrative companion to those raw artifacts, summarizing the
@@ -16,7 +16,7 @@
 > (signal_position=middle), and the §3d 13-case Phase 3 refresh
 > validated that the prior tail-winner macro lead was indeed
 > sampling-inflated — see
-> [`reports/e10_v2_generalization_partial.md`](e10_v2_generalization_partial.md)
+> [`reports/e10_v2_generalization_partial.md`](../e10_v2_generalization_partial.md)
 > §3d.
 >
 > Earlier states (8-case, 10-case, 12-case) — see git history for
@@ -94,7 +94,7 @@ showed the tail-vs-grep gap shrunk substantially (Sonnet:
 caveat that the tail-winner macro lead was sampling-inflated. The
 robust 13-case takeaway is that **no single context-provider wins
 across both signal positions** — see
-[`reports/e10_v2_generalization_partial.md`](e10_v2_generalization_partial.md)
+[`reports/e10_v2_generalization_partial.md`](../e10_v2_generalization_partial.md)
 §3d for the full analysis.
 
 The remaining v1.3/holdout signal_position monoculture has been

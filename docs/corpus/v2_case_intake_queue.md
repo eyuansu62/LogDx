@@ -110,7 +110,7 @@ Batch 3 (target: +2 cases, 10 total — Phase 2 checkpoint)
         (2 distinct test_tcl tests fail with one root cause).
 
 Batch 4 (target: 3-5 cases, 13-15 total)
-  Recommended mix (per reports/v2_split_balance.md flags):
+  Recommended mix (per reports/experiments/v2_split_balance.md flags):
     1 timeout/OOM (still 0/v2)               ✓ Batch 4 case 2
     1 non-pytest v2/stress                   ✓ Batch 4 case 1
     1 huge log_size_bucket (>50k lines)      ✗ blocked by gh CLI

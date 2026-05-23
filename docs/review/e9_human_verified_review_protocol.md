@@ -2,8 +2,8 @@
 
 E9 is the first **human** review pass on CILogBench. Earlier review
 (E2/E2b) used an LLM-as-judge expert reviewer (`claude-opus-4-7-expert`)
-and the calibration documents (`reports/e2_calibration_memo.md`,
-`reports/e2b_score_calibration_v1_1.md`) and the v1.3 limitations doc
+and the calibration documents (`reports/experiments/e2_calibration_memo.md`,
+`reports/experiments/e2b_score_calibration_v1_1.md`) and the v1.3 limitations doc
 (`docs/reports/cilogbench_v1_3_limitations.md` §2) all explicitly flag
 that as expert-model review, not human review. E9 closes that gap by
 running a real human pass on the v1.3 headline comparison.
@@ -64,7 +64,7 @@ The plan defines five gates (A–E):
   E9 metrics (overall_usefulness mean, pairwise win rate, sv1.1 correlation,
   human/auto winner agreement, disagreement list, IRR if applicable).
   **Pending.**
-- **D — report:** `reports/e9_human_verified_v1_3_review.md` plus an alias
+- **D — report:** `reports/experiments/e9_human_verified_v1_3_review.md` plus an alias
   copy of the analyze output as
   `results/e9_human_verified_v1_3_review.json`. **Pending.**
 - **E — public-report update:** v1.3 technical report / one-pager /

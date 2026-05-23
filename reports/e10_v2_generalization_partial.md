@@ -457,7 +457,7 @@ and across both debuggers.
 v2/stress sampling bias** that needs to be disclosed up front.
 The current v2/stress bucket is **4/4 late** (numpy, cpython,
 rust, nodejs all place the failure block at ≥92% of the log; see
-[`reports/v2_split_balance.md`](v2_split_balance.md) §3),
+[`reports/v2_split_balance.md`](experiments/v2_split_balance.md) §3),
 and tail's bounded 200-line window is structurally advantaged by
 late evidence. Decomposing the 12-case macro by split:
 

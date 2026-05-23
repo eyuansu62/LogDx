@@ -52,7 +52,7 @@ slug. The slug shows up in filesystem paths, reports, and manifests.
    wrapper runs `tools/audit_context_privacy.py --context-method raw`
    and stops if any secret pattern fires. Override with
    `--allow-privacy-audit-hits` (but inspect first — read
-   `reports/dev_privacy_audit.md`).
+   `reports/experiments/dev_privacy_audit.md`).
 2. **External-LLM opt-in.** Even after a clean audit, the wrapper
    refuses to invoke the summarizer or the diagnoser unless either:
    - `CILOGBENCH_ALLOW_EXTERNAL_LLM=1` in the environment, OR

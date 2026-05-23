@@ -61,7 +61,7 @@ v1.3 baselines.
 - `results/<split>/diagnoses/mcp-search-agent-v1-sonnet/<case>.json` — diagnosis row (matches `schemas/diagnosis.schema.json`)
 - `results/<split>/diagnoses/mcp-search-agent-v1-sonnet/mcp-search-agent-v1-sonnet.jsonl` — manifest
 - `results/<split>/eval_diagnosis_mcp-search-agent-v1-sonnet.json` — eval (same format as `real-debugger-v*`)
-- `reports/e7_mcp_search_agent_cilogbench_v1_3_mcp-search-agent-v1-sonnet.md`
+- `reports/experiments/e7_mcp_search_agent_cilogbench_v1_3_mcp-search-agent-v1-sonnet.md`
 - `results/e7_mcp_search_agent_cilogbench_v1_3_mcp-search-agent-v1-sonnet.manifest.json`
 
 ## Reproducing
