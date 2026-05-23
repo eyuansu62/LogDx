@@ -123,6 +123,15 @@ for the prototype-vs-formal corpus analysis).
 
 Full per-split + per-debugger breakdown → **[leaderboard](leaderboard.html)**.
 
+![LogDx-CI v1.2 cost-quality Pareto frontier — 11 context providers across 35 cases × 3 LLM families](figures/cost_quality_pareto.png)
+
+The Pareto frontier (4 methods, green dashed) traces the
+best-quality-for-token-cost choices: `rtk-log` → `tail-200` →
+`hybrid-grep-120k-tail` → `hybrid-grep-120k-rtk-tail`. Everything else
+is dominated. The real LLM summarizers land off-frontier — high quality
+but high cost — and `grep` pays ~4.5× more tokens than the top-2
+hybrids for slightly lower score.
+
 ## Corpus
 
 **35 real GitHub Actions failure cases** across `dev` (8), `holdout`
