@@ -17,11 +17,17 @@ RELEASE_TAG="v2-partial-2026-05-20"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 STAGING="$(mktemp -d)/logdx-hf"
 
+echo "==> Regenerating flat metadata jsonl files for the HF dataset viewer"
+python3 "$REPO_ROOT/tools/build_hf_metadata.py"
+
 echo "==> Staging dataset content at $STAGING"
 mkdir -p "$STAGING"
 # Per-case files: raw.log + case.json + ground_truth.json + tags.json
 # + privacy_audit.json under cases/<split>/<case_id>/
 cp -r "$REPO_ROOT/cases" "$STAGING/"
+# Flat metadata jsonl (one per split) — drives the HF dataset viewer
+# via the configs.data_files entry in README.md's YAML frontmatter.
+cp -r "$REPO_ROOT/huggingface/metadata" "$STAGING/"
 # Dataset card (HF reads README.md with YAML frontmatter)
 cp "$REPO_ROOT/huggingface/README.md" "$STAGING/README.md"
 # Per-data license + citation
@@ -29,8 +35,9 @@ cp "$REPO_ROOT/LICENSE-DATA" "$STAGING/LICENSE"
 cp "$REPO_ROOT/CITATION.cff" "$STAGING/"
 
 echo "==> Verifying staging tree"
-echo "Case count: $(find "$STAGING/cases" -name case.json | wc -l | tr -d ' ')"
-echo "Total size: $(du -sh "$STAGING" | cut -f1)"
+echo "Case count:    $(find "$STAGING/cases" -name case.json | wc -l | tr -d ' ')"
+echo "Metadata rows: $(cat "$STAGING/metadata/"*.jsonl 2>/dev/null | wc -l | tr -d ' ')"
+echo "Total size:    $(du -sh "$STAGING" | cut -f1)"
 
 echo "==> Creating HF dataset repo (idempotent via --exist-ok)"
 hf repo create "$DATASET_REPO" --repo-type dataset --exist-ok

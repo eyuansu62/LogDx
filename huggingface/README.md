@@ -22,17 +22,17 @@ configs:
   - config_name: default
     data_files:
       - split: dev
-        path: "cases/dev/**/*.json"
+        path: "metadata/dev.jsonl"
       - split: holdout
-        path: "cases/holdout/**/*.json"
+        path: "metadata/holdout.jsonl"
       - split: stress
-        path: "cases/stress/**/*.json"
+        path: "metadata/stress.jsonl"
       - split: v2_dev
-        path: "cases/v2/dev/**/*.json"
+        path: "metadata/v2_dev.jsonl"
       - split: v2_holdout
-        path: "cases/v2/holdout/**/*.json"
+        path: "metadata/v2_holdout.jsonl"
       - split: v2_stress
-        path: "cases/v2/stress/**/*.json"
+        path: "metadata/v2_stress.jsonl"
 ---
 
 # LogDx-CI
@@ -49,9 +49,23 @@ diagnosis?
 - **Current release**: `v1.2`
 - **License**: CC-BY-4.0 (data, this repo); Apache-2.0 (code, GH repo)
 
-## What this dataset contains
+## Two ways to use this dataset
 
-**35 real GitHub Actions failure cases** across 3 splits, each with:
+LogDx-CI ships in two formats on this HF repo. They contain the same
+underlying 35 cases — pick the one that matches your use case.
+
+| Format | What you get | When to use |
+|---|---|---|
+| **Dataset Viewer / `load_dataset` (`metadata/<split>.jsonl`)** | Flat 27-column table: per-case metadata + tags + `root_cause.{category,summary}`. 35 rows across 6 splits. No raw logs, no full ground-truth annotations. | Browsing the corpus on the HF viewer, filtering by category / ecosystem / split, building dashboards. |
+| **Full per-case bundle (`cases/<split>/<case_id>/`)** | 4 files per case: `raw.log`, `case.json`, `ground_truth.json` (full nested annotations: required_signals, evidence_spans, relevant_files, expected_diagnosis, …), `tags.json`. | Running the benchmark, training, or any work that needs the raw log or full ground truth. Fetch via `huggingface_hub.snapshot_download(repo_id, repo_type="dataset")`. |
+
+The viewer is intentionally schema-flat (the per-case ground-truth files
+are deeply nested and aren't a clean table) — see [the
+`tools/build_hf_metadata.py` script in the code
+repo](https://github.com/eyuansu62/LogDx/blob/main/tools/build_hf_metadata.py)
+for the exact field list and how it's derived.
+
+## What's in the full per-case bundle
 
 | File | Purpose |
 |------|---------|
@@ -63,12 +77,19 @@ diagnosis?
 
 ## Split sizes
 
-| Split | Cases |
-|-------|------:|
-| `dev` | 8 |
-| `holdout` | 15 |
-| `stress` | 12 |
-| **Total** | **35** |
+| Split | Cases | Notes |
+|-------|------:|-------|
+| `dev`         |  5 | v1 prototype-wave dev |
+| `holdout`     |  5 | v1 prototype-wave holdout |
+| `stress`      |  6 | v1 prototype-wave stress |
+| `v2_dev`      |  3 | v2 formal-wave dev |
+| `v2_holdout`  | 10 | v2 formal-wave holdout |
+| `v2_stress`   |  6 | v2 formal-wave stress |
+| **Total**     | **35** | |
+
+Both waves are part of the canonical v1.2 corpus. The two-wave split
+reflects methodology-development history; see [the release notes
+"internal naming" section](https://github.com/eyuansu62/LogDx/blob/main/RELEASE_NOTES.md#a-note-on-internal-naming).
 
 ## Coverage
 
@@ -108,11 +129,32 @@ for the prototype-vs-formal corpus analysis.
 
 ## How to use
 
+### Option 1 — Browse / filter via `load_dataset` (flat metadata only)
+
 ```python
-# Download via the unified hf CLI (pip install huggingface_hub; hf auth login)
-# (the dataset's primary format is per-case JSON + raw.log files,
-# not a single HF Dataset table)
+from datasets import load_dataset
+
+ds = load_dataset("eyuansu71/logdx-ci")
+print(ds)
+# DatasetDict with 6 splits: dev, holdout, stress, v2_dev, v2_holdout, v2_stress
+
+# Filter by failure category
+compile_errors = ds["v2_holdout"].filter(
+    lambda row: row["failure_category"] == "compile_error"
+)
+print(compile_errors[0]["repo"], compile_errors[0]["root_cause_summary"])
+```
+
+This loads the flat metadata table (27 columns, 35 rows) — the same
+view as the HF dataset viewer. No raw logs, no full nested ground
+truth.
+
+### Option 2 — Full per-case bundle (raw logs + nested ground truth)
+
+```python
 from huggingface_hub import snapshot_download
+import json
+from pathlib import Path
 
 local_dir = snapshot_download(
     repo_id="eyuansu71/logdx-ci",
@@ -120,9 +162,6 @@ local_dir = snapshot_download(
 )
 
 # Each case lives at cases/<split>/<case_id>/
-import json
-from pathlib import Path
-
 case_dir = Path(local_dir) / "cases" / "v2" / "dev" / "moby-buildx-bake-v2-001"
 case = json.loads((case_dir / "case.json").read_text())
 truth = json.loads((case_dir / "ground_truth.json").read_text())
@@ -131,7 +170,14 @@ raw_log = (case_dir / "raw.log").read_text()
 
 print(case["repo"], case["framework"], case["line_count"])
 print(truth["root_cause"]["category"], truth["root_cause"]["summary"])
+# Full nested annotations also available:
+for sig in truth["required_signals"]:
+    print(sig["type"], sig["value"], sig["importance"])
 ```
+
+Use this path when you need raw logs or the full nested ground-truth
+annotations (required_signals, evidence_spans, relevant_files,
+expected_diagnosis, must-mention checklist, forbidden claims).
 
 To run the full benchmark (context providers + diagnosers + evaluator),
 clone the **code repository** at <https://github.com/eyuansu62/LogDx>:
