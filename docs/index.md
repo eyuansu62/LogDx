@@ -164,7 +164,20 @@ Every release carries:
 
 - **Protocol lock** (`protocols/*.lock.json`) — SHA-pins 10 schemas +
   3 prompts + 4 evaluators + 10 baselines + 35 case files at the
-  release commit
+  release commit.<br/>
+  <sub>**Note on the 10-lock vs 11-headline split**: the lock pins
+  the original v1.0 baseline set (10 providers, including the legacy
+  `llm-summary-v1-mock` regex stub). The v1.2 headline leaderboard
+  moves `llm-summary-v1-mock` to the appendix and promotes two real
+  LLM-summary providers added on top of the lock —
+  `llm-summary-v1-haiku` (v1.1.1) and `llm-summary-v1-gpt-5-mini`
+  (v1.2) — so the public headline table has **11 methods**. Both real
+  summarizers ship their own SHA-pinned shim scripts
+  (`examples/summary_shim_claude_cli.py`,
+  `examples/summary_shim_openai.py`) and pinned reducer configs; they
+  are not yet promoted into the protocol-lock baseline list. A
+  follow-up freeze (`logdx-ci-v1.2.lock.json` regenerated to include
+  the two real summarizers) is on the v1.3 list.</sub>
 - **3 release gates** — fail CI when any committed artifact drifts:
   - `validate_committed_diagnosis_provider_errors.py` — no non-
     allowlisted provider_error rows in `real-debugger-*` manifests
@@ -183,35 +196,47 @@ Every release carries:
 
 ## Caveats
 
-This is a **v1.0 preprint** release.
+This is a **v1.2 preprint** release.
 
 1. **35 cases.** Per-case variance can shift macro means by ±0.05
    with future corpus expansion. The direction of the top-3 ∩
    finding is robust; absolute magnitudes are preliminary.
 2. **Ground truth is AI-drafted (Claude Opus 4.7) + single-author
    verified** by Bowen Qin (NUS). Not independent human annotation.
-3. **Three model families tested.** Adding GPT-4o / Gemini / Llama
-   is the most-leveraged follow-up.
-4. **No independent human review of v1.0 diagnoses** (an earlier
-   16-case prototype subset had E2/E2b model-as-judge + E9
-   AI-assisted human review; the full 35-case set has not been
-   re-scored).
-5. **20 historical exclusions** documented in
+3. **Three model families tested** (Anthropic Haiku 4.5 + Sonnet 4.6;
+   OpenAI gpt-5-mini; OpenRouter Sonnet for the agent-loop diagnoser).
+   Two unique vendors; adding Gemini / Llama / DeepSeek is the
+   most-leveraged follow-up.
+4. **No independent third-party reproduction** of the 35-case
+   diagnoses (an earlier 16-case prototype subset had E2/E2b
+   model-as-judge + E9 AI-assisted human review; the full set has
+   not been re-scored by an outside party).
+5. **gpt-5-mini reproducibility caveat**: reasoning-model variance
+   means macro means are stable to ±0.02 across re-runs but per-case
+   byte-equality is not guaranteed. Anthropic temp=0 paths
+   (haiku-summary reducer, debugger-v1, debugger-v2) are not
+   affected.
+6. **20 historical exclusions** documented in
    `configs/historical_provider_error_exclusions.json`; the eval
    injects zero-score abstentions for those tuples so the
    denominator stays correct.
 
 See the [full §5 caveats](https://github.com/eyuansu62/LogDx/blob/main/reports/e10_v2_generalization_partial.md#5-caveats)
-for the complete list.
+for the complete list. Earlier release-by-release history
+(v1.0 → v1.1 → v1.1.1 → v1.1.2 → v1.2) lives in
+[`ROADMAP.md`](https://github.com/eyuansu62/LogDx/blob/main/ROADMAP.md).
 
 ## Roadmap
 
-- **v1.1** — Corpus expansion (target 50+); fill remaining
-  `stress` gaps (huge log + non-pytest); spot-checked human
-  review of v1.0 diagnoses
-- **v2** — Train/holdout split decoupling, GPT-4o + Gemini family
-  additions, `matrix_or_monorepo_failure` as a first-class canonical
-  category, optional Gradio leaderboard space on HF
+Next milestones (exploratory; see
+[`ROADMAP.md`](https://github.com/eyuansu62/LogDx/blob/main/ROADMAP.md)
+for the full schedule):
+
+- **v1.3** — Model-family expansion (Gemini, Llama); cost-integrated
+  ranking; agent-loop runs on Haiku 4.5 and gpt-5-mini; configured
+  RTK baseline.
+- **v2** — Train/holdout split decoupling, `fix_action` evaluation
+  dimension, third-party independent reproduction.
 
 ## Citation
 
@@ -223,7 +248,7 @@ for the complete list.
   author = {Qin, Bowen},
   year   = {2026},
   howpublished = {\url{https://github.com/eyuansu62/LogDx}},
-  note   = {v1.0 release; cases corpus at
+  note   = {v1.2 release; cases corpus at
            \url{https://huggingface.co/datasets/eyuansu71/logdx-ci}},
 }
 ```

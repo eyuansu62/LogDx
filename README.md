@@ -10,13 +10,14 @@
 [![License: Apache-2.0 + CC-BY-4.0](https://img.shields.io/badge/license-Apache--2.0%20%2B%20CC--BY--4.0-blue)](LICENSE)
 [![Dataset on HF](https://img.shields.io/badge/data-eyuansu71%2Flogdx--ci-yellow)](https://huggingface.co/datasets/eyuansu71/logdx-ci)
 
-LogDx-CI compares 10 context providers (`raw`, `tail`, `grep`, three
-[RTK](https://github.com/rtk-ai/rtk) modes (`rtk-read`, `rtk-log`,
-`rtk-err-cat`), an `llm-summary`, and three hybrid routers) by
-handing the same CI failure log to three debugger families
-(Claude Haiku 4.5, Claude Sonnet 4.6, OpenAI gpt-5-mini) and scoring
-the resulting root-cause diagnoses against AI-drafted +
-author-verified ground truths.
+LogDx-CI compares **11 context providers** (`raw`, `tail`, `grep`,
+three [RTK](https://github.com/rtk-ai/rtk) modes — `rtk-read`,
+`rtk-log`, `rtk-err-cat` —, two real LLM summarizers —
+`llm-summary-v1-haiku` (Anthropic) and `llm-summary-v1-gpt-5-mini`
+(OpenAI) —, and three hybrid routers) by handing the same CI failure
+log to three debugger families (Claude Haiku 4.5, Claude Sonnet 4.6,
+OpenAI gpt-5-mini) and scoring the resulting root-cause diagnoses
+against AI-drafted + author-verified ground truths.
 
 It optimizes for **method ranking stability** across model families,
 not "which LLM scored highest."
@@ -36,17 +37,21 @@ the 35-case corpus:
 |----:|--------|----------:|----------:|----------:|--------:|
 | 1 | `hybrid-grep-120k-rtk-tail` | 0.624 | 0.679 | 0.706 | **0.670** |
 | 2 | `hybrid-grep-120k-tail`     | 0.610 | 0.730 | 0.658 | **0.666** |
-| 3 | `grep`                      | 0.578 | 0.684 | 0.655 | 0.639 |
-| 4 | `tail-200`                  | 0.595 | 0.624 | 0.623 | 0.614 |
-| 5 | `hybrid-grep-4k-rtk-err-cat`<br/><sub>*(earlier 4k-threshold hybrid; replaced)*</sub> | 0.552 | 0.597 | 0.571 | 0.573 |
-| 6 | `rtk-err-cat`               | 0.455 | 0.488 | 0.467 | 0.470 |
-| 7 | `raw`                       | 0.324 | 0.368 | 0.367 | 0.353 |
-| 8 | `rtk-read`                  | 0.329 | 0.369 | 0.349 | 0.349 |
-| 9 | `llm-summary-v1-mock`       | 0.343 | 0.348 | 0.294 | 0.328 |
-| 10 | `rtk-log`                  | 0.238 | 0.262 | 0.249 | 0.249 |
+| 3 | `llm-summary-v1-gpt-5-mini`<br/><sub>*(new in v1.2; agent-loop #1 at 0.749)*</sub> | 0.654 | 0.686 | 0.652 | **0.664** |
+| 4 | `grep`                      | 0.578 | 0.684 | 0.655 | 0.639 |
+| 5 | `llm-summary-v1-haiku`<br/><sub>*(promoted to headline in v1.1)*</sub> | 0.583 | 0.704 | 0.608 | 0.632 |
+| 6 | `tail-200`                  | 0.595 | 0.624 | 0.623 | 0.614 |
+| 7 | `hybrid-grep-4k-rtk-err-cat`<br/><sub>*(earlier 4k-threshold hybrid; replaced)*</sub> | 0.552 | 0.597 | 0.571 | 0.573 |
+| 8 | `rtk-err-cat`               | 0.455 | 0.488 | 0.467 | 0.470 |
+| 9 | `raw`                       | 0.324 | 0.368 | 0.367 | 0.353 |
+| 10 | `rtk-read`                 | 0.329 | 0.369 | 0.349 | 0.349 |
+| 11 | `rtk-log`                  | 0.238 | 0.262 | 0.249 | 0.249 |
 
-The top-2 hybrids replaced an earlier 4k-threshold hybrid that was
-overfit during methodology development. See [§3 of the technical
+The legacy `llm-summary-v1-mock` stub (used as the LLM-summary
+representative through v1.1) is retained as an appendix entry on
+the leaderboard, not in the headline. The top-2 hybrids replaced an
+earlier 4k-threshold hybrid that was overfit during methodology
+development. See [§3 of the technical
 report](reports/e10_v2_generalization_partial.md) for the
 prototype-vs-formal corpus analysis.
 
@@ -60,7 +65,7 @@ Full leaderboard at <https://logdx-bench.github.io/leaderboard.html>.
 | 📊 Leaderboard | <https://logdx-bench.github.io/leaderboard.html> |
 | 📄 Full report | [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md) |
 | 📦 Cases corpus mirror | <https://huggingface.co/datasets/eyuansu71/logdx-ci> |
-| 📋 Release notes | [`RELEASE_NOTES.md`](RELEASE_NOTES.md) |
+| 📋 Release notes | latest: [`RELEASE_NOTES_v1_2.md`](RELEASE_NOTES_v1_2.md) · history: [`RELEASE_NOTES.md`](RELEASE_NOTES.md) (v1.0), [v1.1.1](RELEASE_NOTES_v1_1_1.md), [v1.1.2](RELEASE_NOTES_v1_1_2.md) |
 | 📑 Cite | [`CITATION.cff`](CITATION.cff) · [BibTeX](https://logdx-bench.github.io/cite.html) |
 
 ## Use the data

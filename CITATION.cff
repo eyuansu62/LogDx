@@ -11,19 +11,24 @@ repository-artifact: "https://huggingface.co/datasets/eyuansu71/logdx-ci"
 url: "https://logdx-bench.github.io/"
 abstract: >
   LogDx-CI evaluates whether CI log reduction tools preserve enough
-  evidence for LLM root-cause diagnosis. The benchmark compares 10+
-  log reducers (raw, tail, grep, rtk-{read,log,err-cat}, llm-summary,
-  and hybrid routers) on 19 real GitHub Actions failure cases spanning
-  eight failure categories and seven ecosystems. Diagnoses from
-  three debuggers — Claude Haiku 4.5, Claude Sonnet 4.6, and OpenAI
-  gpt-5-mini — are scored against AI-drafted, author-verified ground
-  truths using a calibrated formula (diagnosis_score_v1_1) covering
-  category accuracy, signal-mention recall, file/test recall, forbidden
-  claims, and confident-error rate. The headline finding is that the v2
-  corpus produces cross-family-stable AND cross-run-stable benchmark
-  rankings (Sonnet/Haiku/gpt-5-mini agree on top-3 ∩ = {hybrid-v2,
-  hybrid-v3} on v2), while v1.3 stability is narrower. The release
-  includes the full corpus, evaluator code, protocol locks, and three
+  evidence for LLM root-cause diagnosis. The benchmark compares 11
+  log reducers (raw, tail, grep, rtk-{read,log,err-cat}, two real
+  LLM summarizers — llm-summary-v1-haiku (Anthropic) and
+  llm-summary-v1-gpt-5-mini (OpenAI) —, and three hybrid routers)
+  on 35 real GitHub Actions failure cases spanning eight failure
+  categories and seven ecosystems. Diagnoses from three debuggers —
+  Claude Haiku 4.5, Claude Sonnet 4.6, and OpenAI gpt-5-mini — are
+  scored against AI-drafted, author-verified ground truths using a
+  calibrated formula (diagnosis_score_v1_1) covering category
+  accuracy, signal-mention recall, file/test recall, forbidden
+  claims, and confident-error rate. The headline finding is that
+  the top-3 intersection across the three debugger families is
+  {hybrid-grep-120k-rtk-tail, hybrid-grep-120k-tail}, and the
+  bottom-4 set is also stable across all three families. v1.2 adds
+  the cross-family LLM-summary baseline, which becomes the
+  agent-loop #1 at 0.749 with 0.37 tool calls per case and
+  falsifies the self-call-bias hypothesis. The release includes the
+  full corpus, evaluator code, protocol locks, and three
   release-gate scripts that pin canonical state against shim/config
   drift and provider-error class leakage.
 keywords:
@@ -49,10 +54,10 @@ preferred-citation:
   year: 2026
   url: "https://github.com/eyuansu62/LogDx"
   notes: >
-    v1.0 release. Cases corpus mirrored on Hugging Face at
+    v1.2 release. Cases corpus mirrored on Hugging Face at
     https://huggingface.co/datasets/eyuansu71/logdx-ci. The repository
     pins three release-gate scripts (validate_committed_diagnosis_
     provider_errors.py, validate_eval_manifest_consistency.py,
     validate_diagnosis_vs_context_consistency.py) and one historical-
-    exclusion manifest documenting 20 cases removed by 2026-06-09 /
-    2026-06-10 cleanups.
+    exclusion manifest documenting 20 (split, diagnoser, method, case)
+    tuples removed by 2026-06-09 / 2026-06-10 cleanups.

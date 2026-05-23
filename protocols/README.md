@@ -1,17 +1,28 @@
 # Protocol locks
 
-## Current (v1.1.x family — `logdx-ci-*`)
+## Current (v1.x family — `logdx-ci-*`)
 
 ```
-logdx-ci-v1.1.lock.json                # v1.1 release (2026-05-18)
-logdx-ci-v1.1.1.lock.json              # v1.1.1 release (2026-05-20)
+logdx-ci-v1.1.lock.json                    # v1.1   release (2026-05-18)
+logdx-ci-v1.1.1.lock.json                  # v1.1.1 release (2026-05-20)
+logdx-ci-v1.2.lock.json                    # v1.2   release (2026-05-20, current)
 logdx-ci-v2-partial-2026-06-22.lock.json   # rolling "live" lock validated by CI
 ```
 
 These are the actively maintained locks. `tools/validate_protocol_lock.py`
 points at `logdx-ci-v2-partial-2026-06-22.lock.json` in the CI workflow;
-the per-release locks (`v1.1`, `v1.1.1`) are point-in-time snapshots for
-reproducibility of published numbers.
+the per-release locks (`v1.1`, `v1.1.1`, `v1.2`) are point-in-time
+snapshots for reproducibility of published numbers.
+
+**Baseline-set caveat**: all four locks pin the same 10 baselines (the
+v1.0 set, including the legacy `llm-summary-v1-mock` stub). The two
+real LLM-summary providers added in v1.1.1 / v1.2 —
+`llm-summary-v1-haiku` and `llm-summary-v1-gpt-5-mini` — are on the
+public v1.2 headline (making it 11 methods) but are not yet promoted
+into the lock's pinned-baseline list. They ship with their own
+SHA-pinned shim + reducer config under `examples/` and
+`configs/baselines/`. A follow-up `logdx-ci-v1.2.lock.json` regenerated
+to include both real summarizers is tracked for v1.3.
 
 ## Legacy (`cilogbench-*` namespace)
 

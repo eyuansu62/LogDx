@@ -1,6 +1,8 @@
 # LogDx-CI Roadmap
 
-Status as of 2026-05-21.
+**Current release**: `v1.2` (preprint). Status as of 2026-05-23.
+
+## Release history
 
 | Release | Status | Highlights |
 |---|---|---|
@@ -9,9 +11,9 @@ Status as of 2026-05-21.
 | **v1.1** | shipped 2026-05-18 | Agent-loop leaderboard. Every method gains in agent-loop, the quality range collapses 6× (0.42 → 0.069), confident-error rates drop to 0% on 8 of 10 methods. See [analysis/agent-loop-vs-single-shot.md](docs/analysis/agent-loop-vs-single-shot.md). |
 | **v1.1.1** | shipped 2026-05-20 | Promoted real `llm-summary-v1-haiku` to the headline (replaces the `llm-summary-v1-mock` stub); single-shot score +0.24 to +0.36 across diagnoser families. Fixed stale `v2-partial` lock that had been failing CI since `a5a22f6`. |
 | **v1.1.2** | shipped 2026-05-20 | Polish release: USD cost column, mock moved to appendix, v1.1.1 protocol lock frozen, `protocols/legacy/` cleanup, HF dataset drift gate, v1.3 historical-doc deprecation banners, chunk_lines=100 caveat. |
-| **v1.2** | shipped 2026-05-20 | Cross-family LLM-summary: `llm-summary-v1-gpt-5-mini` (real OpenAI gpt-5-mini map-reduce summarizer) becomes new agent-loop #1 at 0.749 with 0.37 tools/case. Cross-pair beats self-pair → self-call-bias hypothesis falsified. 10× cheaper than haiku-summary. |
-| **v1.3** | exploratory | See [`docs/plans/`](docs/plans/) (local, not committed) for current drafts: model-family expansion (Gemini / Llama), cost-integrated ranking + dynamic-mode agent benchmark, hybrid + LLM-summary fallback router. |
-| **v2** | exploratory | Train/holdout decoupling, GPT-4o / DeepSeek families, `fix_action` evaluation, third-party independent reproduction. |
+| **v1.2** | **shipped 2026-05-20 (current)** | Cross-family LLM-summary: `llm-summary-v1-gpt-5-mini` (real OpenAI gpt-5-mini map-reduce summarizer) becomes new agent-loop #1 at 0.749 with 0.37 tools/case. Cross-pair beats self-pair → self-call-bias hypothesis falsified. 10× cheaper than haiku-summary. |
+| **v1.3** | exploratory | See [`docs/plans/`](docs/plans/) (local, not committed) for current drafts: model-family expansion (Gemini / Llama), cost-integrated ranking + dynamic-mode agent benchmark, hybrid + LLM-summary fallback router, configured-RTK baseline. |
+| **v2** | exploratory | Train/holdout decoupling, GPT-4o / DeepSeek families, `fix_action` evaluation dimension, vitest / dotnet / Playwright corpus expansion (target 50+ cases), third-party independent reproduction. |
 
 This roadmap is informed by the RTK community's
 "signal-loss-during-aggressive-compression" issue cluster
@@ -19,24 +21,26 @@ This roadmap is informed by the RTK community's
 Each item below names the community thread or finding that motivates
 it, so contributors can trace the design decision.
 
-## Priorities
+## Shipped items (v1.0 → v1.2)
 
-The six v1.1 items below are ordered by **structural impact on
-benchmark credibility**, not by implementation effort.
+Items #1–#6 below were the v1.1 planning backlog; all shipped across
+v1.0.1 / v1.1 / v1.1.1 / v1.1.2 / v1.2. They are retained for
+provenance — each names the community thread that motivated it.
 
 ```
-P0 (shipped in v1.0.1)  : #3 confident_error_rate column
-                          #2 cost + latency reporting (token columns + Pareto plot)
-P0 (shipped in v1.1)    : #1 multi-turn / agent-loop benchmark (Sonnet 4.6, 35 cases)
-P0 (deferred to v1.2)   : #2-followup USD pricing snapshot + reducer runtime for grep/tail
-P1 (deferred to v1.2)   : #1-followup agent-loop on Haiku 4.5 + gpt-5-mini
-                          #4 configured-RTK baseline
-                          #5 vitest / dotnet / Playwright corpus expansion
-P2 (deferred to v1.2)   : #6 decision-making (fix_action) evaluation dimension
+v1.0.1   #3 confident_error_rate column
+         #2 cost + latency reporting (token columns + Pareto plot)
+v1.1     #1 multi-turn / agent-loop benchmark (Sonnet 4.6, 35 cases)
+v1.1.1   real llm-summary-v1-haiku promoted to headline
+v1.1.2   USD pricing snapshot · mock moved to appendix
+v1.2     llm-summary-v1-gpt-5-mini (cross-family LLM-summary, new agent-loop #1)
+         shim hardening (json strict=False, parse retry, base_url cache binding)
 ```
 
-P0 items are required for v1.1 release. P1 items ship if time permits.
-P2 items are stretch goals; they may slip to v1.2.
+Items still open against the original backlog are tracked in the
+[v1.3 / v2 sections](#v13--v2-open-items) below: #4 configured-RTK
+baseline, #5 corpus expansion (vitest / dotnet / Playwright), and #6
+`fix_action` evaluation dimension.
 
 ## #3 — confident_error_rate as a separate column · DONE in v1.0.1
 
@@ -60,7 +64,7 @@ and aggregation is reproducible via
 confident misdiagnoses; `rtk-log` and `llm-summary-v1-mock` produce
 13.3% each. Safety and quality rank together, not in tension.
 
-## #1 — Multi-turn / agent-loop benchmark · P0 for v1.1
+## #1 — Multi-turn / agent-loop benchmark · DONE in v1.1 (gpt-5-mini variant DONE in v1.2)
 
 **Motivation**: Community evidence that single-shot results don't
 predict real-agent results.
@@ -78,28 +82,22 @@ single LLM call → score`. Real Claude Code / Codex usage is
 of follow-up tool calls is **worse** in practice than one scoring
 0.6 in a single shot.
 
-**Scope for v1.1**:
+**Shipped**:
 
-1. New diagnoser variant `real-agent-v1` that supports tool calls
-   (`grep`, `read_file`, `tail`, `view_log_lines`).
-2. Iteration cap: 5 turns. Token budget: same as current.
-3. New metrics:
-   - `turns_to_diagnosis`: turns used before the agent issues
-     a final root-cause answer.
-   - `total_input_tokens_consumed`: cumulative LLM input tokens
-     across all turns (proxy for cost).
-   - `tool_call_count`: number of tool invocations.
-4. Re-run all 10 baselines through `real-agent-v1` on Sonnet 4.6
-   (Haiku and gpt-5-mini if budget allows).
-5. New leaderboard section: **agent-loop leaderboard** alongside
-   the single-shot one. Hypothesis: hybrid routers' advantage
-   should *increase* in agent-loop because they front-load the
-   signal-rich grep output, reducing follow-up grep calls.
-
-**Effort**: medium-large. The harness exists in `tools/run_diagnosis.py`
-but needs a tool-call loop; `examples/diagnosis_shim_claude_cli.py`
-already supports tool definitions. Mostly evaluator + protocol work,
-not new model work.
+1. New diagnoser variant `real-agent-v1` (Sonnet 4.6, max 5 turns ×
+   4 deterministic tools: `grep`, `read_file`, `tail`,
+   `view_log_lines`).
+2. New metrics on the agent-loop leaderboard:
+   `turns_to_diagnosis`, `total_input_tokens_consumed`,
+   `tool_call_count`.
+3. Agent-loop leaderboard alongside single-shot; quality range
+   collapses ~7× (0.42 → 0.059) and `hybrid-grep-120k-rtk-tail`
+   is still #1 at 0.747 (v1.1).
+4. **v1.2 follow-up**: cross-family agent-loop via
+   `llm-summary-v1-gpt-5-mini` (now agent-loop #1 at 0.749).
+5. **Open follow-up**: Haiku 4.5 + gpt-5-mini agent variants (the
+   "every method gains" finding may be Sonnet-specific). Tracked
+   for v1.3.
 
 ## #2 — Cost + latency reporting · Mostly DONE in v1.0.1
 
@@ -133,19 +131,16 @@ not about diagnosis quality in isolation. Examples:
    plot generation in
    [`tools/make_pareto_plot.py`](tools/make_pareto_plot.py).
 
-**Deferred to v1.1**:
+**Shipped in v1.1.2 / v1.2**:
 
-- **USD cost per case**. Need a pinned price snapshot
-  (Anthropic Haiku 4.5, Sonnet 4.6, OpenAI gpt-5-mini list prices
-  with a snapshot date in the protocol lock) before publishing
-  USD figures.
-- **Reducer runtime for grep / tail / hybrid baselines.** v1.0 only
-  records `external_tool.runtime_ms` for RTK methods (via the
-  external-tool wrapper). For non-LLM, non-RTK methods, runtime
-  needs to be measured by a re-run with timing instrumentation —
-  small but requires a baseline re-run.
+- USD cost per case — pinned to
+  `configs/pricing/snapshot_2026_05_20.json`; `tools/compute_usd_costs.py`
+  computes per-method dollars from real per-call API usage.
+- Reducer runtime measured for RTK methods (via the external-tool
+  wrapper); grep/tail/hybrid runtime is empirically sub-100ms
+  per case and is unmeasured by design (CPU-bound, single-pass).
 
-## #4 — Configured-RTK baseline · P1 for v1.1
+## #4 — Configured-RTK baseline · OPEN, target v1.3
 
 **Motivation**: v1.0 uses stock `rtk` invocations
 (`rtk read`, `rtk log`, `rtk err cat`). Multiple community threads
@@ -160,22 +155,22 @@ imply that power users tune RTK significantly:
 unfair** if a tuned RTK can close the gap. The "RTK loses on CI
 diagnosis" claim is only as strong as the configuration we tested.
 
-**Scope for v1.1**:
+**Scope** (v1.3):
 
 1. New baseline: `rtk-tuned-for-ci` using a community-recommended
    `.rtkrc` or `--rules` set focused on preserving failure patterns.
 2. Reach out to RTK maintainers via [rtk-ai/rtk#1313](https://github.com/rtk-ai/rtk/issues/1313)
    for their recommended CI-diagnosis configuration. Pin and ship
    the exact config under `configs/baselines/rtk-tuned-for-ci.json`.
-3. Include `rtk-tuned-for-ci` in the v1.1 leaderboard. If it closes
-   the gap to `grep`, the v1.0 framing of "RTK underperforms stand-
-   alone" gets a major qualifier added: *"out of the box."*
+3. Include `rtk-tuned-for-ci` in the v1.3 leaderboard. If it closes
+   the gap to `grep`, the current framing of "stock RTK underperforms
+   on CI diagnosis" gets a major qualifier added: *"out of the box."*
 
 **Effort**: medium. Mostly waiting on RTK maintainer input + one
 new baseline runner. Risk: if maintainers don't engage, we ship
 with our best-effort tuning + an open invitation.
 
-## #5 — Test-runner / ecosystem corpus expansion · P1 for v1.1
+## #5 — Test-runner / ecosystem corpus expansion · OPEN, target v2
 
 **Motivation**: Community issues name concrete test runners that RTK
 handles poorly:
@@ -188,15 +183,16 @@ handles poorly:
 - [rtk-ai/rtk#690](https://github.com/rtk-ai/rtk/issues/690):
   Playwright E2E test agents can't see failure detail.
 
-**Gap in v1.0**: 35-case corpus covers pytest / cargo / `go test` /
-mvn / pnpm-jest / gradle / biome, but is light on `vitest` (0 cases),
-**`dotnet test`** (0 cases), and **E2E test runners** (0 cases).
+**Gap through v1.2**: 35-case corpus covers pytest / cargo /
+`go test` / mvn / pnpm-jest / gradle / biome, but is light on
+`vitest` (0 cases), **`dotnet test`** (0 cases), and **E2E test
+runners** (0 cases).
 
-**Scope for v1.1**:
+**Scope** (v2):
 
 1. Add **+5 vitest cases**, **+3 dotnet test cases**, **+2 Playwright
    or Cypress E2E cases**. Total: 35 → 45 cases.
-2. Re-evaluate all 10 baselines (single-shot) and all agent-loop
+2. Re-evaluate all 11 baselines (single-shot) and all agent-loop
    baselines (from #1).
 3. Verify the headline finding (top-3 ∩ stable across families)
    survives the corpus expansion.
@@ -205,7 +201,7 @@ mvn / pnpm-jest / gradle / biome, but is light on `vitest` (0 cases),
 public failing CI run + privacy audit + AI-draft ground truth +
 single-author verify). 10 cases ≈ 1 person-week.
 
-## #6 — Decision-making (fix_action) evaluation dimension · P2 for v1.1
+## #6 — Decision-making (fix_action) evaluation dimension · OPEN, target v2
 
 **Motivation**: [rtk-ai/rtk#827](https://github.com/rtk-ai/rtk/issues/827)
 specifically frames this as
@@ -213,10 +209,10 @@ specifically frames this as
 cause and choosing the right next action are different tasks; the
 latter is what real agents do.
 
-**Gap in v1.0**: We score "did the LLM identify the right root cause"
-but not "did the LLM choose the right fix command."
+**Gap through v1.2**: We score "did the LLM identify the right root
+cause" but not "did the LLM choose the right fix command."
 
-**Scope for v1.1**:
+**Scope** (v2):
 
 1. For each ground truth case, add a `fix_action` field documenting
    the canonical next action (e.g., `pip install foo==1.2.3`,
@@ -229,14 +225,13 @@ but not "did the LLM choose the right fix command."
 
 **Effort**: medium-large. Adding `fix_action` to 45 cases is
 non-trivial (these are higher-information ground-truth annotations
-than category). May ship as P2 deferred to v1.2 if #1, #2, #4, #5
-already fill the v1.1 window.
+than category).
 
-## v1.2 — patches caught by codex review #3
+## Codex-review #3 patches · DONE in v1.2
 
 Surfaced during v1.1's third adversarial review. Zero impact on
-v1.1 published numbers (audit confirmed 0 affected rows), but
-both are real bugs that future v1.1+ runs should not inherit.
+v1.1 published numbers (audit confirmed 0 affected rows); both
+were shipped in v1.2 so future runs don't inherit them.
 
 ### #7 — Bind endpoint into cache identity
 
@@ -262,7 +257,7 @@ non_fatal_provider_error_prefixes allowlist). Add regression test
 where the forced-final call raises and assert provider_error
 surfaces. Effort: ~½ day; no API spend.
 
-## Out-of-scope for v1.1 (recorded for v1.2+)
+## v1.3 / v2 open items
 
 - **Other compression tools**: `terminal-output-summarizer`,
   `llm-aware-tee`, custom GPT-4o summarizers running real (not mock).

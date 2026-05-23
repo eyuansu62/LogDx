@@ -1,6 +1,6 @@
 ---
 title: "Leaderboard"
-description: "Method × debugger leaderboard for LogDx-CI v1.1 (35 cases, single-shot + agent-loop)."
+description: "Method × debugger leaderboard for LogDx-CI v1.2 (35 cases, single-shot + agent-loop, 11 context providers)."
 ---
 
 # LogDx-CI Leaderboard
@@ -9,14 +9,15 @@ description: "Method × debugger leaderboard for LogDx-CI v1.1 (35 cases, single
 [Technical report](https://github.com/eyuansu62/LogDx/blob/main/reports/e10_v2_generalization_partial.md)
 
 All scores are case-count-weighted macro `diagnosis_score_v1_1`
-aggregated across the **35-case v1.0 corpus** (3 splits: `dev`,
-`holdout`, `stress`). The score formula (a calibrated linear
+aggregated across the **35-case v1.2 corpus** (3 splits: `dev`,
+`holdout`, `stress`; same cases as v1.0, expanded methods). The
+score formula (a calibrated linear
 combination of category accuracy, signal-mention recall, file/test
 recall, must-mention coverage, valid-evidence-quote rate, with
 forbidden-claim and confident-error penalties) is documented in
 [`docs/evaluation/diagnosis_eval_v1.md`](https://github.com/eyuansu62/LogDx/blob/main/docs/evaluation/diagnosis_eval_v1.md).
 
-## Overall (35-case corpus, 3 debugger families)
+## Overall (35-case corpus, 3 debugger families, 11 context providers)
 
 Sorted by overall mean across the three debugger families.
 **`confident_error` is the v1.1-calibrated rate** of confidently-wrong
@@ -75,7 +76,7 @@ Two layers of finding:
 
 ## Cost-quality Pareto frontier
 
-![Cost-quality Pareto frontier for LogDx-CI v1.0](figures/cost_quality_pareto.png)
+![Cost-quality Pareto frontier for LogDx-CI v1.2](figures/cost_quality_pareto.png)
 
 x-axis is total LLM tokens consumed per case on a log scale
 (reducer-internal LLM calls + context delivered to the diagnoser +
@@ -156,7 +157,7 @@ which write `external_tool.runtime_ms` into their manifests):
 `grep`/`tail` runtime is unmeasured in v1.0 but is empirically
 sub-100ms for every case in the corpus (CPU-bound, single-pass).
 
-### USD cost (v1.1.2)
+### USD cost (v1.2 snapshot, pinned 2026-05-20)
 
 Provider list prices are pinned to a snapshot date in
 [`configs/pricing/snapshot_2026_05_20.json`](https://github.com/eyuansu62/LogDx/blob/main/configs/pricing/snapshot_2026_05_20.json).
@@ -586,7 +587,7 @@ continuity.
 
 The following baselines are retained for cross-version continuity
 and as control/smoke-test references, but are **not** part of the
-current v1.1.1 ranking. Do not cite their numbers as
+current v1.2 ranking. Do not cite their numbers as
 recommendations for production use.
 
 ### `llm-summary-v1-mock`

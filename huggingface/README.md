@@ -95,8 +95,10 @@ moby buildx-bake, pip + GitHub Actions network, go-redis pubsub.
 |----:|--------|------------------------:|
 | 1 | `hybrid-grep-120k-rtk-tail` | **0.670** |
 | 2 | `hybrid-grep-120k-tail` | **0.666** |
-| 3 | `grep` | 0.639 |
-| 4 | `tail-200` | 0.614 |
+| 3 | `llm-summary-v1-gpt-5-mini` *(new in v1.2; agent-loop #1 at 0.749)* | **0.664** |
+| 4 | `grep` | 0.639 |
+| 5 | `llm-summary-v1-haiku` *(real Haiku summarizer; promoted to headline in v1.1)* | 0.632 |
+| 6 | `tail-200` | 0.614 |
 | ... | (see [the full leaderboard](https://logdx-bench.github.io/leaderboard.html)) | |
 
 The top-2 hybrids replaced an earlier 4k-threshold hybrid that was
