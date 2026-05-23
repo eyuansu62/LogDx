@@ -2,7 +2,7 @@
 
 **Tag**: `v1.0`
 **Project homepage**: <https://logdx-bench.github.io/>
-**Protocol lock**: [`protocols/logdx-ci-v2-partial-2026-06-22.lock.json`](protocols/logdx-ci-v2-partial-2026-06-22.lock.json) ([note](#a-note-on-internal-naming))
+**Protocol lock**: [`protocols/logdx-ci-v2-partial-2026-05-20.lock.json`](protocols/logdx-ci-v2-partial-2026-05-20.lock.json) ([note](#a-note-on-internal-naming))
 **Technical report**: [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md)
 **Cases corpus mirror**: [`huggingface.co/datasets/eyuansu71/logdx-ci`](https://huggingface.co/datasets/eyuansu71/logdx-ci)
 
@@ -179,7 +179,7 @@ are explicit:
    `configs/historical_provider_error_exclusions.json`) are
    counted as zero-score abstentions in the eval denominator
    via injection; the underlying diagnosis manifest rows were
-   removed by the 2026-06-09 / 2026-06-10 cleanups because their
+   removed by the 2026-05-15 cleanups because their
    provider_error prefixes (Claude CLI RuntimeError, JSONDecodeError,
    post_api_error) are not in the canonical allowlist.
 

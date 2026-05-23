@@ -149,7 +149,7 @@ grep/tail tool calls because the summary already names the failure.
 ✅ validate_eval_manifest_consistency.py
 ✅ validate_diagnosis_vs_context_consistency.py
 ✅ validate_corpus_fingerprint.py
-✅ validate_protocol_lock.py   (against logdx-ci-v2-partial-2026-06-22)
+✅ validate_protocol_lock.py   (against logdx-ci-v2-partial-2026-05-20)
 ```
 
 Test suite: 157/157 PASS.

@@ -158,7 +158,7 @@ Each log was passed through `tools/audit_context_privacy.py` (200k-
 line cap, fail-closed on truncation or long-line splits) before
 commit. Per-case redactions are documented in
 `privacy_audit.json` and `tags.json#repo_visibility`. Zero hits
-recorded across all 35 cases on the 2026-06-22 release pass.
+recorded across all 35 cases on the 2026-05-20 v1.2 release pass.
 
 ## Caveats
 

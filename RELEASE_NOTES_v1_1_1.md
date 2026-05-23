@@ -98,7 +98,7 @@ cost-quality Pareto plot makes the tradeoff explicit.
 ## CI hygiene fix (pre-release)
 
 This release also fixes a stale protocol lock that was inherited from
-v1.1: `protocols/logdx-ci-v2-partial-2026-06-22.lock.json` was pinned
+v1.1: `protocols/logdx-ci-v2-partial-2026-05-20.lock.json` was pinned
 against pre-v1.1 SHAs for `schemas/diagnosis.schema.json` and
 `tools/evaluate_diagnosis.py`, and was missing the `prompts/agent_v1.md`
 entry that v1.1 introduced. CI tests started failing from `a5a22f6`

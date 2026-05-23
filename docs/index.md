@@ -155,7 +155,7 @@ python3 tools/validate_diagnosis_vs_context_consistency.py
 
 # Validate the canonical protocol lock
 python3 tools/validate_protocol_lock.py \
-    --protocol protocols/logdx-ci-v2-partial-2026-06-22.lock.json
+    --protocol protocols/logdx-ci-v2-partial-2026-05-20.lock.json
 ```
 
 ## Reproducibility infrastructure

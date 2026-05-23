@@ -30,7 +30,7 @@ python3 tools/validate_eval_manifest_consistency.py
 python3 tools/validate_diagnosis_vs_context_consistency.py
 
 python3 tools/validate_protocol_lock.py \
-    --protocol protocols/logdx-ci-v2-partial-2026-06-22.lock.json
+    --protocol protocols/logdx-ci-v2-partial-2026-05-20.lock.json
 ```
 
 CI runs all of the above on every push; see
@@ -90,7 +90,7 @@ results/                ← canonical eval state (committed)
   <split>/.cache/diagnosis/                ← gitignored cache
 
 protocols/              ← SHA-pinned release locks
-  logdx-ci-v2-partial-2026-06-22.lock.json  ← current canonical lock
+  logdx-ci-v2-partial-2026-05-20.lock.json  ← current canonical lock
 
 docs/                   ← GH Pages site + technical sub-docs
   index.md, leaderboard.md, cite.md

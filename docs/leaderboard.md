@@ -658,8 +658,9 @@ The eval injects zero-score abstention rows for 20 (split,
 diagnoser, method, case) tuples documented in
 [`configs/historical_provider_error_exclusions.json`](https://github.com/eyuansu62/LogDx/blob/main/configs/historical_provider_error_exclusions.json).
 These correspond to transient model / CLI / API failures during the
-2026-04..05 prototype sweeps that were removed by the 2026-06-09 /
-2026-06-10 cleanups. Without injection the eval denominator would
+2026-04..05 prototype sweeps that were removed by the 2026-05-15
+cleanups (commits `f0eeef9` and `3ecf89f`). Without injection the
+eval denominator would
 artificially shrink, inflating the macro means. The
 `validate_eval_manifest_consistency.py` release gate verifies that
 every excluded eval row has `diagnosis_success=False` + zeroed

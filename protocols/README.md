@@ -6,11 +6,11 @@
 logdx-ci-v1.1.lock.json                    # v1.1   release (2026-05-18)
 logdx-ci-v1.1.1.lock.json                  # v1.1.1 release (2026-05-20)
 logdx-ci-v1.2.lock.json                    # v1.2   release (2026-05-20, current)
-logdx-ci-v2-partial-2026-06-22.lock.json   # rolling "live" lock validated by CI
+logdx-ci-v2-partial-2026-05-20.lock.json   # rolling "live" lock validated by CI
 ```
 
 These are the actively maintained locks. `tools/validate_protocol_lock.py`
-points at `logdx-ci-v2-partial-2026-06-22.lock.json` in the CI workflow;
+points at `logdx-ci-v2-partial-2026-05-20.lock.json` in the CI workflow;
 the per-release locks (`v1.1`, `v1.1.1`, `v1.2`) are point-in-time
 snapshots for reproducibility of published numbers.
 

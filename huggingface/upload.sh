@@ -8,12 +8,12 @@
 #     hf auth login
 #
 # Idempotent: re-running will sync the latest cases/ tree to the
-# dataset repo. To bump release tag, change v2-partial-2026-06-22
+# dataset repo. To bump release tag, change v2-partial-2026-05-20
 # below.
 set -euo pipefail
 
 DATASET_REPO="eyuansu71/logdx-ci"
-RELEASE_TAG="v2-partial-2026-06-22"
+RELEASE_TAG="v2-partial-2026-05-20"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 STAGING="$(mktemp -d)/logdx-hf"
 

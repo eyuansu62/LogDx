@@ -21,7 +21,7 @@ schemas, 4 prompts, 4 evaluators, 9 hybrid-baseline configs — over
 35 cases × 6 splits).
 
 Previously the v1.1.1 release didn't ship its own lock; downstream
-reproducibility relied on the rolling `v2-partial-2026-06-22` lock.
+reproducibility relied on the rolling `v2-partial-2026-05-20` lock.
 Future schema/evaluator drift can no longer silently invalidate
 v1.1.1's published numbers — `tools/validate_protocol_lock.py
 --protocol protocols/logdx-ci-v1.1.1.lock.json` is now the canonical
@@ -132,7 +132,7 @@ All 4 release gates green:
 ✅ validate_eval_manifest_consistency.py
 ✅ validate_diagnosis_vs_context_consistency.py
 ✅ validate_corpus_fingerprint.py   (NEW in v1.1.2)
-✅ validate_protocol_lock.py   (against logdx-ci-v2-partial-2026-06-22)
+✅ validate_protocol_lock.py   (against logdx-ci-v2-partial-2026-05-20)
 ```
 
 `tools/tests/test_diagnosis_cache_key.py`: 157/157 PASS.
