@@ -28,6 +28,16 @@ TAGS_FIELDS = [
     "evidence_formats", "noise_profile", "repo_visibility",
 ]
 
+# These three fields are absent on v1 prototype-wave cases (16 of 35)
+# and present as strings on v2 formal-wave cases (19 of 35). Leaving
+# them as None makes Arrow infer the column type as `null` from the
+# first split (dev — all None) and then choke with a CastError when it
+# meets the string values in v2 splits. We coerce None → "unknown"
+# (matching the existing primary_language sentinel) so the viewer sees
+# a uniform string column. The canonical state in tags.json is
+# unchanged; this only affects the flat viewer-side metadata.
+SPARSE_STRING_FIELDS_NULL_SENTINEL = ("ecosystem", "ci_provider", "repo_visibility")
+
 SPLITS = ["dev", "holdout", "stress", "v2/dev", "v2/holdout", "v2/stress"]
 
 
@@ -40,6 +50,9 @@ def build_row(case_dir: Path, split: str) -> dict:
         row[f] = case.get(f)
     for f in TAGS_FIELDS:
         row[f] = tags.get(f)
+    for f in SPARSE_STRING_FIELDS_NULL_SENTINEL:
+        if row.get(f) is None:
+            row[f] = "unknown"
     rc = gt.get("root_cause") or {}
     row["root_cause_category"] = rc.get("category")
     row["root_cause_summary"] = rc.get("summary")
