@@ -8,7 +8,7 @@
 >
 > This is one of the three Phase 2 acceptance-criteria-C deliverables
 > per the E10 Phase 2 plan. Companions:
-> [`v2_split_balance.md`](../experiments/v2_split_balance.md) (already generated) and
+> [`v2_split_balance.md`](v2_split_balance.md) (already generated) and
 > [`v2_contamination_check.md`](v2_contamination_check.md).
 
 ## Counts

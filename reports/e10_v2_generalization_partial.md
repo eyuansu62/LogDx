@@ -52,9 +52,9 @@
 > the on-disk manifests match the lock's frozen state.
 >
 > **Companion docs:**
-> [`e10_phase3_v2_partial_signal_recall.md`](e10_phase3_v2_partial_signal_recall.md)
+> [`e10_phase3_v2_partial_signal_recall.md`](legacy/e10_phase3_v2_partial_signal_recall.md)
 > (deterministic proxy detail) and
-> [`e10_phase3_v2_partial_diagnosis.md`](e10_phase3_v2_partial_diagnosis.md)
+> [`e10_phase3_v2_partial_diagnosis.md`](legacy/e10_phase3_v2_partial_diagnosis.md)
 > (real-debugger sv1.1 detail). This file is the single canonical
 > narrative aggregating both.
 >
@@ -457,7 +457,7 @@ and across both debuggers.
 v2/stress sampling bias** that needs to be disclosed up front.
 The current v2/stress bucket is **4/4 late** (numpy, cpython,
 rust, nodejs all place the failure block at ≥92% of the log; see
-[`reports/v2_split_balance.md`](experiments/v2_split_balance.md) §3),
+[`reports/v2_split_balance.md`](legacy/v2_split_balance.md) §3),
 and tail's bounded 200-line window is structurally advantaged by
 late evidence. Decomposing the 12-case macro by split:
 

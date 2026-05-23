@@ -247,7 +247,7 @@ emitted alongside per case for backward comparison.
 
 The original score (`diagnosis_score_v1`) was calibrated against an
 LLM-as-judge expert reviewer (`claude-opus-4-7-expert`) on the holdout split,
-under E2 (`reports/experiments/e2_calibration_memo.md`). The reviewer scored 50 items (20
+under E2 (`reports/legacy/e2_calibration_memo.md`). The reviewer scored 50 items (20
 absolute + 30 pairwise) over 5 holdout cases × 4 methods, with method names
 hidden from the reviewer.
 
@@ -258,7 +258,7 @@ disagreements were dominated by a single failure mode:
 4 were being flagged as confident errors purely because their category label
 didn't exact-match the (very coarse) ground-truth category enum.
 
-E2b (`reports/experiments/e2b_score_calibration_v1_1.md`) introduced two changes:
+E2b (`reports/legacy/e2b_score_calibration_v1_1.md`) introduced two changes:
 
 1. `category_accuracy` (binary) became `category_match_score_v1_1`
    (1.0 / 0.5 / 0.0) using an explicit compatibility table.
@@ -287,7 +287,7 @@ later spot-checked the v1.3 hybrid-vs-grep comparison.
 
 ## 8b. AI-assisted human review of the v1.3 hybrid-vs-grep claim
 
-E9 (`reports/experiments/e9_human_verified_v1_3_review.md`) ran a 48-item human-review
+E9 (`reports/legacy/e9_human_verified_v1_3_review.md`) ran a 48-item human-review
 pass over `cilogbench-v1.3`'s headline comparison: 16 cases × 2 methods
 (hybrid vs grep) × (1 absolute + 1 pairwise) under `real-debugger-v2` (Sonnet
 4.6, the same debugger as E6). The reviewer is the project author of the
@@ -330,7 +330,7 @@ with the pairwise-grep-lean noted explicitly.
 
 ## 9. Real summary experiment (E3)
 
-E3 (`reports/experiments/e3_real_llm_summary_cilogbench_v1_2_haiku.md`) added one real
+E3 (`reports/legacy/e3_real_llm_summary_cilogbench_v1_2_haiku.md`) added one real
 LLM summarizer (`llm-summary-v1-haiku`, Claude Haiku 4.5 with the v1
 map/reduce prompts) and reran the full protocol against the same fixed
 debugger as v1.
@@ -358,7 +358,7 @@ lossy, or because they are only useful under strict final-context budgets?"*
 
 ## 10. Budget frontier and hybrid routing (E4)
 
-E4 (`reports/experiments/e4_summary_failure_attribution_cilogbench_v1_2.md`) was an
+E4 (`reports/legacy/e4_summary_failure_attribution_cilogbench_v1_2.md`) was an
 analysis-only experiment (no model runs). For each final-context-token
 budget in {1k, 2k, 4k, 8k, 16k, 32k} it asked: which method is the best
 deployable choice?
@@ -396,7 +396,7 @@ This is the policy E5 promoted to a first-class baseline.
 
 ## 11. Hybrid baseline result (E5)
 
-E5 (`reports/experiments/e5_hybrid_grep_fallback_cilogbench_v1_2.md`) implemented
+E5 (`reports/legacy/e5_hybrid_grep_fallback_cilogbench_v1_2.md`) implemented
 `hybrid-grep-4k-rtk-err-cat-v1` as a first-class deterministic context
 provider — same scoring treatment as every other locked baseline.
 
@@ -421,7 +421,7 @@ E4 offline predicted macro sv1.1 = 0.723; E5 actual was 0.715 — a delta of
 −0.008. **The budget-frontier analysis was a strong predictor of the real
 result.**
 
-All four freeze criteria from the v1.3 plan passed (`reports/experiments/cilogbench_v1_3_freeze_memo.md`):
+All four freeze criteria from the v1.3 plan passed (`reports/legacy/cilogbench_v1_3_freeze_memo.md`):
 sv1.1 ≥ grep, total tokens ≤ grep, confErr v1.1 ≤ grep, provider error rate
 ≤ 10%. The hybrid was promoted into `protocols/legacy/cilogbench-v1.3.lock.json`.
 
@@ -429,7 +429,7 @@ sv1.1 ≥ grep, total tokens ≤ grep, confErr v1.1 ≤ grep, provider error rat
 
 ## 12. Second-debugger replication (E6)
 
-E6 (`reports/experiments/e6_second_debugger_cilogbench_v1_3_real-debugger-v2.md`) reran
+E6 (`reports/legacy/e6_second_debugger_cilogbench_v1_3_real-debugger-v2.md`) reran
 the full v1.3 protocol with **Sonnet 4.6** as `real-debugger-v2`, holding
 every other component fixed.
 
@@ -609,7 +609,7 @@ python3 tools/run_protocol_diagnosis_eval.py \
 python3 tools/render_e6_replication_report.py
 ```
 
-This produces `reports/experiments/e6_second_debugger_cilogbench_v1_3_real-debugger-v2.md`,
+This produces `reports/legacy/e6_second_debugger_cilogbench_v1_3_real-debugger-v2.md`,
 the source of every E6 number quoted in this report. Per-case manifests under
 `results/<split>/diagnoses/real-debugger-v{1,2}/<method>.jsonl` are byte-stable
 when rerun against the per-row cache; non-deterministic API output is the only
@@ -626,17 +626,17 @@ configs/hybrids/hybrid-grep-4k-rtk-err-cat-v1.json      hybrid router config
 schemas/hybrid_route.schema.json                        per-case route record schema
 docs/protocol/cilogbench_v1_3.md                        v1.3 protocol doc
 
-reports/experiments/e2_calibration_memo.md                          E2 expert-model review
-reports/experiments/e2b_score_calibration_v1_1.md                   E2b sv1 → sv1.1 calibration
-reports/experiments/e3_real_llm_summary_cilogbench_v1_2_haiku.md    E3 real summary
-reports/experiments/e4_summary_failure_attribution_cilogbench_v1_2.md  E4 budget frontier
-reports/experiments/e5_hybrid_grep_fallback_cilogbench_v1_2.md      E5 hybrid first-class
-reports/experiments/cilogbench_v1_3_freeze_memo.md                  v1.3 freeze
-reports/experiments/e6_second_debugger_cilogbench_v1_3_real-debugger-v2.md  E6 replication
-reports/experiments/e7_mcp_search_agent_cilogbench_v1_3_mcp-search-agent-v1-sonnet.md  E7 search-agent
-reports/experiments/e8_hybrid_first_search_fallback_cilogbench_v1_3.md  E8 search-fallback routing
-reports/experiments/e9_cross_model_expert_style_review.md           E9 cross-model spot-check (ChatGPT)
-reports/experiments/e9_human_verified_v1_3_review.md                E9 AI-assisted human review (this run)
+reports/legacy/e2_calibration_memo.md                          E2 expert-model review
+reports/legacy/e2b_score_calibration_v1_1.md                   E2b sv1 → sv1.1 calibration
+reports/legacy/e3_real_llm_summary_cilogbench_v1_2_haiku.md    E3 real summary
+reports/legacy/e4_summary_failure_attribution_cilogbench_v1_2.md  E4 budget frontier
+reports/legacy/e5_hybrid_grep_fallback_cilogbench_v1_2.md      E5 hybrid first-class
+reports/legacy/cilogbench_v1_3_freeze_memo.md                  v1.3 freeze
+reports/legacy/e6_second_debugger_cilogbench_v1_3_real-debugger-v2.md  E6 replication
+reports/legacy/e7_mcp_search_agent_cilogbench_v1_3_mcp-search-agent-v1-sonnet.md  E7 search-agent
+reports/legacy/e8_hybrid_first_search_fallback_cilogbench_v1_3.md  E8 search-fallback routing
+reports/legacy/e9_cross_model_expert_style_review.md           E9 cross-model spot-check (ChatGPT)
+reports/legacy/e9_human_verified_v1_3_review.md                E9 AI-assisted human review (this run)
 
 results/e2b_score_calibration_v1_1.json                 calibration raw data
 results/e3_real_llm_summary_cilogbench_v1_2_haiku.manifest.json

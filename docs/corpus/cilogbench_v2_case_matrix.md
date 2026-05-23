@@ -4,7 +4,7 @@
 > reached — 10 / 34 new_v2 cases collected (3 v2/dev + 5 v2/holdout +
 > 2 v2/stress). Matrix-vs-target deltas live in §12 progress tracker
 > below; full split-balance narrative lives at
-> [`reports/experiments/v2_split_balance.md`](../../reports/experiments/v2_split_balance.md).
+> [`reports/legacy/v2_split_balance.md`](../../reports/legacy/v2_split_balance.md).
 > Initialized 2026-05-06 from
 > [`cilogbench_e10_corpus_expansion_v2_generalization_plan.md`](cilogbench_e10_corpus_expansion_v2_generalization_plan.md).
 > See [`cilogbench_v2_collection_guidelines.md`](cilogbench_v2_collection_guidelines.md)

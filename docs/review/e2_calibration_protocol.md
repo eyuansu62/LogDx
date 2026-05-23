@@ -11,7 +11,7 @@ and the deterministic metrics are trustworthy enough to keep using as
 the primary signal in subsequent experiments (E3 real LLM summary,
 second debugger model, MCP/agent baselines).
 
-E2b (`reports/experiments/e2b_score_calibration_v1_1.md`) is the score-rule
+E2b (`reports/legacy/e2b_score_calibration_v1_1.md`) is the score-rule
 calibration that ran after E2.5 closed at PASS-but-marginal. E2b adds
 `category_match_score_v1_1` (partial match) and a stricter
 `confident_error_v1_1` trigger; it does NOT rerun any model. The
@@ -75,7 +75,7 @@ python3 tools/analyze_human_review.py \
 # 4. Render the calibration memo (this is the E2.5 deliverable):
 python3 tools/render_e2_calibration_memo.py \
   --batch-id e2-real-debugger-v1-holdout-001
-# -> reports/experiments/e2_calibration_memo.md
+# -> reports/legacy/e2_calibration_memo.md
 ```
 
 ## What the calibration memo answers

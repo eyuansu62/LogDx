@@ -78,5 +78,5 @@ in additional logs without reshuffling v1.1:
 - No `huge` (>50k-line) log.
 - No `scattered` signal-position case.
 
-These gaps are recorded in `reports/experiments/split_balance.md` so future
+These gaps are recorded in `reports/legacy/split_balance.md` so future
 corpus-expansion work can target them.
