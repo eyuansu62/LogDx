@@ -44,7 +44,7 @@ diagnosis?
 
 - **Homepage**: <https://logdx-bench.github.io/>
 - **Code & evaluator**: <https://github.com/eyuansu62/LogDx>
-- **Headline report**: [`reports/e10_v2_generalization_partial.md`](https://github.com/eyuansu62/LogDx/blob/main/reports/e10_v2_generalization_partial.md)
+- **Headline report**: [`reports/technical_report.md`](https://github.com/eyuansu62/LogDx/blob/main/reports/technical_report.md)
 - **Release notes**: [`RELEASE_NOTES.md`](https://github.com/eyuansu62/LogDx/blob/main/RELEASE_NOTES.md) (latest: [`RELEASE_NOTES_v1_2.md`](https://github.com/eyuansu62/LogDx/blob/main/RELEASE_NOTES_v1_2.md))
 - **Current release**: `v1.2`
 - **License**: CC-BY-4.0 (data, this repo); Apache-2.0 (code, GH repo)
@@ -124,7 +124,7 @@ moby buildx-bake, pip + GitHub Actions network, go-redis pubsub.
 
 The top-2 hybrids replaced an earlier 4k-threshold hybrid that was
 overfit during methodology development. See the [technical
-report §3](https://github.com/eyuansu62/LogDx/blob/main/reports/e10_v2_generalization_partial.md)
+report §3](https://github.com/eyuansu62/LogDx/blob/main/reports/technical_report.md)
 for the prototype-vs-formal corpus analysis.
 
 ## How to use
@@ -232,7 +232,7 @@ limitations:
    code repo); the eval injects zero-score abstentions for those
    tuples so the denominator stays correct.
 
-See [`reports/e10_v2_generalization_partial.md`](https://github.com/eyuansu62/LogDx/blob/main/reports/e10_v2_generalization_partial.md) §5
+See [`reports/technical_report.md`](https://github.com/eyuansu62/LogDx/blob/main/reports/technical_report.md) §5
 for the full list.
 
 ## Citation

@@ -3,7 +3,7 @@
 **Tag**: `v1.0`
 **Project homepage**: <https://logdx-bench.github.io/>
 **Protocol lock**: [`protocols/logdx-ci-v2-partial-2026-05-20.lock.json`](protocols/logdx-ci-v2-partial-2026-05-20.lock.json) ([note](#a-note-on-internal-naming))
-**Technical report**: [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md)
+**Technical report**: [`reports/technical_report.md`](reports/technical_report.md)
 **Cases corpus mirror**: [`huggingface.co/datasets/eyuansu71/logdx-ci`](https://huggingface.co/datasets/eyuansu71/logdx-ci)
 
 ## TL;DR
@@ -171,7 +171,7 @@ are explicit:
    headline leaderboard.
 5. **No human review of v1.0 diagnoses.** An earlier 16-case subset
    had E2/E2b model-as-judge + E9 AI-assisted human review (see
-   the [technical report](reports/e10_v2_generalization_partial.md));
+   the [technical report](reports/technical_report.md));
    the full 35-case set has not yet been independently scored.
 6. **`stress` split is partial** (no huge-log + no non-pytest stress
    case at the moment). The next release will fill these.
@@ -183,7 +183,7 @@ are explicit:
    provider_error prefixes (Claude CLI RuntimeError, JSONDecodeError,
    post_api_error) are not in the canonical allowlist.
 
-See `reports/e10_v2_generalization_partial.md` §5 for the full
+See `reports/technical_report.md` §5 for the full
 caveat list including the prototype-vs-formal corpus analysis.
 
 ## A note on internal naming

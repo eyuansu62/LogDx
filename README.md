@@ -52,7 +52,7 @@ representative through v1.1) is retained as an appendix entry on
 the leaderboard, not in the headline. The top-2 hybrids replaced an
 earlier 4k-threshold hybrid that was overfit during methodology
 development. See [§3 of the technical
-report](reports/e10_v2_generalization_partial.md) for the
+report](reports/technical_report.md) for the
 prototype-vs-formal corpus analysis.
 
 Full leaderboard at <https://logdx-bench.github.io/leaderboard.html>.
@@ -63,7 +63,7 @@ Full leaderboard at <https://logdx-bench.github.io/leaderboard.html>.
 |---|---|
 | 🏠 Homepage | <https://logdx-bench.github.io/> |
 | 📊 Leaderboard | <https://logdx-bench.github.io/leaderboard.html> |
-| 📄 Full report | [`reports/e10_v2_generalization_partial.md`](reports/e10_v2_generalization_partial.md) |
+| 📄 Full report | [`reports/technical_report.md`](reports/technical_report.md) |
 | 📦 Cases corpus mirror | <https://huggingface.co/datasets/eyuansu71/logdx-ci> |
 | 📋 Release notes | latest: [`RELEASE_NOTES_v1_2.md`](RELEASE_NOTES_v1_2.md) · history: [`RELEASE_NOTES.md`](RELEASE_NOTES.md) (v1.0), [v1.1.1](RELEASE_NOTES_v1_1_1.md), [v1.1.2](RELEASE_NOTES_v1_1_2.md) |
 | 📑 Cite | [`CITATION.cff`](CITATION.cff) · [BibTeX](https://logdx-bench.github.io/cite.html) |
@@ -107,7 +107,7 @@ families before calling it stable.
   appear as zero-score abstentions in the eval denominator
 
 Full caveats in the
-[technical report §5](reports/e10_v2_generalization_partial.md#5-caveats).
+[technical report §5](reports/technical_report.md#5-caveats).
 
 ## Cite
 

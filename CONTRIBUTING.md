@@ -97,7 +97,7 @@ docs/                   ← GH Pages site + technical sub-docs
   evaluation/, methods/, protocol/, corpus/, …
 
 reports/                ← findings reports
-  e10_v2_generalization_partial.md         ← v1.0 technical report
+  technical_report.md         ← v1.0 technical report
   e1..e9_*.md                              ← v1.3-era reports
 ```
 

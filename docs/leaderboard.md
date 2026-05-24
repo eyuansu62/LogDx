@@ -6,7 +6,7 @@ description: "Method × debugger leaderboard for LogDx-CI v1.2 (35 cases, single
 # LogDx-CI Leaderboard
 
 [← Home](index.html) · [Citation](cite.html) ·
-[Technical report](https://github.com/eyuansu62/LogDx/blob/main/reports/e10_v2_generalization_partial.md)
+[Technical report](https://github.com/eyuansu62/LogDx/blob/main/reports/technical_report.md)
 
 All scores are case-count-weighted macro `diagnosis_score_v1_1`
 aggregated across the **35-case v1.2 corpus** (3 splits: `dev`,
@@ -434,7 +434,7 @@ threshold. Its successors `hybrid-grep-120k-tail` and
 explicit `rtk_input_truncated` gating and clear the earlier hybrid
 by **~10 percentage points** on the 35-case corpus.
 
-See the [technical report §3](https://github.com/eyuansu62/LogDx/blob/main/reports/e10_v2_generalization_partial.md#3-headline-result--full-table)
+See the [technical report §3](https://github.com/eyuansu62/LogDx/blob/main/reports/technical_report.md#3-headline-result--full-table)
 for the prototype-vs-formal corpus analysis that motivated the
 threshold change.
 

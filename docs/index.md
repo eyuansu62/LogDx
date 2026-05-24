@@ -18,7 +18,7 @@ description: "A benchmark for CI log reduction tools — do they preserve enough
 **Current release**: `v1.2` (adds cross-family LLM-summary; new agent-loop #1) ·
 [Leaderboard](leaderboard.html) ·
 [Citation](cite.html) ·
-[Technical report](https://github.com/eyuansu62/LogDx/blob/main/reports/e10_v2_generalization_partial.md)
+[Technical report](https://github.com/eyuansu62/LogDx/blob/main/reports/technical_report.md)
 
 > **v1.2 highlight**: `llm-summary-v1-gpt-5-mini` (real OpenAI
 > gpt-5-mini map-reduce summarizer) becomes the new
@@ -118,7 +118,7 @@ Three layers of finding:
 
 The top-2 hybrids replaced an earlier 4k-threshold hybrid that was
 overfit during methodology development (see the [technical report
-§3](https://github.com/eyuansu62/LogDx/blob/main/reports/e10_v2_generalization_partial.md)
+§3](https://github.com/eyuansu62/LogDx/blob/main/reports/technical_report.md)
 for the prototype-vs-formal corpus analysis).
 
 Full per-split + per-debugger breakdown → **[leaderboard](leaderboard.html)**.
@@ -230,7 +230,7 @@ This is a **v1.2 preprint** release.
    injects zero-score abstentions for those tuples so the
    denominator stays correct.
 
-See the [full §5 caveats](https://github.com/eyuansu62/LogDx/blob/main/reports/e10_v2_generalization_partial.md#5-caveats)
+See the [full §5 caveats](https://github.com/eyuansu62/LogDx/blob/main/reports/technical_report.md#5-caveats)
 for the complete list. Earlier release-by-release history
 (v1.0 → v1.1 → v1.1.1 → v1.1.2 → v1.2) lives in
 [`ROADMAP.md`](https://github.com/eyuansu62/LogDx/blob/main/ROADMAP.md).

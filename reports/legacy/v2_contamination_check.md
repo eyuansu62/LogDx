@@ -1,7 +1,7 @@
 # CILogBench v2 — cross-split contamination check (10-case checkpoint)
 
 > Generated 2026-05-07. Source data:
-> [`results/v2_contamination_check.json`](../results/v2_contamination_check.json).
+> [`results/v2_contamination_check.json`](../../results/v2_contamination_check.json).
 > Augments the legacy
 > [`reports/holdout_contamination_check.md`](holdout_contamination_check.md)
 > (v1.3-dev-vs-v1.3-holdout only) by checking ALL six splits cross-wise.

@@ -207,5 +207,5 @@ enough task that it warrants a different mode.
 - [LogDx-CI homepage](https://logdx-bench.github.io/)
 - [Full leaderboard](https://logdx-bench.github.io/leaderboard.html)
 - [RTK as a method (reference doc)](../methods/rtk.md)
-- [Technical report §3 (formal results)](../../reports/e10_v2_generalization_partial.md)
+- [Technical report §3 (formal results)](../../reports/technical_report.md)
 - [RTK on GitHub](https://github.com/rtk-ai/rtk)

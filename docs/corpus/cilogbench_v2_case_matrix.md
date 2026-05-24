@@ -378,7 +378,7 @@ Update this section as cases land.
              explicitly: tags.json names matrix_or_monorepo_failure
              (narrative coverage tracking), case.json + ground_truth
              stay test_assertion (canonical / evaluator-load-bearing).
-             reports/e10_v2_generalization_partial.md §5.8 documents
+             reports/technical_report.md §5.8 documents
              this caveat. Re-evaluate at v3 with explicit train/holdout
              split for cleaner partial-match scoring extension.
 
@@ -483,7 +483,7 @@ Update this section as cases land.
              Carry-overs: timeout/OOM and matrix/monorepo still 0/v2.
              Phase 3 first run (8-case state) → headline finding:
              hybrid sv1.1 −0.32 Sonnet / −0.30 Haiku, rank #1 → #6
-             cross-debugger (`reports/e10_v2_generalization_partial.md`
+             cross-debugger (`reports/technical_report.md`
              §3); locked at `protocols/legacy/cilogbench-v2-partial.lock.json`.
 
 [2026-05-07] Batch 3 COMPLETE — Phase 2 10-case checkpoint reached
@@ -499,7 +499,7 @@ Update this section as cases land.
              Phase 3 refreshed at 10-case state — direction unchanged,
              ranking magnitude softens to "rank #1 → #3-4" (Sonnet #4,
              Haiku #3). 8-case → 10-case Δ table in
-             `reports/e10_v2_generalization_partial.md` §3b. New lock
+             `reports/technical_report.md` §3b. New lock
              at `protocols/legacy/cilogbench-v2-checkpoint.lock.json`
              (26 cases, 6 splits, validated clean).
              v1.3 one-pager v2 caveat (`docs/reports/cilogbench_v1_3_one_pager.md`)

@@ -67,7 +67,7 @@
 > claim does not survive distribution shift. The "grep is the v2
 > winner" sub-claim is now superseded by the 12-case state.
 >
-> Full v2 results: [`reports/e10_v2_generalization_partial.md`](../../reports/e10_v2_generalization_partial.md)
+> Full v2 results: [`reports/technical_report.md`](../../reports/technical_report.md)
 > (canonical narrative with 8-case → 10-case → 12-case refreshes in
 > §3, §3b, §3c). All v1.3 numbers below are still correct *on v1.3*;
 > this caveat qualifies their generalization, not their v1.3 validity.

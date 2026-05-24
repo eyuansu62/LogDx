@@ -5,7 +5,7 @@ Everything else in this directory is an audit trail.
 
 ## The technical report
 
-- [`e10_v2_generalization_partial.md`](e10_v2_generalization_partial.md)
+- [`technical_report.md`](technical_report.md)
   — headline finding, methodology, full per-method per-debugger
   breakdown, caveats. This is what to cite.
 
