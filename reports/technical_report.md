@@ -700,7 +700,8 @@ some 2024 / 2025 metadata may need updating.
    Pei, K., Press, O., & Narasimhan, K. (2024). *SWE-bench: Can
    Language Models Resolve Real-World GitHub Issues?* ICLR.
    <https://arxiv.org/abs/2310.06770>
-2. **Terminal-Bench.** Stanford / Princeton Language Group (2024).
+2. **Terminal-Bench.** Stanford × Laude collaboration (2024).
+   Task creators include Nicholas Carlini and Jan-Lucas Uslu.
    <https://www.tbench.ai/>
 3. **WebArena.** Zhou, S. et al. (2024). *WebArena: A Realistic Web
    Environment for Building Autonomous Agents.* ICLR.
@@ -710,7 +711,8 @@ some 2024 / 2025 metadata may need updating.
    Environments.* NeurIPS. <https://arxiv.org/abs/2404.07972>
 5. **MT-Bench / Chatbot Arena.** Zheng, L. et al. (2023).
    *Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena.*
-   NeurIPS. <https://arxiv.org/abs/2306.05685>
+   NeurIPS Datasets and Benchmarks Track.
+   <https://arxiv.org/abs/2306.05685>
 6. **AlpacaEval.** Li, X., Zhang, T., Dubois, Y., Taori, R.,
    Gulrajani, I., Guestrin, C., Liang, P., & Hashimoto, T. B.
    (2023). <https://github.com/tatsu-lab/alpaca_eval>
