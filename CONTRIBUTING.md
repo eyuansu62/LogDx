@@ -97,8 +97,9 @@ docs/                   ← GH Pages site + technical sub-docs
   evaluation/, methods/, protocol/, corpus/, …
 
 reports/                ← findings reports
-  technical_report.md         ← v1.0 technical report
-  e1..e9_*.md                              ← v1.3-era reports
+  README.md                   ← index
+  technical_report.md         ← v1.2 technical report (the citable artifact)
+  legacy/                     ← prototype-phase writeups, retained for audit
 ```
 
 ## Adding a new context-provider method

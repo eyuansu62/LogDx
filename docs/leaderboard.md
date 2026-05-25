@@ -434,7 +434,7 @@ threshold. Its successors `hybrid-grep-120k-tail` and
 explicit `rtk_input_truncated` gating and clear the earlier hybrid
 by **~10 percentage points** on the 35-case corpus.
 
-See the [technical report §3](https://github.com/eyuansu62/LogDx/blob/main/reports/technical_report.md#3-headline-result--full-table)
+See the [technical report §3](https://github.com/eyuansu62/LogDx/blob/main/reports/technical_report.md#3-results)
 for the prototype-vs-formal corpus analysis that motivated the
 threshold change.
 

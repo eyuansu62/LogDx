@@ -107,7 +107,7 @@ families before calling it stable.
   appear as zero-score abstentions in the eval denominator
 
 Full caveats in the
-[technical report §5](reports/technical_report.md#5-caveats).
+[technical report §5](reports/technical_report.md#5-caveats-and-limitations).
 
 ## Cite
 
