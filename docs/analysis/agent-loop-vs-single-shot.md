@@ -96,8 +96,6 @@ Sorted by single-shot score (matches the v1.0 leaderboard order).
 | `rtk-log` | **0.249** | 0.689 | **+0.440** | 0.057 | 2.60 | 36,259 |
 | `llm-summary-v1-mock` <sub>*(legacy)*</sub> | 0.328 | 0.715 | +0.387 | **0.000** | 1.88 | 32,139 |
 
-![Agent flattens methods](../figures/agent_flattens_methods.png)
-
 ## Interpretation
 
 ### 1. Why does the agent rescue weak contexts?

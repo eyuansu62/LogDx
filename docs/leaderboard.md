@@ -237,8 +237,6 @@ diagnoser `real-agent-v1` (Sonnet 4.6, max 5 turns × 4 deterministic
 tools: `grep`, `read_file`, `tail`, `view_log_lines` operating on the
 raw log).
 
-![Agent-loop narrows the gap between methods](figures/agent_flattens_methods.png)
-
 **Every context method gains in agent-loop, and the score range
 collapses ~7× — from 0.42 (single-shot) to 0.059 (agent-loop).**
 Weak single-shot methods are rescued by the agent's tool calls;
@@ -310,8 +308,6 @@ Five layers of finding:
    on quality.
 
 ### Agent-loop cost-quality Pareto frontier
-
-![Agent-loop cost-quality Pareto](figures/agent_cost_quality_pareto.png)
 
 In agent-loop, the Pareto frontier compresses dramatically (the
 score range is only 0.059 wide). The frontier (agent-side tokens
