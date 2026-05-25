@@ -94,9 +94,75 @@ single CI failure log."
 
 ---
 
-## 2. Methodology
+## 2. Related Work
 
-### 2.1 Corpus
+### Coding-agent benchmarks
+
+The dominant benchmark for LLM-based software engineering is
+**SWE-bench** (Jimenez et al., 2024), which measures whether an agent
+can resolve real GitHub issues by editing a repository, with
+extensions such as SWE-bench Verified (human-verified subset) and
+SWE-bench Multimodal. **Terminal-Bench** measures agent task
+completion in a terminal environment, a closer analog to our
+CI-failure-diagnosis setting but optimizing for end-to-end task
+success rather than diagnostic accuracy. **WebArena** and **OSWorld**
+benchmark agents in web and OS environments respectively. None of
+these benchmarks isolate the **context-reduction step** that precedes
+LLM diagnosis — the upstream tool that selects what evidence reaches
+the model is treated as opaque infrastructure. We measure this step
+directly.
+
+### LLM-as-judge evaluation
+
+Many recent benchmarks rely on LLMs to score outputs: **MT-Bench**
+and **Chatbot Arena** (Zheng et al., 2023), **AlpacaEval** (Li et
+al., 2023), **G-Eval** (Liu et al., 2023), and **RAGAS** (Es et al.,
+2023) for retrieval-augmented generation. Several biases complicate
+this approach. Zheng et al. (2023) document **self-enhancement bias**
+(models prefer their own outputs in pairwise comparison) and
+**position bias** (the first response wins in pairwise judging
+disproportionately often). Our §4.5 measurement extends this
+literature with a different bias variant: whether a **summarizer +
+downstream judge of the same vendor family** produces inflated scores
+via shared priors. We find this **family-self-call bias is not
+present** on our task; cross-family pairs beat same-family by +0.071
+on average across diagnoser variants.
+
+### Log compression and parsing
+
+Classical log-parsing work (**Drain**, He et al., 2017; **Spell**, Du
+& Li, 2016; **LogPAI** and **LogHub**, Zhu et al., 2019) optimizes
+log compression for *storage and human search*. Our work differs in
+the objective function: we measure **how much of the failure signal
+survives** various log-reduction strategies as judged by downstream
+LLM diagnostic ability, rather than measuring compression ratio or
+human-search recall. The **RTK** tool (rtk-ai/rtk), which is a
+primary baseline in our benchmark, is an open-source context-
+reduction CLI without a published benchmark of its CI-debugging
+effectiveness — this benchmark is, in part, that missing measurement.
+
+### Context selection for LLMs
+
+A growing literature studies how LLM performance degrades with
+context size and content structure: **lost-in-the-middle** (Liu et
+al., 2024) shows that LLMs underweight information in the middle of
+long inputs. **Self-RAG** (Asai et al., 2024) adds reflection to
+retrieval-augmented generation. Our hybrid routers — the top-2
+baselines on this benchmark — are a particularly simple instance of
+this design space: a 120k-token threshold rule that empirically
+identifies the abstain cliff for Sonnet 4.6 and Haiku 4.5 on this
+corpus, with a deterministic fallback to `tail-200`. The 7×
+quality-range collapse in agent-loop (§4.4) is consistent with
+recent findings that tool-use rescues weak retrieval (cf. Self-RAG)
+in agent settings.
+
+References for all cited works appear in [§10](#10-references).
+
+---
+
+## 3. Methodology
+
+### 3.1 Corpus
 
 35 real GitHub Actions failure cases across 6 splits:
 
@@ -131,7 +197,7 @@ passed through `tools/audit_context_privacy.py` (200k-line cap,
 fail-closed on truncation, URL/bearer/API-key/long-opaque-token
 redactors) before commit. Zero redaction hits across all 35 cases.
 
-### 2.2 Evaluation metric
+### 3.2 Evaluation metric
 
 The primary metric `diagnosis_score_v1_1` is a calibrated linear
 combination of:
@@ -157,7 +223,7 @@ We also report `confident_error_rate_v1_1` as a separate column
 because confidently-wrong diagnoses are operationally distinct from
 "missed the diagnosis"; the safety implications differ.
 
-### 2.3 Baselines — 11 context providers
+### 3.3 Baselines — 11 context providers
 
 | Provider | Implementation |
 |---|---|
@@ -173,7 +239,7 @@ because confidently-wrong diagnoses are operationally distinct from
 
 The 120k threshold is empirically the abstain cliff for Sonnet 4.6
 and Haiku 4.5 on this corpus; above it, the model context window plus
-diagnostic prompt overhead causes abstention. See §3.6 for the
+diagnostic prompt overhead causes abstention. See §4.6 for the
 density-driven inflation failure mode that motivates the 120k vs 4k
 threshold choice.
 
@@ -191,7 +257,7 @@ v1.1 to model the LLM-summary class without paid token cost) is
 retained as an appendix entry in the [leaderboard](../docs/leaderboard.md#appendix-legacy-baselines)
 but excluded from the v1.2 headline.
 
-### 2.4 Diagnosers
+### 3.4 Diagnosers
 
 | Diagnoser | Model | Mode |
 |---|---|---|
@@ -211,9 +277,9 @@ log when the initial reduction is insufficient. This separates
 
 ---
 
-## 3. Results
+## 4. Results
 
-### 3.1 Single-shot headline
+### 4.1 Single-shot headline
 
 `diagnosis_score_v1_1` macro across the 35-case corpus, case-count
 weighted across the three single-shot debugger families:
@@ -247,7 +313,7 @@ Three findings from the table:
    standalone on CI debugging, the 120k-tail hybrid is a strict
    upgrade.
 
-### 3.2 Cross-debugger stability
+### 4.2 Cross-debugger stability
 
 Top-3 under each debugger family separately:
 
@@ -272,7 +338,7 @@ The cross-family agreement is a direct robustness check against
 direction is preserved across two vendors (Anthropic + OpenAI) and
 two within-Anthropic capability tiers (Haiku + Sonnet).
 
-### 3.3 Cost-quality Pareto frontier
+### 4.3 Cost-quality Pareto frontier
 
 ![Cost-quality Pareto frontier for LogDx-CI v1.2](../docs/figures/cost_quality_pareto.png)
 
@@ -316,7 +382,7 @@ Provider list prices pinned in `configs/pricing/snapshot_2026_05_20.json`.
 Re-compute against a fresh snapshot with
 `tools/compute_usd_costs.py --pricing <new-snapshot>`.
 
-### 3.4 Agent-loop measurement
+### 4.4 Agent-loop measurement
 
 The single-shot leaderboard tests `log → reducer → single LLM call →
 answer`. Real Claude-Code / Codex usage looks different: the model can
@@ -363,7 +429,7 @@ Findings:
    completely that the agent commits to a diagnosis on turn 1
    about 60% of the time.
 
-### 3.5 Cross-family LLM-summary (v1.2 headline)
+### 4.5 Cross-family LLM-summary (v1.2 headline)
 
 A reviewer raised after v1.1: was the haiku-summary's headline
 promotion (single-shot rank 5, +0.30 over the legacy mock) anchored
@@ -402,7 +468,7 @@ case). The gap is Claude-Code-CLI nested-invocation overhead
 For agent-loop deployment, the gpt-5-mini summarizer is the v1.2
 default recommendation.
 
-### 3.6 Failure modes
+### 4.6 Failure modes
 
 Two reproducible failure modes worth naming:
 
@@ -426,12 +492,12 @@ method" overfit that the v1.2 120k-threshold hybrids correct.
 
 The full per-case-Δ breakdown is in
 [`legacy/e10_v1_3_to_v2_transition_study.md`](legacy/e10_v1_3_to_v2_transition_study.md)
-§4 (the original v1.3→v2 transition study that motivated the
+§5 (the original v1.3→v2 transition study that motivated the
 hybrid redesign).
 
 ---
 
-## 4. Recommendations
+## 5. Recommendations
 
 Three takeaways for practitioners deploying LLM-based CI debugging:
 
@@ -459,7 +525,7 @@ failing leaf).
 
 ---
 
-## 5. Caveats and limitations
+## 6. Caveats and limitations
 
 This is a **v1.2 preprint** release. Headline findings are robust
 enough to ship; per-case magnitudes are preliminary.
@@ -512,7 +578,7 @@ enough to ship; per-case magnitudes are preliminary.
 
 ---
 
-## 6. Reproducibility
+## 7. Reproducibility
 
 Every release carries:
 
@@ -578,7 +644,7 @@ tags + privacy_audit), fetch via `huggingface_hub.snapshot_download`.
 
 ---
 
-## 7. Methodology evolution (release-by-release)
+## 8. Methodology evolution (release-by-release)
 
 This benchmark went through five releases. The leaderboard data is
 the v1.2 result; earlier release headlines are summarized here for
@@ -604,7 +670,7 @@ anyone retracing the methodology decisions.
 
 ---
 
-## 8. Acknowledgements
+## 9. Acknowledgements
 
 LogDx-CI benchmarks third-party log-reduction tools alongside its own
 baselines:
@@ -620,6 +686,58 @@ CI failure logs are sourced from publicly visible
 [GitHub Actions](https://github.com/features/actions) runs.
 Diagnoses are produced by [Claude](https://www.anthropic.com)
 (Anthropic) and [gpt-5-mini](https://openai.com) (OpenAI).
+
+---
+
+## 10. References
+
+BibTeX entries are in [`references.bib`](references.bib). Verify
+entries (titles, authors, venues) before arXiv submission — the
+draft was prepared against knowledge with a January 2026 cutoff and
+some 2024 / 2025 metadata may need updating.
+
+1. **SWE-bench.** Jimenez, C. E., Yang, J., Wettig, A., Yao, S.,
+   Pei, K., Press, O., & Narasimhan, K. (2024). *SWE-bench: Can
+   Language Models Resolve Real-World GitHub Issues?* ICLR.
+   <https://arxiv.org/abs/2310.06770>
+2. **Terminal-Bench.** Stanford / Princeton Language Group (2024).
+   <https://www.tbench.ai/>
+3. **WebArena.** Zhou, S. et al. (2024). *WebArena: A Realistic Web
+   Environment for Building Autonomous Agents.* ICLR.
+   <https://arxiv.org/abs/2307.13854>
+4. **OSWorld.** Xie, T. et al. (2024). *OSWorld: Benchmarking
+   Multimodal Agents for Open-Ended Tasks in Real Computer
+   Environments.* NeurIPS. <https://arxiv.org/abs/2404.07972>
+5. **MT-Bench / Chatbot Arena.** Zheng, L. et al. (2023).
+   *Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena.*
+   NeurIPS. <https://arxiv.org/abs/2306.05685>
+6. **AlpacaEval.** Li, X., Zhang, T., Dubois, Y., Taori, R.,
+   Gulrajani, I., Guestrin, C., Liang, P., & Hashimoto, T. B.
+   (2023). <https://github.com/tatsu-lab/alpaca_eval>
+7. **G-Eval.** Liu, Y., Iter, D., Xu, Y., Wang, S., Xu, R., & Zhu,
+   C. (2023). *G-Eval: NLG Evaluation using GPT-4 with Better Human
+   Alignment.* EMNLP. <https://arxiv.org/abs/2303.16634>
+8. **RAGAS.** Es, S., James, J., Espinosa-Anke, L., & Schockaert, S.
+   (2024). *RAGAS: Automated Evaluation of Retrieval Augmented
+   Generation.* EACL System Demos.
+   <https://arxiv.org/abs/2309.15217>
+9. **Drain.** He, P., Zhu, J., Zheng, Z., & Lyu, M. R. (2017).
+   *Drain: An Online Log Parsing Approach with Fixed Depth Tree.*
+   ICWS.
+10. **Spell.** Du, M. & Li, F. (2016). *Spell: Streaming Parsing
+    of System Event Logs.* ICDM.
+11. **LogPAI / LogHub.** Zhu, J., He, S., Liu, J., He, P., Xie, Q.,
+    Zheng, Z., & Lyu, M. R. (2019). *Tools and Benchmarks for
+    Automated Log Parsing.* ICSE-SEIP.
+12. **RTK (Rust Token Killer).** rtk-ai (2024).
+    <https://github.com/rtk-ai/rtk>
+13. **Lost in the Middle.** Liu, N. F. et al. (2024). *Lost in the
+    Middle: How Language Models Use Long Contexts.* TACL.
+    <https://arxiv.org/abs/2307.03172>
+14. **Self-RAG.** Asai, A., Wu, Z., Wang, Y., Sil, A., & Hajishirzi,
+    H. (2024). *Self-RAG: Learning to Retrieve, Generate, and
+    Critique through Self-Reflection.* ICLR.
+    <https://arxiv.org/abs/2310.11511>
 
 ---
 

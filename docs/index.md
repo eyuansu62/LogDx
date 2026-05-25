@@ -230,7 +230,7 @@ This is a **v1.2 preprint** release.
    injects zero-score abstentions for those tuples so the
    denominator stays correct.
 
-See the [full §5 caveats](https://github.com/eyuansu62/LogDx/blob/main/reports/technical_report.md#5-caveats-and-limitations)
+See the [full §5 caveats](https://github.com/eyuansu62/LogDx/blob/main/reports/technical_report.md#6-caveats-and-limitations)
 for the complete list. Earlier release-by-release history
 (v1.0 → v1.1 → v1.1.1 → v1.1.2 → v1.2) lives in
 [`ROADMAP.md`](https://github.com/eyuansu62/LogDx/blob/main/ROADMAP.md).

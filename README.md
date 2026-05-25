@@ -51,9 +51,10 @@ The legacy `llm-summary-v1-mock` stub (used as the LLM-summary
 representative through v1.1) is retained as an appendix entry on
 the leaderboard, not in the headline. The top-2 hybrids replaced an
 earlier 4k-threshold hybrid that was overfit during methodology
-development. See [§3 of the technical
-report](reports/technical_report.md) for the
-prototype-vs-formal corpus analysis.
+development. See the [technical
+report](reports/technical_report.md) for the v1.2 paper, and
+[`reports/legacy/e10_v1_3_to_v2_transition_study.md`](reports/legacy/e10_v1_3_to_v2_transition_study.md)
+for the original prototype-vs-formal corpus analysis.
 
 Full leaderboard at <https://logdx-bench.github.io/leaderboard.html>.
 
@@ -107,7 +108,7 @@ families before calling it stable.
   appear as zero-score abstentions in the eval denominator
 
 Full caveats in the
-[technical report §5](reports/technical_report.md#5-caveats-and-limitations).
+[technical report §5](reports/technical_report.md#6-caveats-and-limitations).
 
 ## Cite
 
