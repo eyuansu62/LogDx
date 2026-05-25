@@ -2,8 +2,9 @@
 
 **Benchmarking CI Log Reduction Tools for LLM Root-Cause Diagnosis**
 
-> Version: **v1.2** (preprint) · Released 2026-05-20 ·
-> 35 cases × 11 context providers × 3 LLM families ·
+*Bowen Qin · National University of Singapore*
+
+> v1.2 (preprint) · 35 cases × 11 context providers × 3 LLM families ·
 > Code & data: <https://github.com/eyuansu62/LogDx>
 
 ---
@@ -30,11 +31,12 @@ Three load-bearing findings:
    `hybrid-grep-120k-tail`) score 0.670 / 0.666 at ~$0.03/case
    end-to-end — same-ballpark quality as `grep` at 4.5× fewer tokens.
 2. **The agent-loop quality range collapses 7× across reduction
-   tools.** Single-shot quality spread is 0.42 (best 0.670 → worst
-   0.249); agent-loop spread is 0.059 (best 0.749 → worst 0.690). The
+   tools** (single-shot spread 0.42 → agent-loop spread 0.059). The
    tool-using agent rescues weak contexts via follow-up tool calls.
-   Static-reducer choice matters much less for *quality* in
-   agent-loop than in single-shot — but cost differences persist.
+   But **cost differences persist** in agent-loop: weak contexts
+   force the agent to issue 2-4× more tool calls to recover
+   (`rtk-log` uses 2.60 tools/case; the top hybrid uses 0.97).
+   Reducer choice still matters — just via cost, not quality.
 3. **Cross-family LLM-summary beats same-family by +0.071** (v1.2's
    headline). A real OpenAI gpt-5-mini map-reduce summarizer feeding
    a Claude Haiku debugger outscores the same-family Haiku→Haiku
@@ -73,12 +75,14 @@ single-author verified.
 
 ### Why this matters
 
-CI failure debugging is a heavily input-dominated LLM task. In the
-agent-loop trajectory dataset that accompanies this release, input
-tokens dominate output by **40×** (97.6% vs 2.4%) across 420
-trajectories. The upstream context provider is therefore the dominant
-cost lever and a sizable quality lever. Picking the right one is
-worth measuring.
+CI failure logs in this corpus range from 27 lines to 200k+, with a
+median around 5k. Most exceed the effective input window of even
+long-context models once tool definitions, system prompts, and
+reasoning overhead are accounted for. A reduction step is therefore
+nearly mandatory in production agent stacks (Claude Code, Codex,
+Cursor all ship some form of it), but the field has had no public
+empirical comparison of which reductions preserve enough evidence
+for downstream LLM diagnosis. This benchmark closes that gap.
 
 ### Scope
 
@@ -161,8 +165,8 @@ because confidently-wrong diagnoses are operationally distinct from
 | `tail-200` | Last 200 lines |
 | `grep` | Regex-filtered failure-pattern lines + 3/8 surrounding context |
 | `rtk-read`, `rtk-log`, `rtk-err-cat` | Three modes of [RTK (Rust Token Killer)](https://github.com/rtk-ai/rtk) by rtk-ai |
-| `llm-summary-v1-haiku` | Real Anthropic Haiku 4.5 map-reduce summarizer (`chunk_lines=500`, `chunk_overlap_lines=25`, `temperature=0`) |
-| `llm-summary-v1-gpt-5-mini` | Real OpenAI gpt-5-mini map-reduce summarizer (same prompts / chunk_lines / temp as the Haiku summarizer) |
+| `llm-summary-v1-haiku` | Real Anthropic Haiku 4.5 map-reduce summarizer (`chunk_lines=500`, `chunk_overlap_lines=25`, `temperature=0`)<sup>†</sup> |
+| `llm-summary-v1-gpt-5-mini` | Real OpenAI gpt-5-mini map-reduce summarizer (same prompts / chunk_lines / temp as the Haiku summarizer)<sup>†</sup> |
 | `hybrid-grep-4k-rtk-err-cat` | Earlier 4k-threshold hybrid (replaced; retained for methodology continuity) |
 | `hybrid-grep-120k-tail` | grep ≤ 120k tokens else tail-200 |
 | `hybrid-grep-120k-rtk-tail` | grep ≤ 120k tokens else rtk-err-cat (if not truncated and ≤ 120k) else tail-200 |
@@ -172,6 +176,15 @@ and Haiku 4.5 on this corpus; above it, the model context window plus
 diagnostic prompt overhead causes abstention. See §3.6 for the
 density-driven inflation failure mode that motivates the 120k vs 4k
 threshold choice.
+
+<sup>†</sup> Three of the 35 cases
+(`nodejs-test-debugger-exec-timeout-v2-001`,
+`pytest-sklearn-stress-001`, `pytest-sklearn-stress-002`) used
+`chunk_lines=100` instead of the default 500 because they contained
+500-line windows exceeding Haiku's effective input window after
+Claude-Code session overhead. Same map-reduce algorithm, same model,
+same temperature — only the map-stage granularity differs and is
+recorded in per-case `metadata.chunk_lines`.
 
 The legacy `llm-summary-v1-mock` (regex-extract stub used through
 v1.1 to model the LLM-summary class without paid token cost) is
@@ -310,9 +323,9 @@ answer`. Real Claude-Code / Codex usage looks different: the model can
 call follow-up tools when its initial context is missing something.
 We add the **agent-loop** measurement using `real-agent-v1` (Sonnet
 4.6, 5-turn cap, 4 deterministic tools: `grep`, `read_file`, `tail`,
-`view_log_lines` operating on the raw log).
-
-![Agent-loop narrows the gap between methods](../docs/figures/agent_flattens_methods.png)
+`view_log_lines` operating on the raw log). Agent-loop numbers are
+inherited from v1.1; v1.2 added only the `llm-summary-v1-gpt-5-mini`
+row without re-running the other 10 methods.
 
 Sorted by agent-loop `diagnosis_score_v1_1`:
 
@@ -387,7 +400,7 @@ less per reducer call** than haiku-summary ($0.18 vs $1.75 per
 case). The gap is Claude-Code-CLI nested-invocation overhead
 (cached-prefix tokens) that the OpenAI-direct call doesn't carry.
 For agent-loop deployment, the gpt-5-mini summarizer is the v1.2
-universal recommendation.
+default recommendation.
 
 ### 3.6 Failure modes
 
@@ -418,7 +431,35 @@ hybrid redesign).
 
 ---
 
-## 4. Caveats and limitations
+## 4. Recommendations
+
+Three takeaways for practitioners deploying LLM-based CI debugging:
+
+1. **For single-LLM-call diagnosis** (no tool use): pick
+   `hybrid-grep-120k-rtk-tail`. Top-1 across all three model
+   families, zero confident-error, $0.03/case, 4.5× cheaper than
+   `grep` standalone.
+2. **For tool-using agents** (Claude Code, Codex-style):
+   `llm-summary-v1-gpt-5-mini` is the v1.2 default. Agent-loop #1 at
+   0.749, lowest tool-call count (0.37/case), $0.18/case
+   end-to-end. The hybrid above is a close second (0.747, 0.97
+   tools/case) and is appropriate when an extra LLM-preprocessing
+   call isn't acceptable.
+3. **Avoid `rtk-log` standalone.** Its 13.3% confident-error rate
+   single-shot means it actively misleads downstream LLMs ~1 in 8
+   cases. In agent-loop it drops to 5.7% confident-error but still
+   needs 2.6 tool calls/case to recover.
+
+What this benchmark **does not** settle: configured / tuned RTK
+performance (v1.2 tests stock invocations only), generalization to
+non-Anthropic/OpenAI model families, performance on log shapes
+outside the 35-case distribution (notably: pre-step CI runner
+output, build-system streams, monorepo matrix jobs without a single
+failing leaf).
+
+---
+
+## 5. Caveats and limitations
 
 This is a **v1.2 preprint** release. Headline findings are robust
 enough to ship; per-case magnitudes are preliminary.
@@ -471,7 +512,7 @@ enough to ship; per-case magnitudes are preliminary.
 
 ---
 
-## 5. Reproducibility
+## 6. Reproducibility
 
 Every release carries:
 
@@ -537,7 +578,7 @@ tags + privacy_audit), fetch via `huggingface_hub.snapshot_download`.
 
 ---
 
-## 6. Methodology evolution (release-by-release)
+## 7. Methodology evolution (release-by-release)
 
 This benchmark went through five releases. The leaderboard data is
 the v1.2 result; earlier release headlines are summarized here for
@@ -563,7 +604,7 @@ anyone retracing the methodology decisions.
 
 ---
 
-## 7. Acknowledgements
+## 8. Acknowledgements
 
 LogDx-CI benchmarks third-party log-reduction tools alongside its own
 baselines:
