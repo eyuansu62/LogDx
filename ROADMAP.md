@@ -276,7 +276,7 @@ surfaces. Effort: ~½ day; no API spend.
 The corpus and protocol are designed for forkability. To add a case
 or a baseline:
 
-1. Follow [`docs/corpus/cilogbench_v2_annotation_guide.md`](docs/corpus/cilogbench_v2_annotation_guide.md)
+1. Follow [`docs/annotation_guide.md`](docs/annotation_guide.md)
    to import a case.
 2. Run [`tools/validate_cases.py`](tools/validate_cases.py) +
    [`tools/validate_case_tags.py`](tools/validate_case_tags.py)
