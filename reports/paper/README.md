@@ -19,9 +19,22 @@ file in `preprint` mode.
 ```bash
 cd reports/paper
 make pdf       # produces paper.pdf
+make zip       # produces arxiv_submission.zip (upload this to arxiv)
 ```
 
 Requires TeX Live (pdflatex + bibtex). Tested with TeX Live 2026 / TinyTeX.
+
+### Flat-layout notes
+
+arXiv compiles from a flat directory, so the source bundle needs
+`references.bib` and `cost_quality_pareto.png` alongside `paper.tex`.
+Two symlinks in this directory point at the canonical locations:
+
+- `references.bib` → `../references.bib`
+- `cost_quality_pareto.png` → `../../docs/figures/cost_quality_pareto.png`
+
+`make zip` dereferences these symlinks (default `zip` behavior) so the
+resulting archive contains real file content, not links.
 
 ## Markdown ↔ LaTeX dual sources
 
