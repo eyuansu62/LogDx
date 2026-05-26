@@ -15,7 +15,7 @@ or log-reduction findings, please cite the v1.2 release:
 {% raw %}
 ```bibtex
 @misc{qin2026logdx,
-  title  = {{LogDx-CI}: Benchmarking CI Log Reduction Tools
+  title  = {{LogDx-CI}: Benchmarking Log Reduction Tools
            for LLM Root-Cause Diagnosis},
   author = {Qin, Bowen},
   year   = {2026},
@@ -28,14 +28,14 @@ or log-reduction findings, please cite the v1.2 release:
 
 ## APA-style
 
-> Qin, B. (2026). *LogDx-CI: Benchmarking CI Log Reduction Tools
+> Qin, B. (2026). *LogDx-CI: Benchmarking Log Reduction Tools
 > for LLM Root-Cause Diagnosis* (v1.2)
 > [Computer software / dataset]. GitHub.
 > <https://github.com/eyuansu62/LogDx>
 
 ## IEEE-style
 
-> B. Qin, "LogDx-CI: Benchmarking CI Log Reduction Tools for
+> B. Qin, "LogDx-CI: Benchmarking Log Reduction Tools for
 > LLM Root-Cause Diagnosis," GitHub repository, v1.2,
 > 2026. [Online]. Available: <https://github.com/eyuansu62/LogDx>
 

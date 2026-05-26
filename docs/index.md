@@ -1,11 +1,11 @@
 ---
 title: "LogDx-CI"
-description: "A benchmark for CI log reduction tools — do they preserve enough evidence for LLM root-cause diagnosis?"
+description: "A benchmark for log reduction tools — do they preserve enough evidence for LLM root-cause diagnosis?"
 ---
 
 # LogDx-CI
 
-> A benchmark for **CI log reduction tools**
+> A benchmark for **log reduction tools**
 > ([RTK](https://github.com/rtk-ai/rtk), grep, tail, hybrid routers,
 > LLM-summary) — do they preserve enough evidence for LLM root-cause
 > diagnosis?
@@ -252,7 +252,7 @@ for the full schedule):
 {% raw %}
 ```bibtex
 @misc{qin2026logdx,
-  title  = {{LogDx-CI}: Benchmarking CI Log Reduction Tools
+  title  = {{LogDx-CI}: Benchmarking Log Reduction Tools
            for LLM Root-Cause Diagnosis},
   author = {Qin, Bowen},
   year   = {2026},

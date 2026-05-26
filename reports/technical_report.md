@@ -1,6 +1,6 @@
 # LogDx-CI v1.2 — Technical Report
 
-**Benchmarking CI Log Reduction Tools for LLM Root-Cause Diagnosis**
+**Benchmarking Log Reduction Tools for LLM Root-Cause Diagnosis**
 
 *Bowen Qin · National University of Singapore*
 
@@ -778,7 +778,7 @@ score fields.
 
 ```bibtex
 @misc{qin2026logdx,
-  title  = {{LogDx-CI}: Benchmarking CI Log Reduction Tools
+  title  = {{LogDx-CI}: Benchmarking Log Reduction Tools
            for LLM Root-Cause Diagnosis},
   author = {Qin, Bowen},
   year   = {2026},

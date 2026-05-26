@@ -8,7 +8,7 @@
 
 ## TL;DR
 
-LogDx-CI v1.0 evaluates whether CI log reduction tools
+LogDx-CI v1.0 evaluates whether log reduction tools
 ([RTK](https://github.com/rtk-ai/rtk), grep, tail, hybrid routers,
 LLM-summary) preserve enough evidence for LLM-driven root-cause
 diagnosis. The benchmark ships **35 real
@@ -224,7 +224,7 @@ See [CITATION.cff](CITATION.cff). BibTeX:
 
 ```bibtex
 @misc{qin2026logdx,
-  title  = {{LogDx-CI}: Benchmarking CI Log Reduction Tools
+  title  = {{LogDx-CI}: Benchmarking Log Reduction Tools
            for LLM Root-Cause Diagnosis},
   author = {Qin, Bowen},
   year   = {2026},
