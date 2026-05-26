@@ -315,6 +315,7 @@ the three single-shot debugger families.
 \caption{Single-shot leaderboard. \texttt{conf\_err} is the rate of
   confidently-wrong diagnoses (lower is better).}
 \label{tab:singleshot}
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{rlrrrrrr}
 \toprule
 \textbf{Rank} & \textbf{Method} & \textbf{Haiku} & \textbf{Sonnet} & \textbf{gpt-5-mini} & \textbf{Overall} & \textbf{conf\_err} & \textbf{tokens/case} \\
@@ -331,7 +332,8 @@ the three single-shot debugger families.
 10 & \texttt{rtk-read}                  & 0.329 & 0.369 & 0.349 & 0.349 & 0.010 & 274{,}289 \\
 11 & \texttt{rtk-log}                   & 0.238 & 0.262 & 0.249 & 0.249 & 0.133 & 810 \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
 Three findings from Table~\ref{tab:singleshot}:
@@ -347,22 +349,33 @@ $4.5\times$ fewer tokens (88{,}355 vs.\ 19{,}753).
 
 \subsection{Cross-debugger stability}
 
-Top-3 sets per family:
-Claude Haiku 4.5: \{\texttt{hybrid-grep-120k-rtk-tail},
-\texttt{hybrid-grep-120k-tail}, \texttt{tail-200}\}.
-Claude Sonnet 4.6: \{\texttt{hybrid-grep-120k-tail}, \texttt{grep},
-\texttt{hybrid-grep-120k-rtk-tail}\}.
-OpenAI gpt-5-mini: \{\texttt{hybrid-grep-120k-rtk-tail},
-\texttt{hybrid-grep-120k-tail}, \texttt{grep}\}.
+Table~\ref{tab:topthree} shows the top-3 method set under each
+single-shot debugger family.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Top-3 sets per debugger family.}
+\label{tab:topthree}
+\begin{tabular}{ll}
+\toprule
+\textbf{Family} & \textbf{Top-3} \\
+\midrule
+Claude Haiku 4.5  & \texttt{hybrid-grep-120k-rtk-tail}, \texttt{hybrid-grep-120k-tail}, \texttt{tail-200} \\
+Claude Sonnet 4.6 & \texttt{hybrid-grep-120k-tail}, \texttt{grep}, \texttt{hybrid-grep-120k-rtk-tail} \\
+OpenAI gpt-5-mini & \texttt{hybrid-grep-120k-rtk-tail}, \texttt{hybrid-grep-120k-tail}, \texttt{grep} \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 The \textbf{top-3 intersection} across all three families is
-$\{\texttt{hybrid-grep-120k-rtk-tail}, \texttt{hybrid-grep-120k-tail}\}$
+\{\texttt{hybrid-grep-120k-rtk-tail}, \texttt{hybrid-grep-120k-tail}\}
 ---both 120k-threshold hybrids. The \textbf{bottom-4 set} is also
-stable across all three families:
-$\{\texttt{raw}, \texttt{rtk-read}, \texttt{rtk-log}, \texttt{rtk-err-cat}\}$.
-The cross-family agreement is a direct robustness check; the
-direction is preserved across two vendors (Anthropic + OpenAI) and
-two within-Anthropic capability tiers (Haiku + Sonnet).
+stable across all three families: \{\texttt{raw}, \texttt{rtk-read},
+\texttt{rtk-log}, \texttt{rtk-err-cat}\}. The cross-family agreement
+is a direct robustness check; the direction is preserved across two
+vendors (Anthropic + OpenAI) and two within-Anthropic capability
+tiers (Haiku + Sonnet).
 
 \subsection{Cost-quality Pareto frontier}
 
@@ -577,7 +590,7 @@ to ship; per-case magnitudes are preliminary.
   above 180k (max 273{,}654). Costs reported reflect actual usage,
   not the nominal cap.
   \item \textbf{20 historical exclusions} documented in
-  \texttt{configs/historical\_provider\_error\_exclusions.json}
+  \path{configs/historical_provider_error_exclusions.json}
   appear as zero-score abstentions in the eval denominator. These
   correspond to transient model / CLI / API failures during the
   2026-04 / 05 prototype sweeps, removed by the 2026-05-15 cleanups.
