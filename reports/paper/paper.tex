@@ -38,6 +38,24 @@
 
 \maketitle
 
+\begin{figure}[!h]
+\centering
+\includegraphics[width=0.88\linewidth]{../../docs/figures/cost_quality_pareto.png}
+\caption{\textbf{Cost-quality Pareto frontier across 11
+  log-reduction tools.} Case-count-weighted macro
+  \texttt{diagnosis\_score\_v1\_1} across the 35-case corpus
+  $\times$ 3 single-shot LLM debugger families. Green dashed line
+  traces the 4-method frontier
+  (\texttt{rtk-log} $\to$ \texttt{tail-200} $\to$
+  \texttt{hybrid-grep-120k-tail} $\to$
+  \texttt{hybrid-grep-120k-rtk-tail}); all other methods are
+  dominated. The top two hybrids reach 0.670 / 0.666 at $\sim$20k
+  tokens per case --- \textbf{4.5$\times$ fewer tokens than
+  \texttt{grep} at same-ballpark quality}. See
+  \S\ref{sec:headline}--\S\ref{sec:agentloop}.}
+\label{fig:pareto}
+\end{figure}
+
 \begin{abstract}
 CI failure logs are large (median 5k lines, max 200k in this corpus) and
 noisy. Coding agents that try to debug them depend on an upstream tool
@@ -377,9 +395,10 @@ vendors (Anthropic + OpenAI) and two within-Anthropic capability
 tiers (Haiku + Sonnet).
 
 \subsection{Cost-quality Pareto frontier}
+\label{sec:pareto}
 
-Figure~\ref{fig:pareto} visualizes the cost-quality trade-off. The
-4-method Pareto frontier is
+Figure~\ref{fig:pareto} (on page~1) visualizes the cost-quality
+trade-off. The 4-method Pareto frontier is
 \texttt{rtk-log} (810 tokens, 0.249) $\to$
 \texttt{tail-200} (6{,}108, 0.614) $\to$
 \texttt{hybrid-grep-120k-tail} (19{,}753, 0.666) $\to$
@@ -392,19 +411,6 @@ higher score; and \texttt{llm-summary-v1-haiku} is the most
 expensive method on the board at 1.68M tokens per case
 (predominantly Claude-Code-CLI nested cached-prefix overhead) but
 scores rank 5.
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=\linewidth]{../../docs/figures/cost_quality_pareto.png}
-\caption{Cost-quality Pareto frontier. $x$-axis is total tokens per
-  case (log scale); $y$-axis is
-  \texttt{diagnosis\_score\_v1\_1}. Green dashed line traces the
-  4-method frontier (\texttt{rtk-log} $\to$ \texttt{tail-200} $\to$
-  \texttt{hybrid-grep-120k-tail} $\to$
-  \texttt{hybrid-grep-120k-rtk-tail}). All other methods are
-  dominated.}
-\label{fig:pareto}
-\end{figure}
 
 Pinned USD costs (per case, snapshot 2026-05-20): top-2 hybrids
 \$0.031, \texttt{tail-200} \$0.012, \texttt{grep} \$0.129,
