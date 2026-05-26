@@ -16,6 +16,8 @@
 \usepackage{microtype}
 \usepackage{xcolor}
 \usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta, shapes.geometric}
 
 \hypersetup{
   colorlinks=true,
@@ -73,7 +75,27 @@ enough evidence for an LLM to identify the root cause of a CI
 failure}. The pipeline is:
 
 \begin{center}
-\texttt{raw CI log} $\to$ \texttt{context method} $\to$ \texttt{debugger LLM} (or tool-using agent) $\to$ \texttt{diagnosis JSON} $\to$ \texttt{deterministic evaluator} $\to$ \texttt{diagnosis\_score\_v1\_1}
+\begin{tikzpicture}[
+  node distance=8mm,
+  every node/.style={font=\small},
+  stage/.style={
+    rectangle, rounded corners=2pt,
+    draw=black!55, line width=0.5pt,
+    fill=gray!6,
+    minimum height=11mm, inner xsep=4mm, inner ysep=2mm,
+    align=center,
+  },
+  arr/.style={-{Stealth[length=2mm,width=2mm]}, draw=black!60, line width=0.6pt},
+]
+  \node[stage] (raw)  {raw CI log};
+  \node[stage, right=of raw]  (red)  {context\\reduction tool};
+  \node[stage, right=of red]  (dbg)  {LLM diagnoser\\(or 5-turn agent)};
+  \node[stage, right=of dbg]  (sco)  {\texttt{diagnosis\_}\\\texttt{score\_v1\_1}};
+
+  \draw[arr] (raw) -- (red);
+  \draw[arr] (red) -- (dbg);
+  \draw[arr] (dbg) -- (sco);
+\end{tikzpicture}
 \end{center}
 
 The corpus is real public GitHub Actions failures across 8 categories
