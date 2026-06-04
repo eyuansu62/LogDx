@@ -5,6 +5,7 @@
 > LLM-summary) — do they preserve enough evidence for LLM root-cause
 > diagnosis?
 
+[![arXiv](https://img.shields.io/badge/arXiv-2605.28876-b31b1b.svg)](https://arxiv.org/abs/2605.28876)
 [![CI](https://github.com/eyuansu62/LogDx/actions/workflows/ci.yml/badge.svg)](https://github.com/eyuansu62/LogDx/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/eyuansu62/LogDx?include_prereleases&label=release)](https://github.com/eyuansu62/LogDx/releases/latest)
 [![License: Apache-2.0 + CC-BY-4.0](https://img.shields.io/badge/license-Apache--2.0%20%2B%20CC--BY--4.0-blue)](LICENSE)
@@ -64,6 +65,7 @@ Full leaderboard at <https://logdx-bench.github.io/leaderboard.html>.
 |---|---|
 | 🏠 Homepage | <https://logdx-bench.github.io/> |
 | 📊 Leaderboard | <https://logdx-bench.github.io/leaderboard.html> |
+| 📄 arXiv preprint | <https://arxiv.org/abs/2605.28876> |
 | 📄 Full report | [`reports/technical_report.md`](reports/technical_report.md) |
 | 📦 Cases corpus mirror | <https://huggingface.co/datasets/eyuansu71/logdx-ci> |
 | 📋 Release notes | latest: [`RELEASE_NOTES_v1_2.md`](RELEASE_NOTES_v1_2.md) · history: [`RELEASE_NOTES.md`](RELEASE_NOTES.md) (v1.0), [v1.1.1](RELEASE_NOTES_v1_1_1.md), [v1.1.2](RELEASE_NOTES_v1_1_2.md) |
@@ -113,14 +115,17 @@ Full caveats in the
 ## Cite
 
 ```bibtex
-@misc{qin2026logdx,
-  title  = {{LogDx-CI}: Benchmarking Log Reduction Tools
-           for LLM Root-Cause Diagnosis},
-  author = {Qin, Bowen},
-  year   = {2026},
-  howpublished = {\url{https://github.com/eyuansu62/LogDx}},
-  note   = {v1.2 release; cases corpus at
-           \url{https://huggingface.co/datasets/eyuansu71/logdx-ci}},
+@article{qin2026logdx,
+  title         = {{LogDx-CI}: Benchmarking Log Reduction Tools
+                  for LLM Root-Cause Diagnosis},
+  author        = {Qin, Bowen},
+  year          = {2026},
+  eprint        = {2605.28876},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.SE},
+  url           = {https://arxiv.org/abs/2605.28876},
+  note          = {v1.2 release; cases corpus at
+                  \url{https://huggingface.co/datasets/eyuansu71/logdx-ci}},
 }
 ```
 

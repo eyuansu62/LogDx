@@ -42,6 +42,7 @@ A benchmark for **log reduction tools**
 LLM-summary) — do they preserve enough evidence for LLM root-cause
 diagnosis?
 
+- **arXiv preprint**: <https://arxiv.org/abs/2605.28876>
 - **Homepage**: <https://logdx-bench.github.io/>
 - **Code & evaluator**: <https://github.com/eyuansu62/LogDx>
 - **Headline report**: [`reports/technical_report.md`](https://github.com/eyuansu62/LogDx/blob/main/reports/technical_report.md)
@@ -238,14 +239,17 @@ for the full list.
 ## Citation
 
 ```bibtex
-@misc{qin2026logdx,
-  title  = {{LogDx-CI}: Benchmarking Log Reduction Tools
-           for LLM Root-Cause Diagnosis},
-  author = {Qin, Bowen},
-  year   = {2026},
-  howpublished = {\url{https://github.com/eyuansu62/LogDx}},
-  note   = {v1.2 release; cases corpus at
-           \url{https://huggingface.co/datasets/eyuansu71/logdx-ci}},
+@article{qin2026logdx,
+  title         = {{LogDx-CI}: Benchmarking Log Reduction Tools
+                  for LLM Root-Cause Diagnosis},
+  author        = {Qin, Bowen},
+  year          = {2026},
+  eprint        = {2605.28876},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.SE},
+  url           = {https://arxiv.org/abs/2605.28876},
+  note          = {v1.2 release; cases corpus at
+                  \url{https://huggingface.co/datasets/eyuansu71/logdx-ci}},
 }
 ```
 

@@ -3,6 +3,7 @@
 **Tag**: `v1.2`
 **Date**: 2026-05-20
 **Project homepage**: <https://logdx-bench.github.io/>
+**arXiv preprint**: <https://arxiv.org/abs/2605.28876>
 **Type**: Minor release — adds `llm-summary-v1-gpt-5-mini` as a new
 context-provider method on the headline leaderboard; falsifies the
 self-call-bias hypothesis raised in the v1.1.1 review.

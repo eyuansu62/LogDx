@@ -251,14 +251,17 @@ for the full schedule):
 
 {% raw %}
 ```bibtex
-@misc{qin2026logdx,
-  title  = {{LogDx-CI}: Benchmarking Log Reduction Tools
-           for LLM Root-Cause Diagnosis},
-  author = {Qin, Bowen},
-  year   = {2026},
-  howpublished = {\url{https://github.com/eyuansu62/LogDx}},
-  note   = {v1.2 release; cases corpus at
-           \url{https://huggingface.co/datasets/eyuansu71/logdx-ci}},
+@article{qin2026logdx,
+  title         = {{LogDx-CI}: Benchmarking Log Reduction Tools
+                  for LLM Root-Cause Diagnosis},
+  author        = {Qin, Bowen},
+  year          = {2026},
+  eprint        = {2605.28876},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.SE},
+  url           = {https://arxiv.org/abs/2605.28876},
+  note          = {v1.2 release; cases corpus at
+                  \url{https://huggingface.co/datasets/eyuansu71/logdx-ci}},
 }
 ```
 {% endraw %}
