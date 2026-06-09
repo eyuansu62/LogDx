@@ -33,40 +33,42 @@ def my_reducer(raw_log: str) -> str:
         if "error" in line.lower()
     )
 
-# 2. Evaluate on the corpus
+# 2. Evaluate on the corpus (default = static, no LLM, no API key, <1s)
 result = logdx_ci.evaluate(
     reducer=my_reducer,
-    diagnoser="stub-debugger-v1",   # deterministic, no API key
-    splits=["v2/dev"],              # fast subset (3 cases); omit for full 35
+    # diagnoser defaults to "static-signal-recall"
+    # splits defaults to all 6 (= 35 cases)
 )
 
 # 3. Inspect
 print(result.summary())
 ```
 
-Output (with `stub-debugger-v1`, a deterministic regex matcher — for
-real scores comparable to the leaderboard, use `real-debugger-v2`):
+Output:
 
 ```
 LogDx-CI evaluation result
-  diagnoser:           stub-debugger-v1
-  cases evaluated:     3
-  diagnosis_score_v1_1: 0.0167
-  confident_error_rate: 0.0000
-  mean reduced chars:  27,281
-  elapsed:             0.1 sec
-  closest baseline:    rtk-log (0.249, -0.232)
+  diagnoser:           static-signal-recall
+  cases evaluated:     35
+  critical_signal_recall: 0.7536
+  mean reduced chars:  3,053
+  elapsed:             0.05 sec
+  closest baseline:    tail (0.754, +0.000)
 
-Note: stub-debugger-v1 is a deterministic regex matcher for smoke tests;
-the comparison below is not apples-to-apples. Use diagnoser=
-'real-debugger-v2' for scores comparable to the v1.2 leaderboard.
-
-method                                score      tokens  note
+method                                   csr      tokens  note
 --------------------------------------------------------------------------------
-**YOU**                              0.0167      27,281
-hybrid-grep-120k-rtk-tail            0.6700      19,844  +0.653 vs you
-hybrid-grep-120k-tail                0.6660      19,753  +0.649 vs you
-...
+**YOU**                               0.7536       3,053
+raw                                   0.9649           —  +0.211 vs you
+rtk-read                              0.9649           —  +0.211 vs you
+grep                                  0.8411           —  +0.087 vs you
+hybrid-grep-120k-rtk-tail-v3          0.8225           —  +0.069 vs you
+hybrid-grep-120k-tail-v2              0.8189           —  +0.065 vs you
+llm-summary-v1-gpt-5-mini             0.8104           —  +0.057 vs you
+tail                                  0.7536           —  +0.000 vs you
+llm-summary-v1-haiku                  0.7009           —  -0.053 vs you
+hybrid-grep-4k-rtk-err-cat-v1         0.6810           —  -0.073 vs you
+rtk-err-cat                           0.5372           —  -0.216 vs you
+rtk-log                               0.1819           —  -0.572 vs you
 ```
 
 ## Use the real diagnoser
@@ -98,12 +100,17 @@ EOF
 logdx-ci eval --reducer my_reducer.py --diagnoser stub-debugger-v1 --splits v2/dev
 ```
 
-## V0 supported diagnosers
+## Supported diagnosers
 
-| Name | Model | API key | Speed | Cost |
+| Name | What it measures | API key | Speed | Cost |
 |---|---|---|---|---|
-| `stub-debugger-v1` | Deterministic regex stub | none | 0.5s / case | $0 |
-| `real-debugger-v2` | Claude Sonnet 4.6 | `ANTHROPIC_API_KEY` | ~3s / case | ~$0.03 / case |
+| `static-signal-recall` | Did the reducer **preserve** required signals? (text-only, no LLM) | none | <1s / 35 cases | $0 |
+| `stub-debugger-v1` | Smoke test only (deterministic regex stub) | none | <1s / 35 cases | $0 |
+| `real-debugger-v2` | Did Sonnet 4.6 give a correct **diagnosis** from the reduced context? | `claude` CLI logged in | ~3s / case | ~$0.03 / case |
+
+**Recommended workflow**: prototype with `static-signal-recall` (free,
+deterministic, 50ms for 35 cases) → confirm pipeline → spend $1 on
+`real-debugger-v2` for leaderboard-comparable diagnosis scores.
 
 V0.2 will add `real-debugger-v1` (Haiku), `real-debugger-v3` (gpt-5-mini),
 and `real-agent-v1` (Sonnet + 4 tools, 5-turn cap).

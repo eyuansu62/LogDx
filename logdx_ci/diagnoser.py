@@ -23,7 +23,14 @@ from pathlib import Path
 
 from .corpus import find_repo_root
 
-SUPPORTED_DIAGNOSERS = ["stub-debugger-v1", "real-debugger-v2"]
+SUPPORTED_DIAGNOSERS = [
+    "static-signal-recall",
+    "stub-debugger-v1",
+    "real-debugger-v2",
+]
+
+# Modes that don't call any LLM — score reducer output directly vs ground truth.
+STATIC_MODES = {"static-signal-recall"}
 
 SHIM_BY_DIAGNOSER = {
     "stub-debugger-v1": "examples/diagnosis_shim_stub.py",
@@ -57,6 +64,10 @@ def preflight(diagnoser: str) -> None:
                 "(github.com/anthropics/claude-code). Install with: "
                 "npm install -g @anthropic-ai/claude-code, then retry."
             )
+
+
+def is_static(diagnoser: str) -> bool:
+    return diagnoser in STATIC_MODES
 
 
 def diagnose(

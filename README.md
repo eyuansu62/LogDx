@@ -110,23 +110,21 @@ pip install -e .          # installs the `logdx_ci` package + `logdx-ci` CLI
 import logdx_ci
 
 def my_reducer(raw_log: str) -> str:
-    # your logic here — e.g. tail the last 2000 chars
-    return raw_log[-2000:]
+    # your logic here — e.g. tail the last 200 lines
+    return "\n".join(raw_log.split("\n")[-200:])
 
-result = logdx_ci.evaluate(
-    reducer=my_reducer,
-    diagnoser="real-debugger-v2",      # Claude Sonnet 4.6 via `claude` CLI
-    splits=["v2/dev"],                  # fast 3-case subset; omit for full 35
-)
-print(result.summary())                 # score, confident_error_rate,
-                                        # mean tokens, table vs 11 baselines
+result = logdx_ci.evaluate(reducer=my_reducer)   # all 35 cases, ~50 ms, $0
+print(result.summary())                          # score + table vs 11 baselines
 ```
 
-Output includes your score vs all 11 v1.2 baselines (`hybrid-*`,
-`grep`, `tail-200`, `rtk-*`, `llm-summary-*`, `raw`) so you can see
-exactly where your reducer sits on the Pareto front. Diagnoses are
-cached per `(diagnoser, case_id, reduced_context_hash)` so reruns are
-free. Full tutorial: [`logdx_ci/README.md`](logdx_ci/README.md).
+The default `diagnoser="static-signal-recall"` does **not** call any
+LLM — it scores whether your reducer's output preserves the
+ground-truth `required_signals`. Deterministic, free, runs in under a
+second. For leaderboard-comparable diagnosis-quality scoring, pass
+`diagnoser="real-debugger-v2"` (Claude Sonnet 4.6 via the `claude`
+CLI; ~$0.03 / case). Diagnoses are cached per
+`(diagnoser, case_id, reduced_context_hash)` so reruns are free.
+Full tutorial: [`logdx_ci/README.md`](logdx_ci/README.md).
 
 ## Caveats
 

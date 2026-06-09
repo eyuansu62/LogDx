@@ -9,10 +9,16 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Callable
 
-from .baselines import BASELINES, closest_baseline, render_table
+from .baselines import (
+    BASELINES,
+    STATIC_BASELINES,
+    closest_baseline,
+    render_table,
+)
 from .corpus import Case, load_cases, find_repo_root
-from .diagnoser import SUPPORTED_DIAGNOSERS, diagnose, preflight
+from .diagnoser import SUPPORTED_DIAGNOSERS, diagnose, is_static, preflight
 from .scoring import macro, score_case
+from .static_scoring import score_case_static
 
 Reducer = Callable[[str], str]
 
@@ -51,21 +57,28 @@ class Result:
     def vs_closest_baseline(self) -> str:
         if self.score is None:
             return "(no score)"
-        return closest_baseline(self.score)
+        return closest_baseline(self.score, static=is_static(self.diagnoser))
 
     def summary(self) -> str:
         score_str = f"{self.score:.4f}" if self.score is not None else "—"
+        is_st = is_static(self.diagnoser)
+        score_label = (
+            "critical_signal_recall" if is_st else "diagnosis_score_v1_1"
+        )
         lines = [
             f"LogDx-CI evaluation result",
             f"  diagnoser:           {self.diagnoser}",
             f"  cases evaluated:     {self.n_cases}",
-            f"  diagnosis_score_v1_1: {score_str}",
-            f"  confident_error_rate: {self.confident_error_rate:.4f}",
+            f"  {score_label}: {score_str}",
+        ]
+        if not is_st:
+            lines.append(f"  confident_error_rate: {self.confident_error_rate:.4f}")
+        lines.extend([
             f"  mean reduced chars:  {self.chars_per_case:,.0f}",
             f"  elapsed:             {self.elapsed_sec:.1f} sec",
             f"  closest baseline:    {self.vs_closest_baseline()}",
             "",
-        ]
+        ])
         if self.diagnoser == "stub-debugger-v1":
             lines.append(
                 "Note: stub-debugger-v1 is a deterministic regex matcher "
@@ -74,9 +87,20 @@ class Result:
                 "comparable to the v1.2 leaderboard."
             )
             lines.append("")
+        if is_st:
+            lines.append(
+                "Static mode: scoring measures whether the reducer's output "
+                "preserves the ground-truth required_signals (no LLM call). "
+                "Deterministic, free, fast (~1s for 35 cases). For "
+                "diagnosis-quality scoring vs the v1.2 leaderboard, use "
+                "diagnoser='real-debugger-v2'."
+            )
+            lines.append("")
         lines.append("Comparison vs LogDx-CI v1.2 reference baselines:")
         lines.append("")
-        lines.append(render_table(self.score or 0.0, self.chars_per_case))
+        lines.append(
+            render_table(self.score or 0.0, self.chars_per_case, static=is_st)
+        )
         return "\n".join(lines)
 
     def to_json(self, path: str | Path) -> None:
@@ -86,7 +110,7 @@ class Result:
 
 def evaluate(
     reducer: Reducer,
-    diagnoser: str = "stub-debugger-v1",
+    diagnoser: str = "static-signal-recall",
     splits: list[str] | None = None,
     cache_dir: str | Path | None = "~/.logdx_ci_cache/diagnosis",
     api_key: str | None = None,
@@ -101,8 +125,12 @@ def evaluate(
         Your reduction function. Takes the full raw log, returns reduced text.
     diagnoser : str
         Which diagnoser to use. V0 supports:
-          - "stub-debugger-v1" (default; deterministic, no API key)
-          - "real-debugger-v2" (Claude Sonnet 4.6 via Anthropic API)
+          - "static-signal-recall" (default; no LLM, deterministic, 50ms for
+            35 cases — scores via critical_signal_recall on the reducer's
+            output)
+          - "stub-debugger-v1" (deterministic regex stub; smoke tests only)
+          - "real-debugger-v2" (Claude Sonnet 4.6 via the `claude` CLI shim;
+            scores via diagnosis_score_v1_1, leaderboard-comparable)
     splits : list[str] | None
         Which corpus splits to evaluate. Default: all 6 (= 35 cases).
         Pass e.g. ["v2/dev"] for a fast 3-case sanity check.
@@ -169,39 +197,58 @@ def evaluate(
             )
         chars_total += len(reduced)
 
-        # 2. diagnose
-        diag = diagnose(
-            diagnoser=diagnoser,
-            case_id=case.case_id,
-            reduced_context=reduced,
-            case_metadata=case.case_metadata,
-            cache_dir=Path(cache_dir).expanduser() if cache_dir else None,
-            api_key=api_key,
-        )
-
-        # 3. score
-        scored = score_case(
-            diagnosis=diag,
-            ground_truth=case.ground_truth,
-            reduced_context=reduced,
-        )
-        diag_score = scored.get("diagnosis_score_v1_1")
-        diag_scores.append(diag_score)
-        cat_match.append(scored.get("category_match_score_v1_1"))
-        ce = bool(scored.get("confident_error_v1_1"))
-        if scored.get("diagnosis_success", True):
-            confident_error_denom += 1
-            if ce:
-                confident_errors += 1
-
-        per_case[case.case_id] = CaseResult(
-            case_id=case.case_id,
-            split=case.split,
-            score=diag_score,
-            category_match=scored.get("category_match_score_v1_1"),
-            confident_error=ce,
-            reduced_chars=len(reduced),
-        )
+        if is_static(diagnoser):
+            # 2+3. Score reducer output directly — no LLM, no diagnosis JSON.
+            scored = score_case_static(
+                case_id=case.case_id,
+                ground_truth=case.ground_truth,
+                reduced_context=reduced,
+            )
+            diag_score = scored.get("critical_signal_recall")
+            diag_scores.append(diag_score)
+            cat_match.append(None)
+            ce = False
+            # (no confident_error counter in static mode)
+            per_case[case.case_id] = CaseResult(
+                case_id=case.case_id,
+                split=case.split,
+                score=diag_score,
+                category_match=None,
+                confident_error=False,
+                reduced_chars=len(reduced),
+            )
+        else:
+            # 2. diagnose
+            diag = diagnose(
+                diagnoser=diagnoser,
+                case_id=case.case_id,
+                reduced_context=reduced,
+                case_metadata=case.case_metadata,
+                cache_dir=Path(cache_dir).expanduser() if cache_dir else None,
+                api_key=api_key,
+            )
+            # 3. score
+            scored = score_case(
+                diagnosis=diag,
+                ground_truth=case.ground_truth,
+                reduced_context=reduced,
+            )
+            diag_score = scored.get("diagnosis_score_v1_1")
+            diag_scores.append(diag_score)
+            cat_match.append(scored.get("category_match_score_v1_1"))
+            ce = bool(scored.get("confident_error_v1_1"))
+            if scored.get("diagnosis_success", True):
+                confident_error_denom += 1
+                if ce:
+                    confident_errors += 1
+            per_case[case.case_id] = CaseResult(
+                case_id=case.case_id,
+                split=case.split,
+                score=diag_score,
+                category_match=scored.get("category_match_score_v1_1"),
+                confident_error=ce,
+                reduced_chars=len(reduced),
+            )
         if verbose:
             print(
                 f"  score={diag_score:.3f}" if diag_score is not None else "  score=—",

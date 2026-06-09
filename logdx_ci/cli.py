@@ -48,9 +48,13 @@ def main(argv: list[str] | None = None) -> int:
         help="Path to a Python file exposing `def reduce(log: str) -> str`."
     )
     p_eval.add_argument(
-        "--diagnoser", default="stub-debugger-v1",
-        choices=["stub-debugger-v1", "real-debugger-v2"],
-        help="Which diagnoser to use (default: stub-debugger-v1)."
+        "--diagnoser", default="static-signal-recall",
+        choices=["static-signal-recall", "stub-debugger-v1", "real-debugger-v2"],
+        help=(
+            "Which diagnoser to use (default: static-signal-recall — no LLM, "
+            "deterministic, <1s for 35 cases). Use real-debugger-v2 for "
+            "leaderboard-comparable diagnosis scores."
+        ),
     )
     p_eval.add_argument(
         "--splits", nargs="*", default=None,
