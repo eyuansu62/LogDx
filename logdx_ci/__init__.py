@@ -8,13 +8,13 @@ Quickstart:
         # your logic here
         return raw_log[-2000:]  # toy example: tail 2000 chars
 
-    result = logdx_ci.evaluate(my_reducer, diagnoser="stub-debugger-v1")
+    result = logdx_ci.evaluate(my_reducer)   # default = static, no LLM
     print(result.summary())
 
 See logdx_ci/README.md for a full tutorial.
 """
 from .api import evaluate, Result
-from .baselines import BASELINES
+from .baselines import BASELINES, STATIC_BASELINES
 
-__all__ = ["evaluate", "Result", "BASELINES"]
-__version__ = "0.1.0"
+__all__ = ["evaluate", "Result", "BASELINES", "STATIC_BASELINES"]
+__version__ = "0.2.0"
