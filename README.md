@@ -67,6 +67,7 @@ Full leaderboard at <https://logdx-bench.github.io/leaderboard.html>.
 | 📊 Leaderboard | <https://logdx-bench.github.io/leaderboard.html> |
 | 📄 arXiv preprint | <https://arxiv.org/abs/2605.28876> |
 | 📄 Full report | [`reports/technical_report.md`](reports/technical_report.md) |
+| 🐍 Python SDK | [`logdx_ci/`](logdx_ci/) — evaluate your reducer in 5 min |
 | 📦 Cases corpus mirror | <https://huggingface.co/datasets/eyuansu71/logdx-ci> |
 | 📋 Release notes | latest: [`RELEASE_NOTES_v1_2.md`](RELEASE_NOTES_v1_2.md) · history: [`RELEASE_NOTES.md`](RELEASE_NOTES.md) (v1.0), [v1.1.1](RELEASE_NOTES_v1_1_1.md), [v1.1.2](RELEASE_NOTES_v1_1_2.md) |
 | 📑 Cite | [`CITATION.cff`](CITATION.cff) · [BibTeX](https://logdx-bench.github.io/cite.html) |
@@ -94,6 +95,38 @@ python3 tools/evaluate_diagnosis.py \
 For a fresh run that actually hits the OpenAI / Anthropic APIs (vs.
 cache replay), see the [reproducibility section in
 `RELEASE_NOTES.md`](RELEASE_NOTES.md#reproducibility).
+
+## Try it on your own reducer (5 min)
+
+Have a function that takes a CI log and returns a reduced version?
+Evaluate it against all 35 cases in five minutes:
+
+```bash
+git clone https://github.com/eyuansu62/LogDx.git && cd LogDx
+pip install -e .          # installs the `logdx_ci` package + `logdx-ci` CLI
+```
+
+```python
+import logdx_ci
+
+def my_reducer(raw_log: str) -> str:
+    # your logic here — e.g. tail the last 2000 chars
+    return raw_log[-2000:]
+
+result = logdx_ci.evaluate(
+    reducer=my_reducer,
+    diagnoser="real-debugger-v2",      # Claude Sonnet 4.6 via `claude` CLI
+    splits=["v2/dev"],                  # fast 3-case subset; omit for full 35
+)
+print(result.summary())                 # score, confident_error_rate,
+                                        # mean tokens, table vs 11 baselines
+```
+
+Output includes your score vs all 11 v1.2 baselines (`hybrid-*`,
+`grep`, `tail-200`, `rtk-*`, `llm-summary-*`, `raw`) so you can see
+exactly where your reducer sits on the Pareto front. Diagnoses are
+cached per `(diagnoser, case_id, reduced_context_hash)` so reruns are
+free. Full tutorial: [`logdx_ci/README.md`](logdx_ci/README.md).
 
 ## Caveats
 
