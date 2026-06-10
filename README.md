@@ -11,17 +11,51 @@
 [![License: Apache-2.0 + CC-BY-4.0](https://img.shields.io/badge/license-Apache--2.0%20%2B%20CC--BY--4.0-blue)](LICENSE)
 [![Dataset on HF](https://img.shields.io/badge/data-eyuansu71%2Flogdx--ci-yellow)](https://huggingface.co/datasets/eyuansu71/logdx-ci)
 
-LogDx-CI compares **11 context providers** (`raw`, `tail`, `grep`,
-three [RTK](https://github.com/rtk-ai/rtk) modes — `rtk-read`,
-`rtk-log`, `rtk-err-cat` —, two real LLM summarizers —
-`llm-summary-v1-haiku` (Anthropic) and `llm-summary-v1-gpt-5-mini`
-(OpenAI) —, and three hybrid routers) by handing the same CI failure
-log to three debugger families (Claude Haiku 4.5, Claude Sonnet 4.6,
-OpenAI gpt-5-mini) and scoring the resulting root-cause diagnoses
-against AI-drafted + author-verified ground truths.
+LogDx-CI compares **12 context providers** (`raw`, `tail`, `grep`,
+three [RTK](https://github.com/rtk-ai/rtk) modes, two real LLM
+summarizers, three hybrid routers, plus
+[Headroom](https://github.com/chopratejas/headroom)) by handing the
+same CI failure log to three debugger families (Claude Haiku 4.5,
+Claude Sonnet 4.6, OpenAI gpt-5-mini) and scoring the resulting
+root-cause diagnoses against AI-drafted + author-verified ground
+truths. It optimizes for **method ranking stability** across model
+families, not "which LLM scored highest."
 
-It optimizes for **method ranking stability** across model families,
-not "which LLM scored highest."
+## Evaluate your own reducer in 5 minutes
+
+Have a function that takes a CI log and returns a reduced version?
+You can rank it against all 12 reference methods with **zero setup —
+no clone, no API key, no money:**
+
+```bash
+pip install logdx-ci
+```
+
+```python
+import logdx_ci
+
+def my_reducer(raw_log: str) -> str:
+    # your logic here — e.g. keep only the last 200 lines
+    return "\n".join(raw_log.split("\n")[-200:])
+
+result = logdx_ci.evaluate(reducer=my_reducer)   # all 35 cases, ~5 sec
+print(result.summary())                          # score + table vs 12 baselines
+```
+
+The corpus + scoring code is auto-fetched (~20 MB) on first call and
+cached. The default `diagnoser="static-signal-recall"` does **not** call
+any LLM — it scores whether your reducer preserved the ground-truth
+`required_signals`. Deterministic, free, runs in under a second.
+
+For leaderboard-comparable diagnosis-quality scoring, pass
+`diagnoser="real-debugger-v2"` (Claude Sonnet 4.6 via the `claude` CLI;
+~$0.03 / case) or `"real-debugger-v1"` (Haiku 4.5, ~$0.005 / case) or
+`"real-debugger-v3"` (gpt-5-mini, ~$0.006 / case, needs
+`OPENAI_API_KEY`). Diagnoses are cached per `(diagnoser, case_id,
+reduced_context_hash)`, so reruns are free.
+
+Full SDK tutorial: [`logdx_ci/README.md`](logdx_ci/README.md). External
+evaluation example (Headroom): [`docs/external-evaluations/headroom_logcompressor_default.md`](docs/external-evaluations/headroom_logcompressor_default.md).
 
 ## Headline finding
 
@@ -68,64 +102,39 @@ Full leaderboard at <https://logdx-bench.github.io/leaderboard.html>.
 | 📊 Leaderboard | <https://logdx-bench.github.io/leaderboard.html> |
 | 📄 arXiv preprint | <https://arxiv.org/abs/2605.28876> |
 | 📄 Full report | [`reports/technical_report.md`](reports/technical_report.md) |
-| 🐍 Python SDK | [`logdx_ci/`](logdx_ci/) — evaluate your reducer in 5 min |
+| 🐍 Python SDK | [`logdx_ci/`](logdx_ci/) — `pip install logdx-ci`, evaluate your reducer in 5 min |
 | 📦 Cases corpus mirror | <https://huggingface.co/datasets/eyuansu71/logdx-ci> |
 | 📋 Release notes | latest: [`RELEASE_NOTES_v1_2.md`](RELEASE_NOTES_v1_2.md) · history: [`RELEASE_NOTES.md`](RELEASE_NOTES.md) (v1.0), [v1.1.1](RELEASE_NOTES_v1_1_1.md), [v1.1.2](RELEASE_NOTES_v1_1_2.md) |
 | 📑 Cite | [`CITATION.cff`](CITATION.cff) · [BibTeX](https://logdx-bench.github.io/cite.html) |
 
-## Use the data
+## Browse the cases directly
 
-```bash
-git clone https://github.com/eyuansu62/LogDx.git
-cd LogDx
+Each case lives under `cases/<split>/<case_id>/{raw.log, case.json,
+ground_truth.json, tags.json, privacy_audit.json}`. Schema in the
+[dataset card](https://huggingface.co/datasets/eyuansu71/logdx-ci).
+The SDK auto-downloads them on first use — the only reason to clone
+the repo is if you're reproducing the leaderboard or contributing.
 
-# Each case lives under cases/<split>/<case_id>/{raw.log,case.json,
-# ground_truth.json,tags.json,privacy_audit.json}. See the dataset
-# card for the schema:
-# https://huggingface.co/datasets/eyuansu71/logdx-ci
-```
+## For benchmark maintainers (reproduce the leaderboard)
 
-To reproduce a number from the leaderboard:
-
-```bash
-python3 tools/evaluate_diagnosis.py \
-    --split v2/dev --diagnoser real-debugger-v3
-# → results/v2/dev/eval_diagnosis_real-debugger-v3.json
-```
-
-For a fresh run that actually hits the OpenAI / Anthropic APIs (vs.
-cache replay), see the [reproducibility section in
-`RELEASE_NOTES.md`](RELEASE_NOTES.md#reproducibility).
-
-## Try it on your own reducer (5 min)
-
-Have a function that takes a CI log and returns a reduced version?
-Evaluate it against all 35 cases in five minutes:
+The numbers above were generated through the canonical pipeline in
+`tools/`, which writes auditable manifest artifacts to `results/`
+(committed to git for long-term reproducibility). To regenerate them
+from a clean checkout:
 
 ```bash
 git clone https://github.com/eyuansu62/LogDx.git && cd LogDx
-pip install -e .          # installs the `logdx_ci` package + `logdx-ci` CLI
+python tools/run_baseline.py     --method tail-200 --split dev
+python tools/run_diagnosis.py    --diagnoser real-debugger-v2 \
+                                 --split dev --method tail-200
+python tools/evaluate_diagnosis.py --split dev --diagnoser real-debugger-v2
 ```
 
-```python
-import logdx_ci
-
-def my_reducer(raw_log: str) -> str:
-    # your logic here — e.g. tail the last 200 lines
-    return "\n".join(raw_log.split("\n")[-200:])
-
-result = logdx_ci.evaluate(reducer=my_reducer)   # all 35 cases, ~50 ms, $0
-print(result.summary())                          # score + table vs 11 baselines
-```
-
-The default `diagnoser="static-signal-recall"` does **not** call any
-LLM — it scores whether your reducer's output preserves the
-ground-truth `required_signals`. Deterministic, free, runs in under a
-second. For leaderboard-comparable diagnosis-quality scoring, pass
-`diagnoser="real-debugger-v2"` (Claude Sonnet 4.6 via the `claude`
-CLI; ~$0.03 / case). Diagnoses are cached per
-`(diagnoser, case_id, reduced_context_hash)` so reruns are free.
-Full tutorial: [`logdx_ci/README.md`](logdx_ci/README.md).
+The SDK (`logdx_ci.evaluate(...)`) re-uses the same scorer + diagnoser
+shims, so SDK scores are bit-for-bit comparable to leaderboard numbers
+— but the SDK doesn't write the committed-artifact audit trail. Use
+the SDK to *try* a new reducer; use `tools/` to *enshrine* a method on
+the leaderboard.
 
 ## Caveats
 
