@@ -5,6 +5,7 @@ diagnosis on CI failures. Wraps the LogDx-CI v1.2 corpus (35 real GitHub
 Actions failure cases, AI-drafted + author-verified ground truth) into a
 five-minute Python API.
 
+[![PyPI](https://img.shields.io/pypi/v/logdx-ci.svg)](https://pypi.org/project/logdx-ci/)
 [![arXiv](https://img.shields.io/badge/arXiv-2605.28876-b31b1b.svg)](https://arxiv.org/abs/2605.28876)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](../LICENSE)
 

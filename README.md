@@ -6,6 +6,7 @@
 > diagnosis?
 
 [![arXiv](https://img.shields.io/badge/arXiv-2605.28876-b31b1b.svg)](https://arxiv.org/abs/2605.28876)
+[![PyPI](https://img.shields.io/pypi/v/logdx-ci.svg?label=pip%20install%20logdx-ci&color=blue)](https://pypi.org/project/logdx-ci/)
 [![CI](https://github.com/eyuansu62/LogDx/actions/workflows/ci.yml/badge.svg)](https://github.com/eyuansu62/LogDx/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/eyuansu62/LogDx?include_prereleases&label=release)](https://github.com/eyuansu62/LogDx/releases/latest)
 [![License: Apache-2.0 + CC-BY-4.0](https://img.shields.io/badge/license-Apache--2.0%20%2B%20CC--BY--4.0-blue)](LICENSE)
