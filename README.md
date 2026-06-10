@@ -43,10 +43,11 @@ the 35-case corpus:
 | 5 | `llm-summary-v1-haiku`<br/><sub>*(promoted to headline in v1.1)*</sub> | 0.583 | 0.704 | 0.608 | 0.632 |
 | 6 | `tail-200`                  | 0.595 | 0.624 | 0.623 | 0.614 |
 | 7 | `hybrid-grep-4k-rtk-err-cat`<br/><sub>*(earlier 4k-threshold hybrid; replaced)*</sub> | 0.552 | 0.597 | 0.571 | 0.573 |
-| 8 | `rtk-err-cat`               | 0.455 | 0.488 | 0.467 | 0.470 |
-| 9 | `raw`                       | 0.324 | 0.368 | 0.367 | 0.353 |
-| 10 | `rtk-read`                 | 0.329 | 0.369 | 0.349 | 0.349 |
-| 11 | `rtk-log`                  | 0.238 | 0.262 | 0.249 | 0.249 |
+| 8 | `headroom-LogCompressor`<br/><sub>*([Headroom](https://github.com/chopratejas/headroom) v0.24.0 defaults; evaluated via the SDK)*</sub> | 0.548 | 0.601 | 0.534 | 0.561 |
+| 9 | `rtk-err-cat`               | 0.455 | 0.488 | 0.467 | 0.470 |
+| 10 | `raw`                      | 0.324 | 0.368 | 0.367 | 0.353 |
+| 11 | `rtk-read`                 | 0.329 | 0.369 | 0.349 | 0.349 |
+| 12 | `rtk-log`                  | 0.238 | 0.262 | 0.249 | 0.249 |
 
 The legacy `llm-summary-v1-mock` stub (used as the LLM-summary
 representative through v1.1) is retained as an appendix entry on

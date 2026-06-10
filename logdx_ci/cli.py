@@ -49,7 +49,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     p_eval.add_argument(
         "--diagnoser", default="static-signal-recall",
-        choices=["static-signal-recall", "stub-debugger-v1", "real-debugger-v2"],
+        choices=[
+            "static-signal-recall", "stub-debugger-v1",
+            "real-debugger-v1", "real-debugger-v2", "real-debugger-v3",
+        ],
         help=(
             "Which diagnoser to use (default: static-signal-recall — no LLM, "
             "deterministic, <1s for 35 cases). Use real-debugger-v2 for "

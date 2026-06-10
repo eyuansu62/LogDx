@@ -26,7 +26,9 @@ from .corpus import find_repo_root
 SUPPORTED_DIAGNOSERS = [
     "static-signal-recall",
     "stub-debugger-v1",
-    "real-debugger-v2",
+    "real-debugger-v1",   # Haiku 4.5 via `claude` CLI
+    "real-debugger-v2",   # Sonnet 4.6 via `claude` CLI
+    "real-debugger-v3",   # gpt-5-mini via OpenAI HTTPS
 ]
 
 # Modes that don't call any LLM — score reducer output directly vs ground truth.
@@ -34,7 +36,16 @@ STATIC_MODES = {"static-signal-recall"}
 
 SHIM_BY_DIAGNOSER = {
     "stub-debugger-v1": "examples/diagnosis_shim_stub.py",
+    "real-debugger-v1": "examples/diagnosis_shim_claude_cli.py",
     "real-debugger-v2": "examples/diagnosis_shim_claude_cli.py",
+    "real-debugger-v3": "examples/diagnosis_shim_openai.py",
+}
+
+# Per-diagnoser shim env defaults — model alias, provider config.
+SHIM_ENV_BY_DIAGNOSER = {
+    "real-debugger-v1": {"CILOGBENCH_CLAUDE_MODEL": "haiku"},
+    "real-debugger-v2": {"CILOGBENCH_CLAUDE_MODEL": "sonnet"},
+    "real-debugger-v3": {"CILOGBENCH_OPENAI_MODEL": "gpt-5-mini"},
 }
 
 
@@ -57,12 +68,18 @@ def _build_safe_metadata(case_id: str, case_metadata: dict) -> dict:
 
 def preflight(diagnoser: str) -> None:
     """Raise a clear error early if the diagnoser's requirements aren't met."""
-    if diagnoser == "real-debugger-v2":
+    if diagnoser in ("real-debugger-v1", "real-debugger-v2"):
         if shutil.which("claude") is None:
             raise RuntimeError(
-                "real-debugger-v2 requires the `claude` CLI on PATH "
+                f"{diagnoser} requires the `claude` CLI on PATH "
                 "(github.com/anthropics/claude-code). Install with: "
                 "npm install -g @anthropic-ai/claude-code, then retry."
+            )
+    if diagnoser == "real-debugger-v3":
+        if not os.environ.get("OPENAI_API_KEY"):
+            raise RuntimeError(
+                "real-debugger-v3 requires the OPENAI_API_KEY env var. "
+                "Set it in your shell or pass api_key=... to evaluate()."
             )
 
 
@@ -111,9 +128,15 @@ def diagnose(
     }
 
     env = os.environ.copy()
-    if diagnoser == "real-debugger-v2":
-        env.setdefault("CILOGBENCH_CLAUDE_MODEL", "sonnet")
+    for k, v in SHIM_ENV_BY_DIAGNOSER.get(diagnoser, {}).items():
+        env.setdefault(k, v)
+    if diagnoser.startswith("real-"):
         env.setdefault("CILOGBENCH_ALLOW_EXTERNAL_LLM", "1")
+    if api_key:
+        if diagnoser == "real-debugger-v3":
+            env["OPENAI_API_KEY"] = api_key
+        elif diagnoser.startswith("real-debugger-v"):
+            env["ANTHROPIC_API_KEY"] = api_key
 
     timeout = 30 if diagnoser == "stub-debugger-v1" else 180
     proc = subprocess.run(

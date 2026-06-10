@@ -11,18 +11,29 @@
 
 ## Headline
 
-Two complementary numbers, both on the full 35-case corpus, mean
-compressed size **13,955 chars / case (~3,500 tokens)**:
+Headroom evaluated across all three diagnoser families (Haiku 4.5,
+Sonnet 4.6, gpt-5-mini), 35 cases each, mean compressed size **13,955
+chars / case (~3,500 tokens)**:
 
-| Metric | Headroom | Closest baseline | What it measures |
-|---|---:|---|---|
-| `critical_signal_recall` (static, no LLM) | **0.605** | between `rtk-err-cat` (0.537) and `hybrid-grep-4k-rtk-err-cat-v1` (0.681) | Did the reducer preserve ground-truth signal text? |
-| `diagnosis_score_v1_1` (Claude Sonnet 4.6) | **0.601** | `tail-200` (0.614, +0.013) | Did the diagnoser produce the right root-cause from the reduced context? |
+| Diagnoser | diagnosis_score_v1_1 | confident_error_rate |
+|---|---:|---:|
+| Claude Haiku 4.5 | 0.548 | 0.057 |
+| Claude Sonnet 4.6 | 0.601 | 0.029 |
+| OpenAI gpt-5-mini | 0.534 | 0.086 |
+| **Overall** (3-family mean) | **0.561** | 0.057 |
 
-**Token efficiency story**: Headroom hits diagnosis_score 0.601 at ~3,500
-tokens / case, vs `tail-200` at 0.614 with ~6,108 tokens. **Roughly half
-the tokens at -0.013 score**. confident_error_rate = 0.029 (vs
-tail-200's 0.019, hybrid-rtk-tail's 0.000).
+Plus the static (no-LLM) signal-recall metric:
+- `critical_signal_recall` = **0.605** (deterministic, ~50ms for 35 cases)
+
+**Token efficiency story**: at ~3,500 tokens / case, Headroom is **the
+2nd-most-compact method on the leaderboard** — only `rtk-log` (810t,
+0.249) is smaller, with a major quality drop. Headroom delivers
+Overall 0.561 at roughly half `tail-200`'s footprint (6,108t, 0.614) —
+**~91% of tail-200's quality at ~57% of the tokens**.
+
+Cross-family range: 0.534 (gpt-5-mini) → 0.601 (Sonnet), spread of
+0.067 — middling stability compared to `hybrid-grep-120k-rtk-tail`
+(spread 0.082) and `tail-200` (spread 0.029).
 
 ## Pareto frontier (tokens × score)
 
@@ -32,11 +43,11 @@ tokens, and no method delivers fewer tokens at a comparable or better
 score. It is the second point on the curve (just above `rtk-log`'s
 extreme-compression corner).
 
-**Pareto front by `diagnosis_score_v1_1`** (5 of 12 methods, low → high tokens):
+**Pareto front by 3-family Overall** (5 of 12 methods, low → high tokens):
 
 ```
 rtk-log              810t    0.249
-→ headroom-LogComp  3,500t   0.601   ← this run
+→ headroom-LogComp  3,500t   0.561   ← this run
 tail-200            6,108t   0.614
 hybrid-grep-120k-tail            19,753t   0.666
 hybrid-grep-120k-rtk-tail        19,844t   0.670
@@ -66,7 +77,9 @@ that's the cliff Headroom is sitting above.
 
 ## Position on the diagnosis-score leaderboard
 
-| Method | tokens | diagnosis_score_v1_1 | conf. err |
+Sorted by 3-family Overall (case-count-weighted macro `diagnosis_score_v1_1`):
+
+| Method | tokens | Overall | conf. err |
 |---|---:|---:|---:|
 | `hybrid-grep-120k-rtk-tail` | 19,844 | 0.670 | 0.000 |
 | `hybrid-grep-120k-tail` | 19,753 | 0.666 | 0.010 |
@@ -74,8 +87,8 @@ that's the cliff Headroom is sitting above.
 | `grep` | 88,355 | 0.639 | 0.000 |
 | `llm-summary-v1-haiku` | 1,681,520 | 0.632 | 0.029 |
 | `tail-200` | 6,108 | 0.614 | 0.019 |
-| **`headroom LogCompressor` (defaults)** | **~3,500** | **0.601** | **0.029** |
 | `hybrid-grep-4k-rtk-err-cat-v1` | 19,892 | 0.573 | 0.029 |
+| **`headroom LogCompressor` (defaults)** | **~3,500** | **0.561** | **0.057** |
 | `rtk-err-cat` | 19,850 | 0.470 | 0.029 |
 | `raw` | 275,248 | 0.353 | 0.000 |
 | `rtk-read` | 274,289 | 0.349 | 0.010 |

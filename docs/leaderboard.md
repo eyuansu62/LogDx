@@ -36,10 +36,11 @@ CI failure," which is the failure mode raised in
 | 5 | `llm-summary-v1-haiku`<br/><sub>*(real Haiku 4.5 map-reduce summarizer; promoted to headline in v1.1)*</sub> | 0.583 | 0.704 | 0.608 | **0.632** | 0.029 | 1,681,520 |
 | 6 | `tail-200`                  | 0.595 | 0.624 | 0.623 | **0.614** | 0.019 | **6,108** |
 | 7 | `hybrid-grep-4k-rtk-err-cat`<br/><sub>*(earlier 4k-threshold hybrid; replaced — see report)*</sub> | 0.552 | 0.597 | 0.571 | **0.573** | 0.029 | 19,892 |
-| 8 | `rtk-err-cat`               | 0.455 | 0.488 | 0.467 | **0.470** | 0.029 | 19,850 |
-| 9 | `raw`                       | 0.324 | 0.368 | 0.367 | **0.353** | **0.000** | 275,248 |
-| 10 | `rtk-read`                  | 0.329 | 0.369 | 0.349 | **0.349** | 0.010 | 274,289 |
-| 11 | `rtk-log`                  | 0.238 | 0.262 | 0.249 | **0.249** | **0.133** | **810** |
+| 8 | `headroom-LogCompressor`<br/><sub>*([Headroom](https://github.com/chopratejas/headroom) v0.24.0 defaults; evaluated via the SDK at v1.2 → see [external eval report](https://github.com/eyuansu62/LogDx/blob/main/docs/external-evaluations/headroom_logcompressor_default.md))*</sub> | 0.548 | 0.601 | 0.534 | **0.561** | 0.057 | **~3,500** |
+| 9 | `rtk-err-cat`               | 0.455 | 0.488 | 0.467 | **0.470** | 0.029 | 19,850 |
+| 10 | `raw`                       | 0.324 | 0.368 | 0.367 | **0.353** | **0.000** | 275,248 |
+| 11 | `rtk-read`                  | 0.329 | 0.369 | 0.349 | **0.349** | 0.010 | 274,289 |
+| 12 | `rtk-log`                  | 0.238 | 0.262 | 0.249 | **0.249** | **0.133** | **810** |
 
 > *Footnote on `llm-summary-v1-haiku`*: three of the 35 cases
 > (nodejs-test-debugger-exec-timeout-v2-001, pytest-sklearn-stress-001,
@@ -679,5 +680,6 @@ external dependencies are linked to their upstream projects.
 | `hybrid-grep-4k-rtk-err-cat` | earlier 4k-threshold hybrid using grep primary + rtk-err-cat fallback (replaced by the 120k hybrids) |
 | `hybrid-grep-120k-tail` | grep ≤ 120k tokens else tail-200 |
 | `hybrid-grep-120k-rtk-tail` | grep ≤ 120k tokens else rtk-err-cat (if not truncated and ≤ 120k) else tail-200 |
+| `headroom-LogCompressor` | **[Headroom](https://github.com/chopratejas/headroom)** (`headroom-ai` v0.24.0) — `headroom.transforms.LogCompressor` with default config. Evaluated via the SDK (`logdx_ci.evaluate(reducer, diagnoser=...)`). See [`docs/external-evaluations/headroom_logcompressor_default.md`](https://github.com/eyuansu62/LogDx/blob/main/docs/external-evaluations/headroom_logcompressor_default.md) for the per-API-config sweep + Pareto analysis. |
 
 [← Home](index.html) · [Citation](cite.html)
