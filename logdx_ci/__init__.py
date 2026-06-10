@@ -17,4 +17,4 @@ from .api import evaluate, Result
 from .baselines import BASELINES, STATIC_BASELINES
 
 __all__ = ["evaluate", "Result", "BASELINES", "STATIC_BASELINES"]
-__version__ = "0.4.0"
+__version__ = "0.5.0"

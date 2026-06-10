@@ -106,18 +106,20 @@ logdx-ci eval --reducer my_reducer.py --diagnoser stub-debugger-v1 --splits v2/d
 
 ## Supported diagnosers
 
-| Name | What it measures | API key | Speed | Cost |
+| Name | What it measures | Auth | Speed | Cost |
 |---|---|---|---|---|
-| `static-signal-recall` | Did the reducer **preserve** required signals? (text-only, no LLM) | none | <1s / 35 cases | $0 |
+| `static-signal-recall` *(default)* | Did the reducer **preserve** required signals? (text-only, no LLM) | none | <1s / 35 cases | $0 |
 | `stub-debugger-v1` | Smoke test only (deterministic regex stub) | none | <1s / 35 cases | $0 |
-| `real-debugger-v2` | Did Sonnet 4.6 give a correct **diagnosis** from the reduced context? | `claude` CLI logged in | ~3s / case | ~$0.03 / case |
+| `real-debugger-v1` | Did Haiku 4.5 give a correct **diagnosis** from the reduced context? | `claude` CLI logged in | ~3s / case | ~$0.005 / case |
+| `real-debugger-v2` | Did Sonnet 4.6 give a correct **diagnosis**? | `claude` CLI logged in | ~10s / case | ~$0.03 / case |
+| `real-debugger-v3` | Did gpt-5-mini give a correct **diagnosis**? | `OPENAI_API_KEY` | ~10s / case | ~$0.006 / case |
+| `real-agent-v1` | Sonnet 4.6 + 4 tools (grep/read_file/tail/view_log_lines) on raw.log, 5-turn cap | `ANTHROPIC_API_KEY` or `OPENROUTER_API_KEY` | ~20s / case | ~$0.10–0.15 / case |
 
 **Recommended workflow**: prototype with `static-signal-recall` (free,
-deterministic, 50ms for 35 cases) → confirm pipeline → spend $1 on
-`real-debugger-v2` for leaderboard-comparable diagnosis scores.
-
-V0.2 will add `real-debugger-v1` (Haiku), `real-debugger-v3` (gpt-5-mini),
-and `real-agent-v1` (Sonnet + 4 tools, 5-turn cap).
+deterministic, 50ms for 35 cases) → confirm pipeline → spend ~$1 on
+`real-debugger-v2` for leaderboard-comparable single-shot scores → if
+your end use case is an LLM agent (Claude Code / Cursor / Cline / Aider),
+run `real-agent-v1` (~$3-5) for the more realistic agent-loop score.
 
 ## Caching
 

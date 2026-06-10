@@ -52,6 +52,7 @@ def main(argv: list[str] | None = None) -> int:
         choices=[
             "static-signal-recall", "stub-debugger-v1",
             "real-debugger-v1", "real-debugger-v2", "real-debugger-v3",
+            "real-agent-v1",
         ],
         help=(
             "Which diagnoser to use (default: static-signal-recall — no LLM, "

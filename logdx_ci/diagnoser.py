@@ -26,19 +26,34 @@ from .corpus import find_repo_root
 SUPPORTED_DIAGNOSERS = [
     "static-signal-recall",
     "stub-debugger-v1",
-    "real-debugger-v1",   # Haiku 4.5 via `claude` CLI
-    "real-debugger-v2",   # Sonnet 4.6 via `claude` CLI
-    "real-debugger-v3",   # gpt-5-mini via OpenAI HTTPS
+    "real-debugger-v1",   # Haiku 4.5 single-shot via `claude` CLI
+    "real-debugger-v2",   # Sonnet 4.6 single-shot via `claude` CLI
+    "real-debugger-v3",   # gpt-5-mini single-shot via OpenAI HTTPS
+    "real-agent-v1",      # Sonnet 4.6 + 4 tools + 5-turn cap via OpenRouter/Anthropic
 ]
 
 # Modes that don't call any LLM — score reducer output directly vs ground truth.
 STATIC_MODES = {"static-signal-recall"}
+
+# Modes that need access to the raw.log via the `raw_log_path` payload field
+# (agent diagnosers can grep / read_file / tail / view_log_lines on it).
+AGENT_MODES = {"real-agent-v1"}
 
 SHIM_BY_DIAGNOSER = {
     "stub-debugger-v1": "examples/diagnosis_shim_stub.py",
     "real-debugger-v1": "examples/diagnosis_shim_claude_cli.py",
     "real-debugger-v2": "examples/diagnosis_shim_claude_cli.py",
     "real-debugger-v3": "examples/diagnosis_shim_openai.py",
+    "real-agent-v1":    "examples/diagnosis_shim_claude_agent.py",
+}
+
+# Per-diagnoser prompt template (relative to repo root).
+PROMPT_BY_DIAGNOSER = {
+    "stub-debugger-v1": "prompts/debugger_v1.md",
+    "real-debugger-v1": "prompts/debugger_v1.md",
+    "real-debugger-v2": "prompts/debugger_v1.md",
+    "real-debugger-v3": "prompts/debugger_v1.md",
+    "real-agent-v1":    "prompts/agent_v1.md",
 }
 
 # Per-diagnoser shim env defaults — model alias, provider config.
@@ -46,6 +61,7 @@ SHIM_ENV_BY_DIAGNOSER = {
     "real-debugger-v1": {"CILOGBENCH_CLAUDE_MODEL": "haiku"},
     "real-debugger-v2": {"CILOGBENCH_CLAUDE_MODEL": "sonnet"},
     "real-debugger-v3": {"CILOGBENCH_OPENAI_MODEL": "gpt-5-mini"},
+    "real-agent-v1":    {"CILOGBENCH_CLAUDE_MODEL": "anthropic/claude-sonnet-4.6"},
 }
 
 
@@ -81,6 +97,14 @@ def preflight(diagnoser: str) -> None:
                 "real-debugger-v3 requires the OPENAI_API_KEY env var. "
                 "Set it in your shell or pass api_key=... to evaluate()."
             )
+    if diagnoser == "real-agent-v1":
+        has_anthropic = bool(os.environ.get("ANTHROPIC_API_KEY"))
+        has_openrouter = bool(os.environ.get("OPENROUTER_API_KEY"))
+        if not (has_anthropic or has_openrouter):
+            raise RuntimeError(
+                "real-agent-v1 requires ANTHROPIC_API_KEY (direct) or "
+                "OPENROUTER_API_KEY (proxy). Set one and retry."
+            )
 
 
 def is_static(diagnoser: str) -> bool:
@@ -95,12 +119,19 @@ def diagnose(
     case_metadata: dict,
     cache_dir: Path | None = None,
     api_key: str | None = None,  # reserved for V0.2 anthropic-SDK fallback
+    raw_log_path: Path | str | None = None,  # required for agent diagnosers
 ) -> dict:
     """Run a diagnoser on reduced context. Cached when cache_dir is set."""
     if diagnoser not in SUPPORTED_DIAGNOSERS:
         raise ValueError(
             f"Unknown diagnoser {diagnoser!r}. "
             f"Supported in V0: {SUPPORTED_DIAGNOSERS}"
+        )
+    if diagnoser in AGENT_MODES and raw_log_path is None:
+        raise ValueError(
+            f"{diagnoser} is an agent diagnoser and needs `raw_log_path` "
+            "to dispatch its grep/read_file/tail/view_log_lines tools. "
+            "This is normally wired up automatically by evaluate()."
         )
 
     cache_path = None
@@ -116,7 +147,7 @@ def diagnose(
     shim = root / SHIM_BY_DIAGNOSER[diagnoser]
     if not shim.exists():
         raise FileNotFoundError(f"Diagnoser shim not found: {shim}")
-    prompt_text = (root / "prompts" / "debugger_v1.md").read_text()
+    prompt_text = (root / PROMPT_BY_DIAGNOSER[diagnoser]).read_text()
 
     payload = {
         "case_id": case_id,
@@ -126,6 +157,8 @@ def diagnose(
         "safe_case_metadata": _build_safe_metadata(case_id, case_metadata),
         "expected_output_schema": "schemas/diagnosis.schema.json",
     }
+    if raw_log_path is not None:
+        payload["raw_log_path"] = str(Path(raw_log_path).resolve())
 
     env = os.environ.copy()
     for k, v in SHIM_ENV_BY_DIAGNOSER.get(diagnoser, {}).items():
@@ -135,10 +168,21 @@ def diagnose(
     if api_key:
         if diagnoser == "real-debugger-v3":
             env["OPENAI_API_KEY"] = api_key
+        elif diagnoser == "real-agent-v1":
+            # Agent shim prefers OPENROUTER then ANTHROPIC; pass to whichever
+            # is currently in env, default to OPENROUTER.
+            if "OPENROUTER_API_KEY" in env:
+                env["OPENROUTER_API_KEY"] = api_key
+            else:
+                env["ANTHROPIC_API_KEY"] = api_key
         elif diagnoser.startswith("real-debugger-v"):
             env["ANTHROPIC_API_KEY"] = api_key
 
-    timeout = 30 if diagnoser == "stub-debugger-v1" else 180
+    # Agent diagnoser is multi-turn; default to a higher timeout (~300s)
+    # and let the shim's own per-API timeouts handle the per-turn budget.
+    timeout = 30 if diagnoser == "stub-debugger-v1" else (
+        300 if diagnoser in AGENT_MODES else 180
+    )
     proc = subprocess.run(
         [sys.executable, str(shim)],
         input=json.dumps(payload, ensure_ascii=False).encode("utf-8"),

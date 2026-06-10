@@ -219,6 +219,9 @@ def evaluate(
             )
         else:
             # 2. diagnose
+            raw_log_path = (
+                root / "cases" / case.split / case.case_id / "raw.log"
+            )
             diag = diagnose(
                 diagnoser=diagnoser,
                 case_id=case.case_id,
@@ -226,6 +229,7 @@ def evaluate(
                 case_metadata=case.case_metadata,
                 cache_dir=Path(cache_dir).expanduser() if cache_dir else None,
                 api_key=api_key,
+                raw_log_path=raw_log_path,
             )
             # 3. score
             scored = score_case(

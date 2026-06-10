@@ -17,10 +17,11 @@ chars / case (~3,500 tokens)**:
 
 | Diagnoser | diagnosis_score_v1_1 | confident_error_rate |
 |---|---:|---:|
-| Claude Haiku 4.5 | 0.548 | 0.057 |
-| Claude Sonnet 4.6 | 0.601 | 0.029 |
-| OpenAI gpt-5-mini | 0.534 | 0.086 |
-| **Overall** (3-family mean) | **0.561** | 0.057 |
+| Claude Haiku 4.5 (single-shot) | 0.548 | 0.057 |
+| Claude Sonnet 4.6 (single-shot) | 0.601 | 0.029 |
+| OpenAI gpt-5-mini (single-shot) | 0.534 | 0.086 |
+| **Overall** (single-shot, 3-family mean) | **0.561** | 0.057 |
+| Claude Sonnet 4.6 + 4 tools (agent loop, 5-turn cap) | 0.717 | 0.029 |
 
 Plus the static (no-LLM) signal-recall metric:
 - `critical_signal_recall` = **0.605** (deterministic, ~50ms for 35 cases)
@@ -34,6 +35,37 @@ Overall 0.561 at roughly half `tail-200`'s footprint (6,108t, 0.614) —
 Cross-family range: 0.534 (gpt-5-mini) → 0.601 (Sonnet), spread of
 0.067 — middling stability compared to `hybrid-grep-120k-rtk-tail`
 (spread 0.082) and `tail-200` (spread 0.029).
+
+## Agent rescue (the paper's load-bearing finding)
+
+Headroom's single-shot Sonnet score is 0.601. The same Headroom output,
+when read by a Sonnet **agent with `grep`/`read_file`/`tail`/`view_log_lines`
+tools over `raw.log`** (5-turn cap), scores **0.717 — +0.116 / +19%
+relative**. The agent rescues evidence that Headroom's heuristic dropped
+by grepping the raw log directly.
+
+This isn't unique to Headroom — under the agent diagnoser, the spread
+between methods collapses dramatically (paper finding §4.5):
+
+| Mode | Score range (12 methods) | Spread |
+|---|---|---:|
+| Single-shot | 0.249 (`rtk-log`) → 0.670 (`hybrid-grep-120k-rtk-tail`) | 0.421 |
+| Agent loop (v1-only subset) | 0.698 (`llm-summary-v1-mock`) → 0.763 (`rtk-read`) | **0.065** |
+
+**6.5× collapse**. The agent overpowers reducer differences — most of
+what a reducer "preserves" doesn't matter once the diagnoser can grep
+the raw log itself. Under agent mode, Headroom (0.721 on v1-only)
+sits **rank 8/12, between `llm-summary-v1-gpt-5-mini` (0.738) and
+`raw` (0.720)** — i.e., basically tied with sending the uncompressed
+log to the agent.
+
+**Implication for adoption**: Headroom's Pareto-frontier story is most
+compelling under **single-shot** diagnosers (where token efficiency
+genuinely matters). For agent-loop workflows (Claude Code / Cursor /
+Cline / Aider style), the choice of context compressor matters much
+less — including raw passthrough — so the value proposition pivots
+from "preserve evidence" to "save input tokens at near-equivalent
+quality."
 
 ## Pareto frontier (tokens × score)
 
