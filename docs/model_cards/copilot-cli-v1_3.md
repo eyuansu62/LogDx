@@ -32,15 +32,27 @@ cap, prompt hash, shim hash, config hash, and reduced-context hash.
 Compatibility CLI uses its serving system prompt and current date. Native
 SDK uses a replacement system message: `Follow the user instruction exactly.
 Do not use tools.` The runtime versions also differ. The comparison is not a
-controlled test of context size alone, nor identical to the frozen API panel.
+controlled test of context size alone, nor identical to the historical panel
+using Claude Code CLI (v1/v2) and the OpenAI API (v3).
 
 The compatibility path uses the CLI's structured noninteractive output. The
 native path uses the SDK transport because macOS cannot place a million-token
 prompt in one process argument. An earlier ACP prototype reported different
 models at session creation and prompt execution, so its artifacts were
 rejected. The SDK path proves the model at session start, model call, and usage
-reporting. It also proves `long_context`, the 922,000-token prompt limit, and
-zero tool use.
+reporting. It also proves `long_context` and the 922,000-token prompt limit.
+Sessions disable tools and the saved metadata reports zero counts. The
+evaluated adapter defaulted absent counts to zero, so saved artifacts do not
+independently prove explicit zero-tool telemetry. Raw event streams were not
+retained. The current adapter rejects absent or invalid counts and retains
+verified usage when a response cannot be parsed.
+
+The exact evaluated SDK source is retained under
+[`examples/frozen/diagnosis_shim_copilot_sdk_2026_08_30.py`](../../examples/frozen/diagnosis_shim_copilot_sdk_2026_08_30.py)
+for audit only. Its SHA is recorded in the report. New calls use the hardened
+`examples/diagnosis_shim_copilot_sdk.py`; its different hash invalidates old
+cache entries. The native SDK requires Python 3.11+ and its pinned Python
+dependencies, not a separate global Copilot CLI installation.
 
 The completed compatibility panel contains 280 rows each for Luna, Terra, and
 Sol. Every successful row records a matching requested and resolved model.

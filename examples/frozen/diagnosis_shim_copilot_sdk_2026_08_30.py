@@ -198,13 +198,8 @@ def validate_event_provenance(events: list[object], model: str) -> tuple[dict, d
 
     usage = usages[0]
     usage_model = usage.get("model")
-    # Absence is not proof of zero tools. The evaluated adapter is preserved
-    # under examples/frozen/; new calls require explicit integer telemetry.
-    for field in ("_num_tool_calls", "_available_tool_count"):
-        if type(usage.get(field)) is not int or usage[field] < 0:
-            raise ProvenanceError(f"missing or invalid tool telemetry: {field}")
-    tool_count = usage["_num_tool_calls"]
-    available_tool_count = usage["_available_tool_count"]
+    tool_count = int(usage.get("_num_tool_calls") or 0)
+    available_tool_count = int(usage.get("_available_tool_count") or 0)
     if usage_model != model:
         raise ProvenanceError("assistant.usage model mismatch")
     if tool_count or available_tool_count:
@@ -381,7 +376,6 @@ def main() -> int:
         sys.stderr.write(f"diagnosis_shim_copilot_sdk: unsupported effort {effort!r}.\n")
         return 1
     prompt = build_prompt(payload)
-    model_info = None
     try:
         reply, model_info = asyncio.run(
             invoke_sdk(prompt=prompt, model=model, effort=effort, timeout_s=timeout_s)
@@ -397,10 +391,6 @@ def main() -> int:
         return 1
     except Exception as exc:
         envelope = {"_provider_error": f"copilot_sdk_error: {_safe_error(exc)}"}
-        # A malformed diagnosis can still have verified usage. Retain that
-        # metadata, but never include the model reply in the error envelope.
-        if model_info is not None:
-            envelope["_model_info"] = model_info
         json.dump(envelope, sys.stdout, ensure_ascii=False)
         sys.stdout.write("\n")
         return 1

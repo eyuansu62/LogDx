@@ -10,8 +10,8 @@ new evaluation metrics all have well-defined entry points.
 git clone https://github.com/eyuansu62/LogDx.git
 cd LogDx
 
-# Optional but recommended: jsonschema for full schema validation
-pip install jsonschema
+# Test dependencies: full schema validation and the Drain3 regression suite
+python3 -m pip install jsonschema 'drain3==0.9.11'
 
 # Rebuild the diagnosis cache from canonical manifests (one-time;
 # cache is gitignored, so fresh clones need this for cache-hit tests
@@ -25,6 +25,8 @@ Verify your tree is clean:
 python3 tools/tests/test_diagnosis_cache_key.py    # 157 tests
 python3 tools/tests/test_hybrid_router.py          # 10 tests
 python3 tools/tests/test_copilot_v1_3.py           # v1.3 adapter/cache tests
+python3 tools/tests/test_copilot_api.py            # public API model checks
+python3 tools/tests/test_v1_3_analysis_integrity.py # complete comparison panels
 python3 tools/tests/test_drain3_v1_3.py            # pinned deterministic baseline
 
 python3 tools/validate_committed_diagnosis_provider_errors.py
@@ -40,17 +42,95 @@ CI runs all of the above on every push; see
 
 ### Optional Copilot and Drain3 study
 
-Copilot runs send public corpus contexts to GitHub's model service and can use
-paid AI credits. Check the matrix size and account limits before enabling them.
+Start with the [study report](reports/logdx_v1_3_modern_model_study.md) and
+[review guide](PR_PROPOSAL.md#review-guide). These experiments do not replace
+the frozen v1.2 leaderboard. Commands below run from the repository root.
+
+#### Check the saved statistics without model calls
+
+This step needs only Python and the tracked result files. It does not need
+Copilot access, rebuild the diagnosis cache, or change the saved results.
 
 ```bash
-python3 -m pip install -e '.[drain3,copilot-sdk]'
+(
+set -e
+study_check_dir=$(mktemp -d)
+for model in luna terra sol; do
+  python3 tools/analyze_v1_3_transfer.py \
+    --diagnoser "copilot-$model-compat" \
+    --output "$study_check_dir/$model-compat-statistics.json"
+  python3 tools/analyze_v1_3_native.py \
+    --native-diagnoser "copilot-$model-native-long" \
+    --compat-diagnoser "copilot-$model-compat" \
+    --output "$study_check_dir/$model-native-long-statistics.json"
+  cmp "results/v1_3/$model-compat-statistics.json" \
+    "$study_check_dir/$model-compat-statistics.json"
+  cmp "results/v1_3/$model-native-long-statistics.json" \
+    "$study_check_dir/$model-native-long-statistics.json"
+done
+printf 'All six statistics files match. Temporary outputs: %s\n' "$study_check_dir"
+)
+```
 
+Both comparisons should be silent for all three models. Stop on any error;
+do not replace canonical statistics to make a mismatch disappear. The
+temporary directory retains the regenerated files for inspection.
+
+#### Prepare a separate checkout for new calls
+
+Copilot runs send public corpus contexts to GitHub's model service and can use
+paid AI credits. An authenticated Copilot setup and access to the selected
+models are required. Check account limits before enabling calls. The study
+used CLI `1.0.82`, SDK `1.0.11` (bundled runtime `1.0.79`), and Python `3.14.6`.
+The native SDK extra requires Python 3.11 or newer. The base package and
+existing `all` extra keep their Python 3.10 support; install the study extras
+explicitly in a supported interpreter.
+New calls are not expected to reproduce model responses byte for byte.
+
+Use a separate checkout because the runner writes diagnosis manifests and
+per-case outputs. The following local clone includes committed files only,
+not untracked duplicates, caches, or local credentials. Choose a different
+destination if `../LogDx-study-rerun` already exists.
+
+```bash
+git clone --no-hardlinks . ../LogDx-study-rerun
+cd ../LogDx-study-rerun
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install -e '.[drain3,copilot-sdk]'
+```
+
+The Python extra installs the SDK, not the standalone compatibility CLI.
+Install and authenticate the CLI separately before using the CLI example.
+Do not put credentials in a config file or command recorded in the runlog.
+Absolute interpreter paths in saved call metadata describe the original
+machine; use your own environment, not those paths.
+
+The current SDK adapter includes post-study safety fixes. The exact evaluated
+source remains in
+[`examples/frozen/diagnosis_shim_copilot_sdk_2026_08_30.py`](examples/frozen/diagnosis_shim_copilot_sdk_2026_08_30.py)
+for audit only. Use the current adapter for new calls. Its changed source hash
+prevents reuse of old native responses as if they came from the hardened code.
+
+#### Drain3: local-only example
+
+```bash
 python3 tools/run_drain3_baseline.py --split dev
 python3 tools/evaluate_signal_recall.py --split dev --method drain3-templates
+```
 
-export CILOGBENCH_ALLOW_EXTERNAL_LLM=1
+An optional `--results-dir` must stay inside the checkout because manifests
+store repository-relative paths.
+
+#### Compatibility CLI: one paid case
+
+The config supplies the model, reasoning effort, and compatibility cap.
+Remove any conflicting `CILOGBENCH_COPILOT_*` overrides first. Do not use
+`--context-method all`: it includes methods outside this study's matrix.
+
+```bash
 python3 tools/run_diagnosis.py \
+  --allow-external-llm \
   --split dev \
   --diagnoser command \
   --diagnoser-name copilot-terra-compat \
@@ -60,24 +140,40 @@ python3 tools/run_diagnosis.py \
   --case-id pytest-pandas-001
 ```
 
-Use a `*-native-long` config only for the separate raw long-context study. It
-uses the Copilot SDK JSON-RPC transport so the raw context is not limited by
-the operating system's command-line size. Do not combine native-long results
-with the compatibility panel.
+#### Native SDK: one paid raw-context case
 
-Recompute study statistics from existing artifacts without model calls:
+Use the SDK adapter, not the CLI adapter, with a `*-native-long` config. SDK
+transport avoids the operating system's command-line size limit. It still
+rejects inputs above its safe prompt cap; it never silently truncates them.
 
 ```bash
-for model in luna terra sol; do
-  python3 tools/analyze_v1_3_transfer.py \
-    --diagnoser "copilot-$model-compat" \
-    --output "results/v1_3/$model-compat-statistics.json"
-  python3 tools/analyze_v1_3_native.py \
-    --native-diagnoser "copilot-$model-native-long" \
-    --compat-diagnoser "copilot-$model-compat" \
-    --output "results/v1_3/$model-native-long-statistics.json"
-done
+python3 tools/run_diagnosis.py \
+  --allow-external-llm \
+  --split dev \
+  --diagnoser command \
+  --diagnoser-name copilot-terra-native-long \
+  --command 'python3 examples/diagnosis_shim_copilot_sdk.py' \
+  --diagnoser-config configs/diagnosers/copilot-terra-native-long.json \
+  --context-method raw \
+  --case-id pytest-pandas-001
 ```
+
+Each example selects one case. Cached responses may avoid a new call; use
+`--no-cache` only when you intend to pay for a fresh response. After changing
+diagnoses in the disposable checkout, recompute the corresponding evaluation
+before running the analysis scripts:
+
+```bash
+python3 tools/evaluate_diagnosis.py \
+  --split dev --diagnoser copilot-terra-native-long
+```
+
+For the full matrix, the exact models, eight compatibility methods, six
+splits, and native raw-only panel are listed in [RUNLOG.md](RUNLOG.md).
+Changing `--case-id` or omitting it changes the number of paid calls. Keep
+native and compatibility diagnoser names separate. Do not merge fresh
+responses into the published study artifacts or present a partly rerun panel
+as a fresh full-matrix experiment.
 
 Native statistics keep full-corpus comparisons separate from exploratory
 accepted-case subsets. Latency populations distinguish successful model-call

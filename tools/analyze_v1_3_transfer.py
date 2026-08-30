@@ -92,6 +92,54 @@ EVAL_METRICS = (
 )
 
 
+def validate_panel(rows: dict, label: str) -> dict[str, set]:
+    """Require one score for every method on the same split/case population."""
+    if not rows:
+        raise ValueError(f"empty evaluation panel: {label}")
+    cases_by_method: dict[str, set] = {}
+    for (split, method, case_id), metrics in rows.items():
+        score = metrics.get("diagnosis_score_v1_1")
+        if score is None or not math.isfinite(score):
+            raise ValueError(
+                f"missing or non-finite diagnosis score: {label}: {(split, method, case_id)}"
+            )
+        cases_by_method.setdefault(method, set()).add((split, case_id))
+    reference = next(iter(cases_by_method.values()))
+    for method, cases in cases_by_method.items():
+        if cases != reference:
+            raise ValueError(f"incomplete case/method panel: {label}: {method}")
+    return cases_by_method
+
+
+def paired_deltas(
+    left: dict, left_method: str, right: dict, right_method: str
+) -> list[float]:
+    left_cases = {(s, c) for s, m, c in left if m == left_method}
+    right_cases = {(s, c) for s, m, c in right if m == right_method}
+    if not left_cases or left_cases != right_cases:
+        raise ValueError(f"missing paired comparison rows: {left_method} versus {right_method}")
+    return [
+        metrics["diagnosis_score_v1_1"]
+        - right[(split, right_method, case_id)]["diagnosis_score_v1_1"]
+        for (split, method, case_id), metrics in left.items()
+        if method == left_method
+    ]
+
+
+def validate_comparison_panels(current: dict, historical: dict) -> None:
+    current_cases = validate_panel(current, "current")
+    historical_cases = validate_panel(historical, "historical")
+    for required in ("raw", "hybrid-grep-120k-rtk-tail-v3"):
+        if required not in current_cases:
+            raise ValueError(f"missing required comparison method: {required}")
+    shared = current_cases.keys() & historical_cases.keys()
+    if not shared:
+        raise ValueError("current and historical panels have no shared methods")
+    for method in shared:
+        if current_cases[method] != historical_cases[method]:
+            raise ValueError(f"missing paired historical comparison rows: {method}")
+
+
 def load_eval(diagnoser: str, results_dir: Path) -> tuple[dict, dict]:
     rows: dict[tuple[str, str, str], dict[str, float]] = {}
     aggregate: dict[str, dict[str, list[float]]] = {}
@@ -100,16 +148,22 @@ def load_eval(diagnoser: str, results_dir: Path) -> tuple[dict, dict]:
         data = json.loads(path.read_text(encoding="utf-8"))
         for method in data.get("methods", []):
             name = method["context_method"]
+            if not method.get("cases"):
+                raise ValueError(f"empty evaluation method: {path}: {name}")
             for case in method.get("cases", []):
                 values = {
                     metric: float(case[metric])
                     for metric in EVAL_METRICS
                     if case.get(metric) is not None
                 }
-                rows[(split, name, case["case_id"])] = values
+                key = (split, name, case["case_id"])
+                if key in rows:
+                    raise ValueError(f"duplicate evaluation row: {diagnoser}: {key}")
+                rows[key] = values
                 bucket = aggregate.setdefault(name, {})
                 for metric, value in values.items():
                     bucket.setdefault(metric, []).append(value)
+    validate_panel(rows, diagnoser)
     return rows, {
         method: {
             metric: round(statistics.fmean(values), 6)
@@ -122,9 +176,16 @@ def load_eval(diagnoser: str, results_dir: Path) -> tuple[dict, dict]:
 def historical_panel(
     diagnosers: list[str], results_dir: Path
 ) -> tuple[dict, dict]:
+    if not diagnosers or len(set(diagnosers)) != len(diagnosers):
+        raise ValueError("historical diagnosers must be nonempty and unique")
     collected: dict[tuple[str, str, str], dict[str, list[float]]] = {}
+    expected_keys = None
     for diagnoser in diagnosers:
         rows, _ = load_eval(diagnoser, results_dir)
+        if expected_keys is None:
+            expected_keys = set(rows)
+        elif set(rows) != expected_keys:
+            raise ValueError(f"incomplete historical panel: {diagnoser}")
         for key, metrics in rows.items():
             bucket = collected.setdefault(key, {})
             for metric, value in metrics.items():
@@ -250,6 +311,7 @@ def main() -> int:
     historical, historical_means = historical_panel(
         historical_diagnosers, args.results_dir
     )
+    validate_comparison_panels(current, historical)
     current_score_means = {
         method: values["diagnosis_score_v1_1"]
         for method, values in current_means.items()
@@ -263,25 +325,14 @@ def main() -> int:
     )
     methods = {}
     for method in sorted(current_means):
-        deltas = [
-            metrics["diagnosis_score_v1_1"]
-            - historical[key]["diagnosis_score_v1_1"]
-            for key, metrics in current.items()
-            if key[1] == method and key in historical
-        ]
-        raw_deltas = [
-            metrics["diagnosis_score_v1_1"]
-            - current[(key[0], "raw", key[2])]["diagnosis_score_v1_1"]
-            for key, metrics in current.items()
-            if key[1] == method and (key[0], "raw", key[2]) in current
-        ]
+        # New methods such as Drain3 intentionally have no historical baseline.
+        deltas = (
+            paired_deltas(current, method, historical, method)
+            if method in historical_means else []
+        )
+        raw_deltas = paired_deltas(current, method, current, "raw")
         hybrid_method = "hybrid-grep-120k-rtk-tail-v3"
-        hybrid_deltas = [
-            metrics["diagnosis_score_v1_1"]
-            - current[(key[0], hybrid_method, key[2])]["diagnosis_score_v1_1"]
-            for key, metrics in current.items()
-            if key[1] == method and (key[0], hybrid_method, key[2]) in current
-        ]
+        hybrid_deltas = paired_deltas(current, method, current, hybrid_method)
         methods[method] = {
             **{f"{metric}_mean": value for metric, value in current_means[method].items()},
             "paired_delta_vs_historical": paired_bootstrap(deltas),

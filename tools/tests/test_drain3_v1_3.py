@@ -5,9 +5,12 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -46,6 +49,40 @@ class Drain3BaselineTests(unittest.TestCase):
         self.assertEqual(
             self.config["configuration_scope"], "one fixed corpus-wide configuration"
         )
+
+    def test_relative_output_directory(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as directory:
+            fixture_root = Path(directory).resolve()
+            case = fixture_root / "cases/dev/case-1"
+            case.mkdir(parents=True)
+            (case / "raw.log").write_text("job 101 failed\n", encoding="utf-8")
+            config = fixture_root / "config.json"
+            config.write_text(json.dumps(self.config), encoding="utf-8")
+            output = fixture_root / "review-results"
+            relative_output = Path(os.path.relpath(output))
+            with mock.patch.object(BASELINE, "ROOT", fixture_root):
+                self.assertEqual(BASELINE.run(
+                    split="dev", results_dir=relative_output, config_path=config), 0)
+            manifest = output / "dev/drain3-templates.jsonl"
+            row = json.loads(manifest.read_text(encoding="utf-8"))
+            self.assertEqual(row["context_path"], "review-results/dev/drain3-templates/case-1.txt")
+
+    def test_outside_repository_output_rejected_before_writes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "not-created"
+            with self.assertRaisesRegex(ValueError, "results-dir must be inside"):
+                BASELINE.run(split="dev", results_dir=output,
+                             config_path=BASELINE.DEFAULT_CONFIG)
+            self.assertFalse(output.exists())
+
+    def test_split_traversal_rejected_before_writes(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as directory:
+            output = Path(directory) / "not-created"
+            for split in ("../../outside", "../cases/dev", str(ROOT / "cases/dev")):
+                with self.subTest(split=split), self.assertRaisesRegex(ValueError, "split must be a relative"):
+                    BASELINE.run(split=split, results_dir=output,
+                                 config_path=BASELINE.DEFAULT_CONFIG)
+            self.assertFalse(output.exists())
 
 
 if __name__ == "__main__":

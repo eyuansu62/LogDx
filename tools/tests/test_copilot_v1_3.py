@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import importlib.util
+import hashlib
 import io
 import json
 import os
@@ -292,6 +293,43 @@ class SdkNativeProvenanceTests(unittest.TestCase):
         events[1] = self.event("session.usage_info", token_limit=272000)
         with self.assertRaises(SDK_SHIM.ProvenanceError):
             SDK_SHIM.validate_event_provenance(events, "gpt-5.6-luna")
+
+    def test_missing_or_invalid_tool_counts_fail_closed(self) -> None:
+        for field in ("_num_tool_calls", "_available_tool_count"):
+            for value in (None, "0", False, -1, 0.0):
+                with self.subTest(field=field, value=value):
+                    events = self.valid_events()
+                    setattr(events[3].data, field, value)
+                    with self.assertRaises(SDK_SHIM.ProvenanceError):
+                        SDK_SHIM.validate_event_provenance(events, "gpt-5.6-luna")
+            events = self.valid_events()
+            delattr(events[3].data, field)
+            with self.assertRaises(SDK_SHIM.ProvenanceError):
+                SDK_SHIM.validate_event_provenance(events, "gpt-5.6-luna")
+
+    def test_evaluated_sdk_snapshot_keeps_original_hash(self) -> None:
+        source = ROOT / "examples/frozen/diagnosis_shim_copilot_sdk_2026_08_30.py"
+        self.assertEqual(
+            hashlib.sha256(source.read_bytes()).hexdigest(),
+            "20143deadb8e3e22cda32c4e86ca19be802af9e8c5b09620953aa597cc834ccc",
+        )
+
+    def test_malformed_reply_retains_verified_usage_without_reply(self) -> None:
+        info = {"requested_model": "gpt-5.6-luna", "resolved_model": "gpt-5.6-luna",
+                "usage": {"prompt_tokens": 123, "completion_tokens": 4}}
+        output = io.StringIO()
+        with mock.patch.dict(os.environ, {
+            "CILOGBENCH_ALLOW_EXTERNAL_LLM": "1",
+            "CILOGBENCH_COPILOT_MODEL": "gpt-5.6-luna",
+        }), mock.patch.object(sys, "stdin", io.StringIO(json.dumps(payload()))), \
+                mock.patch.object(SDK_SHIM, "invoke_sdk", new=mock.AsyncMock(
+                    return_value=("private malformed response", info))), redirect_stdout(output):
+            result = SDK_SHIM.main()
+        self.assertEqual(result, 1)
+        envelope = json.loads(output.getvalue())
+        self.assertEqual(envelope["_model_info"], info)
+        self.assertIn("copilot_sdk_error", envelope["_provider_error"])
+        self.assertNotIn("private malformed response", output.getvalue())
 
 
 class StatisticsTests(unittest.TestCase):

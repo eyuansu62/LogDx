@@ -54,7 +54,8 @@ runner rejected them with `FAIL_PROVENANCE` and wrote no Mini result.
 An earlier ACP prototype changed the active model after session creation and
 was rejected. The SDK adapter instead proves the selected model at session
 start, the model used for the call, the `long_context` tier, the 922,000-token
-prompt limit, usage-model identity, and zero tool use. Each native model
+prompt limit, and usage-model identity. Sessions disabled tools and recorded
+normalized zero counts; see the post-review telemetry caveat below. Each native model
 produced 35 raw rows: 31 proven calls and four explicit over-cap results.
 
 ## Context boundary
@@ -196,3 +197,58 @@ input would break provenance. The source/documentation whitespace check is
 clean; the earlier unstaged check did not cover new artifact files.
 
 No upstream PR, issue, push, or deployment was created. Hosted CI has not run.
+
+## Draft-readiness review
+
+Three independent reviews covered implementation safety, statistical claims,
+and reproduction/CI. The reviews found no change to the saved numerical
+findings, but identified reusable-code and documentation issues:
+
+- Public API fresh/cache responses now require the configured model identity.
+  Native API setup checks the pinned SDK, not a standalone CLI binary.
+- Transfer analysis now rejects incomplete comparisons and historical panels.
+  All six statistics files still reproduce byte for byte.
+- The base package and legacy `all` extra retain Python 3.10 support. Native
+  SDK installation explicitly requires Python 3.11+.
+- Drain3 accepts relative output directories and rejects outside-repository
+  output before creating files. The 35 evaluated context files are unchanged.
+- README links, a review map, safe offline checks, and a separate-checkout SDK
+  example make the package easier to inspect without paid model calls.
+
+The evaluated SDK adapter defaulted missing tool counts to zero. Although
+sessions were configured without tools, saved normalized counts cannot prove
+explicit zero telemetry without the raw events, which were not retained.
+The current adapter now rejects missing/invalid counts and retains verified
+usage after malformed output. These post-study changes were tested offline;
+they do not recover historical retry costs or strengthen historical telemetry.
+
+The exact evaluated SDK file is preserved at
+`examples/frozen/diagnosis_shim_copilot_sdk_2026_08_30.py` with the original
+SHA-256 above. The study implementation is also recorded in commit
+`93ceec395c9d0d7ee7738b9db2c49f455ffdee43`. Current SDK source has a new hash,
+so fresh calls cannot silently use results from the old source. Saved model
+responses, numerical statistics, and frozen v1.2 artifacts were not changed.
+
+### Final isolated verification
+
+The cloud-synced working folder changed during final testing: new numbered
+copies appeared and historical files moved into numbered directories. The
+first full-suite attempt failed the manifest check because of extra copies.
+Twenty byte-identical copies were moved to a recovery folder, not deleted.
+Further unexpected changes made that folder unsuitable for final verification.
+No reset, cleanup, or repair of its historical tracked files was performed.
+
+A separate local checkout outside the cloud-synced folder was created from
+Git history plus only the 18 explicitly reviewed paths. It contains no
+numbered duplicates or unrelated working-folder changes. Verification there
+passed all 231 tests: 157 cache, 10 hybrid, 32 Copilot/statistics, 14 public API,
+12 analysis-integrity, and 6 Drain3. Provider-error, evaluation-manifest,
+diagnosis-context, corpus, release, and both protocol-lock checks also passed.
+No paid model calls were made. Hosted CI remains unverified until publication.
+
+Independent archive checks regenerated all six statistics files byte for
+byte, rescored all 945 diagnoses and 35 Drain3 static results with zero
+differences, and reconstructed the recorded costs from token-price details.
+The package scan found no credential-pattern matches in changed files and
+confirmed that historical result files are unchanged. The final change has
+one preserved evaluated SDK snapshot and no local duplicate/cache files.

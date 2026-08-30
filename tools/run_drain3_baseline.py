@@ -138,6 +138,19 @@ def validate_row(row: dict) -> None:
 
 
 def run(*, split: str, results_dir: Path, config_path: Path) -> int:
+    # Manifests store repository-relative paths. Reject unsupported output
+    # locations before creating files, and accept ordinary relative paths.
+    results_dir = results_dir.resolve()
+    config_path = config_path.resolve()
+    split_path = Path(split)
+    if split_path.is_absolute() or ".." in split_path.parts:
+        raise ValueError("split must be a relative path without '..'")
+    for label, path in (("results-dir", results_dir), ("config", config_path)):
+        if not path.is_relative_to(ROOT):
+            raise ValueError(f"{label} must be inside the repository: {path}")
+    cases_dir = (ROOT / "cases" / split).resolve()
+    if not cases_dir.is_relative_to(ROOT / "cases"):
+        raise ValueError("split must be inside the repository cases directory")
     config = json.loads(config_path.read_text(encoding="utf-8"))
     installed = importlib.metadata.version("drain3")
     if installed != config["drain3_version"]:
@@ -145,11 +158,13 @@ def run(*, split: str, results_dir: Path, config_path: Path) -> int:
             f"Drain3 version mismatch: installed={installed}, "
             f"config={config['drain3_version']}"
         )
-    cases_dir = ROOT / "cases" / split
     if not cases_dir.is_dir():
         raise FileNotFoundError(f"split not found: {cases_dir}")
     method = config["method"]
-    output_dir = results_dir / split / method
+    output_dir = (results_dir / split / method).resolve()
+    manifest_path = (results_dir / split / f"{method}.jsonl").resolve()
+    if not output_dir.is_relative_to(results_dir) or not manifest_path.is_relative_to(results_dir):
+        raise ValueError("output paths must stay inside results-dir")
     output_dir.mkdir(parents=True, exist_ok=True)
     rows: list[dict] = []
     for case_dir in sorted(path for path in cases_dir.iterdir() if path.is_dir()):
@@ -172,7 +187,6 @@ def run(*, split: str, results_dir: Path, config_path: Path) -> int:
         )
         validate_row(row)
         rows.append(row)
-    manifest_path = results_dir / split / f"{method}.jsonl"
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(
         "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows),

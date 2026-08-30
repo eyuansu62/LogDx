@@ -23,6 +23,14 @@ CLI version was `1.0.82`; the native SDK was `1.0.11` with bundled runtime
 The native adapter SHA-256 was
 `20143deadb8e3e22cda32c4e86ca19be802af9e8c5b09620953aa597cc834ccc`.
 
+The evaluated implementation was packaged in commit
+`93ceec395c9d0d7ee7738b9db2c49f455ffdee43`. Post-study review hardened the
+current SDK adapter, API validation, and analysis input checks. The original
+SDK source is preserved byte for byte in
+[`examples/frozen/diagnosis_shim_copilot_sdk_2026_08_30.py`](../examples/frozen/diagnosis_shim_copilot_sdk_2026_08_30.py).
+The hash above identifies that evaluated snapshot, not the current adapter.
+Saved responses and numerical statistics are unchanged; no model calls were rerun.
+
 Luna, Terra, and Sol each ran 35 cases over eight methods and six split groups.
 Each produced 280 rows: 253 proven model calls and 27 explicit
 unsupported-context results. Every successful row resolved to its requested
@@ -104,7 +112,11 @@ all three models.
 The SDK advertised a 1,050,000-token context window and a 922,000-token prompt
 limit for all three models. The adapter used a 921,000-token safe cap. It
 proved the requested model at session start, model call, and usage reporting.
-It also proved `long_context` mode and zero available or used tools.
+It also proved `long_context` mode. Sessions were configured with no tools,
+and the saved metadata reports zero available or used tools. However, the
+evaluated adapter converted absent tool counts to zero and did not save the
+raw event stream. These artifacts do not independently prove that explicit
+zero counts were reported. The current adapter rejects missing tool telemetry.
 The largest successful counted prompt was 693,398 tokens. Four cases per
 model exceeded the safe cap. This is a native long-context corpus evaluation,
 not a measured one-million-token-input test.
@@ -192,15 +204,16 @@ quality than hybrid. For example, the Prettier template retains
 ## Limits
 
 - Compatibility CLI and native SDK differ in system prompt and runtime.
-  Comparison with the frozen direct-API panel is also approximate.
+  Comparison with the historical panel (Claude Code CLI for v1/v2 and the
+  OpenAI API for v3) is also approximate.
 - Near-limit contexts can fail after prompt overhead even below the nominal
   character cap. Those cases are explicit abstentions with their effective cap.
 - One uncached Terra sample repeat retained the same category and score. This
   small check cannot measure full stochastic variance.
 - Sol pricing was promotional on the execution date and can change.
 - Four raw cases exceeded the 921,000-token safe prompt cap for every model.
-- The SDK transport differs from the compatibility CLI transport and from the
-  frozen direct-API panel.
+- The evaluated SDK normalized missing tool counts to zero. Tool disabling is
+  supported by session configuration, not independent raw-event evidence.
 - One malformed Luna response was retried. Its failed-call usage was not
   observable, so the actual execution cost is approximate.
 - Case bootstrap intervals cover variation across these 35 cases, not full

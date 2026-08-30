@@ -14,6 +14,7 @@ external users without the `claude` CLI.
 from __future__ import annotations
 
 import hashlib
+import importlib.metadata
 import json
 import os
 import shutil
@@ -172,6 +173,39 @@ def _build_safe_metadata(case_id: str, case_metadata: dict) -> dict:
     }
 
 
+def _copilot_model_identity(diagnoser: str, config_path: Path) -> tuple[str, str]:
+    """Keep the public API bound to the same model lock as the study runner."""
+    config = json.loads(config_path.read_text())
+    model = config.get("model") or {}
+    requested = model.get("model_name")
+    resolved = model.get("expected_resolved_model")
+    if not requested or not resolved:
+        raise RuntimeError(f"{diagnoser} requires a pinned model configuration")
+    if _effective_shim_env(diagnoser).get("CILOGBENCH_COPILOT_MODEL") != requested:
+        raise RuntimeError(f"{diagnoser} model environment conflicts with its configuration")
+    return requested, resolved
+
+
+def _validate_copilot_result(
+    out: object, *, diagnoser: str, identity: tuple[str, str]
+) -> None:
+    """Reject unproven results before scoring or accepting a cache hit."""
+    if not isinstance(out, dict) or out.get("_provider_error"):
+        raise RuntimeError(f"{diagnoser} returned no successful diagnosis")
+    info = out.get("_model_info")
+    if not isinstance(info, dict):
+        raise RuntimeError(f"{diagnoser} returned no model identity")
+    requested, resolved = identity
+    if info.get("requested_model") != requested or info.get("resolved_model") != resolved:
+        raise RuntimeError(f"{diagnoser} returned a missing or mismatched model identity")
+    if diagnoser.endswith("-native-long"):
+        # Missing telemetry is unknown, not proof that no tools were available.
+        for field in ("tool_count", "tools_available"):
+            value = info.get(field)
+            if type(value) is not int or value != 0:
+                raise RuntimeError(f"{diagnoser} requires an explicit zero {field}")
+
+
 def preflight(diagnoser: str) -> None:
     """Raise a clear error early if the diagnoser's requirements aren't met."""
     if diagnoser in ("real-debugger-v1", "real-debugger-v2"):
@@ -195,7 +229,21 @@ def preflight(diagnoser: str) -> None:
                 "real-agent-v1 requires ANTHROPIC_API_KEY (direct) or "
                 "OPENROUTER_API_KEY (proxy). Set one and retry."
             )
-    if diagnoser.startswith("copilot-") and shutil.which("copilot") is None:
+    if diagnoser.startswith("copilot-") and diagnoser.endswith("-native-long"):
+        if sys.version_info < (3, 11):
+            raise RuntimeError(f"{diagnoser} requires Python 3.11 or newer")
+        try:
+            sdk_version = importlib.metadata.version("github-copilot-sdk")
+            importlib.metadata.version("tiktoken")
+        except importlib.metadata.PackageNotFoundError as exc:
+            raise RuntimeError(
+                f"{diagnoser} requires github-copilot-sdk==1.0.11 and tiktoken; "
+                "install logdx-ci[copilot-sdk] in the current Python environment"
+            ) from exc
+        if sdk_version != "1.0.11":
+            raise RuntimeError(f"{diagnoser} requires github-copilot-sdk==1.0.11")
+        # The SDK resolves its bundled runtime or COPILOT_CLI_PATH itself.
+    elif diagnoser.startswith("copilot-") and shutil.which("copilot") is None:
         raise RuntimeError(
             f"{diagnoser} requires the GitHub Copilot CLI on PATH."
         )
@@ -236,6 +284,10 @@ def diagnose(
         raise FileNotFoundError(f"Diagnoser shim not found: {shim}")
     if not prompt_path.exists():
         raise FileNotFoundError(f"Diagnoser prompt not found: {prompt_path}")
+    copilot_identity = (
+        _copilot_model_identity(diagnoser, config_path)
+        if diagnoser.startswith("copilot-") else None
+    )
 
     cache_path = None
     if cache_dir is not None:
@@ -252,7 +304,12 @@ def diagnose(
         key = _hash(json.dumps(identity, sort_keys=True, separators=(",", ":")))
         cache_path = cache_dir / f"{diagnoser}__{case_id}__{key}.json"
         if cache_path.exists():
-            return json.loads(cache_path.read_text())
+            cached = json.loads(cache_path.read_text())
+            if copilot_identity is not None:
+                _validate_copilot_result(
+                    cached, diagnoser=diagnoser, identity=copilot_identity
+                )
+            return cached
 
     prompt_text = prompt_path.read_text()
 
@@ -313,6 +370,9 @@ def diagnose(
         raise RuntimeError(
             f"{diagnoser} shim returned non-JSON: {e}. First 400 chars: {head!r}"
         ) from e
+
+    if copilot_identity is not None:
+        _validate_copilot_result(out, diagnoser=diagnoser, identity=copilot_identity)
 
     # Fill in the schema fields the scorer expects but the shim doesn't emit.
     out.setdefault("case_id", case_id)
