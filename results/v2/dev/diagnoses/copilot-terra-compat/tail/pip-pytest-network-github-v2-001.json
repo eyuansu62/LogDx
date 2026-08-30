@@ -1,0 +1,126 @@
+{
+  "case_id": "pip-pytest-network-github-v2-001",
+  "context_method": "tail",
+  "diagnoser": "copilot-terra-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The functional test failed because pip could not download its GitHub-hosted test package after repeated HTTP 502 responses. The test was retried three times and still failed.",
+  "root_cause_category": "network_or_flaky",
+  "root_cause": "GitHub returned repeated 502 responses while pip attempted to download https://github.com/pypa/pip-test-package/archive/refs/heads/master.zip, causing the install command to exit with code 1.",
+  "confidence": 0.98,
+  "relevant_files": [
+    "tests/functional/test_truststore.py",
+    "tests/lib/__init__.py"
+  ],
+  "relevant_tests": [
+    "tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]"
+  ],
+  "evidence": [
+    {
+      "quote": "ERROR: Could not install packages due to an OSError: HTTPSConnectionPool(host='github.com', port=443): Max retries exceeded with url: /pypa/pip-test-package/archive/refs/heads/master.zip (Caused by ResponseError('too many 502 error responses'))",
+      "reason": "The package download failed because GitHub repeatedly returned HTTP 502 responses."
+    },
+    {
+      "quote": "RERUN tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub]",
+      "reason": "The failing network-dependent test was retried three times."
+    },
+    {
+      "quote": "FAILED tests/functional/test_truststore.py::test_no_truststore_can_install[GitHub] - AssertionError: Script returned code: 1",
+      "reason": "The failed download caused this specific test to fail."
+    }
+  ],
+  "suggested_fix": "Retry the CI job after GitHub's 502 responses have cleared; the test's GitHub package download did not succeed after its configured reruns.",
+  "input": {
+    "context_path": "results/v2/dev/tail/pip-pytest-network-github-v2-001.txt",
+    "context_tokens_estimate": 5900
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 784
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 7616.939,
+    "cache_key": "cfe8d8be3f6bc86e7f9132469e2fccaa878af64996afd1d6ad2b0daf976f8922",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-terra",
+      "resolved_model": "gpt-5.6-terra",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-terra",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 356,
+        "prompt_tokens": 14475,
+        "total_tokens": 14831,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 14472,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 14472,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1200000000000,
+            "token_count": 356,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 4045800000
+      },
+      "model_call_duration_ms": 3529,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 3529,
+        "sessionDurationMs": 5301,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8f61ec33e3622c22e900ffd4fc8e99928ba589ac7a15055ae59b431c5f2f5afe",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

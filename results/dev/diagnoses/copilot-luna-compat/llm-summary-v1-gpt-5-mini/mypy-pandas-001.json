@@ -1,0 +1,147 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "copilot-luna-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The pre-commit type-checking hooks failed because pyright and mypy reported numerous missing, unexported, or unknown pyarrow symbols across pandas code.",
+  "root_cause_category": "type_error",
+  "root_cause": "The type-checking environment's pyarrow API or stubs are incompatible with the symbols expected by pandas, causing pyright and mypy errors such as missing is_null, utf8_length, list_value_length, month, and bit_wise_not attributes.",
+  "confidence": 0.93,
+  "relevant_files": [
+    "/home/runner/work/pandas/pandas/pandas/core/arrays/arrow/accessors.py:319:14",
+    "/home/runner/work/pandas/pandas/pandas/io/orc.py:44:28",
+    "pandas/compat/pyarrow.py:69",
+    "pandas/compat/pyarrow.py:76",
+    "pandas/core/arrays/_arrow_string_mixins.py:110",
+    "pandas/core/arrays/arrow/accessors.py:118",
+    "pandas/core/arrays/datetimes.py:1368",
+    "pandas/core/arrays/arrow/array.py:863"
+  ],
+  "relevant_tests": [
+    "pyright",
+    "pyright reportGeneralTypeIssues",
+    "mypy",
+    "mypy (stubtest)"
+  ],
+  "evidence": [
+    {
+      "quote": "pyright..................................................................Failed",
+      "reason": "Shows that the pyright type-checking hook failed."
+    },
+    {
+      "quote": "\"Expression\" is not exported from module \"pyarrow.compute\"",
+      "reason": "Shows an expected pyarrow symbol is not exported according to pyright."
+    },
+    {
+      "quote": "\"is_null\" is not a known attribute of module \"pyarrow.compute\"",
+      "reason": "Shows pyright cannot resolve a pyarrow API attribute used by the code."
+    },
+    {
+      "quote": "Module has no attribute \"is_null\"  [attr-defined]",
+      "reason": "Shows mypy reports the same pyarrow attribute as missing."
+    },
+    {
+      "quote": "Found 279 errors in 9 files (checked 1458 source files)",
+      "reason": "Shows the failure is a broad type-checking incompatibility rather than an isolated runtime assertion."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms the CI job terminated unsuccessfully."
+    }
+  ],
+  "suggested_fix": "Align the pyarrow package/API and its type stubs with the versions expected by pandas, then rerun the pyright and mypy pre-commit hooks.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-gpt-5-mini/mypy-pandas-001.txt",
+    "context_tokens_estimate": 1317
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 908
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 7681.968,
+    "cache_key": "00393e29d9d3064a7820413e0f769ea398e4674dfbdc8bebe1f08ca9f87bb825",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-luna",
+      "resolved_model": "gpt-5.6-luna",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-luna",
+      "max_context_window_tokens": 328000,
+      "max_prompt_tokens_capability": 200000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 200000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 488,
+        "prompt_tokens": 6723,
+        "total_tokens": 7211,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 6720,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 2000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 25000000000,
+            "token_count": 6720,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 120000000000,
+            "token_count": 488,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 226620000
+      },
+      "model_call_duration_ms": 4164,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 4164,
+        "sessionDurationMs": 5853,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "2a2cf91740e2aa5e108dd27e6e9bffbf57cd0b09704b4be470b254c35c421f60",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

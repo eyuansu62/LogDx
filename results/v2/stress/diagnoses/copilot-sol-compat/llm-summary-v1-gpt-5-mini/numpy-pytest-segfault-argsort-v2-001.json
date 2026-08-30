@@ -1,0 +1,130 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "copilot-sol-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The pytest run terminated with a segmentation fault while executing NumPy's datetime NaT argsort stability test. The context identifies the crash location but does not establish why the native code segfaulted.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Native NumPy code called by argsort crashed with a segmentation fault during test_datetime_nat_argsort_stability.",
+  "confidence": 0.86,
+  "relevant_files": [
+    "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py",
+    "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py"
+  ],
+  "relevant_tests": [
+    "test_datetime_nat_argsort_stability"
+  ],
+  "evidence": [
+    {
+      "quote": "Fatal Python error: Segmentation fault",
+      "reason": "This explicitly identifies the immediate runtime failure."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 1231 in argsort",
+      "reason": "The crash stack passes through NumPy's argsort implementation."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
+      "reason": "This identifies the test executing when the segmentation fault occurred."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 245.",
+      "reason": "This confirms that the native crash caused the CI process to fail."
+    }
+  ],
+  "suggested_fix": "Reproduce and debug test_datetime_nat_argsort_stability under Python 3.12, focusing on the native argsort path for datetime NaT values; the context does not support attributing the crash to the failed Meson feature or optional BLAS checks.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-gpt-5-mini/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 1901
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 832
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 8355.011,
+    "cache_key": "b61b4831acc9324b27baa1ef4b0b72448d8e64ba31b2cb6552553aacf9e92850",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-sol",
+      "resolved_model": "gpt-5.6-sol",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-sol",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 455,
+        "prompt_tokens": 7281,
+        "total_tokens": 7736,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 7278,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 7278,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1000000000000,
+            "token_count": 455,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 2275100000
+      },
+      "model_call_duration_ms": 4503,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 4503,
+        "sessionDurationMs": 6393,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "3090010e6a2b4cd862c8e6ea3be6bd0ee9862c034dd9aeba1cf79bbf8c6ffd5f",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

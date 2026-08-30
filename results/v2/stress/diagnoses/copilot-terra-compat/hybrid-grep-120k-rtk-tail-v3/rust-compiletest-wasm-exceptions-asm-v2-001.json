@@ -1,0 +1,134 @@
+{
+  "case_id": "rust-compiletest-wasm-exceptions-asm-v2-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "copilot-terra-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The assembly compiletest for WebAssembly exceptions failed because its FileCheck expectations did not match the generated assembly around calls to `may_panic`. All earlier listed test suites completed successfully, but this single test caused bootstrap to fail.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "FileCheck expectations in tests/assembly-llvm/wasm_exceptions.rs at lines 38 and 62 were not found in the generated wasm_exceptions.s assembly output.",
+  "confidence": 0.98,
+  "relevant_files": [
+    "tests/assembly-llvm/wasm_exceptions.rs",
+    "/checkout/obj/build/x86_64-unknown-linux-gnu/test/assembly-llvm/wasm_exceptions/wasm_exceptions.s"
+  ],
+  "relevant_tests": [
+    "[assembly] tests/assembly-llvm/wasm_exceptions.rs"
+  ],
+  "evidence": [
+    {
+      "quote": "test [assembly] tests/assembly-llvm/wasm_exceptions.rs ... FAILED",
+      "reason": "Identifies the single failing test."
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:38:12: error: CHECK: expected string not found in input",
+      "reason": "Shows a FileCheck expectation in the test source did not match generated assembly."
+    },
+    {
+      "quote": "/checkout/tests/assembly-llvm/wasm_exceptions.rs:62:12: error: CHECK: expected string not found in input",
+      "reason": "Shows a second unmatched FileCheck expectation in the same test."
+    },
+    {
+      "quote": "error: verification with 'FileCheck' failed",
+      "reason": "Confirms the failure mechanism was FileCheck verification."
+    },
+    {
+      "quote": "test result: FAILED. 550 passed; 1 failed; 103 ignored; 0 measured; 0 filtered out; finished in 15.38s",
+      "reason": "Confirms this was the only failure in the assembly test suite."
+    }
+  ],
+  "suggested_fix": "Update the CHECK expectations at lines 38 and 62 of tests/assembly-llvm/wasm_exceptions.rs to match the intended generated assembly around the reported `call may_panic` locations.",
+  "input": {
+    "context_path": "results/v2/stress/hybrid-grep-120k-rtk-tail-v3/rust-compiletest-wasm-exceptions-asm-v2-001.txt",
+    "context_tokens_estimate": 18151
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 852
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 8444.509,
+    "cache_key": "a5f0b6ab8338e45b25c04bc671e12d59e12463f867f4d60715fce22ebfc37df3",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-terra",
+      "resolved_model": "gpt-5.6-terra",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-terra",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 426,
+        "prompt_tokens": 31494,
+        "total_tokens": 31920,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 31491,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 31491,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1200000000000,
+            "token_count": 426,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 8384550000
+      },
+      "model_call_duration_ms": 4326,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 4326,
+        "sessionDurationMs": 6503,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8f61ec33e3622c22e900ffd4fc8e99928ba589ac7a15055ae59b431c5f2f5afe",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

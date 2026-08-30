@@ -1,0 +1,125 @@
+{
+  "case_id": "docbuild-hf-stress-001",
+  "context_method": "grep",
+  "diagnoser": "copilot-luna-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The documentation status-check job failed because an upstream result was \"failure\" while another was \"skipped\", causing its conditional shell script to execute `exit 1`. The context does not identify which upstream documentation step failed or why.",
+  "root_cause_category": "github_actions_config",
+  "root_cause": "The status-check condition evaluated false for the results \"failure\" and \"skipped\", and the script explicitly exited with code 1.",
+  "confidence": 0.99,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "if [[ \"failure\" == \"success\" || \"failure\" == \"skipped\" ]] && \\\\",
+      "reason": "The first upstream result is explicitly shown as \"failure\", so the success/skipped condition is false."
+    },
+    {
+      "quote": "[[ \"skipped\" == \"success\" || \"skipped\" == \"skipped\" ]]; then",
+      "reason": "The second result is \"skipped\", but this does not make the first failed result acceptable."
+    },
+    {
+      "quote": "exit 1",
+      "reason": "The false condition enters the else branch, which explicitly fails the job."
+    },
+    {
+      "quote": "Process completed with exit code 1.",
+      "reason": "The CI runner confirms that the job terminated unsuccessfully."
+    }
+  ],
+  "suggested_fix": "Inspect the upstream job or step represented by the \"failure\" result to identify and fix its documentation-build failure; the provided context does not contain that underlying error.",
+  "input": {
+    "context_path": "results/stress/grep/docbuild-hf-stress-001.txt",
+    "context_tokens_estimate": 230
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 739
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 8021.54,
+    "cache_key": "2f4dd541cd1af24bcdcdb4cf6a9e31831bbbc175a9ac13d45edaaee6980a6094",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-luna",
+      "resolved_model": "gpt-5.6-luna",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-luna",
+      "max_context_window_tokens": 328000,
+      "max_prompt_tokens_capability": 200000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 200000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 293,
+        "prompt_tokens": 5552,
+        "total_tokens": 5845,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 5549,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 2000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 25000000000,
+            "token_count": 5549,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 120000000000,
+            "token_count": 293,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 173945000
+      },
+      "model_call_duration_ms": 3701,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 3701,
+        "sessionDurationMs": 5992,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "2a2cf91740e2aa5e108dd27e6e9bffbf57cd0b09704b4be470b254c35c421f60",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

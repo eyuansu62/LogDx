@@ -1,0 +1,128 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "drain3-templates",
+  "diagnoser": "copilot-luna-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The Linux tests job crashed with a native segmentation fault while running the pytest suite, before pytest could report a normal assertion failure.",
+  "root_cause_category": "other",
+  "root_cause": "A compiled NumPy extension caused the Python process to terminate with a segmentation fault during the test run; the context does not identify the specific extension or test responsible.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "numpy/_core/tests/test_custom_dtypes.py",
+    "numpy/_core/tests/test_datetime.py"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "Fatal Python error: Segmentation fault",
+      "reason": "Directly reports that the Python process crashed with a native segmentation fault."
+    },
+    {
+      "quote": "Process completed with exit code 245.",
+      "reason": "Shows the CI job terminated unsuccessfully after the crash."
+    },
+    {
+      "quote": "Extension modules: numpy._core._multiarray_umath, numpy.linalg._umath_linalg, numpy._core._multiarray_tests, numpy._core._rational_tests, numpy._core._umath_tests, cython.cimports.libc.math, numpy.random._common, numpy.random.bit_generator, numpy.random._bounded_integers, numpy.random._pcg64, numpy.random._generator, numpy.random._mt19937, numpy.random._philox, numpy.random._sfc64, numpy.random.mtrand, numpy._core._simd, numpy._core._operand_flag_tests, charset_normalizer.md, charset_normalizer.cd, numpy.linalg.lapack_lite, checks (total: 21)",
+      "reason": "Indicates the crash occurred in a process containing compiled extension modules, but does not isolate which one caused it."
+    },
+    {
+      "quote": "numpy/_core/tests/test_datetime.py",
+      "reason": "This file was the last named test file shown immediately before the segmentation fault."
+    }
+  ],
+  "suggested_fix": "Reproduce the crash by running the relevant pytest subset around numpy/_core/tests/test_datetime.py and inspect the native extension involved; the provided context does not contain enough information to specify a code-level fix.",
+  "input": {
+    "context_path": "results/v2/stress/drain3-templates/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 26624
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 877
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 9442.049,
+    "cache_key": "333073e74eb3bf993443ee96c9c692e02d58421655f0730b876681245f5d58ca",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-luna",
+      "resolved_model": "gpt-5.6-luna",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 447123,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-luna",
+      "max_context_window_tokens": 328000,
+      "max_prompt_tokens_capability": 200000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 200000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 413,
+        "prompt_tokens": 49657,
+        "total_tokens": 50070,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 49654,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 2000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 25000000000,
+            "token_count": 49654,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 120000000000,
+            "token_count": 413,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 1290970000
+      },
+      "model_call_duration_ms": 4909,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 4909,
+        "sessionDurationMs": 7452,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "2a2cf91740e2aa5e108dd27e6e9bffbf57cd0b09704b4be470b254c35c421f60",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

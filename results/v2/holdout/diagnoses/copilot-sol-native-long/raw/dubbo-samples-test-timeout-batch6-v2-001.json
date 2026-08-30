@@ -1,0 +1,120 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "raw",
+  "diagnoser": "copilot-sol-native-long",
+  "mode": "root_cause_diagnosis",
+  "summary": "The dubbo-samples-test-11137 integration test timed out because its containers were not created after a Zookeeper image pull returned HTTP 500.",
+  "root_cause_category": "network_or_flaky",
+  "root_cause": "The Zookeeper container image pull failed with HTTP 500, leaving the test container unavailable until the 600-second timeout.",
+  "confidence": 0.96,
+  "relevant_files": [
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/docker-compose.yml"
+  ],
+  "relevant_tests": [
+    "dubbo-samples-test-11137"
+  ],
+  "evidence": [
+    {
+      "quote": "zookeeper Error received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "Shows the external image pull failure."
+    },
+    {
+      "quote": "wait for container is timeout: 602 s",
+      "reason": "Confirms the test exceeded its container wait timeout."
+    },
+    {
+      "quote": "[2/23] [dubbo-samples-test-11137:1/1] TEST FAILURE: Run tests timeout",
+      "reason": "Identifies the failed test and reported failure."
+    },
+    {
+      "quote": "Error response from daemon: No such container: dubbo-samples-test-11137--dubbo-samples-test-11137-test-1",
+      "reason": "Confirms the expected test container was never available."
+    }
+  ],
+  "suggested_fix": "Retry the failed test/image pull, and add retry handling for the Zookeeper image pull when the registry returns HTTP 500.",
+  "input": {
+    "context_path": "results/v2/holdout/raw/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 146649
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 694
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 13434.759,
+    "cache_key": "2288db4afd5e5cf81cb115d1e52b2852ac9252b9e1ebb010299c3440e2c51973",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "/tmp/logdx-copilot-sdk-1.0.11/bin/python examples/diagnosis_shim_copilot_sdk.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-sol",
+      "resolved_model": "gpt-5.6-sol",
+      "model_version": "gpt-5.6-sol",
+      "sdk_version": "1.0.11",
+      "cli_version": "1.0.79",
+      "transport": "copilot-sdk-jsonrpc",
+      "reasoning_effort_requested": "low",
+      "reasoning_effort_resolved": "low",
+      "context_mode": "long_context",
+      "context_tier": "long_context",
+      "max_context_window_tokens": 1050000,
+      "max_prompt_tokens_capability": 922000,
+      "max_prompt_tokens": 922000,
+      "safe_prompt_token_cap": 921000,
+      "tokenizer": "o200k_base",
+      "prompt_tokens_counted": 260640,
+      "tools_available": 0,
+      "tool_count": 0,
+      "custom_instructions": false,
+      "memory_enabled": false,
+      "infinite_sessions_enabled": false,
+      "session_store_enabled": false,
+      "isolated_copilot_home": true,
+      "usage": {
+        "prompt_tokens": 260687,
+        "completion_tokens": 434,
+        "total_tokens": 261121,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 260684,
+        "reasoning_tokens": 67
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 260684,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1000000000000,
+            "token_count": 434,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 65605600000.0
+      },
+      "model_call_duration_ms": 8692.0,
+      "sdk_session_duration_ms": 12905.242
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a09cffdb0080fd5a74d1c98c506233c8017c674e856dafa2f52e288452048a83",
+    "shim_sha256": "20143deadb8e3e22cda32c4e86ca19be802af9e8c5b09620953aa597cc834ccc"
+  }
+}

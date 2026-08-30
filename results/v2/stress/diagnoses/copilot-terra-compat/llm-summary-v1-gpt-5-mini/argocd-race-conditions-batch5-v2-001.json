@@ -1,0 +1,142 @@
+{
+  "case_id": "argocd-race-conditions-batch5-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "copilot-terra-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The race-enabled unit-test target failed because the Go race detector found a data race, including in `util/db.TestClusterRaceConditionClusterSecrets`. A cache restore also failed earlier when tar encountered existing files, but the final test target failure is explicitly attributed to test failures and race detection.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The `test-race-local` test run failed after the Go race detector reported a data race during test execution, including `util/db.TestClusterRaceConditionClusterSecrets`.",
+  "confidence": 0.88,
+  "relevant_files": [
+    "/home/runner/work/argo-cd/argo-cd/util/settings/settings.go:1479",
+    "/home/runner/work/argo-cd/argo-cd/util/settings/settings.go:1542",
+    "/home/runner/work/argo-cd/argo-cd/util/settings/settings.go:1836",
+    "/home/runner/work/argo-cd/argo-cd/util/db/cluster.go:356",
+    "/home/runner/work/argo-cd/argo-cd/util/db/cluster.go:220",
+    "/home/runner/work/argo-cd/argo-cd/util/db/cluster_test.go:930",
+    "/home/runner/work/argo-cd/argo-cd/util/db/cluster_test.go:934",
+    "/home/runner/work/argo-cd/argo-cd/util/db/cluster_test.go:942",
+    "/home/runner/work/argo-cd/argo-cd/cmd/argocd/commands/app_test.go:1936"
+  ],
+  "relevant_tests": [
+    "cmd/argocd/commands.TestWaitOnApplicationStatus_JSON_YAML_WideOutput",
+    "util/db.TestClusterRaceConditionClusterSecrets"
+  ],
+  "evidence": [
+    {
+      "quote": "WARNING: DATA RACE",
+      "reason": "This explicitly reports that the race detector found concurrent unsafe access."
+    },
+    {
+      "quote": "testing.go:1712: race detected during execution of test",
+      "reason": "This states that a detected race caused test execution to fail."
+    },
+    {
+      "quote": "FAIL\u001b[0m util/db.TestClusterRaceConditionClusterSecrets (22.37s)",
+      "reason": "This identifies a specific failed test associated with the race-enabled run."
+    },
+    {
+      "quote": "DONE 7346 tests, 5 skipped, 3 failures in 468.930s",
+      "reason": "This confirms the test run completed with failures."
+    },
+    {
+      "quote": "make: *** [Makefile:473: test-race-local] Error 1",
+      "reason": "This connects the failing tests to the job's test target."
+    }
+  ],
+  "suggested_fix": "Synchronize the concurrent accesses reported in the race stack traces, particularly the accesses involving `util/settings/settings.go` and `util/db/cluster.go`, then rerun `test-race-local`.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-gpt-5-mini/argocd-race-conditions-batch5-v2-001.txt",
+    "context_tokens_estimate": 1586
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 964
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 9068.465,
+    "cache_key": "92d5d368459ea1ef729410168466549a9ae5c5507646a6adc6f5220ec3f666d4",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-terra",
+      "resolved_model": "gpt-5.6-terra",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-terra",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 567,
+        "prompt_tokens": 6967,
+        "total_tokens": 7534,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 6964,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 6964,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1200000000000,
+            "token_count": 567,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 2422000000
+      },
+      "model_call_duration_ms": 4791,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 4791,
+        "sessionDurationMs": 6560,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8f61ec33e3622c22e900ffd4fc8e99928ba589ac7a15055ae59b431c5f2f5afe",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

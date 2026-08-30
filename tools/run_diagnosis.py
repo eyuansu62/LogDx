@@ -246,6 +246,23 @@ def load_manifest_rows(results_dir: Path, split: str, method: str) -> list[dict]
     return rows
 
 
+def merge_selected_manifest_rows(
+    source_rows: list[dict], existing_rows: list[dict], selected_rows: list[dict]
+) -> list[dict]:
+    """Replace selected cases without truncating an existing manifest."""
+    merged = {row["case_id"]: row for row in existing_rows}
+    merged.update({row["case_id"]: row for row in selected_rows})
+    ordered_case_ids = [row["case_id"] for row in source_rows]
+    output = [
+        merged[case_id]
+        for case_id in ordered_case_ids
+        if case_id in merged
+    ]
+    known = set(ordered_case_ids)
+    output.extend(row for row in existing_rows if row["case_id"] not in known)
+    return output
+
+
 def validate_diagnosis(row: dict) -> None:
     """Minimal structural validation, always applied. Full jsonschema
     validation is applied when the library is installed."""
@@ -534,11 +551,14 @@ def diagnose_command(
     if raw_log_path is not None:
         payload["raw_log_path"] = raw_log_path
     argv = shlex.split(command)
+    command_timeout = int(
+        (env or {}).get("CILOGBENCH_DIAGNOSIS_COMMAND_TIMEOUT", "180")
+    )
     res = subprocess.run(
         argv,
         input=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
         capture_output=True,
-        timeout=180,
+        timeout=command_timeout,
         # Per Codex 2026-05-15 F1: when the caller computes an env
         # mapping (typically to inject the diagnoser-config's
         # requested_alias into the shim env var when the user hasn't),
@@ -1034,6 +1054,27 @@ def build_shim_env(
     base_url_default = model.get("base_url")
     if base_url_var and base_url_default and env.get(base_url_var) is None:
         env[base_url_var] = base_url_default
+    # LogDx v1.3 Copilot experiment settings. Keep the values that enter the
+    # cache key identical to the values seen by the shim, including defaults
+    # declared in the diagnoser config.
+    reasoning_effort = (config.get("reasoning") or {}).get("effort")
+    if reasoning_effort and env.get("CILOGBENCH_COPILOT_REASONING_EFFORT") is None:
+        env["CILOGBENCH_COPILOT_REASONING_EFFORT"] = str(reasoning_effort)
+    context_mode = (config.get("copilot") or {}).get("context_mode")
+    if context_mode and env.get("CILOGBENCH_COPILOT_CONTEXT_MODE") is None:
+        env["CILOGBENCH_COPILOT_CONTEXT_MODE"] = str(context_mode)
+    if context_mode:
+        # Copilot long-context calls can outlive the historical command-provider
+        # limit. Each transport also enforces its own call timeout.
+        env.setdefault("CILOGBENCH_DIAGNOSIS_COMMAND_TIMEOUT", "600")
+    max_context_chars = (config.get("context_policy") or {}).get(
+        "max_context_chars"
+    )
+    if (
+        max_context_chars is not None
+        and env.get("CILOGBENCH_COPILOT_MAX_CONTEXT_CHARS") is None
+    ):
+        env["CILOGBENCH_COPILOT_MAX_CONTEXT_CHARS"] = str(max_context_chars)
     return env
 
 
@@ -1741,6 +1782,7 @@ def run(
     prompt_path: Path | None, command_str: str | None,
     strict: bool, no_cache: bool, cache_errors: bool,
     diagnoser_config_path: Path | None = None,
+    case_ids: set[str] | None = None,
 ) -> int:
     # Per Codex 2026-05-12 F2 + 2026-05-15 F2: load the diagnoser config
     # to discover (a) env-var-driven cache_key contributions, (b) the
@@ -1908,7 +1950,10 @@ def run(
 
     had_failure = False
     for method in methods:
-        rows = load_manifest_rows(results_dir, split, method)
+        source_rows = load_manifest_rows(results_dir, split, method)
+        rows = source_rows
+        if case_ids:
+            rows = [row for row in rows if row.get("case_id") in case_ids]
         if not rows:
             print(f"  skip {method}: empty or missing manifest", file=sys.stderr)
             continue
@@ -2414,8 +2459,22 @@ def run(
         for path, content in pending_per_case:
             path.write_text(content, encoding="utf-8")
 
+        manifest_rows = out_rows
+        if case_ids and manifest_path.exists():
+            # A smoke/variance rerun must not truncate a previously complete
+            # manifest to only the selected cases. Merge the sampled rows into
+            # the existing manifest and restore canonical source-case order.
+            existing_rows = [
+                json.loads(line)
+                for line in manifest_path.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            manifest_rows = merge_selected_manifest_rows(
+                source_rows, existing_rows, out_rows
+            )
+
         with manifest_path.open("w", encoding="utf-8") as f:
-            for row in out_rows:
+            for row in manifest_rows:
                 f.write(json.dumps(row, ensure_ascii=False) + "\n")
         try:
             display_path = str(manifest_path.relative_to(ROOT))
@@ -2466,6 +2525,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--context-method", default="all",
                     help="One method name or 'all' to discover from "
                          "results/<split>/*.jsonl (default: all).")
+    ap.add_argument(
+        "--case-id",
+        action="append",
+        default=None,
+        help=(
+            "Run only this case ID. Repeat for more than one case. "
+            "Intended for smoke and variance checks."
+        ),
+    )
     ap.add_argument("--no-cache", action="store_true")
     ap.add_argument("--cache-errors", action="store_true",
                     help="Also cache provider errors (off by default).")
@@ -2515,6 +2583,7 @@ def main(argv: list[str] | None = None) -> int:
         strict=args.strict, no_cache=args.no_cache,
         cache_errors=args.cache_errors,
         diagnoser_config_path=args.diagnoser_config,
+        case_ids=set(args.case_id) if args.case_id else None,
     )
 
 

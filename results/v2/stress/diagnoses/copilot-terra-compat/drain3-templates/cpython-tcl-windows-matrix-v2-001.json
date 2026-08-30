@@ -1,0 +1,139 @@
+{
+  "case_id": "cpython-tcl-windows-matrix-v2-001",
+  "context_method": "drain3-templates",
+  "diagnoser": "copilot-terra-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The Windows test run failed because `test_tcl` produced two repeatable assertion failures when Tcl returned a non-BMP Unicode character. The build itself succeeded with \"0 Error(s)\", and the failed test reproduced on retry.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Tcl evaluation returned the UTF-8 byte sequence as mojibake (`'<ðŸ’»>'`) instead of the expected Unicode character (`'<\\U0001f4bb>'`) in two surrogate-result tests.",
+  "confidence": 0.98,
+  "relevant_files": [
+    "D:\\a\\cpython\\cpython\\Lib\\test\\test_tcl.py"
+  ],
+  "relevant_tests": [
+    "test_eval_surrogates_in_result (test.test_tcl.TclTest.test_eval_surrogates_in_result)",
+    "test_evalfile_surrogates_in_result (test.test_tcl.TclTest.test_evalfile_surrogates_in_result)",
+    "test_tcl"
+  ],
+  "evidence": [
+    {
+      "quote": "test_tcl failed (2 failures)",
+      "reason": "Identifies the failing test file and number of failures."
+    },
+    {
+      "quote": "AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ’»>'",
+      "reason": "Shows the concrete mismatch: the expected surrogate pair differs from a mojibake result."
+    },
+    {
+      "quote": "self.assertEqual(tcl.eval(r'set a \"<\\ud83d\\udcbb>\"'), '<\\U0001f4bb>')",
+      "reason": "Shows the expected Tcl evaluation result for the failing surrogate test."
+    },
+    {
+      "quote": "Re-running test_tcl in verbose mode (matching: test_eval_surrogates_in_result, test_evalfile_surrogates_in_result)",
+      "reason": "Names both failures that were selected for retry."
+    },
+    {
+      "quote": "1 test failed again:",
+      "reason": "Confirms the failure was reproducible rather than a one-off transient."
+    },
+    {
+      "quote": "Build succeeded.",
+      "reason": "Shows the CI failure was not caused by compilation."
+    }
+  ],
+  "suggested_fix": "Investigate and correct the Windows Tcl/Tk-to-Python Unicode conversion so Tcl evaluation and evalfile return `'<\\U0001f4bb>'` rather than `'<ðŸ’»>'` for surrogate-pair input.",
+  "input": {
+    "context_path": "results/v2/stress/drain3-templates/cpython-tcl-windows-matrix-v2-001.txt",
+    "context_tokens_estimate": 77289
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 859
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 9940.3,
+    "cache_key": "9dbb8a773ae22055165c3a502d02fc53de63a7175ad35be66c8ab2bbee12ebdd",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-terra",
+      "resolved_model": "gpt-5.6-terra",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 447123,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-terra",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 463,
+        "prompt_tokens": 132509,
+        "total_tokens": 132972,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 132506,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 132506,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1200000000000,
+            "token_count": 463,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 33682700000
+      },
+      "model_call_duration_ms": 5689,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 5689,
+        "sessionDurationMs": 7760,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8f61ec33e3622c22e900ffd4fc8e99928ba589ac7a15055ae59b431c5f2f5afe",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

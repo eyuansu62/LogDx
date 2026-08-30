@@ -1,0 +1,121 @@
+{
+  "case_id": "cpython-tcl-windows-matrix-v2-001",
+  "context_method": "raw",
+  "diagnoser": "copilot-sol-native-long",
+  "mode": "root_cause_diagnosis",
+  "summary": "The Windows test suite failed because two test_tcl assertions returned mojibake instead of the expected Unicode character.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Tcl eval and evalfile results containing a surrogate pair produced '<ðŸ’»>' instead of the expected '<\\U0001f4bb>', causing two assertion failures.",
+  "confidence": 0.99,
+  "relevant_files": [
+    "D:\\a\\cpython\\cpython\\Lib\\test\\test_tcl.py"
+  ],
+  "relevant_tests": [
+    "test.test_tcl.TclTest.test_eval_surrogates_in_result",
+    "test.test_tcl.TclTest.test_evalfile_surrogates_in_result"
+  ],
+  "evidence": [
+    {
+      "quote": "test_tcl failed (2 failures)",
+      "reason": "Identifies the failing test module and failure count."
+    },
+    {
+      "quote": "AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ’»>'",
+      "reason": "Shows the exact Unicode result mismatch in both assertions."
+    },
+    {
+      "quote": "Re-running test_tcl in verbose mode (matching: test_eval_surrogates_in_result, test_evalfile_surrogates_in_result)",
+      "reason": "Identifies both failing tests, which failed again on rerun."
+    },
+    {
+      "quote": "Build succeeded.",
+      "reason": "Confirms compilation was not the cause."
+    }
+  ],
+  "suggested_fix": "Correct Tcl eval/evalfile Unicode result handling so the surrogate pair is returned as '<\\U0001f4bb>' rather than '<ðŸ’»>', then rerun test_tcl.",
+  "input": {
+    "context_path": "results/v2/stress/raw/cpython-tcl-windows-matrix-v2-001.txt",
+    "context_tokens_estimate": 142495
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 693
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 12939.014,
+    "cache_key": "704c61ceb5afcc9c3b659456492dabe054c4c6600c7b54a6a72e6e3ab3085c5f",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "/tmp/logdx-copilot-sdk-1.0.11/bin/python examples/diagnosis_shim_copilot_sdk.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-sol",
+      "resolved_model": "gpt-5.6-sol",
+      "model_version": "gpt-5.6-sol",
+      "sdk_version": "1.0.11",
+      "cli_version": "1.0.79",
+      "transport": "copilot-sdk-jsonrpc",
+      "reasoning_effort_requested": "low",
+      "reasoning_effort_resolved": "low",
+      "context_mode": "long_context",
+      "context_tier": "long_context",
+      "max_context_window_tokens": 1050000,
+      "max_prompt_tokens_capability": 922000,
+      "max_prompt_tokens": 922000,
+      "safe_prompt_token_cap": 921000,
+      "tokenizer": "o200k_base",
+      "prompt_tokens_counted": 232259,
+      "tools_available": 0,
+      "tool_count": 0,
+      "custom_instructions": false,
+      "memory_enabled": false,
+      "infinite_sessions_enabled": false,
+      "session_store_enabled": false,
+      "isolated_copilot_home": true,
+      "usage": {
+        "prompt_tokens": 232306,
+        "completion_tokens": 452,
+        "total_tokens": 232758,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 232303,
+        "reasoning_tokens": 67
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 232303,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1000000000000,
+            "token_count": 452,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 58528350000.0
+      },
+      "model_call_duration_ms": 8146.0,
+      "sdk_session_duration_ms": 12468.732
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a09cffdb0080fd5a74d1c98c506233c8017c674e856dafa2f52e288452048a83",
+    "shim_sha256": "20143deadb8e3e22cda32c4e86ca19be802af9e8c5b09620953aa597cc834ccc"
+  }
+}

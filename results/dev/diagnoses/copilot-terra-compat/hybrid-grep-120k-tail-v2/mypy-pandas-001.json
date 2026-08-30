@@ -1,0 +1,142 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "copilot-terra-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The manual pre-commit type-checking hooks failed, causing the job to exit with code 1. Mypy reported 279 errors, predominantly missing pyarrow attributes across pandas Arrow-related modules; pyright reported the same pattern.",
+  "root_cause_category": "type_error",
+  "root_cause": "The mypy type check failed because the installed pyarrow type interface does not expose numerous pyarrow.compute attributes used by pandas, producing 279 errors in 9 files.",
+  "confidence": 0.97,
+  "relevant_files": [
+    "pandas/compat/pyarrow.py",
+    "pandas/core/arrays/_arrow_string_mixins.py",
+    "pandas/core/arrays/arrow/accessors.py",
+    "pandas/core/arrays/arrow/array.py",
+    "pandas/core/arrays/string_arrow.py",
+    "pandas/core/strings/accessor.py",
+    "pandas/io/feather_format.py",
+    "pandas/tests/reshape/test_get_dummies.py"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "mypy.....................................................................Failed",
+      "reason": "The mypy pre-commit hook is explicitly marked as failed."
+    },
+    {
+      "quote": "Found 279 errors in 9 files (checked 1458 source files)",
+      "reason": "Mypy reports the concrete number of type-checking errors that caused its failure."
+    },
+    {
+      "quote": "pandas/compat/pyarrow.py:76: error: Module has no attribute \"is_null\"  [attr-defined]",
+      "reason": "This directly shows mypy cannot find a pyarrow.compute API used by pandas."
+    },
+    {
+      "quote": "pandas/core/arrays/_arrow_string_mixins.py:110: error: Module has no attribute \"utf8_length\"  [attr-defined]",
+      "reason": "This shows the broad missing-pyarrow-attribute pattern affecting Arrow-related code."
+    },
+    {
+      "quote": "pyright..................................................................Failed",
+      "reason": "Pyright independently fails on the same type-interface issue."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "The failed pre-commit type-checking step caused the CI process failure."
+    }
+  ],
+  "suggested_fix": "Update the pyarrow dependency/type interface used by the type-checking environment so it exposes the pyarrow.compute and pyarrow.fs APIs pandas uses, then rerun the manual pre-commit hooks.",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-120k-tail-v2/mypy-pandas-001.txt",
+    "context_tokens_estimate": 27292
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 924
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 9895.636,
+    "cache_key": "0adef3e687c69fdb8894a88637fedc29e1d4c96b9564a13ab9a215176ca50347",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-terra",
+      "resolved_model": "gpt-5.6-terra",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-terra",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 552,
+        "prompt_tokens": 44726,
+        "total_tokens": 45278,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 44723,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 44723,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1200000000000,
+            "token_count": 552,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 11843750000
+      },
+      "model_call_duration_ms": 5685,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 5685,
+        "sessionDurationMs": 8046,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8f61ec33e3622c22e900ffd4fc8e99928ba589ac7a15055ae59b431c5f2f5afe",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

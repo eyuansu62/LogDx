@@ -1,0 +1,135 @@
+{
+  "case_id": "cpython-tcl-windows-matrix-v2-001",
+  "context_method": "grep",
+  "diagnoser": "copilot-luna-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The Windows CI job built successfully but failed during the test suite because test_tcl had two surrogate-handling assertion failures. Tcl returned the surrogate pair as '<\\ud83d\\udcbb>' instead of the expected Unicode string '<ðŸ’»>'.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The Tcl integration returned an incorrectly decoded result for surrogate-containing strings in both evaluation and eval-file paths.",
+  "confidence": 0.99,
+  "relevant_files": [
+    "D:\\a\\cpython\\cpython\\Lib\\test\\test_tcl.py"
+  ],
+  "relevant_tests": [
+    "test_eval_surrogates_in_result (test.test_tcl.TclTest.test_eval_surrogates_in_result)",
+    "test_evalfile_surrogates_in_result (test.test_tcl.TclTest.test_evalfile_surrogates_in_result)",
+    "test_tcl"
+  ],
+  "evidence": [
+    {
+      "quote": "0 Error(s)",
+      "reason": "The native Windows build completed without compilation or linking errors."
+    },
+    {
+      "quote": "test_tcl failed (2 failures)",
+      "reason": "The test file explicitly failed with two test failures."
+    },
+    {
+      "quote": "self.assertEqual(tcl.eval(r'set a \"<\\ud83d\\udcbb>\"'), '<\\U0001f4bb>')",
+      "reason": "This assertion expected the surrogate pair to be converted to the corresponding Unicode code point."
+    },
+    {
+      "quote": "AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ’»>'",
+      "reason": "The actual Tcl result remained a surrogate pair while the expected result was the decoded Unicode value."
+    },
+    {
+      "quote": "Result: FAILURE then FAILURE",
+      "reason": "The failure reproduced during the verbose rerun, ruling out a transient test failure."
+    }
+  ],
+  "suggested_fix": "Fix the Tcl result decoding/conversion for surrogate-containing strings so both tcl.eval and eval-file results match the expected Unicode value in test_eval_surrogates_in_result and test_evalfile_surrogates_in_result.",
+  "input": {
+    "context_path": "results/v2/stress/grep/cpython-tcl-windows-matrix-v2-001.txt",
+    "context_tokens_estimate": 73515
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 834
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 9176.145,
+    "cache_key": "742e5c1660c876eb6981406069edb415d03dcfb8c9baec84239d3c1c6453006e",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-luna",
+      "resolved_model": "gpt-5.6-luna",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-luna",
+      "max_context_window_tokens": 328000,
+      "max_prompt_tokens_capability": 200000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 200000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 481,
+        "prompt_tokens": 123105,
+        "total_tokens": 123586,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 123102,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 2000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 25000000000,
+            "token_count": 123102,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 120000000000,
+            "token_count": 481,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 3135330000
+      },
+      "model_call_duration_ms": 5239,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 5239,
+        "sessionDurationMs": 7031,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "2a2cf91740e2aa5e108dd27e6e9bffbf57cd0b09704b4be470b254c35c421f60",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

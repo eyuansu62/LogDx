@@ -1,0 +1,116 @@
+{
+  "case_id": "moby-buildx-bake-v2-001",
+  "context_method": "raw",
+  "diagnoser": "copilot-luna-native-long",
+  "mode": "root_cause_diagnosis",
+  "summary": "The integration test image build failed while downloading the Nydus release from GitHub. The subsequent missing coverage report is a downstream effect because the build never completed.",
+  "root_cause_category": "network_or_flaky",
+  "root_cause": "The Docker build's Nydus download returned HTTP 502 Bad Gateway, causing buildx bake to fail.",
+  "confidence": 0.99,
+  "relevant_files": [
+    "Dockerfile:336"
+  ],
+  "relevant_tests": [
+    "integration-tests"
+  ],
+  "evidence": [
+    {
+      "quote": "wget: server returned error: HTTP/1.1 502 Bad Gateway or Proxy Error",
+      "reason": "The external Nydus download failed with a transient gateway/proxy response."
+    },
+    {
+      "quote": "ERROR: failed to solve: process \"/bin/bash -c wget https://github.com/dragonflyoss/nydus/releases/download/$NYDUS_VERSION/nydus-static-$NYDUS_VERSION-$TARGETOS-$TARGETARCH.tgz\" did not complete successfully: exit code: 1",
+      "reason": "This directly identifies the failed Docker build command and its nonzero exit."
+    },
+    {
+      "quote": "##[error]buildx bake failed with: ERROR: failed to solve",
+      "reason": "The CI job failed because the image build could not be solved."
+    }
+  ],
+  "suggested_fix": "Retry the job or make the Nydus download at Dockerfile:336 resilient to transient HTTP 502 failures.",
+  "input": {
+    "context_path": "results/v2/dev/raw/moby-buildx-bake-v2-001.txt",
+    "context_tokens_estimate": 111846
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 681
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 9184.122,
+    "cache_key": "72e3467710e6390f1a841e6788d2211443262d075fe089f86926c96cfe53a1dc",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "/tmp/logdx-copilot-sdk-1.0.11/bin/python examples/diagnosis_shim_copilot_sdk.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-luna",
+      "resolved_model": "gpt-5.6-luna",
+      "model_version": "gpt-5.6-luna",
+      "sdk_version": "1.0.11",
+      "cli_version": "1.0.79",
+      "transport": "copilot-sdk-jsonrpc",
+      "reasoning_effort_requested": "low",
+      "reasoning_effort_resolved": "low",
+      "context_mode": "long_context",
+      "context_tier": "long_context",
+      "max_context_window_tokens": 1050000,
+      "max_prompt_tokens_capability": 922000,
+      "max_prompt_tokens": 922000,
+      "safe_prompt_token_cap": 921000,
+      "tokenizer": "o200k_base",
+      "prompt_tokens_counted": 191149,
+      "tools_available": 0,
+      "tool_count": 0,
+      "custom_instructions": false,
+      "memory_enabled": false,
+      "infinite_sessions_enabled": false,
+      "session_store_enabled": false,
+      "isolated_copilot_home": true,
+      "usage": {
+        "prompt_tokens": 191196,
+        "completion_tokens": 334,
+        "total_tokens": 191530,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 191193,
+        "reasoning_tokens": 0
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 2000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 25000000000,
+            "token_count": 191193,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 120000000000,
+            "token_count": 334,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 4819965000.0
+      },
+      "model_call_duration_ms": 4339.0,
+      "sdk_session_duration_ms": 8694.474
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "77ec37ae05d8e384285b288513e96634da61b63b1534651eb8baa38c520f0367",
+    "shim_sha256": "20143deadb8e3e22cda32c4e86ca19be802af9e8c5b09620953aa597cc834ccc"
+  }
+}
