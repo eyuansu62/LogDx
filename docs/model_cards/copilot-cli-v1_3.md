@@ -1,0 +1,65 @@
+# Copilot diagnosers for the v1.3 study
+
+## Purpose
+
+These diagnosers test whether LogDx reducer rankings transfer to current
+GitHub Copilot models. They are experimental. They are not part of the frozen
+v1.2 results.
+
+## Frozen settings
+
+- Provider: GitHub Copilot
+- Observed CLI: `1.0.82`
+- Native SDK: `1.0.11`
+- Native bundled runtime: `1.0.79`
+- Prompt: `prompts/debugger_v1.md`
+- Reasoning effort: `low`
+- Tools exposed to the model: `0`
+- Custom instructions: disabled
+- Built-in MCP servers: disabled
+- Copilot home: isolated temporary directory per call
+- Normal compatibility context cap: `480000` characters
+- Native transport: Copilot SDK JSON-RPC with `long_context`
+- Native safe prompt cap: `921000` tokens
+
+The requested model comes only from `CILOGBENCH_COPILOT_MODEL`. Each result
+records the requested and resolved model. A mismatch fails closed. The cache
+identity includes the diagnoser, model, reasoning setting, context mode and
+cap, prompt hash, shim hash, config hash, and reduced-context hash.
+
+## Known limits
+
+Compatibility CLI uses its serving system prompt and current date. Native
+SDK uses a replacement system message: `Follow the user instruction exactly.
+Do not use tools.` The runtime versions also differ. The comparison is not a
+controlled test of context size alone, nor identical to the frozen API panel.
+
+The compatibility path uses the CLI's structured noninteractive output. The
+native path uses the SDK transport because macOS cannot place a million-token
+prompt in one process argument. An earlier ACP prototype reported different
+models at session creation and prompt execution, so its artifacts were
+rejected. The SDK path proves the model at session start, model call, and usage
+reporting. It also proves `long_context`, the 922,000-token prompt limit, and
+zero tool use.
+
+The completed compatibility panel contains 280 rows each for Luna, Terra, and
+Sol. Every successful row records a matching requested and resolved model.
+GPT-5 Mini is excluded because prompt-mode probes did not expose resolved-model
+evidence. The runner rejected those probes and wrote no Mini results.
+
+Oversized contexts were rejected. Two near-limit contexts produced
+no usable CLI response after prompt overhead. Their split/method runs used an
+effective cap one character below the observed context size so they become
+explicit `unsupported_context_too_large` rows. The per-row metadata records
+the effective cap. This is a measured transport boundary, not per-case quality
+tuning.
+
+The native panel completed 35 raw rows per model. Each model had 31 proven
+calls and four explicit `unsupported_context_too_large` rows. The largest
+successful counted prompt was 693,398 tokens, so performance at one million
+tokens was not measured. The full-corpus raw score improved because 14 extra
+cases became accepted. On the same 17 accepted inputs, native raw did not
+improve mean scores. System-prompt and runtime differences limit causal claims.
+Its full-corpus comparison with hybrid v3 had a 95% interval overlapping zero.
+Native recorded downstream cost was about 6.7 times the hybrid cost across
+this model mix, excluding local reducer work and frozen-summary preparation.

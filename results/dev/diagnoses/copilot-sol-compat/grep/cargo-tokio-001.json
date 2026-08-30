@@ -1,0 +1,137 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "grep",
+  "diagnoser": "copilot-sol-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The compile-fail test compile_fail_full failed because the actual Rust compiler diagnostics contained additional E0271 errors not present in the expected output for tests/fail/macros_type_mismatch.rs.",
+  "root_cause_category": "compile_error",
+  "root_cause": "The trybuild expected diagnostic snapshot for tests/fail/macros_type_mismatch.rs no longer matches the compiler's actual output; the actual output adds E0271 diagnostics originating in the tokio::main attribute macro.",
+  "confidence": 0.99,
+  "relevant_files": [
+    "tests/fail/macros_type_mismatch.rs"
+  ],
+  "relevant_tests": [
+    "tests-build::macros compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "test compile_fail_full ... FAILED",
+      "reason": "Identifies the failing compile-fail test."
+    },
+    {
+      "quote": "EXPECTED:",
+      "reason": "Shows that trybuild is comparing stored expected diagnostics."
+    },
+    {
+      "quote": "ACTUAL OUTPUT:",
+      "reason": "Shows that the generated compiler diagnostics differed from the expected output."
+    },
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:3:1: 3:15}` to be a future that resolves to `()`, but it resolves to `Result<(), _>`",
+      "reason": "This additional actual compiler diagnostic is absent from the preceding expected output."
+    },
+    {
+      "quote": "this error originates in the attribute macro `tokio::main`",
+      "reason": "Attributes the newly emitted E0271 diagnostics to macro-expanded code."
+    },
+    {
+      "quote": "1 of 10 tests failed",
+      "reason": "Confirms trybuild rejected one compile-fail case."
+    }
+  ],
+  "suggested_fix": "Update the expected trybuild diagnostic output for tests/fail/macros_type_mismatch.rs to include the additional E0271 diagnostics emitted in ACTUAL OUTPUT, after confirming those diagnostics are intended.",
+  "input": {
+    "context_path": "results/dev/grep/cargo-tokio-001.txt",
+    "context_tokens_estimate": 43368
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 827
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 9153.214,
+    "cache_key": "7d06df4104a2e9c5bbe6accdb9d8eae07313e980658af874f33192c90b2496c8",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-sol",
+      "resolved_model": "gpt-5.6-sol",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-sol",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 449,
+        "prompt_tokens": 96680,
+        "total_tokens": 97129,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 96677,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 96677,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1000000000000,
+            "token_count": 449,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 24618850000
+      },
+      "model_call_duration_ms": 5503,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 5503,
+        "sessionDurationMs": 7253,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "3090010e6a2b4cd862c8e6ea3be6bd0ee9862c034dd9aeba1cf79bbf8c6ffd5f",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

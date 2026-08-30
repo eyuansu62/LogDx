@@ -1,0 +1,173 @@
+{
+  "case_id": "jest-nextjs-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "copilot-sol-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The test runner could not match any requested test files, so every listed test command exited with code 1 and produced no results JSON. The context also shows Git rejecting the /work repository because of dubious ownership, which left the test profile branch and SHA empty and is the most likely upstream cause.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "Git refused to operate on the repository at /work because its ownership was considered dubious; the test run then reported zero matches for all requested test paths and exited with code 1.",
+  "confidence": 0.78,
+  "relevant_files": [
+    "/work",
+    "/work/run-tests.js",
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest-babel/__tests__/index.test.tsx",
+    "examples/with-jest/app/blog/[slug]/page.test.tsx",
+    "examples/with-jest/app/counter.test.tsx",
+    "examples/with-jest/app/utils/add.test.ts",
+    "examples/with-jest/app/page.test.tsx",
+    "examples/with-mocha/test/index.test.js",
+    "examples/with-typescript-graphql/test/index.test.tsx",
+    "examples/with-vitest/__tests__/Home.test.tsx",
+    "examples/with-vitest/app/blog/[slug]/page.test.tsx",
+    "examples/with-vitest/app/counter.test.tsx",
+    "examples/with-vitest/app/page.test.tsx",
+    "examples/with-zones/home/test/next-config.test.ts",
+    "examples/with-vitest/app/utils/add.test.ts"
+  ],
+  "relevant_tests": [
+    "examples/with-jest/__tests__/index.test.tsx",
+    "examples/with-jest-babel/__tests__/index.test.tsx",
+    "examples/with-jest/app/blog/[slug]/page.test.tsx",
+    "examples/with-jest/app/counter.test.tsx",
+    "examples/with-jest/app/utils/add.test.ts",
+    "examples/with-jest/app/page.test.tsx",
+    "examples/with-mocha/test/index.test.js",
+    "examples/with-typescript-graphql/test/index.test.tsx",
+    "examples/with-vitest/__tests__/Home.test.tsx",
+    "examples/with-vitest/app/blog/[slug]/page.test.tsx",
+    "examples/with-vitest/app/counter.test.tsx",
+    "examples/with-vitest/app/page.test.tsx",
+    "examples/with-zones/home/test/next-config.test.ts",
+    "examples/with-vitest/app/utils/add.test.ts"
+  ],
+  "evidence": [
+    {
+      "quote": "fatal: detected dubious ownership in repository at '/work'",
+      "reason": "This is the explicit Git ownership rejection in the test environment."
+    },
+    {
+      "quote": "git config --global --add safe.directory /work",
+      "reason": "The log provides the concrete configuration required to permit Git access."
+    },
+    {
+      "quote": "branch=",
+      "reason": "The empty branch value immediately after the Git error shows repository metadata was not obtained."
+    },
+    {
+      "quote": "sha=",
+      "reason": "The empty SHA similarly indicates Git metadata discovery failed."
+    },
+    {
+      "quote": "Pattern: examples/with-jest/__tests__/index.test.tsx - 0 matches",
+      "reason": "The Jest example test was not discovered rather than failing an assertion."
+    },
+    {
+      "quote": "examples/with-jest/__tests__/index.test.tsx failed to pass within 2 retries",
+      "reason": "The discovery failure persisted through retries."
+    },
+    {
+      "quote": "Some tests failed",
+      "reason": "The runner ultimately treated the repeated zero-match results as failures."
+    },
+    {
+      "quote": "exiting with code 1",
+      "reason": "This confirms the direct job-ending failure."
+    }
+  ],
+  "suggested_fix": "Before running tests in /work, execute `git config --global --add safe.directory /work` as instructed by the log, then rerun the test job.",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-120k-tail-v2/jest-nextjs-001.txt",
+    "context_tokens_estimate": 60313
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1207
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 23237.56,
+    "cache_key": "59ae05ab8f138d758d85d4fdabdbc9c8228aa3f66a262519d3761b96883af799",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-sol",
+      "resolved_model": "gpt-5.6-sol",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-sol",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 897,
+        "prompt_tokens": 89428,
+        "total_tokens": 90325,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 89425,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 89425,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1000000000000,
+            "token_count": 897,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 23253850000
+      },
+      "model_call_duration_ms": 19324,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 19324,
+        "sessionDurationMs": 21448,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "3090010e6a2b4cd862c8e6ea3be6bd0ee9862c034dd9aeba1cf79bbf8c6ffd5f",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "case_id": "pytest-pandas-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "copilot-terra-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The NumPy Nightly pytest job failed because NumPy 2.5.0.dev0 emits a DeprecationWarning for generic timedelta units, and that warning is surfaced as an error during collection and test execution. This produced 52 collection/errors and 45 failed tests.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Tests and test collection use NumPy datetime/timedelta values with an implicit or \"generic\" timedelta unit, which NumPy 2.5.0.dev0 deprecates; pytest reports the resulting DeprecationWarning as an error.",
+  "confidence": 0.91,
+  "relevant_files": [
+    "pandas/tests/arrays/masked/test_indexing.py:11",
+    "pandas/tests/arrays/masked/test_indexing.py:43",
+    "pandas/tests/arrays/test_timedeltas.py:196",
+    "pandas/tests/arrays/test_timedeltas.py:233",
+    "pandas/tests/dtypes/test_inference.py:1109",
+    "pandas/tests/dtypes/test_inference.py:1344",
+    "pandas/tests/dtypes/test_missing.py:769",
+    "pandas/tests/frame/indexing/test_indexing.py:1889",
+    "pandas/tests/frame/indexing/test_indexing.py:1921",
+    "pandas/tests/frame/test_constructors.py:77",
+    "pandas/tests/frame/test_constructors.py:2041",
+    "pandas/tests/indexes/datetimes/methods/test_insert.py:18",
+    "pandas/tests/indexes/datetimes/methods/test_insert.py:19",
+    "pandas/tests/tslibs/test_array_to_datetime.py:101",
+    "pandas/tests/util/test_assert_index_equal.py:262",
+    "pandas/tests/frame/methods/test_rank.py:391",
+    "pandas/tests/arithmetic/test_datetime64.py"
+  ],
+  "relevant_tests": [
+    "TestArrayToDatetimeResolutionInference.test_infer_with_nat_int_float_str[nan]",
+    "TestArrayToDatetimeResolutionInference.test_infer_with_nat_int_float_str[-9223372036854775808]",
+    "TestArrayToDatetimeResolutionInference.test_infer_with_nat_int_float_str[-9.223372036854776e+18]",
+    "TestArrayToDatetimeResolutionInference.test_infer_with_nat_int_float_str[NaT]",
+    "test_assert_index_equal_different_inferred_types",
+    "TestRank.test_rank_inf_and_nan[DataFrame-contents0-float64]",
+    "TestRank.test_rank_inf_and_nan[DataFrame-contents5-datetime64]",
+    "TestRank.test_rank_inf_and_nan[Series-contents0-float64]",
+    "TestRank.test_rank_inf_and_nan[Series-contents4-object]",
+    "pandas/tests/arithmetic/test_datetime64.py::TestDatetimeIndexComparisons::test_dti_cmp_nat_behaves_like_float_cmp_nan"
+  ],
+  "evidence": [
+    {
+      "quote": "numpy                     2.5.0.dev0",
+      "reason": "The failing job uses a NumPy nightly development build."
+    },
+    {
+      "quote": "E   DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific unit instead.",
+      "reason": "This is the explicit error reported during collection and tests."
+    },
+    {
+      "quote": "_________ ERROR collecting pandas/tests/arrays/masked/test_indexing.py _________",
+      "reason": "The warning prevents pytest from collecting at least one test module."
+    },
+    {
+      "quote": "expected = np.array([dt, np.datetime64(\"NaT\")], dtype=\"M8[us]\")",
+      "reason": "The context identifies datetime/NaT construction at a warning-producing failed test location."
+    },
+    {
+      "quote": "= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s (0:12:39) =",
+      "reason": "The pytest run ended with widespread failures and errors."
+    }
+  ],
+  "suggested_fix": "Update the affected pandas code and tests to use explicit NumPy timedelta units rather than generic-unit timedelta values or implicit bare-integer conversions.",
+  "input": {
+    "context_path": "results/dev/llm-summary-v1-gpt-5-mini/pytest-pandas-001.txt",
+    "context_tokens_estimate": 1772
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1241
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 12014.23,
+    "cache_key": "5e21e2931665f4947f207e89fa9768a2ff96002b484f5dcd7cf0db6becc5a807",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-terra",
+      "resolved_model": "gpt-5.6-terra",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-terra",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 822,
+        "prompt_tokens": 7103,
+        "total_tokens": 7925,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 7100,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 7100,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1200000000000,
+            "token_count": 822,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 2762000000
+      },
+      "model_call_duration_ms": 6660,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 6660,
+        "sessionDurationMs": 10093,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8f61ec33e3622c22e900ffd4fc8e99928ba589ac7a15055ae59b431c5f2f5afe",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

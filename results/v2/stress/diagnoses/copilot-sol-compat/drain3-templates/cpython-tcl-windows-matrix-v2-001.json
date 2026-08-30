@@ -1,0 +1,147 @@
+{
+  "case_id": "cpython-tcl-windows-matrix-v2-001",
+  "context_method": "drain3-templates",
+  "diagnoser": "copilot-sol-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The Windows build succeeded, but test_tcl failed consistently in two surrogate-handling assertions. Tcl returned mojibake for the expected emoji value, and the same failures occurred on rerun.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Tcl 9.0.3 evaluation returned the string '<ðŸ’»>' instead of the expected emoji string '<💻>', causing test_eval_surrogates_in_result and test_evalfile_surrogates_in_result to fail.",
+  "confidence": 0.99,
+  "relevant_files": [
+    "D:\\a\\cpython\\cpython\\Lib\\test\\test_tcl.py"
+  ],
+  "relevant_tests": [
+    "test_tcl",
+    "test_eval_surrogates_in_result (test.test_tcl.TclTest.test_eval_surrogates_in_result)",
+    "test_evalfile_surrogates_in_result (test.test_tcl.TclTest.test_evalfile_surrogates_in_result)"
+  ],
+  "evidence": [
+    {
+      "quote": "Build succeeded.",
+      "reason": "The compilation phase completed successfully, so the job was not stopped by a build error."
+    },
+    {
+      "quote": "tkinter.info_patchlevel: 9.0.3",
+      "reason": "This identifies the Tcl/Tk patch level used when the failing tests ran."
+    },
+    {
+      "quote": "test_tcl failed (2 failures)",
+      "reason": "This explicitly identifies the failing test file and number of failures."
+    },
+    {
+      "quote": "FAIL: test_eval_surrogates_in_result (test.test_tcl.TclTest.test_eval_surrogates_in_result)",
+      "reason": "This names the first failed assertion."
+    },
+    {
+      "quote": "FAIL: test_evalfile_surrogates_in_result (test.test_tcl.TclTest.test_evalfile_surrogates_in_result)",
+      "reason": "This names the second failed assertion."
+    },
+    {
+      "quote": "AssertionError: '<\\ud83d\\udcbb>' != '<ðŸ’»>'",
+      "reason": "This shows the concrete expected-versus-actual string mismatch caused by incorrect surrogate/UTF-8 handling."
+    },
+    {
+      "quote": "Re-running test_tcl in verbose mode (matching: test_eval_surrogates_in_result, test_evalfile_surrogates_in_result)",
+      "reason": "The runner isolated these two failures for a retry."
+    },
+    {
+      "quote": "1 test failed again:",
+      "reason": "The failure reproduced on rerun rather than disappearing as a transient issue."
+    }
+  ],
+  "suggested_fix": "Correct the Tcl 9.0.3 result conversion so surrogate-pair input is returned as the expected Unicode emoji for both tcl.eval() and evalfile(), then rerun test_tcl.",
+  "input": {
+    "context_path": "results/v2/stress/drain3-templates/cpython-tcl-windows-matrix-v2-001.txt",
+    "context_tokens_estimate": 77289
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 941
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 11273.897,
+    "cache_key": "092a9570d1e87d8f606402163894a3bd4c4ebd52618c7b1ba3af16bd9b24019d",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-sol",
+      "resolved_model": "gpt-5.6-sol",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 447123,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-sol",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 628,
+        "prompt_tokens": 132504,
+        "total_tokens": 133132,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 132501,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 132501,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1000000000000,
+            "token_count": 628,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 33753850000
+      },
+      "model_call_duration_ms": 7452,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 7452,
+        "sessionDurationMs": 9360,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "3090010e6a2b4cd862c8e6ea3be6bd0ee9862c034dd9aeba1cf79bbf8c6ffd5f",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

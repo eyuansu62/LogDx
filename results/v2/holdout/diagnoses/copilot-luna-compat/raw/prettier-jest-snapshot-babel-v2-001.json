@@ -1,0 +1,153 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "raw",
+  "diagnoser": "copilot-luna-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed during `yarn test` because 13 Jest snapshots across three test suites no longer match the received parser errors. The failures are concentrated in Babel/Babel-Flow/Babel-TypeScript parsing of invalid `import()` usage and one TypeScript constructor overload case.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Expected Jest snapshots contain older parser error messages and locations, but the formatter now receives different Babel parser errors, causing 14 tests and 13 snapshots to fail.",
+  "confidence": 0.99,
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js",
+    "tests/config/format-test/test-format.js"
+  ],
+  "relevant_tests": [
+    "snippet: #0 format[babel]",
+    "snippet: #0 format[babel-flow]",
+    "snippet: #0 format[babel-ts]",
+    "snippet: #1 format[babel]",
+    "snippet: #1 format[babel-flow]",
+    "snippet: #1 format[babel-ts]",
+    "snippet: #2 format[babel]",
+    "snippet: #2 format[babel-flow]",
+    "snippet: #2 format[babel-ts]",
+    "snippet: #3 format[babel]",
+    "snippet: #3 format[babel-flow]",
+    "snippet: #3 format[babel-ts]",
+    "constructorOverloadsWithDefaultValues.ts > format[babel-ts]",
+    "snippet: #0 format[babel-ts] 1"
+  ],
+  "evidence": [
+    {
+      "quote": "Error: expect(received).rejects.toThrowErrorMatchingSnapshot()",
+      "reason": "Shows the failures are Jest snapshot assertion mismatches."
+    },
+    {
+      "quote": "› 13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "The test runner explicitly reports snapshot failures and suggests updating them."
+    },
+    {
+      "quote": "- Unexpected token (1:8)\n+ `import()` requires exactly one or two arguments. (1:1)",
+      "reason": "The received Babel error differs from the snapshot's expected error text and location."
+    },
+    {
+      "quote": "- Cannot use new with import(...). (1:5)\n+ Cannot use new with import(). (1:5)",
+      "reason": "The received error message differs from the stored snapshot."
+    },
+    {
+      "quote": "SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)",
+      "reason": "The Babel TypeScript parser rejects the constructor overload case shown in the test."
+    },
+    {
+      "quote": "Test Suites: 3 failed, 1500 passed, 1503 total",
+      "reason": "Confirms the job failed because three test suites failed while the remainder passed."
+    }
+  ],
+  "suggested_fix": "Inspect the parser changes affecting these cases and update the affected Jest snapshots with `-u` if the new errors and locations are intended; otherwise restore the expected parser behavior.",
+  "input": {
+    "context_path": "results/v2/holdout/raw/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 48106
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1066
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 11275.0,
+    "cache_key": "779f50d3a64fd8619b71d1f1e4430f8f49e26dbd3520ccb9764abf802223aabc",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-luna",
+      "resolved_model": "gpt-5.6-luna",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-luna",
+      "max_context_window_tokens": 328000,
+      "max_prompt_tokens_capability": 200000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 200000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 708,
+        "prompt_tokens": 78720,
+        "total_tokens": 79428,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 78717,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 2000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 25000000000,
+            "token_count": 78717,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 120000000000,
+            "token_count": 708,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 2052945000
+      },
+      "model_call_duration_ms": 6872,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 6872,
+        "sessionDurationMs": 9156,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "2a2cf91740e2aa5e108dd27e6e9bffbf57cd0b09704b4be470b254c35c421f60",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

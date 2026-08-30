@@ -1,0 +1,163 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "grep",
+  "diagnoser": "copilot-luna-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The Jest test run failed because expected error snapshots no longer match the parser's received errors. A TypeScript conformance test also fails with a parser SyntaxError for a constructor overload default value.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Parser error messages and locations changed, causing 13 snapshots to fail across 2 suites; the remaining failing test reports `A parameter initializer is only allowed in a function or constructor implementation. (3:17)` for `constructor(x = 1);`.",
+  "confidence": 0.99,
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js",
+    "file:///home/runner/work/prettier/prettier/src/common/parser-create-error.js",
+    "file:///home/runner/work/prettier/prettier/src/language-js/parse/utilities/create-babel-parse-error.js",
+    "file:///home/runner/work/prettier/prettier/src/language-js/parse/babel.js",
+    "file:///home/runner/work/prettier/prettier/tests/config/format-test/test-format.js"
+  ],
+  "relevant_tests": [
+    "snippet: #0 > format[babel]",
+    "snippet: #0 > format[babel-flow]",
+    "snippet: #0 > format[babel-ts]",
+    "snippet: #1 > format[babel]",
+    "snippet: #1 > format[babel-flow]",
+    "snippet: #1 > format[babel-ts]",
+    "snippet: #2 > format[babel]",
+    "snippet: #2 > format[babel-flow]",
+    "snippet: #2 > format[babel-ts]",
+    "snippet: #3 > format[babel]",
+    "snippet: #3 > format[babel-flow]",
+    "snippet: #3 > format[babel-ts]",
+    "constructorOverloadsWithDefaultValues.ts > format[babel-ts]"
+  ],
+  "evidence": [
+    {
+      "quote": "Error: expect(received).rejects.toThrowErrorMatchingSnapshot()",
+      "reason": "The failing assertions are snapshot comparisons rather than compilation or installation failures."
+    },
+    {
+      "quote": "› 12 snapshots failed.",
+      "reason": "The import error test suite has twelve snapshot mismatches."
+    },
+    {
+      "quote": "› 1 snapshot failed.",
+      "reason": "The declare-function-with-body test has one snapshot mismatch."
+    },
+    {
+      "quote": "- Unexpected token (1:8)",
+      "reason": "The expected snapshot contains a different error message and location."
+    },
+    {
+      "quote": "+ `import()` requires exactly one or two arguments. (1:1)",
+      "reason": "The received parser error differs from the expected snapshot."
+    },
+    {
+      "quote": "SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)",
+      "reason": "The constructor conformance test fails with a parser SyntaxError."
+    },
+    {
+      "quote": "› 13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "The job explicitly identifies snapshot mismatches as the failure and suggests updating them after inspection."
+    },
+    {
+      "quote": "Process completed with exit code 1.",
+      "reason": "This confirms the test command failed."
+    }
+  ],
+  "suggested_fix": "Inspect the parser changes and update the affected Jest snapshots with `-u` if the new error messages and locations are intentional; otherwise restore the expected parser behavior, and address the `constructor(x = 1);` parsing failure.",
+  "input": {
+    "context_path": "results/v2/holdout/grep/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 20936
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1180
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 10767.984,
+    "cache_key": "d1059b7c6e130dc95c14fed11884e840bc9e93d3e4b619f15384bfa75ebd6aaa",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-luna",
+      "resolved_model": "gpt-5.6-luna",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-luna",
+      "max_context_window_tokens": 328000,
+      "max_prompt_tokens_capability": 200000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 200000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 705,
+        "prompt_tokens": 37372,
+        "total_tokens": 38077,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 37369,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 2000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 25000000000,
+            "token_count": 37369,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 120000000000,
+            "token_count": 705,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 1018885000
+      },
+      "model_call_duration_ms": 5639,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 5639,
+        "sessionDurationMs": 7966,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "2a2cf91740e2aa5e108dd27e6e9bffbf57cd0b09704b4be470b254c35c421f60",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

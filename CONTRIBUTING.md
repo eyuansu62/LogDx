@@ -22,8 +22,10 @@ python3 tools/migrate_cache_keys_codex_2026_06_08.py
 Verify your tree is clean:
 
 ```bash
-python3 tools/tests/test_diagnosis_cache_key.py    # 155 tests
+python3 tools/tests/test_diagnosis_cache_key.py    # 157 tests
 python3 tools/tests/test_hybrid_router.py          # 10 tests
+python3 tools/tests/test_copilot_v1_3.py           # v1.3 adapter/cache tests
+python3 tools/tests/test_drain3_v1_3.py            # pinned deterministic baseline
 
 python3 tools/validate_committed_diagnosis_provider_errors.py
 python3 tools/validate_eval_manifest_consistency.py
@@ -35,6 +37,52 @@ python3 tools/validate_protocol_lock.py \
 
 CI runs all of the above on every push; see
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+### Optional Copilot and Drain3 study
+
+Copilot runs send public corpus contexts to GitHub's model service and can use
+paid AI credits. Check the matrix size and account limits before enabling them.
+
+```bash
+python3 -m pip install -e '.[drain3,copilot-sdk]'
+
+python3 tools/run_drain3_baseline.py --split dev
+python3 tools/evaluate_signal_recall.py --split dev --method drain3-templates
+
+export CILOGBENCH_ALLOW_EXTERNAL_LLM=1
+python3 tools/run_diagnosis.py \
+  --split dev \
+  --diagnoser command \
+  --diagnoser-name copilot-terra-compat \
+  --command 'python3 examples/diagnosis_shim_copilot_cli.py' \
+  --diagnoser-config configs/diagnosers/copilot-terra-compat.json \
+  --context-method tail \
+  --case-id pytest-pandas-001
+```
+
+Use a `*-native-long` config only for the separate raw long-context study. It
+uses the Copilot SDK JSON-RPC transport so the raw context is not limited by
+the operating system's command-line size. Do not combine native-long results
+with the compatibility panel.
+
+Recompute study statistics from existing artifacts without model calls:
+
+```bash
+for model in luna terra sol; do
+  python3 tools/analyze_v1_3_transfer.py \
+    --diagnoser "copilot-$model-compat" \
+    --output "results/v1_3/$model-compat-statistics.json"
+  python3 tools/analyze_v1_3_native.py \
+    --native-diagnoser "copilot-$model-native-long" \
+    --compat-diagnoser "copilot-$model-compat" \
+    --output "results/v1_3/$model-native-long-statistics.json"
+done
+```
+
+Native statistics keep full-corpus comparisons separate from exploratory
+accepted-case subsets. Latency populations distinguish successful model-call
+time from successful, rejected, and all-row adapter end-to-end runtime.
+Recorded costs cover diagnosis only, not frozen-summary preparation.
 
 ## Repo layout (high level)
 

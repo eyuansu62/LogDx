@@ -1,0 +1,138 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "grep",
+  "diagnoser": "copilot-luna-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because the integration test dubbo-samples-test-11137 timed out while waiting for its test container. Docker also reported an HTTP 500 error while downloading the zookeeper image, leaving the expected containers unavailable.",
+  "root_cause_category": "network_or_flaky",
+  "root_cause": "The dubbo-samples-test-11137 integration test could not start its Docker dependencies because downloading zookeeper failed with HTTP 500, causing the container wait to reach the 602-second timeout.",
+  "confidence": 0.98,
+  "relevant_files": [
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/docker-compose.yml"
+  ],
+  "relevant_tests": [
+    "dubbo-samples-test-11137"
+  ],
+  "evidence": [
+    {
+      "quote": "wait for container is timeout: 602 s",
+      "reason": "Shows the integration test exceeded its container startup wait."
+    },
+    {
+      "quote": "[dubbo-samples-test-11137] :ErrorMsg: Run tests timeout",
+      "reason": "Explicitly identifies the test failure as a timeout."
+    },
+    {
+      "quote": "zookeeper Error received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "Directly shows the Docker zookeeper image download failed with a server-side HTTP error."
+    },
+    {
+      "quote": "Error response from daemon: received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "Confirms Docker could not complete the dependency image operation."
+    },
+    {
+      "quote": "Error response from daemon: No such container: dubbo-samples-test-11137--zookeeper-1",
+      "reason": "Shows the expected zookeeper container was never available."
+    },
+    {
+      "quote": "[2/23] [dubbo-samples-test-11137:1/1] TEST FAILURE: Run tests timeout",
+      "reason": "The final test summary attributes the single failed test to the timeout."
+    }
+  ],
+  "suggested_fix": "Retry the job after the zookeeper image download/server error clears; if it recurs, investigate Docker registry availability for the zookeeper image and preserve the test logs in /home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs.",
+  "input": {
+    "context_path": "results/v2/holdout/grep/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 16973
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 910
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 8706.491,
+    "cache_key": "fb2d4fc9b04ff1387f4062770dda7840be97e171aa8e817846eacd4cd21e0275",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-luna",
+      "resolved_model": "gpt-5.6-luna",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-luna",
+      "max_context_window_tokens": 328000,
+      "max_prompt_tokens_capability": 200000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 200000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 552,
+        "prompt_tokens": 34100,
+        "total_tokens": 34652,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 34097,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 2000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 25000000000,
+            "token_count": 34097,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 120000000000,
+            "token_count": 552,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 918725000
+      },
+      "model_call_duration_ms": 5138,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 5138,
+        "sessionDurationMs": 6850,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "2a2cf91740e2aa5e108dd27e6e9bffbf57cd0b09704b4be470b254c35c421f60",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}
