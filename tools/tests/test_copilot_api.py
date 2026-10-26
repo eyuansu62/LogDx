@@ -107,6 +107,14 @@ class CopilotApiTests(unittest.TestCase):
                 self.diagnose(cache_dir=Path(directory))
             self.assertEqual(list(Path(directory).iterdir()), [])
 
+    def test_outer_timeout_covers_native_budget_and_override(self) -> None:
+        for overrides, budget in (({}, 600), ({"CILOGBENCH_COPILOT_TIMEOUT": "900"}, 900)):
+            with mock.patch.dict(os.environ, overrides), mock.patch.object(
+                API.subprocess, "run", return_value=completed(result(native=True))
+            ) as run:
+                self.diagnose(native=True)
+                self.assertGreater(run.call_args.kwargs["timeout"], budget)
+
     def test_native_explicit_zero_tool_counts_are_accepted(self) -> None:
         with mock.patch.object(API.subprocess, "run", return_value=completed(result(native=True))):
             self.assertEqual(self.diagnose(native=True)["_model_info"]["tool_count"], 0)

@@ -252,3 +252,21 @@ differences, and reconstructed the recorded costs from token-price details.
 The package scan found no credential-pattern matches in changed files and
 confirmed that historical result files are unchanged. The final change has
 one preserved evaluated SDK snapshot and no local duplicate/cache files.
+
+
+## Transport and analysis fixes — 2026-10-26
+
+The current CLI adapter sends prompts through stdin and uses supported
+reasoning and session-sync flags. The original evaluated CLI source is saved
+under `examples/frozen/` with its original SHA-256. The SDK receives its
+configured timeout and counts literal special-token markers as ordinary log
+text. Public API and command-runner timeouts include 60 seconds for startup
+and cleanup. Cost summaries now report missing observations and use `null`
+when no cost data was recorded.
+
+Offline validation passed 240 tests, the diagnosis validators, corpus and
+release checks, and all four protocol locks. Two existing integration tests
+now quote command paths so they also work in checkouts containing spaces.
+The six statistics files retain every previous metric and total; only cost
+observation counts were added. Saved diagnosis responses and Drain3 contexts
+were not changed. No benchmark model calls were made for these fixes.

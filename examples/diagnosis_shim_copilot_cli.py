@@ -251,11 +251,9 @@ def invoke_copilot(
         env["COPILOT_HOME"] = str(temp_path / "copilot-home")
         argv = [
             "copilot",
-            "-p",
-            prompt,
             "--model",
             model,
-            "--effort",
+            "--reasoning-effort",
             effort,
             "--context",
             context_mode,
@@ -268,15 +266,18 @@ def invoke_copilot(
             "__logdx_no_tools__",
             "--no-custom-instructions",
             "--disable-builtin-mcps",
-            "--no-remote",
+            "--sync-session=off",
             "--no-auto-update",
             "--max-ai-credits",
             "30",
             "--usage-output-file",
             str(usage_path),
         ]
+        # Piped input is the CLI prompt. Do not add -p: it would discard stdin.
+        # Keep log bytes out of argv to avoid Linux single-argument limits.
         result = subprocess.run(
             argv,
+            input=prompt,
             capture_output=True,
             text=True,
             timeout=timeout_s,
@@ -316,7 +317,7 @@ def _invoke_copilot_acp(
             "--stdio",
             "--model",
             model,
-            "--effort",
+            "--reasoning-effort",
             effort,
             "--context",
             context_mode,
@@ -324,7 +325,7 @@ def _invoke_copilot_acp(
             "__logdx_no_tools__",
             "--no-custom-instructions",
             "--disable-builtin-mcps",
-            "--no-remote",
+            "--sync-session=off",
             "--no-auto-update",
             "--max-ai-credits",
             "30",

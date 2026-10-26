@@ -345,10 +345,12 @@ def diagnose(
     # Agent diagnoser is multi-turn; default to a higher timeout (~300s)
     # and let the shim's own per-API timeouts handle the per-turn budget.
     timeout = 30 if diagnoser == "stub-debugger-v1" else (
-        360 if diagnoser.startswith("copilot-") else (
-            300 if diagnoser in AGENT_MODES else 180
-        )
+        300 if diagnoser in AGENT_MODES else 180
     )
+    if diagnoser.startswith("copilot-"):
+        default_timeout = "600" if diagnoser.endswith("-native-long") else "240"
+        # Let the shim finish its model-call budget and clean up its runtime.
+        timeout = int(env.get("CILOGBENCH_COPILOT_TIMEOUT", default_timeout)) + 60
     proc = subprocess.run(
         [sys.executable, str(shim)],
         input=json.dumps(payload, ensure_ascii=False).encode("utf-8"),

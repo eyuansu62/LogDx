@@ -47,12 +47,16 @@ independently prove explicit zero-tool telemetry. Raw event streams were not
 retained. The current adapter rejects absent or invalid counts and retains
 verified usage when a response cannot be parsed.
 
-The exact evaluated SDK source is retained under
-[`examples/frozen/diagnosis_shim_copilot_sdk_2026_08_30.py`](../../examples/frozen/diagnosis_shim_copilot_sdk_2026_08_30.py)
-for audit only. Its SHA is recorded in the report. New calls use the hardened
-`examples/diagnosis_shim_copilot_sdk.py`; its different hash invalidates old
-cache entries. The native SDK requires Python 3.11+ and its pinned Python
-dependencies, not a separate global Copilot CLI installation.
+The exact evaluated CLI and SDK sources are retained under
+[`examples/frozen/`](../../examples/frozen/) for audit only. Their SHAs are
+recorded in the report. New calls use the current adapters; their different
+hashes invalidate old cache entries. The CLI now reads the prompt from stdin
+and disables session sync with `--sync-session=off`, instead of the removed
+`--no-remote` flag. These flags were checked with CLI `1.0.103`.
+The SDK counts literal special-token markers as ordinary log text and passes
+its configured timeout to `send_and_wait()`. The native SDK requires Python
+3.11+ and its pinned Python dependencies, not a separate global Copilot CLI
+installation.
 
 The completed compatibility panel contains 280 rows each for Luna, Terra, and
 Sol. Every successful row records a matching requested and resolved model.

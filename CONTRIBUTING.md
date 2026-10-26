@@ -11,7 +11,7 @@ git clone https://github.com/eyuansu62/LogDx.git
 cd LogDx
 
 # Test dependencies: full schema validation and the Drain3 regression suite
-python3 -m pip install jsonschema 'drain3==0.9.11'
+python3 -m pip install jsonschema 'drain3==0.9.11' 'tiktoken>=0.12,<1'
 
 # Rebuild the diagnosis cache from canonical manifests (one-time;
 # cache is gitignored, so fresh clones need this for cache-hit tests
@@ -106,11 +106,21 @@ Do not put credentials in a config file or command recorded in the runlog.
 Absolute interpreter paths in saved call metadata describe the original
 machine; use your own environment, not those paths.
 
-The current SDK adapter includes post-study safety fixes. The exact evaluated
-source remains in
-[`examples/frozen/diagnosis_shim_copilot_sdk_2026_08_30.py`](examples/frozen/diagnosis_shim_copilot_sdk_2026_08_30.py)
-for audit only. Use the current adapter for new calls. Its changed source hash
-prevents reuse of old native responses as if they came from the hardened code.
+The current CLI and SDK adapters include post-study fixes. The exact evaluated
+sources remain under [`examples/frozen/`](examples/frozen/) for audit only.
+Use the current adapters for new calls. Their changed source hashes prevent
+reuse of old responses as if they came from the updated code.
+
+The current CLI adapter uses piped stdin, `--reasoning-effort`, and
+`--sync-session=off` (checked with CLI `1.0.103`). It does not use the removed
+`--no-remote` flag. Piped input keeps large prompts out of the operating
+system's command-line argument limit. The default context tier, character cap,
+and disabled tool surface remain unchanged.
+
+`CILOGBENCH_COPILOT_TIMEOUT` sets the model-call timeout in seconds (default:
+240 for CLI, 600 for SDK). The SDK receives that timeout explicitly. The public
+API and command runner allow another 60 seconds for startup and cleanup.
+An explicit `CILOGBENCH_DIAGNOSIS_COMMAND_TIMEOUT` overrides the runner limit.
 
 #### Drain3: local-only example
 
@@ -179,6 +189,10 @@ Native statistics keep full-corpus comparisons separate from exploratory
 accepted-case subsets. Latency populations distinguish successful model-call
 time from successful, rejected, and all-row adapter end-to-end runtime.
 Recorded costs cover diagnosis only, not frozen-summary preparation.
+`observable_total_nano_aiu` is the sum of recorded values, or `null` if none
+were recorded. `observable_nano_aiu_observations` and
+`observable_nano_aiu_missing_rows` state its coverage across all manifest rows,
+including rejected rows. A partial sum is not a complete execution cost.
 
 ## Repo layout (high level)
 

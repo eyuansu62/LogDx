@@ -1064,9 +1064,12 @@ def build_shim_env(
     if context_mode and env.get("CILOGBENCH_COPILOT_CONTEXT_MODE") is None:
         env["CILOGBENCH_COPILOT_CONTEXT_MODE"] = str(context_mode)
     if context_mode:
-        # Copilot long-context calls can outlive the historical command-provider
-        # limit. Each transport also enforces its own call timeout.
-        env.setdefault("CILOGBENCH_DIAGNOSIS_COMMAND_TIMEOUT", "600")
+        # Give the shim its model-call budget plus startup/cleanup time.
+        # An explicit command timeout remains a caller-controlled upper bound.
+        call_timeout = int(env.get(
+            "CILOGBENCH_COPILOT_TIMEOUT", "600" if context_mode == "long_context" else "240"
+        ))
+        env.setdefault("CILOGBENCH_DIAGNOSIS_COMMAND_TIMEOUT", str(call_timeout + 60))
     max_context_chars = (config.get("context_policy") or {}).get(
         "max_context_chars"
     )

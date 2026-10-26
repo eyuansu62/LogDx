@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import importlib.util
+import asyncio
 import hashlib
 import io
 import json
@@ -307,6 +308,11 @@ class SdkNativeProvenanceTests(unittest.TestCase):
             with self.assertRaises(SDK_SHIM.ProvenanceError):
                 SDK_SHIM.validate_event_provenance(events, "gpt-5.6-luna")
 
+    def test_evaluated_cli_snapshot_keeps_original_hash(self) -> None:
+        source = ROOT / "examples/frozen/diagnosis_shim_copilot_cli_2026_08_30.py"
+        self.assertEqual(hashlib.sha256(source.read_bytes()).hexdigest(),
+                         "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a")
+
     def test_evaluated_sdk_snapshot_keeps_original_hash(self) -> None:
         source = ROOT / "examples/frozen/diagnosis_shim_copilot_sdk_2026_08_30.py"
         self.assertEqual(
@@ -448,6 +454,128 @@ class CaseFilterTests(unittest.TestCase):
         merged = RUNNER.merge_selected_manifest_rows(source, existing, selected)
         self.assertEqual([row["case_id"] for row in merged], ["a", "b", "c"])
         self.assertEqual([row["value"] for row in merged], ["old-a", "new-b", "old-c"])
+
+
+class CopilotTransportRegressionTests(unittest.TestCase):
+    def test_cli_uses_current_flags_and_delivers_large_prompt_via_stdin(self):
+        # A real child process models current CLI argument handling without
+        # authentication or model access. The response hashes the received input.
+        prompt = "failure log \u2603\n" * 40_000
+        with tempfile.TemporaryDirectory() as directory:
+            cli = Path(directory) / "copilot"
+            cli.write_text("#!/usr/bin/env python3\n" + """
+import hashlib, json, sys
+if '--no-remote' in sys.argv or '--sync-session=off' not in sys.argv:
+    sys.exit(2)
+if '-p' in sys.argv or '--prompt' in sys.argv:
+    sys.exit(3)  # CLI ignores stdin when -p is supplied.
+if max(map(len, sys.argv)) >= 131072:
+    sys.exit(4)
+prompt = sys.stdin.read()
+print(json.dumps({'type':'model.model_call_success','data':{'toolCount':0}}))
+print(json.dumps({'type':'assistant.message','data':{'phase':'final_answer',
+    'content':hashlib.sha256(prompt.encode()).hexdigest()}}))
+""")
+            cli.chmod(0o755)
+            with mock.patch.dict(os.environ, {"PATH": directory + os.pathsep + os.environ["PATH"]}):
+                reply, info = SHIM.invoke_copilot(prompt=prompt, model="gpt-5.6-luna",
+                    effort="low", context_mode="default", timeout_s=10)
+            self.assertEqual(reply, hashlib.sha256(prompt.encode()).hexdigest())
+            self.assertEqual(info["tool_count"], 0)
+
+    def test_prompt_is_not_a_process_argument(self):
+        prompt = "x" * 400_000
+        def launch(argv, **kwargs):
+            if any(len(arg.encode()) >= 131072 for arg in argv):
+                raise OSError(7, "Argument list too long")
+            self.assertEqual(kwargs.get("input"), prompt)
+            return subprocess.CompletedProcess(argv, 0, stdout=(
+                '{"type":"assistant.message","data":{"phase":"final_answer","content":"ok"}}\n'
+                '{"type":"model.model_call_success","data":{"toolCount":0}}'), stderr="")
+        with mock.patch.object(SHIM.subprocess, "run", side_effect=launch):
+            reply, _ = SHIM.invoke_copilot(prompt=prompt, model="gpt-5.6-luna",
+                effort="low", context_mode="default", timeout_s=10)
+        self.assertEqual(reply, "ok")
+
+
+class NativeCallRegressionTests(unittest.TestCase):
+    def invoke(self, prompt, timeout_s):
+        import tiktoken
+        # Real tokenizer semantics, with a local tiny vocabulary (no download).
+        encoding = tiktoken.Encoding(name="logdx-test", pat_str=r".",
+            mergeable_ranks={bytes([i]): i for i in range(256)},
+            special_tokens={"<|endoftext|>": 256})
+        events = SdkNativeProvenanceTests().valid_events()
+        class Session:
+            async def send_and_wait(self, prompt, *, timeout=60.0):
+                if timeout < timeout_s:
+                    raise TimeoutError("SDK deadline would expire before configured budget")
+                return SimpleNamespace(type="assistant.message", data=SimpleNamespace(content="ok"))
+            async def disconnect(self):
+                pass
+        class Client:
+            def __init__(self, **kwargs):
+                pass
+            async def __aenter__(self):
+                return self
+            async def __aexit__(self, *args):
+                pass
+            async def list_models(self):
+                return [SimpleNamespace(id="gpt-5.6-luna", capabilities=SimpleNamespace(
+                    limits=SimpleNamespace(max_context_window_tokens=1050000)),
+                    billing=SimpleNamespace(token_prices=SimpleNamespace(
+                        long_context=SimpleNamespace(max_prompt_tokens=922000))))]
+            async def create_session(self, **kwargs):
+                for event in events:
+                    kwargs["on_event"](event)
+                return Session()
+        with mock.patch.dict(sys.modules, {
+            "copilot": SimpleNamespace(CopilotClient=Client),
+            "copilot.session": SimpleNamespace(PermissionDecisionUserNotAvailable=lambda: None),
+        }), mock.patch.object(SDK_SHIM.importlib.metadata, "version", return_value="1.0.11"), \
+                mock.patch.object(tiktoken, "get_encoding", return_value=encoding):
+            return asyncio.run(SDK_SHIM.invoke_sdk(prompt=prompt, model="gpt-5.6-luna",
+                effort="low", timeout_s=timeout_s))
+
+    def test_sdk_receives_configured_timeout(self):
+        reply, _ = self.invoke("log", 600)
+        self.assertEqual(reply, "ok")
+
+    def test_special_token_marker_is_counted_as_literal_log_text(self):
+        reply, info = self.invoke("expected <|endoftext|> in output", 10)
+        self.assertEqual(reply, "ok")
+        self.assertGreater(info["prompt_tokens_counted"], 1)
+
+
+class RunnerTimeoutRegressionTests(unittest.TestCase):
+    def test_command_deadline_covers_native_budget_and_override(self):
+        config = json.loads((ROOT / "configs/diagnosers/copilot-luna-native-long.json").read_text())
+        for overrides, budget in (({}, 600), ({"CILOGBENCH_COPILOT_TIMEOUT": "900"}, 900)):
+            with mock.patch.dict(os.environ, overrides, clear=True):
+                env = RUNNER.build_shim_env(config)
+            self.assertGreater(int(env["CILOGBENCH_DIAGNOSIS_COMMAND_TIMEOUT"]), budget)
+
+
+class CostTelemetryRegressionTests(unittest.TestCase):
+    def runtime(self, values):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory) / "dev/diagnoses/test"
+            folder.mkdir(parents=True)
+            rows = [{"metadata": {"model_info": {"observable_ai_usage": value}}} for value in values]
+            (folder / "raw.jsonl").write_text("\n".join(json.dumps(row) for row in rows))
+            return STATS.load_runtime("test", Path(directory))["raw"]
+
+    def test_absent_cost_is_unknown(self):
+        result = self.runtime([{}])
+        self.assertIsNone(result["observable_total_nano_aiu"])
+        self.assertEqual(result["observable_nano_aiu_observations"], 0)
+        self.assertEqual(result["observable_nano_aiu_missing_rows"], 1)
+
+    def test_partial_cost_has_coverage_and_explicit_zero_is_observed(self):
+        result = self.runtime([{"total_nano_aiu": 0}, {}, {"total_nano_aiu": 12}])
+        self.assertEqual(result["observable_total_nano_aiu"], 12)
+        self.assertEqual(result["observable_nano_aiu_observations"], 2)
+        self.assertEqual(result["observable_nano_aiu_missing_rows"], 1)
 
 
 if __name__ == "__main__":

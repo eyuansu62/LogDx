@@ -260,7 +260,12 @@ def load_runtime(diagnoser: str, results_dir: Path) -> dict[str, dict]:
             "mean_input_tokens": round(statistics.fmean(bucket["input_tokens"]), 2) if bucket["input_tokens"] else None,
             "mean_output_tokens": round(statistics.fmean(bucket["output_tokens"]), 2) if bucket["output_tokens"] else None,
             "premium_requests": round(sum(bucket["premium_requests"]), 6) if bucket["premium_requests"] else None,
-            "observable_total_nano_aiu": round(sum(bucket["nano_aiu"]), 6),
+            # This is the observed sum, not an estimate for unreported rows.
+            "observable_total_nano_aiu": (
+                round(sum(bucket["nano_aiu"]), 6) if bucket["nano_aiu"] else None
+            ),
+            "observable_nano_aiu_observations": len(bucket["nano_aiu"]),
+            "observable_nano_aiu_missing_rows": rows - len(bucket["nano_aiu"]),
             "successful_model_call_latency_ms": latency_summary(bucket["model_latency_ms"]),
             "successful_end_to_end_latency_ms": latency_summary(bucket["success_runtime_ms"]),
             "rejected_end_to_end_latency_ms": latency_summary(bucket["error_runtime_ms"]),

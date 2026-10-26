@@ -30,6 +30,11 @@ SDK source is preserved byte for byte in
 [`examples/frozen/diagnosis_shim_copilot_sdk_2026_08_30.py`](../examples/frozen/diagnosis_shim_copilot_sdk_2026_08_30.py).
 The hash above identifies that evaluated snapshot, not the current adapter.
 Saved responses and numerical statistics are unchanged; no model calls were rerun.
+A later transport fix also preserves the evaluated CLI source in
+`examples/frozen/diagnosis_shim_copilot_cli_2026_08_30.py`. The compatibility
+hash above refers to that snapshot. Current analysis adds cost observation
+and missing-row counts; this metadata does not change the reported totals.
+An entirely unobserved cost is now `null`, not zero.
 
 Luna, Terra, and Sol each ran 35 cases over eight methods and six split groups.
 Each produced 280 rows: 253 proven model calls and 27 explicit

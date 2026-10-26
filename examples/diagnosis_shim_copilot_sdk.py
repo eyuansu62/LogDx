@@ -240,7 +240,7 @@ async def invoke_sdk(
         )
 
     encoding = tiktoken.get_encoding(TOKENIZER)
-    counted_prompt_tokens = len(encoding.encode(prompt))
+    counted_prompt_tokens = len(encoding.encode(prompt, disallowed_special=()))
     events: list[object] = []
 
     def on_event(event: object) -> None:
@@ -306,7 +306,7 @@ async def invoke_sdk(
             )
             try:
                 response = await asyncio.wait_for(
-                    session.send_and_wait(prompt), timeout=timeout_s
+                    session.send_and_wait(prompt, timeout=timeout_s), timeout=timeout_s
                 )
             finally:
                 await session.disconnect()
