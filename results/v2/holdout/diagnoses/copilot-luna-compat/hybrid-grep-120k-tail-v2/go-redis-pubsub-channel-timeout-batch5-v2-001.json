@@ -1,0 +1,134 @@
+{
+  "case_id": "go-redis-pubsub-channel-timeout-batch5-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "copilot-luna-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because one PubSub integration specification timed out while waiting for a channel message. The suite reported 1 failed spec and exited with a nonzero status.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "PubSub test TestGinkgoSuite failed in the \"PubSub [It] should ChannelMessage\" spec because the channel received no message within the 1-second timeout.",
+  "confidence": 0.99,
+  "relevant_files": [
+    "/home/runner/work/go-redis/go-redis/pubsub_test.go"
+  ],
+  "relevant_tests": [
+    "TestGinkgoSuite",
+    "PubSub [It] should ChannelMessage"
+  ],
+  "evidence": [
+    {
+      "quote": "[FAILED] PubSub [It] should ChannelMessage",
+      "reason": "Identifies the failing PubSub specification."
+    },
+    {
+      "quote": "Timed out after 1.001s.",
+      "reason": "Shows the failure was caused by a timeout."
+    },
+    {
+      "quote": "Expected\n      <<-chan *redis.Message | len:0, cap:10>: 0xc0012d96c0\n  to receive something.",
+      "reason": "Shows that the channel had no message available when the assertion timed out."
+    },
+    {
+      "quote": "pubsub_test.go:661",
+      "reason": "Pinpoints the assertion location in the test file."
+    },
+    {
+      "quote": "FAIL! -- 1223 Passed | 1 Failed | 0 Pending | 50 Skipped",
+      "reason": "Confirms the suite failed due to exactly one failed test."
+    }
+  ],
+  "suggested_fix": "Investigate the PubSub ChannelMessage test at /home/runner/work/go-redis/go-redis/pubsub_test.go:661 and ensure the expected message is published and delivered before the 1-second timeout.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-tail-v2/go-redis-pubsub-channel-timeout-batch5-v2-001.txt",
+    "context_tokens_estimate": 22394
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 756
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 7725.616,
+    "cache_key": "66e6eb3f5a29a7b35895a1d966392c21ff315b90b57b4568ed88f707691db352",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-luna",
+      "resolved_model": "gpt-5.6-luna",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-luna",
+      "max_context_window_tokens": 328000,
+      "max_prompt_tokens_capability": 200000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 200000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 421,
+        "prompt_tokens": 39334,
+        "total_tokens": 39755,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 39331,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 2000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 25000000000,
+            "token_count": 39331,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 120000000000,
+            "token_count": 421,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 1033855000
+      },
+      "model_call_duration_ms": 4102,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 4102,
+        "sessionDurationMs": 5856,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "2a2cf91740e2aa5e108dd27e6e9bffbf57cd0b09704b4be470b254c35c421f60",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

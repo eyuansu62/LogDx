@@ -1,0 +1,154 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "grep",
+  "diagnoser": "copilot-sol-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because the pyright, mypy, and stubtest hooks reported type-checking errors, predominantly for pyarrow APIs that the type checkers could not find or considered private. The subsequent script tests passed.",
+  "root_cause_category": "type_error",
+  "root_cause": "Static type checking failed because pandas code references numerous pyarrow.compute APIs and other pyarrow symbols that pyright and mypy report as missing, untyped, or not exported; mypy found 279 errors in 9 files.",
+  "confidence": 0.98,
+  "relevant_files": [
+    "pandas/compat/pyarrow.py",
+    "pandas/core/arrays/_arrow_string_mixins.py",
+    "pandas/core/arrays/arrow/accessors.py",
+    "pandas/core/arrays/arrow/extension_types.py",
+    "pandas/core/arrays/arrow/array.py",
+    "pandas/core/arrays/datetimes.py",
+    "pandas/core/arrays/string_arrow.py",
+    "pandas/core/strings/accessor.py",
+    "pandas/io/orc.py",
+    "pandas/io/parquet.py",
+    "pandas/io/feather_format.py",
+    "pandas/tests/reshape/test_get_dummies.py"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "pyright..................................................................\u001b[41mFailed\u001b[m",
+      "reason": "The pyright type-checking hook explicitly failed."
+    },
+    {
+      "quote": "\"Expression\" is not exported from module \"pyarrow.compute\"",
+      "reason": "Pyright identified use of a pyarrow.compute symbol that its type information does not export."
+    },
+    {
+      "quote": "pyright reportGeneralTypeIssues..........................................\u001b[41mFailed\u001b[m",
+      "reason": "The second pyright hook also failed on general type issues."
+    },
+    {
+      "quote": "mypy.....................................................................\u001b[41mFailed\u001b[m",
+      "reason": "The mypy type-checking hook explicitly failed."
+    },
+    {
+      "quote": "pandas/compat/pyarrow.py:76: error: Module has no attribute \"is_null\"  [attr-defined]",
+      "reason": "Mypy could not resolve a referenced pyarrow module attribute."
+    },
+    {
+      "quote": "Found 279 errors in 9 files (checked 1458 source files)",
+      "reason": "This quantifies the widespread type-checking failure."
+    },
+    {
+      "quote": "error: not checking stubs due to mypy build errors:",
+      "reason": "Stubtest failed downstream because the mypy build already contained errors."
+    },
+    {
+      "quote": "============================== 92 passed in 0.68s ==============================",
+      "reason": "The later script tests passed, isolating the observed job failure to static typing rather than those runtime tests."
+    }
+  ],
+  "suggested_fix": "Update the pyarrow-facing annotations, imports, or type-checker configuration so the referenced pyarrow.compute and related APIs are recognized as exported and typed, then rerun the manual pre-commit hooks.",
+  "input": {
+    "context_path": "results/dev/grep/mypy-pandas-001.txt",
+    "context_tokens_estimate": 27248
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1057
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 10623.011,
+    "cache_key": "5eecfc7e0cd664c559d743e1b687d47c41f973ae135bf118896bb87be89db02c",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-sol",
+      "resolved_model": "gpt-5.6-sol",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-sol",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 696,
+        "prompt_tokens": 44676,
+        "total_tokens": 45372,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 44673,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 44673,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1000000000000,
+            "token_count": 696,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 11864850000
+      },
+      "model_call_duration_ms": 7028,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 7028,
+        "sessionDurationMs": 8865,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "3090010e6a2b4cd862c8e6ea3be6bd0ee9862c034dd9aeba1cf79bbf8c6ffd5f",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

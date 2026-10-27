@@ -1,0 +1,135 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "tail",
+  "diagnoser": "copilot-sol-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The trybuild compile-fail test `compile_fail_full` failed because the actual compiler diagnostics for `tests/fail/macros_type_mismatch.rs` did not match the expected output. The test run stopped after 1 of 10 trybuild cases failed.",
+  "root_cause_category": "compile_error",
+  "root_cause": "The expected compile-fail output for `tests/fail/macros_type_mismatch.rs` is out of sync with the actual Rust compiler diagnostics, causing the trybuild test `compile_fail_full` to fail.",
+  "confidence": 0.97,
+  "relevant_files": [
+    "tests/fail/macros_type_mismatch.rs",
+    "./tests/macros.rs"
+  ],
+  "relevant_tests": [
+    "compile_fail_full",
+    "tests-build::macros compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:13:1: 13:15}` to be a future that resolves to `Result<(), ()>`, but it resolves to `()`",
+      "reason": "This is an actual compiler diagnostic emitted for the compile-fail fixture."
+    },
+    {
+      "quote": "note: If the actual output is the correct output you can bless it by rerunning",
+      "reason": "Trybuild explicitly indicates that the actual diagnostic output differs from the stored expectation."
+    },
+    {
+      "quote": "your test with the environment variable TRYBUILD=overwrite",
+      "reason": "This provides trybuild's supported action for updating an outdated expected-output snapshot."
+    },
+    {
+      "quote": "1 of 10 tests failed",
+      "reason": "This confirms that one trybuild case failed."
+    },
+    {
+      "quote": "FAIL\u001b[0m [   9.875s] (396/396) \u001b[35;1mtests-build::macros\u001b[0m \u001b[34;1mcompile_fail_full",
+      "reason": "This identifies the failing test target and test identifier."
+    }
+  ],
+  "suggested_fix": "Review the actual diagnostics for `tests/fail/macros_type_mismatch.rs`; if they are correct, rerun the test with `TRYBUILD=overwrite` to update the expected compile-fail output.",
+  "input": {
+    "context_path": "results/dev/tail/cargo-tokio-001.txt",
+    "context_tokens_estimate": 4374
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 852
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 8625.182,
+    "cache_key": "766090ba1512462a834f3ff59d1238ea75d496cdc8f49deaa60773cc9de51ba0",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-sol",
+      "resolved_model": "gpt-5.6-sol",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-sol",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 514,
+        "prompt_tokens": 12122,
+        "total_tokens": 12636,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 12119,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 12119,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1000000000000,
+            "token_count": 514,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 3544350000
+      },
+      "model_call_duration_ms": 5075,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 5075,
+        "sessionDurationMs": 6932,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "3090010e6a2b4cd862c8e6ea3be6bd0ee9862c034dd9aeba1cf79bbf8c6ffd5f",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

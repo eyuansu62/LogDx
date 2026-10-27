@@ -1,0 +1,125 @@
+{
+  "case_id": "cleanup-tsc-stress-001",
+  "context_method": "raw",
+  "diagnoser": "copilot-luna-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The Cleanup artifacts job failed while deleting workflow artifacts because the GitHub API returned HTTP 403. The token used by gh was not authorized for the deletion request.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The GitHub token lacked permission to delete artifacts in microsoft/TypeScript, causing the DELETE API call to fail with \"Resource not accessible by integration (HTTP 403)\".",
+  "confidence": 0.99,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "GITHUB_TOKEN Permissions",
+      "reason": "The log identifies the permissions granted to the workflow token."
+    },
+    {
+      "quote": "Actions: write",
+      "reason": "The listed token permissions do not show an explicit artifact-deletion permission."
+    },
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "The API explicitly rejected the artifact deletion request due to authorization."
+    },
+    {
+      "quote": "Process completed with exit code 1.",
+      "reason": "The authorization failure caused the cleanup job to fail."
+    }
+  ],
+  "suggested_fix": "Grant the workflow token the permission required to delete artifacts, or use an appropriately authorized token for the DELETE request.",
+  "input": {
+    "context_path": "results/stress/raw/cleanup-tsc-stress-001.txt",
+    "context_tokens_estimate": 1291
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 691
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 7182.881,
+    "cache_key": "364578d95d275120470a6e699cf1b5b9475fecba77f144576cc5e39731c198c7",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-luna",
+      "resolved_model": "gpt-5.6-luna",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-luna",
+      "max_context_window_tokens": 328000,
+      "max_prompt_tokens_capability": 200000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 200000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 233,
+        "prompt_tokens": 7586,
+        "total_tokens": 7819,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 7583,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 2000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 25000000000,
+            "token_count": 7583,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 120000000000,
+            "token_count": 233,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 217595000
+      },
+      "model_call_duration_ms": 2763,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 2763,
+        "sessionDurationMs": 4764,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "2a2cf91740e2aa5e108dd27e6e9bffbf57cd0b09704b4be470b254c35c421f60",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

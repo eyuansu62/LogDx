@@ -1,0 +1,138 @@
+{
+  "case_id": "go-redis-pubsub-channel-timeout-batch5-v2-001",
+  "context_method": "drain3-templates",
+  "diagnoser": "copilot-sol-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The Go test job failed because the PubSub spec \"should ChannelMessage\" timed out waiting for a message on an empty channel.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The PubSub test at /home/runner/work/go-redis/go-redis/pubsub_test.go:661 did not receive a message within 1.001 seconds, causing TestGinkgoSuite and the test job to fail.",
+  "confidence": 0.99,
+  "relevant_files": [
+    "/home/runner/work/go-redis/go-redis/pubsub_test.go"
+  ],
+  "relevant_tests": [
+    "PubSub [It] should ChannelMessage",
+    "TestGinkgoSuite"
+  ],
+  "evidence": [
+    {
+      "quote": "PubSub ^[[38;5;9m^[[1m[It] should ChannelMessage",
+      "reason": "Identifies the failing Ginkgo test."
+    },
+    {
+      "quote": "[FAILED] Timed out after 1.001s.",
+      "reason": "States the immediate failure condition and timeout duration."
+    },
+    {
+      "quote": "<<-chan *redis.Message | len:0, cap:10>: 0xc0012d96c0",
+      "reason": "Shows that the message channel was empty when the assertion timed out."
+    },
+    {
+      "quote": "to receive something.",
+      "reason": "Confirms that the failed assertion expected a value from the channel."
+    },
+    {
+      "quote": "/home/runner/work/go-redis/go-redis/pubsub_test.go:661",
+      "reason": "Locates the assertion that failed."
+    },
+    {
+      "quote": "--- FAIL: TestGinkgoSuite (179.28s)",
+      "reason": "Confirms the timeout propagated to the Go test suite."
+    }
+  ],
+  "suggested_fix": "Investigate why the ChannelMessage path does not deliver to the channel before the 1-second assertion at /home/runner/work/go-redis/go-redis/pubsub_test.go:661, and correct the delivery or synchronization behavior.",
+  "input": {
+    "context_path": "results/v2/holdout/drain3-templates/go-redis-pubsub-channel-timeout-batch5-v2-001.txt",
+    "context_tokens_estimate": 12540
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 777
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 9111.901,
+    "cache_key": "c21014644f913270673f68a2cae56412d7832728ff47d79d49238c42a8b2ecac",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-sol",
+      "resolved_model": "gpt-5.6-sol",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-sol",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 460,
+        "prompt_tokens": 25619,
+        "total_tokens": 26079,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 25616,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 25616,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1000000000000,
+            "token_count": 460,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 6864600000
+      },
+      "model_call_duration_ms": 5288,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 5288,
+        "sessionDurationMs": 7228,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "3090010e6a2b4cd862c8e6ea3be6bd0ee9862c034dd9aeba1cf79bbf8c6ffd5f",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

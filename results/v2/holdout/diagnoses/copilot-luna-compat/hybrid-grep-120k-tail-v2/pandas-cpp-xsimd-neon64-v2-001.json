@@ -1,0 +1,129 @@
+{
+  "case_id": "pandas-cpp-xsimd-neon64-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "copilot-luna-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The macos-15 py312 job failed while compiling pandas' C++ SIMD sources for ARM NEON. The compiler could not resolve explicit instantiations because the implementation uses xsimd::neon while the declarations expect xsimd::neon64.",
+  "root_cause_category": "compile_error",
+  "root_cause": "Compilation failed due to a mismatch between xsimd::neon64 and xsimd::neon in explicit instantiations of accumulate_moments_simd::operator().",
+  "confidence": 0.99,
+  "relevant_files": [
+    "pandas/_libs/include/pandas/simd/moments_simd.hpp",
+    "pandas/_libs/simd/moments_inst_neon.cpp",
+    "pandas/_libs/simd/moments.cpp"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "FAILED: [code=1] pandas/_libs/simd/libmoments_simd_neon.a.p/moments_inst_neon.cpp.o",
+      "reason": "The NEON C++ compilation step failed."
+    },
+    {
+      "quote": "error: explicit instantiation of 'operator()' does not refer to a function template",
+      "reason": "The compiler rejected the explicit template instantiation."
+    },
+    {
+      "quote": "could not match 'Moments (xsimd::neon64, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int) noexcept' against 'Moments (xsimd::neon, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int)'",
+      "reason": "The diagnostic explicitly identifies the xsimd::neon64 versus xsimd::neon type mismatch."
+    },
+    {
+      "quote": "ninja: build stopped: subcommand failed.",
+      "reason": "The compilation error stopped the build."
+    }
+  ],
+  "suggested_fix": "Make the explicit declarations and definitions of accumulate_moments_simd::operator() use the same xsimd architecture type, resolving the xsimd::neon64 versus xsimd::neon mismatch.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-tail-v2/pandas-cpp-xsimd-neon64-v2-001.txt",
+    "context_tokens_estimate": 5045
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 802
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 8532.311,
+    "cache_key": "87631ab150a8b22827bdded71c50fa00404da2c1c8ba3c71a882f6e72b6b77db",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-luna",
+      "resolved_model": "gpt-5.6-luna",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-luna",
+      "max_context_window_tokens": 328000,
+      "max_prompt_tokens_capability": 200000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 200000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 482,
+        "prompt_tokens": 12829,
+        "total_tokens": 13311,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 12826,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 2000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 25000000000,
+            "token_count": 12826,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 120000000000,
+            "token_count": 482,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 378550000
+      },
+      "model_call_duration_ms": 3946,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 3946,
+        "sessionDurationMs": 6118,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "2a2cf91740e2aa5e108dd27e6e9bffbf57cd0b09704b4be470b254c35c421f60",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

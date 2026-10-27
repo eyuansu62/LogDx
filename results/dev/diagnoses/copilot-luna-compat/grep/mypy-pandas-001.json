@@ -1,0 +1,162 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "grep",
+  "diagnoser": "copilot-luna-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed because both Pyright and mypy reported extensive typing errors for pyarrow APIs used by pandas. The errors indicate that the installed pyarrow type information does not expose many runtime attributes and types that pandas uses.",
+  "root_cause_category": "type_error",
+  "root_cause": "Pyright and mypy could not resolve numerous pyarrow.compute attributes and types, producing 69 Pyright errors and 279 mypy errors across pyarrow-related pandas files.",
+  "confidence": 0.99,
+  "relevant_files": [
+    "pandas/compat/pyarrow.py",
+    "pandas/core/arrays/_arrow_string_mixins.py",
+    "pandas/core/arrays/arrow/accessors.py",
+    "pandas/core/arrays/arrow/extension_types.py",
+    "pandas/io/parquet.py",
+    "pandas/core/arrays/arrow/array.py",
+    "pandas/core/arrays/datetimes.py",
+    "pandas/core/arrays/string_arrow.py",
+    "pandas/core/strings/accessor.py",
+    "pandas/io/feather_format.py",
+    "pandas/tests/reshape/test_get_dummies.py"
+  ],
+  "relevant_tests": [
+    "pyright",
+    "pyright reportGeneralTypeIssues",
+    "mypy",
+    "mypy (stubtest)"
+  ],
+  "evidence": [
+    {
+      "quote": "pyright..................................................................Failed",
+      "reason": "The Pyright type-checking hook failed."
+    },
+    {
+      "quote": "\"Expression\" is not exported from module \"pyarrow.compute\"",
+      "reason": "Pyright reports missing exported pyarrow type information."
+    },
+    {
+      "quote": "4 errors, 0 warnings, 0 informations",
+      "reason": "The first Pyright hook completed with type errors."
+    },
+    {
+      "quote": "pyright reportGeneralTypeIssues..........................................Failed",
+      "reason": "The general Pyright type-checking hook also failed."
+    },
+    {
+      "quote": "69 errors, 0 warnings, 0 informations",
+      "reason": "The second Pyright hook found widespread typing failures."
+    },
+    {
+      "quote": "mypy.....................................................................Failed",
+      "reason": "The mypy type-checking hook failed."
+    },
+    {
+      "quote": "Module has no attribute \"is_null\"",
+      "reason": "Mypy cannot find pyarrow.compute attributes used by pandas."
+    },
+    {
+      "quote": "Found 279 errors in 9 files (checked 1458 source files)",
+      "reason": "Mypy reports the scale of the typing failure."
+    },
+    {
+      "quote": "error: not checking stubs due to mypy build errors:",
+      "reason": "The stubtest failure is downstream of the mypy build/type errors."
+    }
+  ],
+  "suggested_fix": "Align the pyarrow typing information with the APIs used by pandas, or update the affected pyarrow-related type annotations/configuration so Pyright and mypy recognize those attributes and types.",
+  "input": {
+    "context_path": "results/dev/grep/mypy-pandas-001.txt",
+    "context_tokens_estimate": 27248
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1016
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 9040.809,
+    "cache_key": "05c70d4a54ae1b7f566131dcf342f4b4e0ad9a95081339550363de9a5ef55b83",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-luna",
+      "resolved_model": "gpt-5.6-luna",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-luna",
+      "max_context_window_tokens": 328000,
+      "max_prompt_tokens_capability": 200000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 200000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 662,
+        "prompt_tokens": 44681,
+        "total_tokens": 45343,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 44678,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 2000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 25000000000,
+            "token_count": 44678,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 120000000000,
+            "token_count": 662,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 1196450000
+      },
+      "model_call_duration_ms": 5492,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 5492,
+        "sessionDurationMs": 7313,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "2a2cf91740e2aa5e108dd27e6e9bffbf57cd0b09704b4be470b254c35c421f60",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

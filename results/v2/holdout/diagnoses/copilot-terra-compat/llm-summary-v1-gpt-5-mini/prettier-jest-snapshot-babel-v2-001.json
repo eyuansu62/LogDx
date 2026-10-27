@@ -1,0 +1,141 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "copilot-terra-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest failed because parser error output no longer matches the committed snapshots in JavaScript import-error and TypeScript error-format tests. The changes include different Babel parser messages and source positions, producing 13 snapshot failures across 3 suites.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Parser error messages and error locations changed, causing Jest snapshot expectations to mismatch.",
+  "confidence": 0.9,
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js",
+    "file:///home/runner/work/prettier/prettier/tests/config/format-test/test-format.js:17:48",
+    "file:///home/runner/work/prettier/prettier/src/common/parser-create-error.js:5:17",
+    "file:///home/runner/work/prettier/prettier/src/language-js/parse/utilities/create-babel-parse-error.js:33:10",
+    "file:///home/runner/work/prettier/prettier/src/language-js/parse/babel.js:176:13"
+  ],
+  "relevant_tests": [
+    "snippet: #0 > format[babel]",
+    "snippet: #0 > format[babel-flow]",
+    "snippet: #0 > format[babel-ts]",
+    "snippet: #1 > format[babel]",
+    "snippet: #1 > format[babel-flow]",
+    "snippet: #2 > format[babel]",
+    "snippet: #3 > format[babel]"
+  ],
+  "evidence": [
+    {
+      "quote": "› 13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "The test runner explicitly identifies snapshot failures as the failure mechanism."
+    },
+    {
+      "quote": "- Unexpected token (1:8)\n+ `import()` requires exactly one or two arguments. (1:1)",
+      "reason": "This shows a concrete parser error-message and position change that mismatches a snapshot."
+    },
+    {
+      "quote": "- An implementation cannot be declared in ambient contexts. (1:1)\n+ An implementation cannot be declared in ambient contexts. (1:24)",
+      "reason": "This shows a changed error location that mismatches the expected snapshot."
+    },
+    {
+      "quote": "Test Suites: 3 failed, 1500 passed, 1503 total",
+      "reason": "The failure is limited to test suites rather than dependency installation or workflow execution."
+    }
+  ],
+  "suggested_fix": "Determine whether the parser error-output changes are intended; if so, update the affected Jest snapshots by re-running Jest with `-u`, otherwise restore the parser/error-formatting behavior and locations expected by the snapshots.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-gpt-5-mini/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 1298
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1003
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 8948.645,
+    "cache_key": "d7f48979659f29cb87cb9b0e0939e45675d711c97b1e6cd18c4bf71082504e16",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-terra",
+      "resolved_model": "gpt-5.6-terra",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-terra",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 556,
+        "prompt_tokens": 6513,
+        "total_tokens": 7069,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 6510,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 6510,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1200000000000,
+            "token_count": 556,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 2295300000
+      },
+      "model_call_duration_ms": 5271,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 5271,
+        "sessionDurationMs": 7026,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8f61ec33e3622c22e900ffd4fc8e99928ba589ac7a15055ae59b431c5f2f5afe",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

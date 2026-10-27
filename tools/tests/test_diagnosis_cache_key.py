@@ -14,6 +14,7 @@ from __future__ import annotations
 import contextlib
 import os
 import shutil
+import shlex
 import sys
 import tempfile
 from pathlib import Path
@@ -1446,7 +1447,7 @@ def test_runner_accepts_command_provider_under_command_config():
              "--split", "dev",
              "--diagnoser", "command",
              "--diagnoser-name", "real-debugger-v3",
-             "--command", f"python3 {repo}/examples/diagnosis_shim_openai.py",
+             "--command", shlex.join(["python3", str(repo / "examples/diagnosis_shim_openai.py")]),
              "--context-method", "grep",
              "--diagnoser-config",
              f"{repo}/configs/diagnosers/real-debugger-v3.json"],
@@ -2898,7 +2899,7 @@ def test_stub_template_end_to_end_writes_clean_rows():
     with _snapshot_restore_diag_dir(diag_dir):
         env = dict(os.environ)
         env["CILOGBENCH_ALLOW_EXTERNAL_LLM"] = "1"
-        env["DIAGNOSIS_COMMAND"] = f"python3 {repo}/examples/diagnosis_shim_stub.py"
+        env["DIAGNOSIS_COMMAND"] = shlex.join(["python3", str(repo / "examples/diagnosis_shim_stub.py")])
         res = _sub.run(
             ["python3", f"{repo}/tools/run_diagnosis.py",
              "--split", "dev",

@@ -1,0 +1,151 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "copilot-sol-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "Jest failed because parser errors no longer matched stored snapshots, and TypeScript parsing produced syntax errors. Overall, 14 tests and 13 snapshots failed across 3 test suites.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Parser error messages, source positions, and behavior differed from the expectations encoded in Jest snapshots, causing snapshot assertion failures and TypeScript parser test failures.",
+  "confidence": 0.9,
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js",
+    "tests/config/format-test/test-format.js",
+    "src/common/parser-create-error.js",
+    "src/language-js/parse/utilities/create-babel-parse-error.js",
+    "src/language-js/parse/babel.js",
+    "src/main/parse.js",
+    "src/main/core.js"
+  ],
+  "relevant_tests": [
+    "snippet: #0 > format[babel]",
+    "snippet: #0 > format[babel-flow]",
+    "snippet: #0 > format[babel-ts]",
+    "snippet: #1 > format[babel]",
+    "snippet: #1 > format[babel-flow]",
+    "snippet: #2 > format[babel]",
+    "snippet: #3 > format[babel]"
+  ],
+  "evidence": [
+    {
+      "quote": "Test Suites: 3 failed, 1500 passed, 1503 total",
+      "reason": "Confirms that the CI failure came from three failing Jest suites."
+    },
+    {
+      "quote": "Snapshots:   13 failed, 12086 passed, 12099 total",
+      "reason": "Shows that snapshot mismatches were a principal failure mode."
+    },
+    {
+      "quote": "- Unexpected token (1:8)\n+ `import()` requires exactly one or two arguments. (1:1)",
+      "reason": "Demonstrates a concrete parser error message and position change relative to the stored snapshot."
+    },
+    {
+      "quote": "SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)",
+      "reason": "Shows the concrete TypeScript parser error affecting the constructor-parameter test."
+    },
+    {
+      "quote": "- An implementation cannot be declared in ambient contexts. (1:1)\n+ An implementation cannot be declared in ambient contexts. (1:24)",
+      "reason": "Demonstrates that a changed parser error location caused another snapshot mismatch."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "Confirms that the test failures terminated the CI job."
+    }
+  ],
+  "suggested_fix": "Determine whether the changed parser diagnostics and TypeScript parsing behavior are intended; if they are, re-run Jest with `-u` to update the affected snapshots, otherwise restore the prior parser behavior and error positions.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-gpt-5-mini/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 1298
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1025
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 10255.536,
+    "cache_key": "ea9f936af25e48ddf217f1e9f6ca53ae442dc8b0c6519aec3e92b2bc49715a5a",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-sol",
+      "resolved_model": "gpt-5.6-sol",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-sol",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 664,
+        "prompt_tokens": 6509,
+        "total_tokens": 7173,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 6506,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 6506,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1000000000000,
+            "token_count": 664,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 2291100000
+      },
+      "model_call_duration_ms": 6362,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 6362,
+        "sessionDurationMs": 8391,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "3090010e6a2b4cd862c8e6ea3be6bd0ee9862c034dd9aeba1cf79bbf8c6ffd5f",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

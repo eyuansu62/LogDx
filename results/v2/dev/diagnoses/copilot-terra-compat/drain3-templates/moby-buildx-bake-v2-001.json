@@ -1,0 +1,127 @@
+{
+  "case_id": "moby-buildx-bake-v2-001",
+  "context_method": "drain3-templates",
+  "diagnoser": "copilot-terra-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The Docker Buildx bake step failed while building the Nydus stage because downloading a GitHub release asset returned HTTP 502. The later missing coverage reports are a downstream consequence of the build never completing.",
+  "root_cause_category": "network_or_flaky",
+  "root_cause": "The `wget` download of the Nydus release archive from github.com failed with `HTTP/1.1 502 Bad Gateway or Proxy Error`, causing the Docker build step to exit with code 1.",
+  "confidence": 0.99,
+  "relevant_files": [
+    "Dockerfile"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "wget: server returned error: HTTP/1.1 502 Bad Gateway or Proxy Error",
+      "reason": "This explicitly identifies the failed external download as an HTTP 502/proxy error."
+    },
+    {
+      "quote": "RUN wget https://github.com/dragonflyoss/nydus/releases/download/$NYDUS_VERSION/nydus-static-$NYDUS_VERSION-$TARGETOS-$TARGETARCH.tgz",
+      "reason": "This is the build command that attempted to download the Nydus release archive."
+    },
+    {
+      "quote": "ERROR: failed to solve: process \"/bin/bash -c wget https://github.com/dragonflyoss/nydus/releases/download/$NYDUS_VERSION/nydus-static-$NYDUS_VERSION-$TARGETOS-$TARGETARCH.tgz\" did not complete successfully: exit code: 1",
+      "reason": "This confirms the failed download directly caused the Buildx bake failure."
+    },
+    {
+      "quote": "Dockerfile:336",
+      "reason": "This identifies the Dockerfile location of the failed download instruction."
+    }
+  ],
+  "suggested_fix": "Retry the build after the GitHub/proxy 502 clears; if this is recurrent, make the Dockerfile download at Dockerfile:336 resilient with an appropriate retry strategy or use a reliably available source for the Nydus archive.",
+  "input": {
+    "context_path": "results/v2/dev/drain3-templates/moby-buildx-bake-v2-001.txt",
+    "context_tokens_estimate": 31608
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 814
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 8957.938,
+    "cache_key": "5162977baf2804fcecf4e0fa04f8c7698edc6e3f980149703a670a35d7b2f60f",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-terra",
+      "resolved_model": "gpt-5.6-terra",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 470934,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-terra",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 443,
+        "prompt_tokens": 56571,
+        "total_tokens": 57014,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 56568,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 56568,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1200000000000,
+            "token_count": 443,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 14674200000
+      },
+      "model_call_duration_ms": 4918,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 4918,
+        "sessionDurationMs": 6775,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8f61ec33e3622c22e900ffd4fc8e99928ba589ac7a15055ae59b431c5f2f5afe",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

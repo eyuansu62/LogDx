@@ -1,0 +1,139 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "copilot-luna-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The pytest run terminated with a native segmentation fault while executing NumPy's datetime argsort stability test. The stack trace points into NumPy C-extension code, and the context also reports missing native libraries and failed compile/header checks.",
+  "root_cause_category": "other",
+  "root_cause": "A NumPy native C-extension crashed with SIGSEGV during test_datetime_nat_argsort_stability; the context suggests an inconsistent or incomplete native build environment, but does not establish which missing dependency or compile check caused the crash.",
+  "confidence": 0.86,
+  "relevant_files": [
+    "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py:54",
+    "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py:1231",
+    "/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py:226"
+  ],
+  "relevant_tests": [
+    "test_datetime_nat_argsort_stability"
+  ],
+  "evidence": [
+    {
+      "quote": "Fatal Python error: Segmentation fault",
+      "reason": "The test process suffered a native crash rather than a normal assertion failure."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/tests/test_datetime.py\", line 226 in test_datetime_nat_argsort_stability",
+      "reason": "The stack trace identifies the test active when the crash occurred."
+    },
+    {
+      "quote": "File \"/home/runner/work/numpy/numpy/build-install/usr/lib/python3.12/site-packages/numpy/_core/fromnumeric.py\", line 54 in _wrapfunc",
+      "reason": "The crash occurred through NumPy's native-backed array operation dispatch."
+    },
+    {
+      "quote": "/usr/bin/ld: cannot find -lmkl_rt: No such file or directory",
+      "reason": "The build environment could not find the MKL runtime library during a native link check."
+    },
+    {
+      "quote": "/usr/bin/ld: cannot find -lopenblas: No such file or directory",
+      "reason": "The build environment could not find the OpenBLAS library during a native link check."
+    },
+    {
+      "quote": "Run-time dependency openblas found: NO",
+      "reason": "Meson reported that an expected native BLAS dependency was unavailable."
+    }
+  ],
+  "suggested_fix": "Investigate and correct the native build environment so the required BLAS libraries and headers are available, then rebuild the NumPy C extensions before rerunning pytest.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-gpt-5-mini/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 1901
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 983
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 8890.154,
+    "cache_key": "8679074c1dc263330a307bbef60d9c9b39205708d5c20d65977b3f652147cb8e",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-luna",
+      "resolved_model": "gpt-5.6-luna",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-luna",
+      "max_context_window_tokens": 328000,
+      "max_prompt_tokens_capability": 200000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 200000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 599,
+        "prompt_tokens": 7280,
+        "total_tokens": 7879,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 7277,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 2000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 25000000000,
+            "token_count": 7277,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 120000000000,
+            "token_count": 599,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 253865000
+      },
+      "model_call_duration_ms": 4580,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 4580,
+        "sessionDurationMs": 6459,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "2a2cf91740e2aa5e108dd27e6e9bffbf57cd0b09704b4be470b254c35c421f60",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

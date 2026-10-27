@@ -1,0 +1,138 @@
+{
+  "case_id": "pandas-cpp-xsimd-neon64-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "copilot-terra-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The editable build fails because C++ compilation of the SIMD moments sources has invalid explicit template instantiations for the Neon target. The resulting Ninja failure causes pip's editable metadata preparation to exit with code 1.",
+  "root_cause_category": "compile_error",
+  "root_cause": "`accumulate_moments_simd::operator()<xsimd::neon64>` is explicitly instantiated, but the available candidate signature uses `xsimd::neon`, so the explicit instantiation does not match a function template.",
+  "confidence": 0.96,
+  "relevant_files": [
+    "../../pandas/_libs/include/pandas/simd/moments_simd.hpp:255",
+    "../../pandas/_libs/include/pandas/simd/moments_simd.hpp:182",
+    "../../pandas/_libs/simd/moments_inst_neon.cpp:14:43",
+    "../../pandas/_libs/simd/moments.cpp"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "reason": "This is the direct compiler error that stops the build."
+    },
+    {
+      "quote": "extern template Moments accumulate_moments_simd::operator()<xsimd::neon64>(",
+      "reason": "This identifies the incompatible explicit instantiation target."
+    },
+    {
+      "quote": "could not match 'Moments (xsimd::neon64, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int) noexcept'",
+      "reason": "The compiler states that the requested instantiation expects a neon64 signature."
+    },
+    {
+      "quote": "against 'Moments (xsimd::neon, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int)'",
+      "reason": "The candidate template instead has an xsimd::neon signature."
+    },
+    {
+      "quote": "ninja: build stopped: subcommand failed.",
+      "reason": "The C++ errors cause the Ninja build to fail."
+    },
+    {
+      "quote": "× Preparing editable metadata (pyproject.toml) did not run successfully.",
+      "reason": "The failed compilation propagates to pip metadata preparation."
+    }
+  ],
+  "suggested_fix": "Align the explicit Neon instantiations in `../../pandas/_libs/include/pandas/simd/moments_simd.hpp:255` and `../../pandas/_libs/simd/moments_inst_neon.cpp:14:43` with the declared template's SIMD type so the instantiation uses the same `xsimd::neon`/`xsimd::neon64` type as its matching function signature.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-gpt-5-mini/pandas-cpp-xsimd-neon64-v2-001.txt",
+    "context_tokens_estimate": 1624
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 958
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 9083.863,
+    "cache_key": "282c655cced40854980393ee37bd50a52e9c08ddd6a5cc77b59c23e1af068997",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-terra",
+      "resolved_model": "gpt-5.6-terra",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-terra",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 543,
+        "prompt_tokens": 7092,
+        "total_tokens": 7635,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 7089,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 7089,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1200000000000,
+            "token_count": 543,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 2424450000
+      },
+      "model_call_duration_ms": 5330,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 5330,
+        "sessionDurationMs": 7142,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8f61ec33e3622c22e900ffd4fc8e99928ba589ac7a15055ae59b431c5f2f5afe",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

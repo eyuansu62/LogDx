@@ -1,0 +1,174 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "grep",
+  "diagnoser": "copilot-sol-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The Jest run failed in three suites: two suites had 13 stale error snapshots, while a TypeScript conformance case produced an unexpected Babel parser SyntaxError. Overall, 14 tests failed.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Babel parser error output no longer matches the stored Jest snapshots, including changed dynamic-import messages and source locations; additionally, the babel-ts parser now rejects a constructor overload parameter initializer that its conformance test expected to format.",
+  "confidence": 0.98,
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js",
+    "tests/config/format-test/test-format.js",
+    "tests/config/format-test/run-prettier.js",
+    "src/common/parser-create-error.js",
+    "src/language-js/parse/utilities/create-babel-parse-error.js",
+    "src/language-js/parse/babel.js",
+    "src/main/parse.js",
+    "src/main/core.js"
+  ],
+  "relevant_tests": [
+    "snippet: #0 > format[babel]",
+    "snippet: #0 > format[babel-flow]",
+    "snippet: #0 > format[babel-ts]",
+    "snippet: #1 > format[babel]",
+    "snippet: #1 > format[babel-flow]",
+    "snippet: #1 > format[babel-ts]",
+    "snippet: #2 > format[babel]",
+    "snippet: #2 > format[babel-flow]",
+    "snippet: #2 > format[babel-ts]",
+    "snippet: #3 > format[babel]",
+    "snippet: #3 > format[babel-flow]",
+    "snippet: #3 > format[babel-ts]",
+    "constructorOverloadsWithDefaultValues.ts > format[babel-ts]"
+  ],
+  "evidence": [
+    {
+      "quote": "FAIL tests/format/js/_errors_/import/format.test.js",
+      "reason": "Identifies the dynamic-import error test suite as failed."
+    },
+    {
+      "quote": "- Unexpected token (1:8)",
+      "reason": "Shows the error text stored in the snapshot."
+    },
+    {
+      "quote": "+ `import()` requires exactly one or two arguments. (1:1)",
+      "reason": "Shows that the received Babel parser error differs from the stored snapshot."
+    },
+    {
+      "quote": "FAIL tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+      "reason": "Identifies the non-snapshot conformance failure."
+    },
+    {
+      "quote": "SyntaxError: A parameter initializer is only allowed in a function or constructor implementation. (3:17)",
+      "reason": "States the parser rejection that caused the conformance case to fail."
+    },
+    {
+      "quote": "FAIL tests/format/typescript/_errors_/declare-function-with-body/format.test.js",
+      "reason": "Identifies the second snapshot suite as failed."
+    },
+    {
+      "quote": "- An implementation cannot be declared in ambient contexts. (1:1)",
+      "reason": "Shows the location expected by the stored snapshot."
+    },
+    {
+      "quote": "+ An implementation cannot be declared in ambient contexts. (1:24)",
+      "reason": "Shows that the received location changed and caused the snapshot mismatch."
+    },
+    {
+      "quote": "› 13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "Explicitly summarizes the snapshot failures and gives the supported update action."
+    },
+    {
+      "quote": "Test Suites: 3 failed, 1500 passed, 1503 total",
+      "reason": "Confirms the final scope of the test-suite failure."
+    }
+  ],
+  "suggested_fix": "Inspect whether the changed Babel parser diagnostics and constructor-overload rejection are intended; if they are, re-run jest with `-u` to update the 13 snapshots and adjust the constructor conformance expectation for the reported SyntaxError.",
+  "input": {
+    "context_path": "results/v2/holdout/grep/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 20936
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1255
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 13193.335,
+    "cache_key": "cbe3ecf52d645fa0b538043fc7d353ac3a8a2f9d49d2efb939b74a83d1d06472",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-sol",
+      "resolved_model": "gpt-5.6-sol",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-sol",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 907,
+        "prompt_tokens": 37368,
+        "total_tokens": 38275,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 37365,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 37365,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1000000000000,
+            "token_count": 907,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 10248850000
+      },
+      "model_call_duration_ms": 9669,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 9669,
+        "sessionDurationMs": 11403,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "3090010e6a2b4cd862c8e6ea3be6bd0ee9862c034dd9aeba1cf79bbf8c6ffd5f",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

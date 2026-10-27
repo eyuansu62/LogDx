@@ -1,0 +1,146 @@
+{
+  "case_id": "mypy-pandas-001",
+  "context_method": "drain3-templates",
+  "diagnoser": "copilot-terra-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The manual pre-commit job failed because pyright and mypy reported type-checking errors. The doctests and script tests passed, but stubtest was skipped because the mypy build had errors.",
+  "root_cause_category": "type_error",
+  "root_cause": "Static type checking failed: pyright reported private-import, missing-attribute, and argument-type errors, while mypy found 279 errors across 9 files.",
+  "confidence": 0.99,
+  "relevant_files": [
+    "/home/runner/work/pandas/pandas/pandas/core/arrays/arrow/accessors.py",
+    "/home/runner/work/pandas/pandas/pandas/io/orc.py",
+    "/home/runner/work/pandas/pandas/pandas/compat/pyarrow.py",
+    "/home/runner/work/pandas/pandas/pandas/core/arrays/_arrow_string_mixins.py",
+    "/home/runner/work/pandas/pandas/pandas/core/arrays/arrow/extension_types.py",
+    "/home/runner/work/pandas/pandas/pandas/io/parquet.py",
+    "pandas/core/arrays/arrow/array.py",
+    "pandas/tests/reshape/test_get_dummies.py"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "pyright..................................................................Failed",
+      "reason": "The pyright pre-commit type-checking hook failed."
+    },
+    {
+      "quote": "error: \"ExtensionArray\" is not exported from module",
+      "reason": "Pyright reported a private-import type-checking error."
+    },
+    {
+      "quote": "Argument of type \"ParquetCompressionOptions\" cannot be assigned to parameter \"compression\" of type \"str\" in function \"write_table\"",
+      "reason": "Pyright reported a concrete incompatible argument type."
+    },
+    {
+      "quote": "mypy.....................................................................Failed",
+      "reason": "The mypy pre-commit type-checking hook failed."
+    },
+    {
+      "quote": "Found 279 errors in 9 files (checked 1458 source files)",
+      "reason": "Mypy explicitly reports the scope of the type-checking failures."
+    },
+    {
+      "quote": "error: not checking stubs due to mypy build errors:",
+      "reason": "The stubtest failure is downstream of the mypy build errors."
+    },
+    {
+      "quote": "====================== 1648 passed, 34 skipped in 20.05s =======================",
+      "reason": "Doctests passed, so they are not the source of the job failure."
+    }
+  ],
+  "suggested_fix": "Resolve the reported pyright and mypy errors, including the non-exported module import, missing module attributes, the ParquetCompressionOptions-to-str argument mismatch in pandas/io/parquet.py, and the listed mypy errors; then rerun the manual pre-commit hooks.",
+  "input": {
+    "context_path": "results/dev/drain3-templates/mypy-pandas-001.txt",
+    "context_tokens_estimate": 52520
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 991
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 12901.157,
+    "cache_key": "00f634e56855b5f34ecaa3c37599c903dad1e5788f4331acb61c8049ce78f3eb",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-terra",
+      "resolved_model": "gpt-5.6-terra",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-terra",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 530,
+        "prompt_tokens": 95307,
+        "total_tokens": 95837,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 95304,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 95304,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1200000000000,
+            "token_count": 530,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 24462600000
+      },
+      "model_call_duration_ms": 8679,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 8679,
+        "sessionDurationMs": 10664,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8f61ec33e3622c22e900ffd4fc8e99928ba589ac7a15055ae59b431c5f2f5afe",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

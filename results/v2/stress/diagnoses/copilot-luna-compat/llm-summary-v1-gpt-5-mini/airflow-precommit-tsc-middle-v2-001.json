@@ -1,0 +1,138 @@
+{
+  "case_id": "airflow-precommit-tsc-middle-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "copilot-luna-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "TypeScript compilation failed during the UI static checks, and the compiler reported three errors in three files. The wrapper propagated the non-zero compiler result, causing the CI job to fail.",
+  "root_cause_category": "compile_error",
+  "root_cause": "The `pnpm tsc` command failed because TypeScript reported two unused declarations (`ColorMode` and `ParamsSpec`) and a `SetupServer` versus `SetupServerApi` type mismatch.",
+  "confidence": 0.99,
+  "relevant_files": [
+    "src/layouts/Nav/UserSettingsButton.tsx:55",
+    "src/pages/Connections/ConnectionForm.tsx:33",
+    "testsSetup.ts:78",
+    "scripts/ci/prek/ts_compile_lint_ui.py: line 62"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "Running command: `pnpm tsc --p /home/runner/work/airflow/airflow/airflow-core/src/airflow/ui/tmpkhdkxx97.json`",
+      "reason": "Identifies the TypeScript compilation command that failed."
+    },
+    {
+      "quote": "'ColorMode' is declared but never used.",
+      "reason": "Shows an unused declaration compilation error."
+    },
+    {
+      "quote": "'ParamsSpec' is declared but its value is never read.",
+      "reason": "Shows a second unused declaration compilation error."
+    },
+    {
+      "quote": "Type 'SetupServer' is missing the following properties from type 'SetupServerApi': #private, network",
+      "reason": "Shows the type incompatibility reported by TypeScript."
+    },
+    {
+      "quote": "Found 3 errors in 3 files.",
+      "reason": "Confirms the compiler found three errors causing compilation failure."
+    },
+    {
+      "quote": "returned non-zero exit status 2.",
+      "reason": "Shows that the TypeScript command failed and the CI wrapper propagated the failure."
+    }
+  ],
+  "suggested_fix": "Remove or use the unused `ColorMode` and `ParamsSpec` declarations, and resolve the `SetupServer` to `SetupServerApi` type mismatch in the listed files, then rerun `pnpm tsc`.",
+  "input": {
+    "context_path": "results/v2/stress/llm-summary-v1-gpt-5-mini/airflow-precommit-tsc-middle-v2-001.txt",
+    "context_tokens_estimate": 1087
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 836
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 7103.419,
+    "cache_key": "9467f31bdfe2a8f236b2be6cefc636f98f3f6a48cc2465c37cb7f7c45e92dda0",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-luna",
+      "resolved_model": "gpt-5.6-luna",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-luna",
+      "max_context_window_tokens": 328000,
+      "max_prompt_tokens_capability": 200000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 200000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 403,
+        "prompt_tokens": 6507,
+        "total_tokens": 6910,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 6504,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 2000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 25000000000,
+            "token_count": 6504,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 120000000000,
+            "token_count": 403,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 211020000
+      },
+      "model_call_duration_ms": 3486,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 3486,
+        "sessionDurationMs": 5222,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "2a2cf91740e2aa5e108dd27e6e9bffbf57cd0b09704b4be470b254c35c421f60",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

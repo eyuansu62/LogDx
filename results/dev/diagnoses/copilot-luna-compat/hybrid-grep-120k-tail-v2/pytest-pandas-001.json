@@ -1,0 +1,144 @@
+{
+  "case_id": "pytest-pandas-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "copilot-luna-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The NumPy Nightly job failed broadly during test collection and execution because NumPy emitted a DeprecationWarning for use of the generic timedelta unit, and that warning was treated as an error. The run ended with 45 failed tests and 52 collection errors.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "The test suite and pandas code use bare or generic-unit datetime/timedelta values such as np.datetime64(\"NaT\"), which trigger NumPy's deprecated generic timedelta-unit warning; the warning is promoted to an exception during pytest collection and test execution.",
+  "confidence": 0.99,
+  "relevant_files": [
+    "pandas/tests/arrays/masked/test_indexing.py",
+    "pandas/tests/arrays/test_timedeltas.py",
+    "pandas/tests/dtypes/test_inference.py",
+    "pandas/tests/dtypes/test_missing.py",
+    "pandas/core/internals/concat.py",
+    "pandas/tests/scalar/timedelta/test_arithmetic.py",
+    "pandas/tests/tslibs/test_array_to_datetime.py"
+  ],
+  "relevant_tests": [
+    "TestDatetimeIndexComparisons.test_dti_cmp_nat_behaves_like_float_cmp_nan",
+    "TestAppend.test_append_dtype_coerce[True]",
+    "TestTimedeltaAdditionSubtraction.test_td_rsub_nat",
+    "TestTimedeltaMultiplicationDivision.test_td_rdiv_na_scalar",
+    "TestArrayToDatetimeResolutionInference.test_infer_homogeoneous_date_objects",
+    "TestRank.test_rank_inf_and_nan[DataFrame-contents0-float64]"
+  ],
+  "evidence": [
+    {
+      "quote": "DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future.",
+      "reason": "This is the warning reported at both collection and test execution failure sites."
+    },
+    {
+      "quote": "np.datetime64(\"NaT\")",
+      "reason": "The deprecated warning is repeatedly raised at expressions constructing a bare NaT datetime value."
+    },
+    {
+      "quote": "pandas/core/internals/concat.py:412",
+      "reason": "A pandas implementation path also triggers the warning through dtype.type(\"NaT\"), so the issue is not limited to test definitions."
+    },
+    {
+      "quote": "45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s",
+      "reason": "The final pytest summary confirms widespread failures and collection errors."
+    },
+    {
+      "quote": "Process completed with exit code 1.",
+      "reason": "This confirms the warning-driven test failures caused the CI job to fail."
+    }
+  ],
+  "suggested_fix": "Replace uses that produce the generic NumPy timedelta unit with values using a specific unit, as indicated by the warning: \"Please use a specific unit instead.\"",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-120k-tail-v2/pytest-pandas-001.txt",
+    "context_tokens_estimate": 81147
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1000
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 9818.341,
+    "cache_key": "203e393e502d8373a7a89e604d7281b802dcf102e46251bd6280ef51cf9a5c48",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-luna",
+      "resolved_model": "gpt-5.6-luna",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-luna",
+      "max_context_window_tokens": 328000,
+      "max_prompt_tokens_capability": 200000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 200000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 626,
+        "prompt_tokens": 79075,
+        "total_tokens": 79701,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 79072,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 2000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 25000000000,
+            "token_count": 79072,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 120000000000,
+            "token_count": 626,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 2051980000
+      },
+      "model_call_duration_ms": 5802,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 5802,
+        "sessionDurationMs": 7740,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "2a2cf91740e2aa5e108dd27e6e9bffbf57cd0b09704b4be470b254c35c421f60",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

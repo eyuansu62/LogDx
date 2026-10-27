@@ -1,0 +1,136 @@
+{
+  "case_id": "pytest-pandas-001",
+  "context_method": "raw",
+  "diagnoser": "copilot-sol-native-long",
+  "mode": "root_cause_diagnosis",
+  "summary": "The NumPy Nightly pytest run failed because bare NumPy datetime NaT construction emitted a DeprecationWarning that was treated as a test failure and collection error.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "NumPy 2.5.0.dev0 deprecates the generic unit used by expressions such as np.datetime64(\"NaT\"); these warnings caused 45 test failures and 52 collection errors.",
+  "confidence": 0.99,
+  "relevant_files": [
+    "pandas/core/internals/concat.py",
+    "pandas/tests/arrays/masked/test_indexing.py",
+    "pandas/tests/arrays/test_timedeltas.py",
+    "pandas/tests/dtypes/test_inference.py",
+    "pandas/tests/dtypes/test_missing.py",
+    "pandas/tests/frame/indexing/test_indexing.py",
+    "pandas/tests/frame/test_constructors.py",
+    "pandas/tests/indexes/datetimes/methods/test_insert.py",
+    "pandas/tests/indexes/test_index_new.py",
+    "pandas/tests/indexes/timedeltas/test_indexing.py",
+    "pandas/tests/io/json/test_ujson.py",
+    "pandas/tests/scalar/timestamp/test_constructors.py",
+    "pandas/tests/series/indexing/test_indexing.py",
+    "pandas/tests/util/test_assert_almost_equal.py"
+  ],
+  "relevant_tests": [
+    "pandas/tests/arithmetic/test_datetime64.py::TestDatetimeIndexComparisons::test_dti_cmp_nat_behaves_like_float_cmp_nan",
+    "pandas/tests/reshape/concat/test_append.py::TestAppend::test_append_dtype_coerce[True]",
+    "pandas/tests/reshape/concat/test_categorical.py::TestCategoricalConcat::test_concat_categorical_datetime",
+    "pandas/tests/scalar/timedelta/test_arithmetic.py::TestTimedeltaAdditionSubtraction::test_td_rsub_nat"
+  ],
+  "evidence": [
+    {
+      "quote": "numpy                     2.5.0.dev0",
+      "reason": "The failing job used a NumPy nightly development build."
+    },
+    {
+      "quote": "DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future.",
+      "reason": "This warning is the repeated direct cause of collection errors and test failures."
+    },
+    {
+      "quote": "Please use a specific unit instead.",
+      "reason": "NumPy explicitly states the required correction."
+    },
+    {
+      "quote": "= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s (0:12:39) =",
+      "reason": "The pytest summary confirms widespread failures and collection errors."
+    }
+  ],
+  "suggested_fix": "Replace bare np.datetime64(\"NaT\") and dtype.type(\"NaT\") constructions with equivalents that specify an explicit datetime or timedelta unit.",
+  "input": {
+    "context_path": "results/dev/raw/pytest-pandas-001.txt",
+    "context_tokens_estimate": 135163
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 958
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 14376.241,
+    "cache_key": "74d3d831dab88ec759bfcd16d24708975c7f864e5ea38dd94b67788165b90273",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "/tmp/logdx-copilot-sdk-1.0.11/bin/python examples/diagnosis_shim_copilot_sdk.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-sol",
+      "resolved_model": "gpt-5.6-sol",
+      "model_version": "gpt-5.6-sol",
+      "sdk_version": "1.0.11",
+      "cli_version": "1.0.79",
+      "transport": "copilot-sdk-jsonrpc",
+      "reasoning_effort_requested": "low",
+      "reasoning_effort_resolved": "low",
+      "context_mode": "long_context",
+      "context_tier": "long_context",
+      "max_context_window_tokens": 1050000,
+      "max_prompt_tokens_capability": 922000,
+      "max_prompt_tokens": 922000,
+      "safe_prompt_token_cap": 921000,
+      "tokenizer": "o200k_base",
+      "prompt_tokens_counted": 166840,
+      "tools_available": 0,
+      "tool_count": 0,
+      "custom_instructions": false,
+      "memory_enabled": false,
+      "infinite_sessions_enabled": false,
+      "session_store_enabled": false,
+      "isolated_copilot_home": true,
+      "usage": {
+        "prompt_tokens": 166887,
+        "completion_tokens": 713,
+        "total_tokens": 167600,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 166884,
+        "reasoning_tokens": 68
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 166884,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1000000000000,
+            "token_count": 713,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 42434600000.0
+      },
+      "model_call_duration_ms": 9503.0,
+      "sdk_session_duration_ms": 13863.831
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "a09cffdb0080fd5a74d1c98c506233c8017c674e856dafa2f52e288452048a83",
+    "shim_sha256": "20143deadb8e3e22cda32c4e86ca19be802af9e8c5b09620953aa597cc834ccc"
+  }
+}

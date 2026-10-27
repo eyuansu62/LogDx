@@ -1,0 +1,126 @@
+{
+  "case_id": "gh-cli-go-test-prompter-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "copilot-terra-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The integration test job failed because a prompter subtest timed out waiting for `form.Run()` to finish. The available context does not establish whether the underlying cause is a hang, deadlock, or intermittent timing issue.",
+  "root_cause_category": "timeout_or_oom",
+  "root_cause": "`TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query` failed because `form.Run()` did not complete within the test's allowed time.",
+  "confidence": 0.93,
+  "relevant_files": [
+    "huh_prompter_test.go:478"
+  ],
+  "relevant_tests": [
+    "TestHuhPrompterMultiSelectWithSearchPersistence",
+    "TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query"
+  ],
+  "evidence": [
+    {
+      "quote": "--- FAIL: TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query (5.13s)",
+      "reason": "This identifies the specific failing subtest and shows it ran until failure after several seconds."
+    },
+    {
+      "quote": "huh_prompter_test.go:478: form.Run() did not complete in time",
+      "reason": "This explicitly states the immediate failure condition: `form.Run()` exceeded the test's completion window."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "This confirms the failed test caused the CI step to fail."
+    }
+  ],
+  "suggested_fix": "Investigate the multi-select search-persistence flow exercised by `TestHuhPrompterMultiSelectWithSearchPersistence/selections_persist_after_changing_search_query` and ensure `form.Run()` completes; the context does not show enough detail to determine whether the fix belongs in form behavior or its test timeout.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-gpt-5-mini/gh-cli-go-test-prompter-v2-001.txt",
+    "context_tokens_estimate": 631
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 802
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 7072.116,
+    "cache_key": "2cbe65f13dadc0509dcaea06d147ae685f35e21092f1adc3d5603472d2953831",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-terra",
+      "resolved_model": "gpt-5.6-terra",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-terra",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 359,
+        "prompt_tokens": 5831,
+        "total_tokens": 6190,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 5828,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 5828,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1200000000000,
+            "token_count": 359,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 1888400000
+      },
+      "model_call_duration_ms": 3538,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 3538,
+        "sessionDurationMs": 5311,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8f61ec33e3622c22e900ffd4fc8e99928ba589ac7a15055ae59b431c5f2f5afe",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

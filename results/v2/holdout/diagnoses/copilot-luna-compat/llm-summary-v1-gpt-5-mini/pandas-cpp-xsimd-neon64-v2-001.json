@@ -1,0 +1,134 @@
+{
+  "case_id": "pandas-cpp-xsimd-neon64-v2-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "copilot-luna-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The macOS arm64 CI job failed while compiling pandas SIMD C++ sources during editable wheel metadata preparation. The explicit template instantiation does not match the declared candidate signature, causing Ninja and pip metadata preparation to exit with code 1.",
+  "root_cause_category": "compile_error",
+  "root_cause": "The code explicitly instantiates accumulate_moments_simd::operator()<xsimd::neon64>, but the available candidate uses xsimd::neon, so Clang rejects the instantiation.",
+  "confidence": 0.98,
+  "relevant_files": [
+    "../../pandas/_libs/include/pandas/simd/moments_simd.hpp:255",
+    "../../pandas/_libs/include/pandas/simd/moments_simd.hpp:182",
+    "../../pandas/_libs/simd/moments_inst_neon.cpp:14:43",
+    "../../pandas/_libs/simd/moments.cpp"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "error: explicit instantiation of 'operator()' does not refer to a function template, variable template, member function, member class, or static data member",
+      "reason": "Clang reports that the explicit template instantiation is invalid."
+    },
+    {
+      "quote": "extern template Moments accumulate_moments_simd::operator()<xsimd::neon64>(",
+      "reason": "The declaration explicitly instantiates the operator for xsimd::neon64."
+    },
+    {
+      "quote": "candidate template ignored: could not match 'Moments (xsimd::neon64, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int) noexcept' ... against 'Moments (xsimd::neon, std::span<const double>, int, std::optional<std::span<const uint8_t>>, int)'",
+      "reason": "The compiler identifies the concrete mismatch between xsimd::neon64 and xsimd::neon."
+    },
+    {
+      "quote": "ninja: build stopped: subcommand failed.",
+      "reason": "The compilation error stops the Ninja build."
+    },
+    {
+      "quote": "× Preparing editable metadata (pyproject.toml) did not run successfully.",
+      "reason": "The failed native compilation propagates to pip's editable metadata preparation."
+    }
+  ],
+  "suggested_fix": "Align the explicit instantiations using xsimd::neon64 with the operator template's actual xsimd::neon signature, or otherwise update the declaration and definition so their SIMD type signatures match.",
+  "input": {
+    "context_path": "results/v2/holdout/llm-summary-v1-gpt-5-mini/pandas-cpp-xsimd-neon64-v2-001.txt",
+    "context_tokens_estimate": 1624
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 923
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 8854.376,
+    "cache_key": "59db90ea8c2798a336bc157644db3199bb4cf487bbf6acb89161ea9fea8e22c0",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-luna",
+      "resolved_model": "gpt-5.6-luna",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-luna",
+      "max_context_window_tokens": 328000,
+      "max_prompt_tokens_capability": 200000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 200000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 496,
+        "prompt_tokens": 7093,
+        "total_tokens": 7589,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 7090,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 2000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 25000000000,
+            "token_count": 7090,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 120000000000,
+            "token_count": 496,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 236830000
+      },
+      "model_call_duration_ms": 4942,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 4942,
+        "sessionDurationMs": 6852,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "2a2cf91740e2aa5e108dd27e6e9bffbf57cd0b09704b4be470b254c35c421f60",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

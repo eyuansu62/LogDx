@@ -1,0 +1,131 @@
+{
+  "case_id": "cleanup-k8s-stress-001",
+  "context_method": "llm-summary-v1-gpt-5-mini",
+  "diagnoser": "copilot-luna-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The cleanup job failed while deleting GitHub Actions artifacts because the gh api request received HTTP 403: Resource not accessible by integration. The job then exited with code 1.",
+  "root_cause_category": "permission_or_secret",
+  "root_cause": "The token used by gh api lacked permission to delete repository artifacts, causing the DELETE request to /repos/kubernetes/kubernetes/actions/artifacts/\"$artifact_id\" to be rejected with HTTP 403.",
+  "confidence": 0.96,
+  "relevant_files": [
+    "/repos/kubernetes/kubernetes/actions/runs/23485708914/artifacts",
+    "/repos/kubernetes/kubernetes/actions/artifacts/\"$artifact_id\""
+  ],
+  "relevant_tests": [
+    "Run gh api",
+    "Run echo \"Deleting artifacts for run ID: 23485708914\""
+  ],
+  "evidence": [
+    {
+      "quote": "gh: Resource not accessible by integration (HTTP 403)",
+      "reason": "The GitHub API explicitly rejected the request because the integration was not authorized."
+    },
+    {
+      "quote": "gh api",
+      "reason": "The failing operation was performed through the GitHub CLI API command."
+    },
+    {
+      "quote": "-X DELETE",
+      "reason": "The rejected request attempted to delete an artifact."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "The authorization failure caused the CI job to fail."
+    }
+  ],
+  "suggested_fix": "Grant the token used by gh api permission to delete repository Actions artifacts, or use a credential with the required repository permissions.",
+  "input": {
+    "context_path": "results/stress/llm-summary-v1-gpt-5-mini/cleanup-k8s-stress-001.txt",
+    "context_tokens_estimate": 752
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 744
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 8951.869,
+    "cache_key": "06d5db42ec8263536ff3d2569e103b1ee50762361d5203984b8372d561ad939c",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-luna",
+      "resolved_model": "gpt-5.6-luna",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-luna",
+      "max_context_window_tokens": 328000,
+      "max_prompt_tokens_capability": 200000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 200000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 298,
+        "prompt_tokens": 6022,
+        "total_tokens": 6320,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 6019,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 2000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 25000000000,
+            "token_count": 6019,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 120000000000,
+            "token_count": 298,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 186295000
+      },
+      "model_call_duration_ms": 3212,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 3212,
+        "sessionDurationMs": 5486,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "2a2cf91740e2aa5e108dd27e6e9bffbf57cd0b09704b4be470b254c35c421f60",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "case_id": "cargo-tokio-001",
+  "context_method": "tail",
+  "diagnoser": "copilot-terra-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The trybuild compile-fail snapshot test failed because the compiler diagnostics for the macro type-mismatch case differed from the expected output. The failing test was `compile_fail_full` in `tests-build::macros`.",
+  "root_cause_category": "compile_error",
+  "root_cause": "The compile-fail fixture `tests/fail/macros_type_mismatch.rs` produces Rust type errors, and trybuild reported that its actual compiler output did not match the stored expected output.",
+  "confidence": 0.92,
+  "relevant_files": [
+    "tests/fail/macros_type_mismatch.rs",
+    "./tests/macros.rs"
+  ],
+  "relevant_tests": [
+    "compile_fail_full",
+    "tests-build::macros compile_fail_full"
+  ],
+  "evidence": [
+    {
+      "quote": "note: If the actual output is the correct output you can bless it by rerunning\n          your test with the environment variable TRYBUILD=overwrite",
+      "reason": "trybuild explicitly indicates that the observed compiler output differs from the expected compile-fail output."
+    },
+    {
+      "quote": "thread 'compile_fail_full' (25975) panicked",
+      "reason": "This identifies the failing compile-fail test."
+    },
+    {
+      "quote": "1 of 10 tests failed",
+      "reason": "The trybuild runner reports a single failed case."
+    },
+    {
+      "quote": "FAIL [   9.875s] (396/396) tests-build::macros compile_fail_full",
+      "reason": "The test summary identifies the failed test target and test name."
+    },
+    {
+      "quote": "error[E0271]: expected `{async block@$DIR/tests/fail/macros_type_mismatch.rs:13:1: 13:15}` to be a future that resolves to `Result<(), ()>`, but it resolves to `()`",
+      "reason": "The fixture emits concrete Rust compilation diagnostics that are being checked by the compile-fail test."
+    }
+  ],
+  "suggested_fix": "Review and update the expected trybuild stderr output for `tests/fail/macros_type_mismatch.rs` if the displayed diagnostics are intended; the log specifically suggests rerunning with `TRYBUILD=overwrite` to bless the actual output.",
+  "input": {
+    "context_path": "results/dev/tail/cargo-tokio-001.txt",
+    "context_tokens_estimate": 4374
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 866
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 8586.758,
+    "cache_key": "8f9bebdad12d93be445034805b38682e6396c8ab46403989bee4106b009dc77e",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-terra",
+      "resolved_model": "gpt-5.6-terra",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-terra",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 418,
+        "prompt_tokens": 12122,
+        "total_tokens": 12540,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 12119,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 12119,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1200000000000,
+            "token_count": 418,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 3531950000
+      },
+      "model_call_duration_ms": 4412,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 4412,
+        "sessionDurationMs": 6540,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8f61ec33e3622c22e900ffd4fc8e99928ba589ac7a15055ae59b431c5f2f5afe",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "case_id": "numpy-pytest-segfault-argsort-v2-001",
+  "context_method": "rtk-log",
+  "diagnoser": "copilot-luna-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The CI job failed during native build configuration because required system headers could not be found, causing compiler checks and linking to fail before pytest execution.",
+  "root_cause_category": "compile_error",
+  "root_cause": "The build environment could not locate required headers, including 'version' and 'sys/mman.h', resulting in compiler-check failures and linker errors.",
+  "confidence": 0.98,
+  "relevant_files": [
+    "numpy/meson.build:445"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "#error \"Header 'version' could not be found\"",
+      "reason": "Shows that a required header was missing during compilation."
+    },
+    {
+      "quote": "#error \"Header 'sys/mman.h' could not be found\"",
+      "reason": "Shows another required system header was unavailable in the build environment."
+    },
+    {
+      "quote": "collect2: error: ld returned 1 exit status",
+      "reason": "Confirms the failed compiler checks propagated to the linker."
+    },
+    {
+      "quote": "numpy/meson.build:445: WARNING: The variable(s) 'BLAS_INCLUDEDIR',",
+      "reason": "Identifies the Meson build file involved in the configuration output."
+    }
+  ],
+  "suggested_fix": "Fix the CI build environment or include paths so the required 'version' and 'sys/mman.h' headers are available before rerunning the job.",
+  "input": {
+    "context_path": "results/v2/stress/rtk-log/numpy-pytest-segfault-argsort-v2-001.txt",
+    "context_tokens_estimate": 412
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 704
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 7347.428,
+    "cache_key": "5c26985fbf9fa44fb8d6a14eaabc691c91b79782320b3cf68a44b1d7c6493bb8",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-luna",
+      "resolved_model": "gpt-5.6-luna",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-luna",
+      "max_context_window_tokens": 328000,
+      "max_prompt_tokens_capability": 200000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 200000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 268,
+        "prompt_tokens": 5764,
+        "total_tokens": 6032,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 5761,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 2000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 25000000000,
+            "token_count": 5761,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 120000000000,
+            "token_count": 268,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 176245000
+      },
+      "model_call_duration_ms": 3614,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 3614,
+        "sessionDurationMs": 5397,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "2a2cf91740e2aa5e108dd27e6e9bffbf57cd0b09704b4be470b254c35c421f60",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

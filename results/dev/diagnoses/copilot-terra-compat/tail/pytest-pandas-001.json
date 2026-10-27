@@ -1,0 +1,130 @@
+{
+  "case_id": "pytest-pandas-001",
+  "context_method": "tail",
+  "diagnoser": "copilot-terra-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The pytest job failed because 45 tests failed and 52 produced errors while running against NumPy nightly. The visible failures are tied to NumPy's deprecation of the generic timedelta unit, which is being treated as an error.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Tests use NumPy timedelta values with the deprecated generic unit or implicit bare-integer conversion, producing DeprecationWarning errors under the NumPy nightly environment.",
+  "confidence": 0.86,
+  "relevant_files": [
+    "pandas/tests/frame/test_constructors.py",
+    "pandas/tests/indexes/datetimes/methods/test_insert.py",
+    "pandas/tests/indexes/test_index_new.py",
+    "pandas/tests/indexes/timedeltas/test_indexing.py",
+    "pandas/tests/io/json/test_ujson.py",
+    "pandas/tests/scalar/timestamp/test_constructors.py",
+    "pandas/tests/series/indexing/test_indexing.py",
+    "pandas/tests/util/test_assert_almost_equal.py"
+  ],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific unit instead.",
+      "reason": "This warning is reported as an ERROR across the listed test files and identifies the incompatible timedelta usage."
+    },
+    {
+      "quote": "= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s (0:12:39) =",
+      "reason": "The pytest summary confirms that test failures and errors caused the job to fail."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 1.",
+      "reason": "The nonzero process exit follows the failing pytest run."
+    }
+  ],
+  "suggested_fix": "Update the affected timedelta constructions and arithmetic to use explicit NumPy timedelta units rather than the deprecated generic unit or implicit bare-integer conversions.",
+  "input": {
+    "context_path": "results/dev/tail/pytest-pandas-001.txt",
+    "context_tokens_estimate": 7002
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 850
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 8088.308,
+    "cache_key": "48521ab93a0070873c57e88088ce466bc8127e8bbe10ff46cfce3c6da11bfffa",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-terra",
+      "resolved_model": "gpt-5.6-terra",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-terra",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 401,
+        "prompt_tokens": 15529,
+        "total_tokens": 15930,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 15526,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 15526,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1200000000000,
+            "token_count": 401,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 4363300000
+      },
+      "model_call_duration_ms": 3563,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 3563,
+        "sessionDurationMs": 6174,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8f61ec33e3622c22e900ffd4fc8e99928ba589ac7a15055ae59b431c5f2f5afe",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

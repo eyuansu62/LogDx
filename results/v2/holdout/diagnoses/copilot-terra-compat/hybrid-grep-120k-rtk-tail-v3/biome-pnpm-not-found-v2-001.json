@@ -1,0 +1,129 @@
+{
+  "case_id": "biome-pnpm-not-found-v2-001",
+  "context_method": "hybrid-grep-120k-rtk-tail-v3",
+  "diagnoser": "copilot-terra-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The Rust test suite and code-generation tests completed successfully, but the subsequent formatting step failed because `pnpm` was unavailable on the runner.",
+  "root_cause_category": "github_actions_config",
+  "root_cause": "The CI environment did not have the `pnpm` executable available when the generated-code verification invoked `pnpm format`, causing exit code 127.",
+  "confidence": 0.99,
+  "relevant_files": [],
+  "relevant_tests": [],
+  "evidence": [
+    {
+      "quote": "pnpm format",
+      "reason": "This is the formatting command invoked after code generation."
+    },
+    {
+      "quote": "sh: 1: pnpm: not found",
+      "reason": "This explicitly identifies the missing executable."
+    },
+    {
+      "quote": "error: Recipe `format` failed on line 221 with exit code 127",
+      "reason": "Exit code 127 confirms the command could not be found."
+    },
+    {
+      "quote": "##[error]Process completed with exit code 127.",
+      "reason": "The missing command caused the CI job to fail."
+    },
+    {
+      "quote": "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s",
+      "reason": "The targeted code-generation tests passed before the missing pnpm command failure."
+    }
+  ],
+  "suggested_fix": "Configure the CI job to install or otherwise make `pnpm` available on PATH before running `cargo run -p xtask_codegen --features global_types -- global-types --verify`, which invokes `pnpm format`.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-rtk-tail-v3/biome-pnpm-not-found-v2-001.txt",
+    "context_tokens_estimate": 98701
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 736
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 9284.65,
+    "cache_key": "5e45c5d85e6104eb0ef63679eafb6308c79399f225fdaeda2aff0a1423450326",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-terra",
+      "resolved_model": "gpt-5.6-terra",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-terra",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 304,
+        "prompt_tokens": 161917,
+        "total_tokens": 162221,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 161914,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 161914,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1200000000000,
+            "token_count": 304,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 40843900000
+      },
+      "model_call_duration_ms": 5636,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 5636,
+        "sessionDurationMs": 7414,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8f61ec33e3622c22e900ffd4fc8e99928ba589ac7a15055ae59b431c5f2f5afe",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

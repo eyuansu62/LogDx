@@ -1,0 +1,138 @@
+{
+  "case_id": "prettier-jest-snapshot-babel-v2-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "copilot-luna-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The test job failed because three formatting test suites produced output that no longer matches their stored Jest snapshots. Most failures involve changed Babel parser error messages and locations.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Expected Jest snapshots are outdated relative to the current parser error output, causing 13 snapshot failures across 3 test suites.",
+  "confidence": 0.99,
+  "relevant_files": [
+    "tests/format/js/_errors_/import/format.test.js",
+    "tests/format/typescript/conformance/classes/constructorDeclarations/constructorParameters/format.test.js",
+    "tests/format/typescript/_errors_/declare-function-with-body/format.test.js"
+  ],
+  "relevant_tests": [
+    "snippet: #0 format[babel]",
+    "snippet: #0 format[babel-flow]",
+    "snippet: #0 format[babel-ts]",
+    "constructorOverloadsWithDefaultValues.ts > format[babel-ts]"
+  ],
+  "evidence": [
+    {
+      "quote": "Error: expect(received).rejects.toThrowErrorMatchingSnapshot()",
+      "reason": "The failing assertions are Jest snapshot comparisons."
+    },
+    {
+      "quote": "› 13 snapshots failed from 2 test suites. Inspect your code changes or re-run jest with `-u` to update them.",
+      "reason": "The CI summary explicitly identifies snapshot mismatches as the failure."
+    },
+    {
+      "quote": "- Unexpected token (1:8)\n+ `import()` requires exactly one or two arguments. (1:1)",
+      "reason": "The received Babel parser error differs from the stored snapshot in both message and location."
+    },
+    {
+      "quote": "Test Suites: 3 failed, 1500 passed, 1503 total",
+      "reason": "The job failed due to three test suites failing despite most tests passing."
+    },
+    {
+      "quote": "Process completed with exit code 1.",
+      "reason": "The snapshot/test failures caused the CI command to exit unsuccessfully."
+    }
+  ],
+  "suggested_fix": "Inspect the parser changes and update the affected Jest snapshots with `-u` if the new error messages and locations are intentional.",
+  "input": {
+    "context_path": "results/v2/holdout/hybrid-grep-120k-tail-v2/prettier-jest-snapshot-babel-v2-001.txt",
+    "context_tokens_estimate": 20980
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 862
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 9607.291,
+    "cache_key": "790f2c0e5e10e9e82d8654f6e96a66212368218ef4fe5abc560632a5acd7f324",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-luna",
+      "resolved_model": "gpt-5.6-luna",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-luna",
+      "max_context_window_tokens": 328000,
+      "max_prompt_tokens_capability": 200000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 200000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 479,
+        "prompt_tokens": 37420,
+        "total_tokens": 37899,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 37417,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 2000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 25000000000,
+            "token_count": 37417,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 120000000000,
+            "token_count": 479,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 992965000
+      },
+      "model_call_duration_ms": 4436,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 4436,
+        "sessionDurationMs": 6935,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "2a2cf91740e2aa5e108dd27e6e9bffbf57cd0b09704b4be470b254c35c421f60",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

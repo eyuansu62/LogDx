@@ -95,6 +95,15 @@ for the original prototype-vs-formal corpus analysis.
 
 Full leaderboard at <https://logdx-bench.github.io/leaderboard.html>.
 
+## Experimental modern-model study
+
+The [modern-model study](reports/logdx_v1_3_modern_model_study.md) tests the
+existing reducers with Copilot models, native long context, and one Drain3
+baseline. It is separate from the frozen v1.2 leaderboard, not a new release
+or a demonstrated accuracy improvement. See the
+[review guide](PR_PROPOSAL.md#review-guide) and
+[reproduction instructions](CONTRIBUTING.md#optional-copilot-and-drain3-study).
+
 ## Quick links
 
 | | |

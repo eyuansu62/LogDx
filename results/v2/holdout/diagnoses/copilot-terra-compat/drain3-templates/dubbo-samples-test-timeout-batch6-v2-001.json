@@ -1,0 +1,130 @@
+{
+  "case_id": "dubbo-samples-test-timeout-batch6-v2-001",
+  "context_method": "drain3-templates",
+  "diagnoser": "copilot-terra-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The integration-test job failed because `dubbo-samples-test-11137` exceeded its configured test-container wait limit. During failure handling, Docker also reported an unexpected HTTP 500 while pulling the zookeeper image, so the required container was not available.",
+  "root_cause_category": "timeout_or_oom",
+  "root_cause": "The `dubbo-samples-test-11137` integration scenario timed out after waiting 602 seconds for its test container, exceeding its configured timeout of 600 seconds.",
+  "confidence": 0.91,
+  "relevant_files": [
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/logs",
+    "/home/runner/work/dubbo/dubbo/99-integration/dubbo-samples-test-11137/target/docker-compose.yml"
+  ],
+  "relevant_tests": [
+    "dubbo-samples-test-11137"
+  ],
+  "evidence": [
+    {
+      "quote": "wait for container is timeout: 602 s",
+      "reason": "The log explicitly records that container waiting exceeded the timeout."
+    },
+    {
+      "quote": "[dubbo-samples-test-11137] timeout: 600",
+      "reason": "This identifies the scenario's configured timeout threshold."
+    },
+    {
+      "quote": "[2/23] [dubbo-samples-test-11137:1/1] TEST FAILURE: Run tests timeout",
+      "reason": "The test runner explicitly classifies this scenario as a timeout failure."
+    },
+    {
+      "quote": "zookeeper Error received unexpected HTTP status: 500 Internal Server Error",
+      "reason": "The failure logs show a Docker image-pull error that prevented the zookeeper container from being obtained during the failed scenario."
+    }
+  ],
+  "suggested_fix": "Investigate why the zookeeper image pull returned \"500 Internal Server Error\" and ensure the required containers can start within the configured 600-second timeout for `dubbo-samples-test-11137`.",
+  "input": {
+    "context_path": "results/v2/holdout/drain3-templates/dubbo-samples-test-timeout-batch6-v2-001.txt",
+    "context_tokens_estimate": 14456
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 816
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 8478.082,
+    "cache_key": "9ec1a9f8a010ffdfda2d650daf429c35c1f3e2cdfe23dd49c2b93a4c2e66eafb",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-terra",
+      "resolved_model": "gpt-5.6-terra",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-terra",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 383,
+        "prompt_tokens": 27581,
+        "total_tokens": 27964,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 27578,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 27578,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1200000000000,
+            "token_count": 383,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 7354700000
+      },
+      "model_call_duration_ms": 4686,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 4686,
+        "sessionDurationMs": 6468,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8f61ec33e3622c22e900ffd4fc8e99928ba589ac7a15055ae59b431c5f2f5afe",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}

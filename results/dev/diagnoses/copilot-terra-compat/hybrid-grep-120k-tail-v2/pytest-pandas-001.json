@@ -1,0 +1,168 @@
+{
+  "case_id": "pytest-pandas-001",
+  "context_method": "hybrid-grep-120k-tail-v2",
+  "diagnoser": "copilot-terra-compat",
+  "mode": "root_cause_diagnosis",
+  "summary": "The NumPy Nightly pytest run failed because NumPy emits a DeprecationWarning for unitless datetime/timedelta NaT construction, and those warnings are treated as test failures during collection and execution.",
+  "root_cause_category": "test_assertion",
+  "root_cause": "Multiple tests and test modules use unitless `np.datetime64(\"NaT\")` (and related unitless datetime/timedelta construction), which raises `DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated`; pytest reports these warnings as collection errors and failed tests.",
+  "confidence": 0.99,
+  "relevant_files": [
+    "pandas/tests/arrays/masked/test_indexing.py",
+    "pandas/tests/arrays/test_timedeltas.py",
+    "pandas/tests/dtypes/test_inference.py",
+    "pandas/tests/dtypes/test_missing.py",
+    "pandas/tests/frame/indexing/test_indexing.py",
+    "pandas/tests/frame/test_constructors.py",
+    "pandas/tests/indexes/datetimes/methods/test_insert.py",
+    "pandas/tests/indexes/test_index_new.py",
+    "pandas/tests/indexes/timedeltas/test_indexing.py",
+    "pandas/tests/io/json/test_ujson.py",
+    "pandas/tests/scalar/timestamp/test_constructors.py",
+    "pandas/tests/series/indexing/test_indexing.py",
+    "pandas/tests/util/test_assert_almost_equal.py",
+    "pandas/tests/arithmetic/test_datetime64.py",
+    "pandas/core/internals/concat.py",
+    "pandas/tests/reshape/concat/test_append.py",
+    "pandas/tests/reshape/concat/test_categorical.py",
+    "pandas/tests/reshape/concat/test_datetimes.py",
+    "pandas/tests/scalar/timedelta/test_arithmetic.py",
+    "pandas/tests/series/methods/test_equals.py",
+    "pandas/tests/indexes/categorical/test_indexing.py",
+    "pandas/tests/indexes/datetimes/test_indexing.py",
+    "pandas/tests/arithmetic/test_timedelta64.py",
+    "pandas/tests/test_algos.py",
+    "pandas/tests/tools/test_to_datetime.py",
+    "pandas/tests/indexes/timedeltas/methods/test_insert.py",
+    "pandas/tests/tslibs/test_array_to_datetime.py",
+    "pandas/tests/util/test_assert_index_equal.py",
+    "pandas/tests/frame/methods/test_rank.py",
+    "pandas/tests/groupby/methods/test_nth.py",
+    "pandas/tests/io/sas/test_sas7bdat.py"
+  ],
+  "relevant_tests": [
+    "pandas/tests/arithmetic/test_datetime64.py::TestDatetimeIndexComparisons::test_dti_cmp_nat_behaves_like_float_cmp_nan",
+    "pandas/tests/reshape/concat/test_append.py::TestAppend::test_append_dtype_coerce[True]",
+    "pandas/tests/reshape/concat/test_append.py::TestAppend::test_append_dtype_coerce[False]",
+    "pandas/tests/scalar/timedelta/test_arithmetic.py::TestTimedeltaAdditionSubtraction::test_td_rsub_nat",
+    "pandas/tests/scalar/timedelta/test_arithmetic.py::TestTimedeltaMultiplicationDivision::test_td_rdiv_na_scalar",
+    "pandas/tests/tslibs/test_array_to_datetime.py::TestArrayToDatetimeResolutionInference::test_infer_homogeoneous_date_objects"
+  ],
+  "evidence": [
+    {
+      "quote": "==================================== ERRORS ====================================",
+      "reason": "Pytest reports collection errors in addition to test failures."
+    },
+    {
+      "quote": "E   DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific unit instead.",
+      "reason": "This is the explicit error reported for every listed collection failure and failed test."
+    },
+    {
+      "quote": "np.datetime64(\"NaT\"),",
+      "reason": "The deprecated unitless NaT construction appears at the reported failure locations."
+    },
+    {
+      "quote": "pandas/core/internals/concat.py:412: DeprecationWarning",
+      "reason": "Production code also calls `dtype.type(\"NaT\")` and triggers the same warning."
+    },
+    {
+      "quote": "= 45 failed, 162298 passed, 25570 skipped, 701 xfailed, 52 errors in 759.43s (0:12:39) =",
+      "reason": "The test run ended with 45 failures and 52 collection errors."
+    }
+  ],
+  "suggested_fix": "Replace unitless `np.datetime64(\"NaT\")` and affected `dtype.type(\"NaT\")` usage with constructions using an explicit datetime/timedelta unit, then rerun the NumPy Nightly tests.",
+  "input": {
+    "context_path": "results/dev/hybrid-grep-120k-tail-v2/pytest-pandas-001.txt",
+    "context_tokens_estimate": 81147
+  },
+  "usage": {
+    "processing_tokens_estimate": 0,
+    "output_tokens_estimate": 1371
+  },
+  "metadata": {
+    "provider": "command",
+    "prompt_sha256": "ecffdf03c99a91b0f8f75e086720d9fb8db96af0d9dae5285baf679c9c9d28de",
+    "runtime_ms": 11278.735,
+    "cache_key": "cc8510f20a9ab89b1e84a5d937cbcc9c2298723166b5b2dff8f5375b155dc69d",
+    "provider_error": null,
+    "provider_error_detail": null,
+    "command": "python3 examples/diagnosis_shim_copilot_cli.py",
+    "model_info": {
+      "provider_name": "github-copilot",
+      "requested_model": "gpt-5.6-terra",
+      "resolved_model": "gpt-5.6-terra",
+      "cli_version": "GitHub Copilot CLI 1.0.82.",
+      "reasoning_effort_requested": "low",
+      "context_mode": "default",
+      "max_context_chars": 480000,
+      "tools_available": 0,
+      "custom_instructions": false,
+      "isolated_copilot_home": true,
+      "model_version": "gpt-5.6-terra",
+      "max_context_window_tokens": 400000,
+      "max_prompt_tokens_capability": 272000,
+      "tokenizer": "o200k_base",
+      "reasoning_effort_resolved": "low",
+      "max_prompt_tokens": 272000,
+      "tool_count": 0,
+      "usage": {
+        "completion_tokens": 911,
+        "prompt_tokens": 79082,
+        "total_tokens": 79993,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_creation_tokens": 79079,
+          "cache_ttl_seconds": 1800
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_cache_frontier_source": "reported_writes",
+        "prompt_cache_details_reported": true
+      },
+      "observable_ai_usage": {
+        "token_details": [
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 200000000000,
+            "token_count": 3,
+            "token_type": "input"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 20000000000,
+            "token_count": 0,
+            "token_type": "cache_read"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 250000000000,
+            "token_count": 79079,
+            "token_type": "cache_write"
+          },
+          {
+            "batch_size": 1000000,
+            "cost_per_batch": 1200000000000,
+            "token_count": 911,
+            "token_type": "output"
+          }
+        ],
+        "total_nano_aiu": 20863550000
+      },
+      "model_call_duration_ms": 7210,
+      "cli_result_usage": {
+        "premiumRequests": 1,
+        "totalApiDurationMs": 7210,
+        "sessionDurationMs": 9148,
+        "codeChanges": {
+          "linesAdded": 0,
+          "linesRemoved": 0,
+          "filesModified": []
+        }
+      }
+    },
+    "diagnoser_config_name": null,
+    "diagnoser_config_sha256": "8f61ec33e3622c22e900ffd4fc8e99928ba589ac7a15055ae59b431c5f2f5afe",
+    "shim_sha256": "a37d5d679110ef731a856ca5e77080715cf6f82e330c7a8896e0332869b8243a"
+  }
+}
